@@ -60,7 +60,8 @@ router.get('/my/:order_code', requireUser, async (req: Request, res: Response) =
 });
 
 // ── Tạo đơn hàng ──────────────────────────────────────
-router.post('/', requireUser, async (req: Request, res: Response) => {
+// Hỗ trợ cả '/' và '/create' (frontend gọi /orders/create)
+router.post(['/', '/create'], requireUser, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     const { items, coupon_code, payment_method = 'sepay', notes, custom_fields_data } = req.body;

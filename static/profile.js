@@ -269,6 +269,33 @@ async function renderProfile(view) {
     }
     } // end if (balanceEnabled)
 
+    // ── Thẻ điểm thưởng (nếu bật) ──
+    try {
+      const loy = await apiFetch('/loyalty/me');
+      if (loy && loy.config && loy.config.enabled) {
+        const ptsCard = el('div', 'mb-24');
+        const histRows = (loy.history || []).slice(0, 5).map(h => `
+          <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px;">
+            <span class="text-muted">${esc(h.description || h.type)}</span>
+            <strong style="color:${h.amount >= 0 ? '#10b981' : '#ef4444'}">${h.amount >= 0 ? '+' : ''}${h.amount} điểm</strong>
+          </div>`).join('');
+        ptsCard.innerHTML = `
+          <div style="background: linear-gradient(135deg,#7c3aed 0%,#a855f7 100%); border-radius:16px; padding:24px; color:#fff; box-shadow:0 10px 25px rgba(124,58,237,0.25); margin-bottom:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div style="font-size:13px; font-weight:600; opacity:.85; text-transform:uppercase; letter-spacing:.5px;">Điểm thưởng</div>
+                <div style="font-size:30px; font-weight:800; margin-top:6px;">${(loy.points||0).toLocaleString()} <span style="font-size:16px;font-weight:600;">điểm</span></div>
+                <div style="font-size:13px; opacity:.85; margin-top:4px;">≈ ${fmt(loy.value||0)} • Tích ${loy.config.earn_per ? `1 điểm/${(loy.config.earn_per).toLocaleString()}đ` : ''}, đổi 1 điểm = ${fmt(loy.config.redeem_value||0)}</div>
+              </div>
+              <i class="fa-solid fa-gift" style="font-size:28px; opacity:.9;"></i>
+            </div>
+          </div>
+          ${histRows ? `<div class="info-card"><h4 class="fw-600 mb-12"><i class="fa-solid fa-clock-rotate-left"></i> Lịch sử điểm gần đây</h4>${histRows}</div>` : ''}
+        `;
+        view.appendChild(ptsCard);
+      }
+    } catch (e) { /* loyalty tắt hoặc lỗi -> bỏ qua */ }
+
     const securityCard = el('div', 'info-card');
     let pwFormHtml = '';
     

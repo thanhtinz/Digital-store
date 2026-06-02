@@ -1845,6 +1845,7 @@ async function renderAdminSettings(view) {
     const se = unified.settings_security || {};
     const ca = unified.settings_captcha || {};
     const fe = unified.settings_features || {};
+    const lo = unified.settings_loyalty || {};
     const dbCfg = dbSettings.providers || {};
 
   // Helper: escape HTML
@@ -1877,6 +1878,7 @@ async function renderAdminSettings(view) {
     { id: 'security', label: 'Bảo mật', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' },
     { id: 'captcha', label: 'Captcha', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' },
     { id: 'features', label: 'Chức năng', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>' },
+    { id: 'loyalty', label: 'Điểm thưởng', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>' },
     { id: 'database', label: 'Database', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>' },
     { id: 'ai', label: 'AI', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.09 3.26L16.36 6.4l-2.63 2.09.64 3.51L12 10.24 9.63 12l.64-3.51L7.64 6.4l3.27-1.14z"/><path d="M5 19l1.5-4.5L2 12l4.5-1.5L5 5l1.5 4.5L12 8l-1.5 4.5L12 19l-1.5-4.5L5 19z"/><circle cx="19" cy="5" r="2"/><circle cx="19" cy="19" r="2"/></svg>' },
   ];
@@ -2150,6 +2152,19 @@ async function renderAdminSettings(view) {
           ${toggleRow('fe-balance', 'Số dư / Nạp tiền', 'Hệ thống số dư và nạp tiền', fe.balance !== false)}
           ${toggleRow('fe-api_docs', 'Tài liệu API / API Keys', 'Cho phép dev tạo API key & xem tài liệu (yêu cầu bật Số dư)', fe.api_docs === true && fe.balance !== false)}
           ${toggleRow('fe-wishlist', 'Yêu thích', 'Tính năng yêu thích sản phẩm', fe.wishlist !== false)}
+        </div>
+      </div>
+
+      <!-- ═══ Loyalty / Điểm thưởng ═══ -->
+      <div class="settings-section" data-section="loyalty">
+        <div class="settings-card">
+          <div class="settings-section-title"><i class="fa-solid fa-gift"></i> Điểm thưởng / Hạng thành viên</div>
+          <p class="text-muted text-sm mb-16">Khách tích điểm khi đơn hoàn tất và đổi điểm thành tiền giảm khi đặt đơn.</p>
+          ${toggleRow('lo-enabled', 'Bật điểm thưởng', 'Cho phép tích & đổi điểm', lo.enabled === true)}
+          ${field('lo-earn-per', 'Số tiền (đồng) để được 1 điểm', lo.earn_per ?? 1000, { type: 'number', placeholder: 'VD: 1000 → 1 điểm/1.000đ' })}
+          ${field('lo-redeem-value', '1 điểm đổi được (đồng)', lo.redeem_value ?? 100, { type: 'number', placeholder: 'VD: 100 → 1 điểm = 100đ' })}
+          ${field('lo-min-redeem', 'Điểm tối thiểu mỗi lần đổi', lo.min_redeem ?? 100, { type: 'number', placeholder: 'VD: 100' })}
+          ${field('lo-max-percent', '% tối đa của đơn được trả bằng điểm', lo.max_percent ?? 50, { type: 'number', placeholder: 'VD: 50' })}
         </div>
       </div>
 
@@ -2458,6 +2473,13 @@ async function renderAdminSettings(view) {
         balance: chk('fe-balance'),
         api_docs: chk('fe-balance') && chk('fe-api_docs'),
         wishlist: chk('fe-wishlist'),
+      },
+      settings_loyalty: {
+        enabled: chk('lo-enabled'),
+        earn_per: num('lo-earn-per'),
+        redeem_value: num('lo-redeem-value'),
+        min_redeem: num('lo-min-redeem'),
+        max_percent: num('lo-max-percent'),
       },
     };
 

@@ -2244,6 +2244,16 @@ async function renderCheckout(view) {
     try { const bData = await apiFetch('/balance'); userBalance = bData.balance || 0; } catch(e) {}
   }
 
+  // ── Điểm thưởng: tính số điểm có thể đổi cho đơn này ──
+  let loyalty = null, redeemInfo = null, redeemPoints = 0;
+  try { loyalty = await apiFetch('/loyalty/me'); } catch (e) {}
+  if (loyalty && loyalty.config && loyalty.config.enabled && loyalty.points >= (loyalty.config.min_redeem || 1)) {
+    const rv = loyalty.config.redeem_value || 1, mp = loyalty.config.max_percent || 0;
+    const maxByPct = Math.floor((grandTotal * mp) / 100);
+    const pts = Math.min(loyalty.points, Math.floor(maxByPct / rv));
+    if (pts >= (loyalty.config.min_redeem || 1)) redeemInfo = { points: pts, discount: pts * rv };
+  }
+
   function renderStep2() {
     view.innerHTML = '';
     const heroHead = el('div', 'products-hero');
@@ -2343,10 +2353,19 @@ async function renderCheckout(view) {
         ${taxRate > 0 ? `
         <div class="summary-row"><span class="summary-label">Thuế (${taxRate}%)</span><span class="summary-value">${fmt(taxAmount)}</span></div>
         ` : ''}
+        ${redeemInfo ? `
+        <div class="summary-row" style="align-items:flex-start; gap:8px;">
+          <label style="display:flex; gap:8px; cursor:pointer; font-size:13px; color:var(--text-body);">
+            <input type="checkbox" id="redeem-cb" style="margin-top:2px;" />
+            <span>Dùng <strong>${redeemInfo.points.toLocaleString()}</strong> điểm thưởng <span class="text-muted">(bạn có ${loyalty.points.toLocaleString()})</span></span>
+          </label>
+        </div>
+        <div class="summary-row" id="sum-points-row" style="display:none;"><span class="summary-label" style="color:#10b981;">Đổi điểm</span><span class="summary-value" style="color:#10b981;">-${fmt(redeemInfo.discount)}</span></div>
+        ` : ''}
         <div class="divider" style="margin: 16px 0; border-top: 1px dashed var(--border-dark);"></div>
         <div class="summary-row" style="background: var(--primary-light); padding: 16px; border-radius: 8px; margin: 0 -8px;">
           <span class="summary-label fw-700" style="color: var(--primary); font-size: 16px;">Tổng cộng</span>
-          <span class="summary-total" style="font-size: 22px; color: #ef4444;">${fmt(grandTotal)}</span>
+          <span class="summary-total" id="sum-total" style="font-size: 22px; color: #ef4444;">${fmt(grandTotal)}</span>
         </div>
       </div>
     `;
@@ -2363,6 +2382,18 @@ async function renderCheckout(view) {
     rightWrapper.appendChild(actionsWrapper);
     
     grid.appendChild(left); grid.appendChild(rightWrapper); view.appendChild(grid);
+
+    // Đổi điểm: cập nhật tổng tiền hiển thị khi tick
+    const redeemCb = qs('#redeem-cb', right);
+    if (redeemCb && redeemInfo) {
+      redeemCb.onchange = () => {
+        redeemPoints = redeemCb.checked ? redeemInfo.points : 0;
+        const ptsRow = qs('#sum-points-row', right);
+        const totalEl = qs('#sum-total', right);
+        if (ptsRow) ptsRow.style.display = redeemCb.checked ? 'flex' : 'none';
+        if (totalEl) totalEl.innerHTML = fmt(Math.max(0, grandTotal - (redeemCb.checked ? redeemInfo.discount : 0)));
+      };
+    }
 
     // Payment method selection
     let selectedMethod = userBalance >= grandTotal ? 'balance' : 'sepay';
@@ -2387,7 +2418,7 @@ async function renderCheckout(view) {
     qs('#btn-pay', actionsWrapper).onclick = async () => {
       const btn = qs('#btn-pay', actionsWrapper); btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...';
       try {
-        const order = await apiFetch('/orders/create', { method: 'POST', body: JSON.stringify({ items: cart.map(item => ({ package_id: item.pkg_id, quantity: item.quantity, custom_fields_data: item.fields || {} })), payment_method: selectedMethod, coupon_code: cartCoupon?.code || null }) });
+        const order = await apiFetch('/orders/create', { method: 'POST', body: JSON.stringify({ items: cart.map(item => ({ package_id: item.pkg_id, quantity: item.quantity, custom_fields_data: item.fields || {} })), payment_method: selectedMethod, coupon_code: cartCoupon?.code || null, redeem_points: redeemPoints }) });
         if (selectedMethod === 'sepay') {
           const payment = await apiFetch('/payment/create-link', { method: 'POST', body: JSON.stringify({ order_code: order.order_code }) });
           cart.length = 0; cartCoupon = null; saveCart(); updateCartCount();

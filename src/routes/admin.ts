@@ -416,9 +416,93 @@ router.get('/admin/settings/public', async (_req: Request, res: Response) => {
   res.json(Object.fromEntries(configs.map((c: { key: string; value: string | null }) => [c.key, c.value])));
 });
 
+// Các nhóm cài đặt được lưu dưới dạng 1 row JSON mỗi nhóm (key = tên nhóm)
+const SETTINGS_GROUPS = [
+  'settings_general', 'settings_appearance', 'settings_scripts', 'settings_images',
+  'settings_security', 'settings_captcha', 'settings_features', 'settings_loyalty',
+];
+
+// Mirror sang key phẳng để phần còn lại của app (SEO, tiền tệ, thuế, ảnh, loyalty) đọc được
+function flatMirror(payload: Record<string, any>): Record<string, string> {
+  const g = payload.settings_general || {};
+  const im = payload.settings_images || {};
+  const lo = payload.settings_loyalty || {};
+  const out: Record<string, string> = {};
+  const set = (k: string, v: any) => { if (v !== undefined && v !== null && v !== '') out[k] = String(v); };
+  // General -> SEO/tiền/thuế
+  set('site_name', g.title);
+  set('site_description', g.site_description ?? g.description);
+  set('copyright_text', g.copyright_text);
+  set('seo_title', g.seo_title);
+  set('seo_description', g.seo_description);
+  set('seo_keywords', g.seo_keywords);
+  set('seo_author', g.seo_author);
+  set('twitter_card', g.twitter_card);
+  set('currency_name', g.currency_name);
+  set('currency_icon', g.currency_icon);
+  if (g.tax_rate !== undefined && g.tax_rate !== '') set('tax_rate', g.tax_rate);
+  // Images
+  set('site_logo', im.logo_url);
+  set('favicon_url', im.favicon_url);
+  set('default_image_url', im.default_image_url);
+  set('seo_image_url', im.seo_image_url);
+  set('default_avatar_url', im.default_avatar_url);
+  // Loyalty -> key loyalty_* (service đọc)
+  if (lo.enabled !== undefined) out['loyalty_enabled'] = lo.enabled ? '1' : '0';
+  set('loyalty_earn_per', lo.earn_per);
+  set('loyalty_redeem_value', lo.redeem_value);
+  set('loyalty_min_redeem', lo.min_redeem);
+  set('loyalty_max_percent', lo.max_percent);
+  return out;
+}
+
 router.get('/admin/settings/unified', requireAdmin, async (_req: Request, res: Response) => {
   const configs = await prisma.siteConfig.findMany();
-  res.json(Object.fromEntries(configs.map((c: { key: string; value: string | null }) => [c.key, c.value])));
+  const map: Record<string, string | null> = Object.fromEntries(configs.map((c: any) => [c.key, c.value]));
+  const out: Record<string, any> = { ...map };
+  // Giải JSON các nhóm để frontend đọc nested (settings_general...)
+  for (const grp of SETTINGS_GROUPS) {
+    if (map[grp]) { try { out[grp] = JSON.parse(map[grp] as string); } catch { out[grp] = {}; } }
+    else if (!out[grp]) out[grp] = {};
+  }
+  res.json(out);
+});
+
+router.put('/admin/settings/unified', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const payload = (req.body || {}) as Record<string, any>;
+    const upserts: Array<{ key: string; value: string }> = [];
+    // 1) Lưu mỗi nhóm dưới dạng JSON (round-trip cho form admin)
+    for (const grp of SETTINGS_GROUPS) {
+      if (payload[grp] && typeof payload[grp] === 'object') {
+        upserts.push({ key: grp, value: JSON.stringify(payload[grp]) });
+      }
+    }
+    // 2) Mirror sang key phẳng cho phần còn lại của app
+    for (const [k, v] of Object.entries(flatMirror(payload))) upserts.push({ key: k, value: v });
+
+    await Promise.all(upserts.map((u) =>
+      prisma.siteConfig.upsert({ where: { key: u.key }, update: { value: u.value }, create: { key: u.key, value: u.value } })
+    ));
+    res.json({ message: 'Đã lưu cài đặt' });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+router.put('/admin/settings/database', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    // Lưu cấu hình provider DB (dùng cho script db-switch). Không đổi kết nối đang chạy.
+    const providers = req.body?.providers ?? req.body ?? {};
+    await prisma.siteConfig.upsert({
+      where: { key: 'db_providers' },
+      update: { value: JSON.stringify(providers) },
+      create: { key: 'db_providers', value: JSON.stringify(providers) },
+    });
+    res.json({ ok: true, message: 'Đã lưu cấu hình database' });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
 });
 
 router.get('/admin/settings/database', requireAdmin, async (_req: Request, res: Response) => {
