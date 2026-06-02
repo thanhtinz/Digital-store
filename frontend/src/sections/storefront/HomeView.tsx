@@ -215,7 +215,7 @@ export default function HomeView() {
       {/* SẢN PHẨM NỔI BẬT */}
       {(loading || featured.length > 0) && (
         <>
-          <SectionHead title="★ Sản phẩm nổi bật" viewAllHref={PATH_DASHBOARD.eCommerce.list} />
+          <SectionHead title="★ Sản phẩm nổi bật" viewAllHref={PATH_DASHBOARD.eCommerce.shop} />
           <ShopProductList products={featured} loading={loading && featured.length === 0} />
         </>
       )}
@@ -223,7 +223,7 @@ export default function HomeView() {
       {/* SẢN PHẨM MỚI */}
       {newest.length > 0 && (
         <>
-          <SectionHead title="Sản phẩm mới" viewAllHref={PATH_DASHBOARD.eCommerce.list} />
+          <SectionHead title="Sản phẩm mới" viewAllHref={PATH_DASHBOARD.eCommerce.shop} />
           <ShopProductList products={newest} loading={false} />
         </>
       )}

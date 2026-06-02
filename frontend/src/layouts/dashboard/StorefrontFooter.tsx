@@ -13,14 +13,14 @@ import { PATH_DASHBOARD } from '../../routes/paths';
 // ----------------------------------------------------------------------
 
 const EXPLORE_LINKS = [
-  { label: 'Tất cả sản phẩm', href: PATH_DASHBOARD.eCommerce.list },
   { label: 'Gian hàng', href: PATH_DASHBOARD.eCommerce.shop },
   { label: 'Góc chia sẻ (Blog)', href: PATH_DASHBOARD.blog.posts },
 ];
 
 const SUPPORT_LINKS = [
   { label: 'Liên hệ & Hỗ trợ', href: PATH_DASHBOARD.chat.root },
-  { label: 'Tài khoản của tôi', href: PATH_DASHBOARD.user.account },
+  { label: 'Đơn hàng của tôi', href: PATH_DASHBOARD.orders.root },
+  { label: 'Tài khoản của tôi', href: PATH_DASHBOARD.myAccount },
 ];
 
 type Settings = {

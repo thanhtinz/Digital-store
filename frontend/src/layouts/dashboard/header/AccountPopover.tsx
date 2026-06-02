@@ -18,16 +18,16 @@ import { IconButtonAnimate } from '../../../components/animate';
 
 const OPTIONS = [
   {
-    label: 'Home',
+    label: 'Trang chủ',
     linkTo: '/',
   },
   {
-    label: 'Profile',
-    linkTo: PATH_DASHBOARD.user.profile,
+    label: 'Tài khoản',
+    linkTo: PATH_DASHBOARD.myAccount,
   },
   {
-    label: 'Settings',
-    linkTo: PATH_DASHBOARD.user.account,
+    label: 'Đơn hàng',
+    linkTo: PATH_DASHBOARD.orders.root,
   },
 ];
 

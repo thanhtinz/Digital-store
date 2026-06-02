@@ -34,7 +34,6 @@ const navConfig = [
     items: [
       { title: 'trang chủ', path: '/', icon: ICONS.dashboard },
       { title: 'gian hàng', path: PATH_DASHBOARD.eCommerce.shop, icon: ICONS.ecommerce },
-      { title: 'tất cả sản phẩm', path: PATH_DASHBOARD.eCommerce.list, icon: ICONS.cart },
     ],
   },
   {
