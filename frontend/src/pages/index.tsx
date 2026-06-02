@@ -1,16 +1,26 @@
 // next
-import { useEffect } from 'react';
-import { useRouter } from 'next/router';
-// config
-import { PATH_DASHBOARD } from '../routes/paths';
+import Head from 'next/head';
+// layouts
+import DashboardLayout from '../layouts/dashboard';
+// sections
+import HomeView from '../sections/storefront/HomeView';
+
+// ----------------------------------------------------------------------
+
+HomePage.getLayout = (page: React.ReactElement) => (
+  <DashboardLayout disableGuard>{page}</DashboardLayout>
+);
 
 // ----------------------------------------------------------------------
 
 export default function HomePage() {
-  const { push } = useRouter();
-  useEffect(() => {
-    // Trang chủ -> shop công khai (không bắt đăng nhập). Dashboard/app vẫn cần login.
-    push(PATH_DASHBOARD.eCommerce.shop);
-  }, [push]);
-  return null;
+  return (
+    <>
+      <Head>
+        <title> Trang chủ | Digital Store</title>
+      </Head>
+
+      <HomeView />
+    </>
+  );
 }
