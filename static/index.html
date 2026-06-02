@@ -24,6 +24,11 @@
   <meta itemprop="image" content="{{ seo_image_url or default_image_url or '' }}" />
   <meta name="thumbnail" content="{{ seo_image_url or default_image_url or '' }}" />
   <meta name="theme-color" content="{{ theme_color or '#00AB55' }}" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="{{ site_name or 'Store' }}" />
 
   <meta name="twitter:card" content="{{ twitter_card or 'summary_large_image' }}" />
   <meta name="twitter:title" content="{{ seo_title or site_name or site_name }}" />
@@ -40,6 +45,16 @@
   <link rel="shortcut icon" href="{{ favicon_url or '/static/candy-icon.png' }}" />
   <link rel="apple-touch-icon" href="{{ favicon_url or '/static/candy-icon.png' }}" />
   <link rel="stylesheet" href="/static/styles.css?v={{ css_hash }}" />
+  <script>
+    // Áp dụng dark/light sớm để tránh nhấp nháy (đọc lựa chọn đã lưu, nếu chưa thì theo hệ thống)
+    (function(){
+      try {
+        var t = localStorage.getItem('theme');
+        if (!t) t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+      } catch(e){}
+    })();
+  </script>
   <script>
     // Rescue hash fragment immediately on boot to prevent mobile pull-to-refresh hash dropping
     (function(){
@@ -250,5 +265,11 @@
   <script src="/static/oauth-settings.js?v={{ js_hash }}&build=20260507-1"></script>
   <script src="/static/oauth-login.js?v={{ js_hash }}&build=20260507-1"></script>
   <script src="/static/app.js?v={{ js_hash }}&build=20260507-1"></script>
+  <script>
+    // Đăng ký service worker (PWA, network-first nên không phục vụ bản cũ khi online)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function(){ navigator.serviceWorker.register('/sw.js').catch(function(){}); });
+    }
+  </script>
 </body>
 </html>

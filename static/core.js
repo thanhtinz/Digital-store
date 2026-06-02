@@ -430,3 +430,41 @@ function animateEntrance(container) {
   btn.style.opacity = '0';
   btn.style.pointerEvents = 'none';
 })();
+
+// ─── Dark/Light theme toggle ───────────────────────────
+function setTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  try { localStorage.setItem('theme', t); } catch (e) {}
+  const btn = document.querySelector('.theme-toggle-btn i');
+  if (btn) btn.className = t === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', t === 'dark' ? '#161C24' : (window.appSettings?.theme_color || '#00AB55'));
+}
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  setTheme(cur === 'dark' ? 'light' : 'dark');
+}
+window.toggleTheme = toggleTheme;
+window.setTheme = setTheme;
+
+(function () {
+  function mount() {
+    if (document.querySelector('.theme-toggle-btn')) return;
+    const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    const btn = document.createElement('button');
+    btn.className = 'theme-toggle-btn';
+    btn.type = 'button';
+    btn.title = 'Chế độ sáng/tối';
+    btn.setAttribute('aria-label', 'Chuyển chế độ sáng/tối');
+    btn.innerHTML = '<i class="' + (cur === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon') + '"></i>';
+    btn.onclick = function () {
+      toggleTheme();
+      if (typeof anime !== 'undefined' && anime.animate) {
+        anime.animate(btn, { rotate: [0, 360], duration: 500, ease: 'outCubic' });
+      }
+    };
+    document.body.appendChild(btn);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
+  else mount();
+})();

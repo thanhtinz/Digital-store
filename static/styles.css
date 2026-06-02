@@ -133,6 +133,53 @@
   --border-light: var(--border-dark);
 }
 
+/* ─── Dark mode ─── (lật bảng màu nền/chữ/grey; component dùng biến nên tự đổi) */
+[data-theme="dark"] {
+  --grey-0:   #161C24;
+  --grey-100: #1A222C;
+  --grey-200: #212B36;
+  --grey-300: #2A3543;
+  --grey-400: #454F5B;
+  --grey-500: #637381;
+  --grey-600: #919EAB;
+  --grey-700: #C4CDD5;
+  --grey-800: #DFE3E8;
+  --grey-900: #F9FAFB;
+
+  --bg-page:    #161C24;
+  --bg-card:    #212B36;
+  --bg-sidebar: #1A222C;
+  --bg-header:  rgba(22,28,36,0.85);
+
+  --text-heading: #FFFFFF;
+  --text-body:    #C4CDD5;
+  --text-muted:   #919EAB;
+  --text-disabled:#637381;
+
+  --border:      rgba(145,158,171,0.24);
+  --border-dark: rgba(145,158,171,0.36);
+
+  --shadow-sm:  0 1px 2px 0 rgba(0,0,0,0.40);
+  --shadow:     0 8px 16px 0 rgba(0,0,0,0.40);
+  --shadow-lg:  0 24px 48px 0 rgba(0,0,0,0.50);
+  --shadow-card: 0 0 2px 0 rgba(0,0,0,0.40), 0 12px 24px -4px rgba(0,0,0,0.40);
+  --shadow-dialog: -40px 40px 80px -8px rgba(0,0,0,0.50);
+
+  color-scheme: dark;
+}
+
+/* Nút chuyển sáng/tối (chèn bằng JS) */
+.theme-toggle-btn {
+  position: fixed; right: 18px; bottom: 18px; z-index: 1200;
+  width: 44px; height: 44px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg-card); color: var(--text-heading);
+  border: 1px solid var(--border); box-shadow: var(--shadow);
+  cursor: pointer; font-size: 18px; transition: transform var(--transition-fast), background var(--transition);
+}
+.theme-toggle-btn:hover { transform: scale(1.08); }
+@media print { .theme-toggle-btn { display: none; } }
+
 button, input, textarea, select { -webkit-tap-highlight-color: transparent; }
 
 /* ─── Reset ─── */

@@ -75,10 +75,16 @@ app.use('/api', defaultRateLimit);
 app.use(express.static(STATIC_DIR, { maxAge: '1h', etag: true }));
 
 // ── Public settings helper ─────────────────────────────
+const SEO_KEYS = [
+  'site_name', 'site_logo', 'site_description', 'site_banner', 'currency', 'tax_rate',
+  'favicon_url', 'default_image_url', 'theme_color', 'copyright_text',
+  'seo_title', 'seo_description', 'seo_keywords', 'seo_author', 'seo_image_url',
+  'og_type', 'twitter_card', 'og_image_alt', 'robots',
+];
+
 async function loadPublicSettings(): Promise<Record<string, string>> {
-  const publicKeys = ['site_name', 'site_logo', 'site_description', 'site_banner', 'currency', 'tax_rate'];
   try {
-    const configs = await prisma.siteConfig.findMany({ where: { key: { in: publicKeys } } });
+    const configs = await prisma.siteConfig.findMany({ where: { key: { in: SEO_KEYS } } });
     return Object.fromEntries(configs.map((c: { key: string; value: string | null }) => [c.key, c.value || '']));
   } catch {
     return {};
@@ -126,54 +132,183 @@ app.get('/api/images/:id', async (req, res) => {
   }
 });
 
-// ── SPA HTML pages ─────────────────────────────────────
-const htmlPages: Record<string, string> = {};
+// ── SPA HTML pages (mini Jinja-style template renderer) ─
+// index.html/blog.html dùng cú pháp {{ a or b or 'lit' }}, {{ x|tojson }}
+// và {% if VAR %}...{% endif %}. Hàm dưới resolve đúng các token đó.
+function renderTemplate(html: string, ctx: Record<string, any>): string {
+  // {% if VAR %}...{% endif %} (không lồng nhau)
+  html = html.replace(/\{%\s*if\s+([a-zA-Z0-9_]+)\s*%\}([\s\S]*?)\{%\s*endif\s*%\}/g,
+    (_m, key, inner) => (ctx[key] ? inner : ''));
 
-async function renderHtml(template: string): Promise<string> {
-  try {
-    let html = await fs.promises.readFile(path.join(STATIC_DIR, template), 'utf-8');
-    const settings = await loadPublicSettings();
-    const siteName = settings['site_name'] || 'Sweet Premium Store';
-    const siteLogo = settings['site_logo'] || '/candy-icon.png';
+  // {{ expr }}
+  html = html.replace(/\{\{\s*([\s\S]*?)\s*\}\}/g, (_m, raw) => {
+    let expr = String(raw).trim();
+    let asJson = false;
+    expr = expr.replace(/\|\s*safe\s*$/, '').trim();
+    if (/\|\s*tojson\s*$/.test(expr)) { asJson = true; expr = expr.replace(/\|\s*tojson\s*$/, '').trim(); }
+    if (expr.startsWith('(') && expr.endsWith(')')) expr = expr.slice(1, -1).trim();
+    // Đánh giá "a or b or 'literal'": lấy giá trị truthy đầu tiên
+    let val: any = '';
+    for (const part of expr.split(/\s+or\s+/)) {
+      const t = part.trim();
+      if ((t.startsWith("'") && t.endsWith("'")) || (t.startsWith('"') && t.endsWith('"'))) {
+        val = t.slice(1, -1);
+        if (val) break;
+        continue;
+      }
+      const cv = ctx[t];
+      if (cv !== undefined && cv !== null && cv !== '') { val = cv; break; }
+    }
+    if (asJson) return JSON.stringify(val ?? '');
+    return String(val ?? '');
+  });
+  return html;
+}
 
-    html = html
-      .replace(/{{SITE_NAME}}/g, siteName)
-      .replace(/{{SITE_LOGO}}/g, siteLogo)
-      .replace(/{{JS_HASH}}/g, getFileHash(path.join(STATIC_DIR, 'app.js')))
-      .replace(/{{CSS_HASH}}/g, getFileHash(path.join(STATIC_DIR, 'styles.css')));
-    return html;
-  } catch {
-    return '<!DOCTYPE html><html><body>Loading...</body></html>';
-  }
+function escapeHtml(s: string): string {
+  return String(s).replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } as any)[c]);
+}
+
+// Xây context SEO cho 1 request (site-level + có thể override per-page)
+async function buildContext(req: express.Request, extra: Record<string, any> = {}): Promise<Record<string, any>> {
+  const s = await loadPublicSettings();
+  const cleanPath = req.originalUrl.split('?')[0];
+  const url = `${APP_BASE.replace(/\/$/, '')}${cleanPath}`;
+  const siteName = s['site_name'] || 'Sweet Premium Store';
+  const ctx: Record<string, any> = {
+    site_name: siteName,
+    site_description: s['site_description'] || '',
+    favicon_url: s['favicon_url'] || '/static/candy-icon.png',
+    default_image_url: s['default_image_url'] || s['site_logo'] || '/static/candy-icon.png',
+    theme_color: s['theme_color'] || '#00AB55',
+    copyright_text: s['copyright_text'] || `© ${new Date().getFullYear()} ${siteName}`,
+    seo_title: s['seo_title'] || '',
+    seo_description: s['seo_description'] || '',
+    seo_keywords: s['seo_keywords'] || '',
+    seo_author: s['seo_author'] || '',
+    seo_image_url: s['seo_image_url'] || '',
+    og_type: s['og_type'] || 'website',
+    twitter_card: s['twitter_card'] || 'summary_large_image',
+    og_image_alt: s['og_image_alt'] || '',
+    robots: s['robots'] || 'index, follow',
+    canonical_url: url,
+    social_url: url,
+    css_hash: getFileHash(path.join(STATIC_DIR, 'styles.css')),
+    js_hash: getFileHash(path.join(STATIC_DIR, 'app.js')),
+    ...extra,
+  };
+  return ctx;
 }
 
 // ── HTML route helper ──────────────────────────────────
-async function serveHtml(res: express.Response, template: string): Promise<void> {
+async function serveHtml(req: express.Request, res: express.Response, template: string, extra: Record<string, any> = {}): Promise<void> {
   try {
-    const html = await renderHtml(template);
+    const html = await fs.promises.readFile(path.join(STATIC_DIR, template), 'utf-8');
+    const ctx = await buildContext(req, extra);
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache');
-    res.send(html);
+    res.send(renderTemplate(html, ctx));
   } catch {
     res.status(500).send('Server error');
   }
 }
 
-// Admin pages
-app.get('/admin', (_, res) => serveHtml(res, 'index.html'));
-app.get('/admin/*', (_, res) => serveHtml(res, 'index.html'));
+// Admin pages (không index trên search engine)
+app.get('/admin', (req, res) => serveHtml(req, res, 'index.html', { robots: 'noindex, nofollow' }));
+app.get('/admin/*', (req, res) => serveHtml(req, res, 'index.html', { robots: 'noindex, nofollow' }));
+
+// Per-product SEO: tiêu đề/ảnh/mô tả theo sản phẩm để chia sẻ đẹp
+app.get('/products/:slug', async (req, res) => {
+  try {
+    const p: any = await prisma.product.findFirst({
+      where: { slug: req.params.slug },
+      include: { category: true },
+    });
+    if (p) {
+      const desc = String(p.shortDescription || p.description || '').replace(/<[^>]*>/g, ' ').trim().slice(0, 200);
+      const img = p.imageUrl || '';
+      const jsonLd = {
+        '@context': 'https://schema.org', '@type': 'Product',
+        name: p.name, description: desc, image: img ? [img] : undefined,
+        category: p.category?.name,
+      };
+      await serveHtml(req, res, 'index.html', {
+        seo_title: p.name, seo_description: desc,
+        seo_image_url: img, og_image_alt: p.name, og_type: 'product',
+        json_ld: jsonLd,
+      });
+      return;
+    }
+  } catch { /* fallback dưới */ }
+  await serveHtml(req, res, 'index.html');
+});
 
 // Client pages - serve index.html for SPA routing
 app.get([
   '/', '/login', '/register', '/profile', '/orders', '/orders/:code',
-  '/products', '/products/:slug', '/category/:slug',
+  '/products', '/category/:slug',
   '/checkout/:code', '/payment/:code',
   '/blog', '/blog/:slug', '/wishlist', '/search',
   '/auth-callback', '/smm', '/smm/history', '/smm/history/:id',
-], (_, res) => serveHtml(res, 'index.html'));
+], (req, res) => serveHtml(req, res, 'index.html'));
 
 // Blog public page
-app.get('/blog-public', (_, res) => serveHtml(res, 'blog.html'));
+app.get('/blog-public', (req, res) => serveHtml(req, res, 'blog.html'));
+
+// ── PWA service worker tại root scope ──────────────────
+app.get('/sw.js', (_req, res) => {
+  res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.sendFile(path.join(STATIC_DIR, 'sw.js'));
+});
+
+// ── SEO: robots.txt + sitemap.xml ──────────────────────
+app.get('/robots.txt', (_req, res) => {
+  const base = APP_BASE.replace(/\/$/, '');
+  res.type('text/plain').send(
+    `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\n\nSitemap: ${base}/sitemap.xml\n`
+  );
+});
+
+app.get('/sitemap.xml', async (_req, res) => {
+  try {
+    const base = APP_BASE.replace(/\/$/, '');
+    const [products, posts, categories] = await Promise.all([
+      prisma.product.findMany({ where: { isActive: true }, select: { slug: true, updatedAt: true }, take: 2000 }),
+      prisma.blogPost.findMany({ where: { isPublished: true }, select: { slug: true, updatedAt: true }, take: 2000 }),
+      prisma.category.findMany({ where: { isActive: true }, select: { slug: true }, take: 500 }),
+    ]);
+    const urls: string[] = [];
+    const add = (loc: string, lastmod?: Date) => urls.push(
+      `  <url><loc>${escapeHtml(base + loc)}</loc>${lastmod ? `<lastmod>${lastmod.toISOString().slice(0, 10)}</lastmod>` : ''}</url>`
+    );
+    ['/', '/products', '/blog'].forEach((p) => add(p));
+    categories.forEach((c: any) => c.slug && add(`/category/${c.slug}`));
+    products.forEach((p: any) => p.slug && add(`/products/${p.slug}`, p.updatedAt));
+    posts.forEach((p: any) => p.slug && add(`/blog/${p.slug}`, p.updatedAt));
+    res.type('application/xml').send(
+      `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`
+    );
+  } catch {
+    res.status(500).type('text/plain').send('sitemap error');
+  }
+});
+
+// ── PWA manifest ───────────────────────────────────────
+app.get('/manifest.webmanifest', async (_req, res) => {
+  const s = await loadPublicSettings();
+  const name = s['site_name'] || 'Sweet Premium Store';
+  const icon = s['favicon_url'] || '/static/candy-icon.png';
+  res.type('application/manifest+json').send(JSON.stringify({
+    name, short_name: name.slice(0, 12), start_url: '/', display: 'standalone',
+    background_color: '#ffffff', theme_color: s['theme_color'] || '#00AB55',
+    icons: [
+      { src: icon, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+      { src: icon, sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+    ],
+  }));
+});
 
 // ── 404 fallback ────────────────────────────────────────
 app.use((_req, res) => {
