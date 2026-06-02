@@ -263,6 +263,7 @@ model User {
   providerId      String?  @db.VarChar(255) @map("provider_id")
   twoFactorSecret String?  @db.VarChar(255) @map("two_factor_secret")
   balance         Decimal  @default(0) @db.Decimal(12, 2)
+  points          Int      @default(0)
   isActive        Boolean  @default(true) @map("is_active")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
@@ -270,6 +271,8 @@ model User {
   balanceTransactions BalanceTransaction[]
   smmOrders           SmmOrder[]
   cardTransactions    CardChargeTransaction[]
+  notifications       Notification[]
+  pointTransactions   PointTransaction[]
   // Lưu ý: Wishlist tham chiếu user qua userId dạng String (giống Order),
   // không khai báo quan hệ Prisma ở đây để tránh lỗi validate (User.id là Int).
 
@@ -656,4 +659,70 @@ model TelegramBot {
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   @@map("telegram_bots")
+}
+
+// ── Thông báo trong ứng dụng (chuông) ──────────────────
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  type      String   @default("info") @db.VarChar(40)   // order, payment, points, system...
+  title     String   @db.VarChar(255)
+  body      String?
+  link      String?  @db.VarChar(500)
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+// ── Điểm thưởng / hạng thành viên ──────────────────────
+model PointTransaction {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @map("user_id")
+  amount       Int      // +tích / -đổi (số điểm)
+  balanceAfter Int      @map("balance_after")
+  type         String   @db.VarChar(40)   // earn_order, redeem_order, admin_adjust
+  description  String?
+  reference    String?  @db.VarChar(100)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("point_transactions")
+}
+
+// ── Live chat (tự xây, quản lý trong admin) ────────────
+model ChatConversation {
+  id            Int      @id @default(autoincrement())
+  userId        Int?     @map("user_id")        // null = khách vãng lai
+  guestName     String?  @db.VarChar(120) @map("guest_name")
+  guestEmail    String?  @db.VarChar(255) @map("guest_email")
+  status        String   @default("open") @db.VarChar(20)   // open | closed
+  lastMessageAt DateTime @default(now()) @map("last_message_at")
+  unreadAdmin   Int      @default(0) @map("unread_admin")
+  unreadUser    Int      @default(0) @map("unread_user")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  messages ChatMessage[]
+
+  @@index([status, lastMessageAt])
+  @@index([userId])
+  @@map("chat_conversations")
+}
+
+model ChatMessage {
+  id             Int      @id @default(autoincrement())
+  conversationId Int      @map("conversation_id")
+  sender         String   @db.VarChar(20)   // user | admin
+  body           String
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@map("chat_messages")
 }

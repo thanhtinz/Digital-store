@@ -26,6 +26,9 @@ import integrationsRouter from './routes/integrations';
 import cardChargeRouter from './routes/cardCharge';
 import stockRouter from './routes/stock';
 import mailRouter from './routes/mail';
+import userNotificationsRouter from './routes/userNotifications';
+import chatRouter from './routes/chat';
+import loyaltyRouter from './routes/loyalty';
 import { startReportScheduler } from './services/scheduler';
 
 // __dirname is natively available in CommonJS
@@ -118,6 +121,9 @@ app.use('/api', integrationsRouter); // api-providers + ai generate
 app.use('/api/card-charge', cardChargeRouter); // nạp thẻ
 app.use('/api/stock', stockRouter); // quản lý kho
 app.use('/api/admin/mail', mailRouter); // mail server config
+app.use('/api/notifications', userNotificationsRouter); // chuông thông báo user
+app.use('/api/chat', chatRouter); // live chat (user + admin)
+app.use('/api/loyalty', loyaltyRouter); // điểm thưởng
 
 // ── Uploaded images ────────────────────────────────────
 app.get('/api/images/:id', async (req, res) => {

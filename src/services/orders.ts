@@ -51,6 +51,8 @@ export async function autoDeliver(orderId: number): Promise<void> {
         where: { id: orderId },
         data: { status: 'completed' },
       });
+      const { awardPointsForOrder } = await import('./loyalty');
+      awardPointsForOrder(order.userId, money(order.totalAmount), order.orderCode).catch(() => {});
     }
     return;
   }
@@ -76,6 +78,9 @@ export async function autoDeliver(orderId: number): Promise<void> {
         data: { status: 'completed', deliveryData },
       }),
     ]);
+
+    const { awardPointsForOrder } = await import('./loyalty');
+    awardPointsForOrder(order.userId, money(order.totalAmount), order.orderCode).catch(() => {});
 
     // Cảnh báo hết hàng nếu tồn kho thấp (≤5)
     const remaining = await prisma.stockItem.count({ where: { packageId: order.package.id, isSold: false } });

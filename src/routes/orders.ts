@@ -3,8 +3,16 @@ import prisma from '../db';
 import { requireUser, requireAdmin, requireStaffOrAdmin } from '../middleware/auth';
 import { orderToDict, genOrderCode, applyCoupon, autoDeliver, money } from '../services/orders';
 import { notifyNewOrder } from '../services/telegram';
+import { createNotification } from '../services/notify';
+import { awardPointsForOrder, estimatePointDiscount, redeemPointsForOrder } from '../services/loyalty';
 
 const router = Router();
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'Chờ thanh toán', pending_payment: 'Chờ thanh toán', paid: 'Đã thanh toán',
+  processing: 'Đang xử lý', completed: 'Đã giao hàng', cancelled: 'Đã hủy',
+  failed: 'Lỗi / đã hoàn tiền', refunded: 'Đã hoàn tiền',
+};
 
 // ── Lấy đơn hàng của user ──────────────────────────────
 router.get('/my', requireUser, async (req: Request, res: Response) => {
@@ -56,6 +64,7 @@ router.post('/', requireUser, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     const { items, coupon_code, payment_method = 'sepay', notes, custom_fields_data } = req.body;
+    const redeemPoints = Math.max(0, parseInt(req.body.redeem_points) || 0);
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       res.status(422).json({ detail: 'Cần ít nhất 1 sản phẩm' });
@@ -117,10 +126,15 @@ router.post('/', requireUser, async (req: Request, res: Response) => {
     const taxAmount = Math.round(taxableAmount * (taxRate / 100));
     const totalAmount = Math.round(taxableAmount + taxAmount);
 
+    // Ước lượng giảm giá từ đổi điểm (số trừ thật sẽ atomic trong transaction)
+    const estPointDiscount = redeemPoints > 0
+      ? await estimatePointDiscount(user.user_id, redeemPoints, totalAmount)
+      : 0;
+
     // Balance payment
     if (payment_method === 'balance') {
       const dbUser = await prisma.user.findUnique({ where: { id: user.user_id } });
-      if (!dbUser || money(dbUser.balance) < totalAmount) {
+      if (!dbUser || money(dbUser.balance) < Math.max(0, totalAmount - estPointDiscount)) {
         res.status(400).json({ detail: 'Số dư không đủ' });
         return;
       }
@@ -130,6 +144,16 @@ router.post('/', requireUser, async (req: Request, res: Response) => {
     const isSingleItem = orderItemsData.length === 1;
 
     const order = await prisma.$transaction(async (tx: any) => {
+      // Đổi điểm (atomic) -> giảm trừ vào tổng phải trả
+      let pointDiscount = 0;
+      let pointsUsed = 0;
+      if (redeemPoints > 0) {
+        const r = await redeemPointsForOrder(tx, user.user_id, redeemPoints, totalAmount, orderCode);
+        pointDiscount = r.discount;
+        pointsUsed = r.used;
+      }
+      const payable = Math.max(0, totalAmount - pointDiscount);
+
       const newOrder = await tx.order.create({
         data: {
           orderCode,
@@ -138,14 +162,14 @@ router.post('/', requireUser, async (req: Request, res: Response) => {
           packageId: isSingleItem ? orderItemsData[0].packageId : null,
           quantity: isSingleItem ? orderItemsData[0].quantity : 1,
           subtotalAmount: subtotal,
-          discountAmount,
+          discountAmount: discountAmount + pointDiscount,
           taxAmount,
-          totalAmount,
+          totalAmount: payable,
           couponCode: coupon_code || null,
           status: payment_method === 'balance' ? 'paid' : 'pending',
           paymentMethod: payment_method,
           customFieldsData: isSingleItem ? orderItemsData[0].customFieldsData : custom_fields_data || null,
-          notes: notes || null,
+          notes: pointsUsed > 0 ? `${notes ? notes + ' | ' : ''}Đã đổi ${pointsUsed} điểm (-${pointDiscount.toLocaleString()}đ)` : (notes || null),
         },
       });
 
@@ -180,8 +204,8 @@ router.post('/', requireUser, async (req: Request, res: Response) => {
       if (payment_method === 'balance') {
         // Trừ tiền có điều kiện (atomic) — chống race khi 2 đơn cùng lúc làm âm ví
         const deducted = await tx.user.updateMany({
-          where: { id: user.user_id, balance: { gte: totalAmount } },
-          data: { balance: { decrement: totalAmount } },
+          where: { id: user.user_id, balance: { gte: payable } },
+          data: { balance: { decrement: payable } },
         });
         if (deducted.count === 0) {
           throw new Error('INSUFFICIENT_BALANCE');
@@ -190,7 +214,7 @@ router.post('/', requireUser, async (req: Request, res: Response) => {
         await tx.balanceTransaction.create({
           data: {
             userId: user.user_id,
-            amount: -totalAmount,
+            amount: -payable,
             balanceAfter: money(dbUser?.balance),
             type: 'purchase',
             status: 'completed',
@@ -326,6 +350,19 @@ router.patch('/admin/:order_code/status', requireStaffOrAdmin, async (req: Reque
 
     if (status === 'paid') {
       await autoDeliver(order.id);
+    }
+
+    // Thông báo cho khách + tích điểm khi giao xong (không chặn nếu lỗi)
+    if (order.status !== status) {
+      createNotification(order.userId, {
+        type: 'order',
+        title: `Đơn ${order.orderCode}: ${STATUS_LABELS[status] || status}`,
+        body: notes || undefined,
+        link: `/orders/${order.orderCode}`,
+      }).catch(() => {});
+      if (status === 'completed') {
+        awardPointsForOrder(order.userId, money(order.totalAmount), order.orderCode).catch(() => {});
+      }
     }
 
     res.json({ message: 'Đã cập nhật', status: updated.status });
