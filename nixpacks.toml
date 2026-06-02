@@ -1,0 +1,4 @@
+# Cấu hình Nixpacks cho Railway — chỉ ghim phiên bản Node.
+# Build/Start do railway.json điều khiển (buildCommand / startCommand).
+[phases.setup]
+nixPkgs = ["nodejs_20"]
