@@ -45,3 +45,48 @@
   border-top: 1px solid var(--border) !important;
 }
 .footer-link:hover { color: var(--primary) !important; }
+
+/* ============================================================
+   TRANG CHI TIẾT (sản phẩm / đơn hàng / blog) — theo minimals.cc:
+   card = ĐỔ BÓNG MỀM + bo 16, KHÔNG viền cứng. Giữ phần đặc thù riêng
+   (hộp giao hàng xanh, mã code...) chỉ bo mềm lại.
+   ============================================================ */
+
+/* Card chính các trang chi tiết -> Minimal card (bóng, không viền) */
+.pd-card,
+.order-card,
+.blog-card,
+.blog-article-content,
+.review-card,
+.ticket-card {
+  border: none !important;
+  border-radius: 16px !important;
+  box-shadow: var(--shadow-card) !important;
+}
+.order-card { transition: box-shadow .2s !important; }
+.order-card:hover { box-shadow: var(--shadow) !important; }
+.blog-card { transition: box-shadow .2s, transform .2s !important; overflow: hidden; }
+.blog-card:hover { box-shadow: var(--shadow) !important; }
+
+/* Pills / chips / badges chi tiết SP -> pill sạch, không bóng */
+.pd-chip, .pd-badge, .pd-badge-sm, .pd-badge-green, .pd-badge-orange,
+.pd-badge-red, .pd-badge-blue, .pd-badge-flash, .pd-action-badge {
+  border-radius: 100px !important;
+  box-shadow: none !important;
+}
+
+/* Hộp đặc thù riêng (giao hàng, mã game/code) -> GIỮ màu, chỉ bo mềm + bỏ bóng nặng */
+.delivery-box, .delivery-data, .pd-game-code, .pd-game-info, .pd-code-row {
+  border-radius: 14px !important;
+  box-shadow: none !important;
+}
+
+/* Nút & input trên chi tiết SP / coupon -> bo gọn Minimal, phẳng */
+.pd-btn-buy, .pd-btn-cart, .pd-btn-login, .pd-coupon-btn, .pd-coupon-toggle {
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+.pd-coupon-input, .pd-coupon-wrap { border-radius: 10px !important; }
+
+/* Thanh tiến trình (đánh giá/sold) bo tròn mềm */
+.pd-bar-track, .pd-bar-fill { border-radius: 100px !important; }
