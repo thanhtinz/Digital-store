@@ -16,7 +16,7 @@
     "db:push": "prisma db push",
     "db:seed": "tsx src/utils/seed.ts",
     "db:deploy": "prisma db push --skip-generate --accept-data-loss",
-    "start:railway": "(prisma db push --skip-generate --accept-data-loss || echo '[start] prisma db push that bai - kiem tra DATABASE_URL'); node dist/server.js",
+    "start:railway": "node scripts/railway-start.js",
     "db:switch": "node scripts/db-switch.js"
   },
   "dependencies": {
