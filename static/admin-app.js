@@ -154,6 +154,7 @@
     ] },
     { group: 'Hệ thống', items: [
       { p: '/admin/payments', icon: 'payments', label: 'Thanh toán', ready: true },
+      { p: '/admin/connect', icon: 'announce', label: 'Kết nối & Thông báo', ready: true },
       { p: '/admin/settings', icon: 'settings', label: 'Cài đặt', ready: true },
     ] },
   ];
@@ -189,6 +190,7 @@
     '/admin/blog': screenBlog,
     '/admin/banners': screenBanners,
     '/admin/tickets': screenTickets,
+    '/admin/connect': screenConnect,
     '/admin/settings': screenSettings,
   };
   function go(path, replace) {
@@ -712,6 +714,80 @@
       api('/balance/admin/adjust', { method: 'POST', body: { user_id: u.id, amount: amt, reason: v('ud-reason') || 'Điều chỉnh từ admin' } })
         .then(function () { toast('Đã điều chỉnh số dư', 'success'); closeDrawer(); loadUsers(); }).catch(function (e) { toast(e.message, 'error'); btn.disabled = false; });
     });
+  }
+
+  // ── SCREEN: Connect (Telegram + Mail) ────────────────
+  var notifyTypesCache = null;
+  function screenConnect(view) {
+    view.innerHTML = pageHead('Kết nối & Thông báo', 'Telegram bot báo đơn & cấu hình email') +
+      '<div class="ap-card" style="margin-bottom:16px"><div class="ap-card-head"><h3>Telegram Bots</h3><button class="ap-btn sm primary" id="ap-bot-add">+ Thêm bot</button></div><div id="ap-bot-list"><div style="display:grid;place-items:center;min-height:120px"><div class="ap-spinner"></div></div></div></div>' +
+      '<div class="ap-card"><div class="ap-card-head"><h3>Cấu hình Email (SMTP)</h3></div><div class="ap-card-body" id="ap-mail-box"><div style="display:grid;place-items:center;min-height:100px"><div class="ap-spinner"></div></div></div></div>';
+    $('#ap-bot-add').addEventListener('click', function () { botForm(null); });
+    loadBots(); loadMailConfig();
+  }
+  function loadBots() {
+    var box = $('#ap-bot-list'); if (!box) return;
+    api('/telegram/bots').then(function (bots) {
+      var rows = (bots || []).map(function (b) {
+        return '<tr><td><b>' + esc(b.name) + '</b>' + (b.department ? '<div style="font-size:12px;color:var(--ap-text-3)">' + esc(b.department) + '</div>' : '') + '</td>' +
+          '<td class="ap-mono">' + esc(b.chat_id) + '</td>' +
+          '<td>' + (b.receive_reports ? '<span class="ap-badge blue">Báo cáo</span> ' : '') + ((b.notify_types || []).length ? '<span class="ap-badge gray">' + b.notify_types.length + ' loại</span>' : '') + '</td>' +
+          '<td>' + (b.is_active ? '<span class="ap-badge green">Bật</span>' : '<span class="ap-badge gray">Tắt</span>') + '</td>' +
+          '<td style="text-align:right;white-space:nowrap"><button class="ap-btn sm" data-test="' + b.id + '">Test</button> <button class="ap-btn sm" data-edit="' + b.id + '">Sửa</button> <button class="ap-btn sm danger" data-del="' + b.id + '">Xóa</button></td></tr>';
+      }).join('') || emptyRow(5, 'Chưa có bot nào');
+      box.innerHTML = '<div class="ap-table-wrap"><table class="ap-table"><thead><tr><th>Tên</th><th>Chat ID</th><th>Nhận</th><th>Trạng thái</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+      box.querySelectorAll('[data-edit]').forEach(function (b) { b.addEventListener('click', function () { botForm((bots || []).find(function (x) { return x.id == b.getAttribute('data-edit'); })); }); });
+      box.querySelectorAll('[data-del]').forEach(function (b) { b.addEventListener('click', function () { if (!confirm('Xóa bot này?')) return; api('/telegram/bots/' + b.getAttribute('data-del'), { method: 'DELETE' }).then(function () { toast('Đã xóa', 'success'); loadBots(); }).catch(function (e) { toast(e.message, 'error'); }); }); });
+      box.querySelectorAll('[data-test]').forEach(function (b) { b.addEventListener('click', function () { b.disabled = true; b.textContent = '...'; api('/telegram/bots/' + b.getAttribute('data-test') + '/test', { method: 'POST' }).then(function (r) { toast(r.message || 'Đã gửi test', 'success'); }).catch(function (e) { toast(e.message, 'error'); }).then(function () { b.disabled = false; b.textContent = 'Test'; }); }); });
+    }).catch(function (e) { box.innerHTML = '<div class="ap-empty">' + ICON('alert') + '<div>' + (e.status === 403 ? 'Chỉ admin truy cập.' : esc(e.message)) + '</div></div>'; });
+  }
+  function botForm(b) {
+    b = b || {};
+    var pr = notifyTypesCache ? Promise.resolve(notifyTypesCache) : api('/telegram/notify-types').then(function (t) { notifyTypesCache = t || []; return notifyTypesCache; }).catch(function () { return []; });
+    pr.then(function (types) {
+      var norm = (types || []).map(function (x) { return typeof x === 'string' ? { key: x, label: x } : { key: x.key || x.value || x.id, label: x.label || x.name || x.key }; });
+      var sel0 = b.notify_types || [];
+      var ntHtml = norm.map(function (t) { return switchRow('bt-nt-' + t.key, t.label, '', sel0.indexOf(t.key) >= 0); }).join('') || '';
+      var body = inp('btf-name', 'Tên bot', b.name) +
+        inp('btf-dept', 'Bộ phận (tùy chọn)', b.department) +
+        inp('btf-token', 'Bot Token', b.bot_token, 'text', b.bot_token_set ? 'Để trống nếu không đổi' : '123456:ABC...') +
+        inp('btf-chat', 'Chat ID', b.chat_id, 'text', '-100xxxx hoặc id cá nhân') +
+        switchRow('btf-reports', 'Nhận báo cáo định kỳ', '', !!b.receive_reports) +
+        switchRow('btf-active', 'Kích hoạt', '', b.is_active !== false) +
+        (ntHtml ? '<h4 style="margin:14px 0 4px;font-size:13px">Loại thông báo nhận</h4>' + ntHtml : '');
+      openModal(b.id ? 'Sửa bot' : 'Thêm bot Telegram', body, function (btn) {
+        if (!v('btf-name') || !v('btf-chat')) { toast('Nhập tên & chat ID', 'error'); return; }
+        var nt = norm.filter(function (t) { return vc('bt-nt-' + t.key); }).map(function (t) { return t.key; });
+        var payload = { name: v('btf-name'), department: v('btf-dept'), chat_id: v('btf-chat'), notify_types: nt, receive_reports: vc('btf-reports'), is_active: vc('btf-active') };
+        if (v('btf-token') && v('btf-token') !== '••••••••') payload.bot_token = v('btf-token');
+        else if (!b.id) { toast('Nhập bot token', 'error'); return; }
+        btnLoad(btn, true);
+        var req = b.id ? api('/telegram/bots/' + b.id, { method: 'PUT', body: payload }) : api('/telegram/bots', { method: 'POST', body: payload });
+        req.then(function () { toast('Đã lưu bot', 'success'); closeModal(); loadBots(); }).catch(function (e) { toast(e.message, 'error'); btnLoad(btn, false); });
+      });
+    });
+  }
+  function loadMailConfig() {
+    var box = $('#ap-mail-box'); if (!box) return;
+    api('/admin/mail/config').then(function (m) {
+      box.innerHTML =
+        '<div class="ap-form-row">' + sel('ml-mode', 'Chế độ gửi', m.mail_mode || 'relay', [{ v: 'relay', t: 'Relay (server nội bộ)' }, { v: 'smtp', t: 'SMTP ngoài' }]) + inp('ml-from-name', 'Tên người gửi', m.mail_from_name) + '</div>' +
+        inp('ml-from-email', 'Email gửi đi', m.mail_from_email, 'text', 'no-reply@domain.com') +
+        '<div class="ap-form-row">' + inp('ml-host', 'SMTP Host', m.mail_smtp_host, 'text', 'smtp.gmail.com') + inp('ml-port', 'SMTP Port', m.mail_smtp_port || '587', 'number') + '</div>' +
+        '<div class="ap-form-row">' + inp('ml-user', 'SMTP User', m.mail_smtp_user) + inp('ml-pass', 'SMTP Pass', m.mail_smtp_pass, 'text', 'Để trống nếu không đổi') + '</div>' +
+        '<div style="display:flex;gap:10px"><button class="ap-btn primary" id="ml-save">Lưu cấu hình mail</button><button class="ap-btn" id="ml-test">Gửi mail test</button></div>';
+      $('#ml-save').addEventListener('click', function () {
+        var btn = this; btnLoad(btn, true);
+        var payload = { mail_mode: v('ml-mode'), mail_from_name: v('ml-from-name'), mail_from_email: v('ml-from-email'), mail_smtp_host: v('ml-host'), mail_smtp_port: v('ml-port'), mail_smtp_user: v('ml-user') };
+        if (v('ml-pass') && v('ml-pass') !== '••••••••') payload.mail_smtp_pass = v('ml-pass');
+        api('/admin/mail/config', { method: 'PUT', body: payload }).then(function () { toast('Đã lưu cấu hình mail', 'success'); btnLoad(btn, false); }).catch(function (e) { toast(e.message, 'error'); btnLoad(btn, false); });
+      });
+      $('#ml-test').addEventListener('click', function () {
+        var to = prompt('Gửi mail test tới địa chỉ:'); if (!to) return;
+        var btn = this; btn.disabled = true;
+        api('/admin/mail/test', { method: 'POST', body: { to: to } }).then(function (r) { toast(r.message || 'Đã gửi', 'success'); }).catch(function (e) { toast(e.message, 'error'); }).then(function () { btn.disabled = false; });
+      });
+    }).catch(function (e) { box.innerHTML = '<div class="ap-empty">' + (e.status === 403 ? 'Chỉ admin truy cập.' : esc(e.message)) + '</div>'; });
   }
 
   // ── SCREEN: Banners ──────────────────────────────────
