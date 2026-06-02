@@ -32,7 +32,7 @@ import CartWidget from '../../../sections/@dashboard/e-commerce/CartWidget';
 // ----------------------------------------------------------------------
 
 EcommerceShopPage.getLayout = (page: React.ReactElement) => (
-  <DashboardLayout>{page}</DashboardLayout>
+  <DashboardLayout disableGuard>{page}</DashboardLayout>
 );
 
 // ----------------------------------------------------------------------

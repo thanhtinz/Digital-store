@@ -18,9 +18,12 @@ import NavHorizontal from './nav/NavHorizontal';
 
 type Props = {
   children?: React.ReactNode;
+  // Digital Store: cho phép trang công khai (shop/sản phẩm/blog) bỏ AuthGuard
+  // để khách chưa đăng nhập vẫn xem được.
+  disableGuard?: boolean;
 };
 
-export default function DashboardLayout({ children }: Props) {
+export default function DashboardLayout({ children, disableGuard = false }: Props) {
   const { themeLayout } = useSettingsContext();
 
   const isDesktop = useResponsive('up', 'lg');
@@ -90,6 +93,10 @@ export default function DashboardLayout({ children }: Props) {
       </>
     );
   };
+
+  if (disableGuard) {
+    return renderContent();
+  }
 
   return <AuthGuard> {renderContent()} </AuthGuard>;
 }

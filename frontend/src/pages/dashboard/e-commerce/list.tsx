@@ -64,7 +64,7 @@ const STATUS_OPTIONS = [
 // ----------------------------------------------------------------------
 
 EcommerceProductListPage.getLayout = (page: React.ReactElement) => (
-  <DashboardLayout>{page}</DashboardLayout>
+  <DashboardLayout disableGuard>{page}</DashboardLayout>
 );
 
 // ----------------------------------------------------------------------

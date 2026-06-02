@@ -1,0 +1,10 @@
+node_modules
+.next
+.swc
+_static
+.git
+.env.local
+npm-debug.log*
+yarn-error.log*
+*.tsbuildinfo
+.DS_Store

@@ -31,7 +31,7 @@ const SORT_OPTIONS = [
 
 // ----------------------------------------------------------------------
 
-BlogPostsPage.getLayout = (page: React.ReactElement) => <DashboardLayout>{page}</DashboardLayout>;
+BlogPostsPage.getLayout = (page: React.ReactElement) => <DashboardLayout disableGuard>{page}</DashboardLayout>;
 
 // ----------------------------------------------------------------------
 

@@ -12,6 +12,8 @@ const withTM = require('next-transpile-modules')([
 module.exports = withTM({
   swcMinify: false,
   trailingSlash: true,
+  // Build gọn cho Docker/VPS/Railway (chỉ copy file cần thiết khi chạy).
+  output: 'standalone',
   eslint: { ignoreDuringBuilds: true },
   env: {
     // HOST

@@ -28,7 +28,7 @@ import {
 
 // ----------------------------------------------------------------------
 
-BlogPostPage.getLayout = (page: React.ReactElement) => <DashboardLayout>{page}</DashboardLayout>;
+BlogPostPage.getLayout = (page: React.ReactElement) => <DashboardLayout disableGuard>{page}</DashboardLayout>;
 
 // ----------------------------------------------------------------------
 

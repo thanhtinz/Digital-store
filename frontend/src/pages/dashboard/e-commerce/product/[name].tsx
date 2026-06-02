@@ -51,7 +51,7 @@ const SUMMARY = [
 // ----------------------------------------------------------------------
 
 EcommerceProductDetailsPage.getLayout = (page: React.ReactElement) => (
-  <DashboardLayout>{page}</DashboardLayout>
+  <DashboardLayout disableGuard>{page}</DashboardLayout>
 );
 
 // ----------------------------------------------------------------------
