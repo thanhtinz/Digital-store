@@ -41,36 +41,10 @@ const routes = {
     navigateTo(`/all?q=${encodeURIComponent(q)}`, { replace: true });
   },
   '/login': renderLogin,
-  '/admin/login': renderAdminLogin,
   '/register': renderRegister,
   '/reset-password': renderResetPassword,
   '/auth-callback': renderAuthCallback,
-  '/admin': renderAdmin,
-  '/admin/categories': renderAdminCategories,
-  '/admin/products': renderAdminProducts,
-  '/admin/orders': renderAdminOrders,
-  '/admin/stock': renderAdminStock,
-  '/admin/settings': renderAdminSettings,
-  '/admin/images': renderAdminImages,
-  '/admin/oauth-settings': renderAdminOAuthSettings,
-  '/admin/banners': renderAdminBanners,
-  '/admin/flash-sales': renderAdminFlashSales,
-  '/admin/gift-codes': renderAdminGiftCodes,
-  '/admin/affiliates': renderAdminAffiliates,
-  '/admin/blog': renderAdminBlog,
-  '/admin/support-pages': renderAdminSupportPages,
-  '/admin/announcements': renderAdminAnnouncements,
-  '/admin/tickets': renderAdminTickets,
-  '/admin/notifications': renderAdminNotifications,
-  '/admin/payments': renderAdminPayments,
-  '/admin/balance': renderAdminBalance,
-  '/admin/api-providers': renderAdminApiProviders,
-  '/admin/smm': renderAdminSmmPlatforms,
-  '/admin/smm/platforms': renderAdminSmmPlatforms,
-  '/admin/smm/categories': renderAdminSmmCategories,
-  '/admin/smm/services': renderAdminSmmServices,
-  '/admin/smm/orders': renderAdminSmmOrders,
-  '/admin/smm/providers': renderAdminSmmProviders,
+  // Khu vực /admin/* do app admin riêng (admin.html) phụ trách — không định tuyến ở client SPA nữa.
   '/blog': renderBlogList,
   '/blog/:slug': renderBlogPost,
   '/profile': renderProfile,
@@ -779,6 +753,8 @@ async function init() {
     if (!rawHref || rawHref.startsWith('#') || rawHref.startsWith('mailto:') || rawHref.startsWith('tel:')) return;
     const url = new URL(rawHref, location.origin);
     if (url.origin !== location.origin) return;
+    // /admin/* do app admin riêng (admin.html) phụ trách -> để trình duyệt tải nguyên trang
+    if (url.pathname === '/admin' || url.pathname.startsWith('/admin/')) return;
     if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/static/') || url.pathname.startsWith('/blog') || url.pathname.startsWith('/share/')) return;
     e.preventDefault();
     navigateTo(`${url.pathname}${url.search}`);

@@ -143,6 +143,18 @@ async function apiFetch(path, options = {}) {
   return data;
 }
 
+// ── UI helper dùng chung (client blog dùng) ────────────────────
+// Tách từ admin.js để client không phải nạp admin.js.
+function cuiPageHeader(title, subtitle, actionsHtml = '') {
+  return `<div class="cui-page-header">
+    <div class="cui-page-header-left">
+      <div class="cui-page-title">${title}</div>
+      ${subtitle ? `<div class="cui-page-subtitle">${subtitle}</div>` : ''}
+    </div>
+    ${actionsHtml ? `<div class="cui-page-actions">${actionsHtml}</div>` : ''}
+  </div>`;
+}
+
 // ── Auth ───────────────────────────────────────────────────────
 function saveToken(token) {
   authToken = token;
