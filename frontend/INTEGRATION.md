@@ -78,3 +78,28 @@ Lưu token vào `localStorage.accessToken` (adapter đã đọc key này).
 ### Các trang vẫn dùng mock (backend Digital Store không có nghiệp vụ tương ứng)
 - Banking, Booking, File Manager, Invoice, Kanban, Mail, Calendar — Minimal demo, giữ nguyên mock. Nếu sau này backend có endpoint, nối tương tự (sửa slice/section + thêm adapter).
 - Analytics/Ecommerce dashboard: biểu đồ dùng mock — có thể thay bằng `/api/admin/dashboard` khi muốn.
+
+---
+
+## Cập nhật: "Nối hết" (lượt 3)
+
+Hoàn tất các điểm còn hở để mọi luồng e-commerce/blog chạy thật end-to-end.
+
+✅ **Tìm kiếm sản phẩm** — ô search trong shop (`ShopProductSearch`) gọi `GET /api/products/search?query=` → backend trả `{ results }` (route mới trong `src/routes/products.ts`). Adapter chuẩn hoá `data.results`.
+✅ **Tìm kiếm blog** — `BlogPostsSearch` gọi `GET /api/blog/posts/search?query=` → backend route mới trong `src/routes/misc.ts`, trả `{ results }`.
+✅ **Blog list/detail** — backend trả `{ items }`; adapter nay đồng bộ về cả `data.posts` và `data.results`, và map đúng field camelCase (`thumbnailUrl`, `viewCount`, `publishedAt`) trong `adaptPost`.
+✅ **Checkout theo GÓI (quan trọng)** — backend bán theo `package_id` (ProductPackage), không theo size/màu. Trang chi tiết (`ProductDetailsSummary.tsx`) nay:
+  - Nếu sản phẩm có `packages` → hiện ô **chọn Gói** (thay cho Color/Size), cập nhật giá theo gói.
+  - Lưu `packageId` + `packageName` vào cart item (type `ICheckoutCartItem`).
+  - `CheckoutPayment.tsx` map `package_id = Number(item.packageId)` và **lọc bỏ** item không có gói hợp lệ trước khi `POST /api/orders` → không còn lỗi "Không tìm thấy gói".
+  - Nếu sản phẩm không có gói → vẫn dùng Color/Size như Minimal gốc (có guard khi mảng rỗng).
+
+### Tóm tắt trạng thái nối
+| Nhóm | Trạng thái |
+|------|-----------|
+| Auth (login/register/me/đổi mật khẩu) | ✅ thật |
+| Sản phẩm (list/detail/search) | ✅ thật |
+| Đơn hàng / Checkout (theo gói) | ✅ thật |
+| Blog (list/detail/search) | ✅ thật |
+| User list (admin) | ✅ thật |
+| Chat, Kanban, Calendar, Mail, Invoice, Banking… | ⛔ mock (backend không có nghiệp vụ) |

@@ -110,11 +110,13 @@ export default function CheckoutPayment({
   const onSubmit = async () => {
     try {
       // Tạo đơn hàng thật trên backend Digital Store
-      const items = (checkout.cart || []).map((item: any) => ({
-        product_id: item.id,
-        package_id: item.packageId || item.id,
-        quantity: item.quantity || 1,
-      }));
+      const items = (checkout.cart || [])
+        .map((item: any) => ({
+          product_id: item.id,
+          package_id: Number(item.packageId),
+          quantity: item.quantity || 1,
+        }))
+        .filter((it: any) => Number.isFinite(it.package_id) && it.package_id > 0);
       await axios.post('/api/orders', {
         items,
         payment_method: 'balance',

@@ -61,6 +61,31 @@ router.get('/blog/posts', async (req: Request, res: Response) => {
   }
 });
 
+router.get('/blog/posts/search', async (req: Request, res: Response) => {
+  try {
+    const query = ((req.query.query as string) || (req.query.q as string) || '').trim();
+    if (!query) { res.json({ results: [] }); return; }
+    const posts = await prisma.blogPost.findMany({
+      where: {
+        isPublished: true,
+        OR: [
+          { title: { contains: query, mode: 'insensitive' } },
+          { excerpt: { contains: query, mode: 'insensitive' } },
+        ],
+      },
+      orderBy: { publishedAt: 'desc' },
+      take: 10,
+      select: {
+        id: true, title: true, slug: true, excerpt: true, thumbnailUrl: true,
+        publishedAt: true, viewCount: true, category: true,
+      } as any,
+    });
+    res.json({ results: posts });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
 router.get('/blog/posts/:slug', async (req: Request, res: Response) => {
   try {
     const post = await prisma.blogPost.findFirst({

@@ -39,6 +39,18 @@ export type IProduct = {
   createdAt: Date | string | number;
   category: string;
   gender: string;
+  // Digital Store: danh sách gói (giữ nguyên từ backend để trang chi tiết render & tạo đơn)
+  packages?: IProductPackage[];
+};
+
+export type IProductPackage = {
+  id: string | number;
+  name: string;
+  price: number;
+  originalPrice?: number | null;
+  stock?: number;
+  isActive?: boolean;
+  description?: string;
 };
 
 export type IProductFilter = {
@@ -62,6 +74,9 @@ export type ICheckoutCartItem = {
   size: string;
   quantity: number;
   subtotal: number;
+  // Digital Store: gói sản phẩm thực tế dùng để tạo đơn hàng
+  packageId?: string | number;
+  packageName?: string;
 };
 
 export type ICheckoutBillingAddress = {

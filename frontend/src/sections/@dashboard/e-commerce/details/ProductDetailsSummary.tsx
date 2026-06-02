@@ -66,7 +66,12 @@ export default function ProductDetailsSummary({
     totalRating,
     totalReview,
     inventoryType,
+    packages = [],
   } = product;
+
+  // Digital Store: bán theo gói. Nếu có gói thì dùng gói thay cho size/màu.
+  const hasPackages = Array.isArray(packages) && packages.length > 0;
+  const defaultPackage = hasPackages ? packages[0] : undefined;
 
   const alreadyProduct = cart.map((item) => item.id).includes(id);
 
@@ -78,10 +83,12 @@ export default function ProductDetailsSummary({
     name,
     cover,
     available,
-    price,
+    price: defaultPackage ? defaultPackage.price : price,
     colors: colors[0],
     size: sizes[4],
     quantity: available < 1 ? 0 : 1,
+    packageId: defaultPackage ? String(defaultPackage.id) : undefined,
+    packageName: defaultPackage ? defaultPackage.name : undefined,
   };
 
   const methods = useForm<FormValuesProps>({
@@ -91,6 +98,16 @@ export default function ProductDetailsSummary({
   const { reset, watch, control, setValue, handleSubmit } = methods;
 
   const values = watch();
+
+  const handleChangePackage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const pkgId = event.target.value;
+    const pkg = packages.find((p) => String(p.id) === String(pkgId));
+    setValue('packageId', pkgId);
+    if (pkg) {
+      setValue('packageName', pkg.name);
+      setValue('price', pkg.price);
+    }
+  };
 
   useEffect(() => {
     if (product) {
@@ -169,7 +186,7 @@ export default function ProductDetailsSummary({
           </Stack>
 
           <Typography variant="h4">
-            {priceSale && (
+            {!hasPackages && priceSale && (
               <Box
                 component="span"
                 sx={{ color: 'text.disabled', textDecoration: 'line-through', mr: 0.5 }}
@@ -178,63 +195,90 @@ export default function ProductDetailsSummary({
               </Box>
             )}
 
-            {fCurrency(price)}
+            {fCurrency(values.price ?? price)}
           </Typography>
         </Stack>
 
         <Divider sx={{ borderStyle: 'dashed' }} />
 
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Typography variant="subtitle2">Color</Typography>
+        {hasPackages ? (
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Typography variant="subtitle2" sx={{ height: 40, lineHeight: '40px', flexGrow: 1 }}>
+              Gói
+            </Typography>
 
-          <Controller
-            name="colors"
-            control={control}
-            render={({ field }) => (
-              <ColorSinglePicker
-                colors={colors}
-                value={field.value}
-                onChange={field.onChange}
-                sx={{
-                  ...(colors.length > 4 && {
-                    maxWidth: 144,
-                    justifyContent: 'flex-end',
-                  }),
-                }}
-              />
+            <RHFSelect
+              name="packageId"
+              size="small"
+              onChange={handleChangePackage}
+              sx={{ maxWidth: 220 }}
+            >
+              {packages.map((pkg) => (
+                <MenuItem key={pkg.id} value={String(pkg.id)}>
+                  {pkg.name} — {fCurrency(pkg.price)}
+                </MenuItem>
+              ))}
+            </RHFSelect>
+          </Stack>
+        ) : (
+          <>
+            {colors.length > 0 && (
+              <Stack direction="row" alignItems="center" justifyContent="space-between">
+                <Typography variant="subtitle2">Color</Typography>
+
+                <Controller
+                  name="colors"
+                  control={control}
+                  render={({ field }) => (
+                    <ColorSinglePicker
+                      colors={colors}
+                      value={field.value}
+                      onChange={field.onChange}
+                      sx={{
+                        ...(colors.length > 4 && {
+                          maxWidth: 144,
+                          justifyContent: 'flex-end',
+                        }),
+                      }}
+                    />
+                  )}
+                />
+              </Stack>
             )}
-          />
-        </Stack>
 
-        <Stack direction="row" justifyContent="space-between">
-          <Typography variant="subtitle2" sx={{ height: 40, lineHeight: '40px', flexGrow: 1 }}>
-            Size
-          </Typography>
+            {sizes.length > 0 && (
+              <Stack direction="row" justifyContent="space-between">
+                <Typography variant="subtitle2" sx={{ height: 40, lineHeight: '40px', flexGrow: 1 }}>
+                  Size
+                </Typography>
 
-          <RHFSelect
-            name="size"
-            size="small"
-            helperText={
-              <Link underline="always" color="inherit">
-                Size Chart
-              </Link>
-            }
-            sx={{
-              maxWidth: 96,
-              '& .MuiFormHelperText-root': {
-                mx: 0,
-                mt: 1,
-                textAlign: 'right',
-              },
-            }}
-          >
-            {sizes.map((size) => (
-              <MenuItem key={size} value={size}>
-                {size}
-              </MenuItem>
-            ))}
-          </RHFSelect>
-        </Stack>
+                <RHFSelect
+                  name="size"
+                  size="small"
+                  helperText={
+                    <Link underline="always" color="inherit">
+                      Size Chart
+                    </Link>
+                  }
+                  sx={{
+                    maxWidth: 96,
+                    '& .MuiFormHelperText-root': {
+                      mx: 0,
+                      mt: 1,
+                      textAlign: 'right',
+                    },
+                  }}
+                >
+                  {sizes.map((size) => (
+                    <MenuItem key={size} value={size}>
+                      {size}
+                    </MenuItem>
+                  ))}
+                </RHFSelect>
+              </Stack>
+            )}
+          </>
+        )}
 
         <Stack direction="row" justifyContent="space-between">
           <Typography variant="subtitle2" sx={{ height: 36, lineHeight: '36px' }}>

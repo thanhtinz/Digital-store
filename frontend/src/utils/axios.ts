@@ -68,20 +68,23 @@ function adaptProduct(p: any): any {
 function adaptPost(p: any): any {
   if (!p || typeof p !== 'object') return p;
   if (p.cover !== undefined && p.author !== undefined && typeof p.author === 'object') return p;
+  const categoryName =
+    typeof p.category === 'object' ? p.category?.name : p.category;
   return {
     id: String(p.id ?? p.slug ?? ''),
-    cover: p.cover_url || p.image_url || p.cover || '',
+    cover: p.cover_url || p.image_url || p.thumbnailUrl || p.thumbnail_url || p.cover || '',
     title: p.title ?? '',
     description: p.excerpt ?? p.description ?? '',
     content: p.content ?? '',
-    createdAt: p.created_at ?? p.createdAt ?? new Date().toISOString(),
-    view: p.views ?? p.view ?? 0,
+    createdAt:
+      p.publishedAt ?? p.published_at ?? p.created_at ?? p.createdAt ?? new Date().toISOString(),
+    view: p.viewCount ?? p.views ?? p.view ?? 0,
     comment: p.comment_count ?? p.comment ?? 0,
     share: p.share ?? 0,
     favorite: p.favorite ?? 0,
-    tags: p.tags ?? (p.category ? [p.category] : []),
-    metaTitle: p.meta_title ?? p.title ?? '',
-    metaDescription: p.meta_description ?? p.excerpt ?? '',
+    tags: p.tags ?? (categoryName ? [categoryName] : []),
+    metaTitle: p.metaTitle ?? p.meta_title ?? p.title ?? '',
+    metaDescription: p.metaDescription ?? p.meta_description ?? p.excerpt ?? '',
     metaKeywords: p.meta_keywords ?? [],
     author: typeof p.author === 'object' ? p.author : {
       name: p.author ?? 'Admin',
@@ -97,13 +100,19 @@ axiosInstance.interceptors.response.use(
     const url = response.config.url || '';
     const d = response.data;
 
+    // /api/products/search -> { results: [...] } (đặt trước branch :slug)
+    if (/\/products\/search/.test(url)) {
+      const list = d?.results || d?.items || d?.products;
+      if (Array.isArray(list)) d.results = list.map(adaptProduct);
+      else if (Array.isArray(d)) response.data = { results: d.map(adaptProduct) };
+    }
     // /api/products  -> chuẩn hoá về { products: [...] } (backend trả items HOẶC products)
-    if (/\/products(\?|$)/.test(url)) {
+    else if (/\/products(\?|$)/.test(url)) {
       const list = d?.products || d?.items;
       if (Array.isArray(list)) d.products = list.map(adaptProduct);
     }
     // /api/products/product?name=  -> { product: {...} }
-    if (/\/products\/product/.test(url) && d?.product) {
+    else if (/\/products\/product/.test(url) && d?.product) {
       d.product = adaptProduct(d.product);
     }
     // /api/products/:slug -> { ...product } hoặc { product }
@@ -117,11 +126,22 @@ axiosInstance.interceptors.response.use(
     }
 
 
+    // /api/blog/posts/search -> { results: [...] } (đặt trước branch :slug)
+    if (/\/blog\/posts\/search/.test(url)) {
+      const list = d?.results || d?.posts || d?.items;
+      if (Array.isArray(list)) d.results = list.map(adaptPost);
+      else if (Array.isArray(d)) response.data = { results: d.map(adaptPost) };
+    }
     // /api/blog/posts -> { total, posts: [...] } hoặc { items }
-    if (/\/blog\/posts(\?|$)/.test(url)) {
-      if (d?.posts) d.posts = d.posts.map(adaptPost);
-      if (d?.items) d.results = d.items.map(adaptPost);
-      if (Array.isArray(d)) response.data = { posts: d.map(adaptPost) };
+    // Backend trả { items }, nên đồng bộ về cả posts/results để FE đọc key nào cũng được.
+    else if (/\/blog\/posts(\?|$)/.test(url)) {
+      const list = d?.posts || d?.items;
+      if (Array.isArray(list)) {
+        const mapped = list.map(adaptPost);
+        d.posts = mapped;
+        d.results = mapped;
+      }
+      if (Array.isArray(d)) response.data = { posts: d.map(adaptPost), results: d.map(adaptPost) };
     }
     // /api/blog/posts/:slug -> { post } hoặc {...}
     else if (/\/blog\/posts\//.test(url)) {

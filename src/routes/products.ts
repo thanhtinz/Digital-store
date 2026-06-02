@@ -84,6 +84,23 @@ router.get('/trending', async (req: Request, res: Response) => {
   }
 });
 
+// ── Public: tìm kiếm nhanh sản phẩm (cho ô search) ─────
+router.get('/search', async (req: Request, res: Response) => {
+  try {
+    const query = ((req.query.query as string) || (req.query.q as string) || (req.query.name as string) || '').trim();
+    if (!query) { res.json({ results: [] }); return; }
+    const products = await prisma.product.findMany({
+      where: { isActive: true, name: { contains: query, mode: 'insensitive' } },
+      orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
+      take: 10,
+      include: CARD_INCLUDE,
+    });
+    res.json({ results: products.map((p) => serializeProduct(p)) });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
 // ── Public: sản phẩm liên quan (cùng danh mục) ─────────
 router.get('/:slug/related', async (req: Request, res: Response) => {
   try {
