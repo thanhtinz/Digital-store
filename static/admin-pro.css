@@ -263,6 +263,30 @@ a { color: inherit; text-decoration: none; }
 .ap-toast.error { border-left-color: var(--ap-danger); }
 @keyframes ap-slidein { from { transform: translateX(20px); opacity: 0; } }
 
+/* ── Modal ──────────────────────────────────────────── */
+.ap-modal-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,.5); z-index: 70; display: grid; place-items: center; opacity: 0; transition: opacity .2s; padding: 20px; pointer-events: none; }
+.ap-modal-backdrop.open { opacity: 1; pointer-events: auto; }
+.ap-modal { background: var(--ap-surface); border: 1px solid var(--ap-border); border-radius: 14px; box-shadow: var(--ap-shadow-lg); width: 500px; max-width: 100%; max-height: 90vh; display: flex; flex-direction: column; transform: translateY(12px); transition: transform .2s; }
+.ap-modal-backdrop.open .ap-modal { transform: none; }
+.ap-modal-head { padding: 16px 20px; border-bottom: 1px solid var(--ap-border); display: flex; justify-content: space-between; align-items: center; }
+.ap-modal-head h3 { margin: 0; font-size: 16px; }
+.ap-modal-body { padding: 20px; overflow-y: auto; }
+.ap-modal-foot { padding: 14px 20px; border-top: 1px solid var(--ap-border); display: flex; justify-content: flex-end; gap: 10px; }
+.ap-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 520px) { .ap-form-row { grid-template-columns: 1fr; } }
+
+/* ── Switch / toggle ────────────────────────────────── */
+.ap-switch-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--ap-border); }
+.ap-switch-row:last-child { border-bottom: none; }
+.ap-switch-row .lbl { font-weight: 600; font-size: 13.5px; }
+.ap-switch-row .desc { font-size: 12px; color: var(--ap-text-3); margin-top: 2px; }
+.ap-switch { position: relative; width: 42px; height: 24px; flex: none; }
+.ap-switch input { opacity: 0; width: 0; height: 0; }
+.ap-switch .track { position: absolute; inset: 0; background: var(--ap-border); border-radius: 999px; transition: background .2s; cursor: pointer; }
+.ap-switch .track::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+.ap-switch input:checked + .track { background: var(--ap-primary); }
+.ap-switch input:checked + .track::before { transform: translateX(18px); }
+
 /* ── Chart (SVG) ────────────────────────────────────── */
 .ap-chart { width: 100%; height: 220px; }
 .ap-chart .bar { fill: var(--ap-primary); opacity: .85; transition: opacity .15s; }

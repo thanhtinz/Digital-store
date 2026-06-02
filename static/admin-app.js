@@ -93,10 +93,10 @@
     { group: 'Bán hàng', items: [
       { p: '/admin/orders', icon: 'orders', label: 'Đơn hàng', ready: true },
       { p: '/admin/products', icon: 'products', label: 'Sản phẩm', ready: true },
-      { p: '/admin/categories', icon: 'categories', label: 'Danh mục' },
+      { p: '/admin/categories', icon: 'categories', label: 'Danh mục', ready: true },
       { p: '/admin/stock', icon: 'stock', label: 'Kho hàng' },
-      { p: '/admin/coupons', icon: 'coupons', label: 'Mã giảm giá' },
-      { p: '/admin/flash-sales', icon: 'flash', label: 'Flash Sale' },
+      { p: '/admin/coupons', icon: 'coupons', label: 'Mã giảm giá', ready: true },
+      { p: '/admin/flash-sales', icon: 'flash', label: 'Flash Sale', ready: true },
     ] },
     { group: 'Người dùng', items: [
       { p: '/admin/users', icon: 'users', label: 'Người dùng', ready: true },
@@ -109,7 +109,7 @@
     ] },
     { group: 'Hệ thống', items: [
       { p: '/admin/payments', icon: 'payments', label: 'Thanh toán' },
-      { p: '/admin/settings', icon: 'settings', label: 'Cài đặt' },
+      { p: '/admin/settings', icon: 'settings', label: 'Cài đặt', ready: true },
     ] },
   ];
   function navMeta(path) {
@@ -134,6 +134,10 @@
     '/admin/orders': screenOrders,
     '/admin/products': screenProducts,
     '/admin/users': screenUsers,
+    '/admin/categories': screenCategories,
+    '/admin/coupons': screenCoupons,
+    '/admin/flash-sales': screenFlashSales,
+    '/admin/settings': screenSettings,
   };
   function go(path, replace) {
     if (path === location.pathname) { render(); return; }
@@ -514,6 +518,203 @@
   function screenNotFound(view) {
     view.innerHTML = '<div class="ap-empty" style="min-height:60vh">' + ICON('alert') + '<div style="font-size:18px;font-weight:600">Không tìm thấy trang</div><div><a href="/admin" data-path="/admin" style="color:var(--ap-primary)">Về Dashboard</a></div></div>';
     var a = view.querySelector('[data-path]'); if (a) a.addEventListener('click', function (e) { e.preventDefault(); go('/admin'); });
+  }
+
+  // ── Modal + form helpers ─────────────────────────────
+  function closeModal() { var m = $('#ap-modal-bd'); if (m) { m.classList.remove('open'); setTimeout(function () { m.remove(); }, 200); } }
+  function openModal(title, bodyHtml, onSubmit, okLabel) {
+    var ex = $('#ap-modal-bd'); if (ex) ex.remove();
+    var bd = document.createElement('div'); bd.className = 'ap-modal-backdrop'; bd.id = 'ap-modal-bd';
+    bd.innerHTML = '<div class="ap-modal"><div class="ap-modal-head"><h3>' + esc(title) + '</h3><button class="ap-icon-btn" id="ap-modal-x">' + ICON('close') + '</button></div>' +
+      '<div class="ap-modal-body">' + bodyHtml + '</div>' +
+      '<div class="ap-modal-foot"><button class="ap-btn" id="ap-modal-cancel">Hủy</button><button class="ap-btn primary" id="ap-modal-ok">' + esc(okLabel || 'Lưu') + '</button></div></div>';
+    document.body.appendChild(bd);
+    requestAnimationFrame(function () { bd.classList.add('open'); });
+    bd.addEventListener('click', function (e) { if (e.target === bd) closeModal(); });
+    $('#ap-modal-x').addEventListener('click', closeModal);
+    $('#ap-modal-cancel').addEventListener('click', closeModal);
+    $('#ap-modal-ok').addEventListener('click', function () { if (onSubmit) onSubmit($('#ap-modal-ok')); });
+  }
+  function inp(id, label, val, type, ph) { return '<div class="ap-field"><label>' + esc(label) + '</label><input class="ap-input" id="' + id + '" type="' + (type || 'text') + '" value="' + esc(val == null ? '' : val) + '" placeholder="' + esc(ph || '') + '"></div>'; }
+  function ta(id, label, val, ph) { return '<div class="ap-field"><label>' + esc(label) + '</label><textarea class="ap-input" id="' + id + '" rows="3" placeholder="' + esc(ph || '') + '">' + esc(val || '') + '</textarea></div>'; }
+  function sel(id, label, val, options) { return '<div class="ap-field"><label>' + esc(label) + '</label><select class="ap-select" id="' + id + '">' + options.map(function (o) { return '<option value="' + esc(o.v) + '"' + (String(val) === String(o.v) ? ' selected' : '') + '>' + esc(o.t) + '</option>'; }).join('') + '</select></div>'; }
+  function switchRow(id, label, desc, checked) { return '<div class="ap-switch-row"><div><div class="lbl">' + esc(label) + '</div>' + (desc ? '<div class="desc">' + esc(desc) + '</div>' : '') + '</div><label class="ap-switch"><input type="checkbox" id="' + id + '"' + (checked ? ' checked' : '') + '><span class="track"></span></label></div>'; }
+  function v(id) { var e = $('#' + id); return e ? e.value.trim() : ''; }
+  function vn(id) { var e = $('#' + id); return e ? (parseFloat(e.value) || 0) : 0; }
+  function vc(id) { var e = $('#' + id); return e ? e.checked : false; }
+  function toLocalInput(iso) { if (!iso) return ''; var d = new Date(iso); if (isNaN(d)) return ''; var p = function (n) { return ('0' + n).slice(-2); }; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()); }
+  function btnLoad(btn, on) { if (!btn) return; btn.disabled = on; btn.dataset.txt = btn.dataset.txt || btn.textContent; btn.textContent = on ? 'Đang lưu...' : btn.dataset.txt; }
+
+  // ── SCREEN: Categories ───────────────────────────────
+  function screenCategories(view) {
+    view.innerHTML = pageHead('Danh mục', 'Tổ chức nhóm sản phẩm', '<button class="ap-btn primary" id="ap-cat-add">+ Thêm danh mục</button>') +
+      '<div class="ap-card" id="ap-cat-card"><div style="display:grid;place-items:center;min-height:220px"><div class="ap-spinner"></div></div></div>';
+    $('#ap-cat-add').addEventListener('click', function () { categoryForm(null); });
+    loadCategories();
+  }
+  function loadCategories() {
+    var card = $('#ap-cat-card'); if (!card) return;
+    api('/categories').then(function (cats) {
+      var rows = (cats || []).map(function (c) {
+        var icon = c.iconUrl ? '<img src="' + esc(c.iconUrl) + '" style="width:26px;height:26px;border-radius:6px;object-fit:cover" onerror="this.style.display=\'none\'">' : ICON('categories');
+        return '<tr><td><div style="display:flex;align-items:center;gap:10px"><span style="width:26px;height:26px;display:grid;place-items:center;color:var(--ap-text-3)">' + icon + '</span><b>' + esc(c.name) + '</b></div></td>' +
+          '<td class="ap-mono">' + esc(c.slug) + '</td><td>' + esc(c.productType || '—') + '</td><td>' + (c.sortOrder || 0) + '</td>' +
+          '<td>' + (c.isActive ? '<span class="ap-badge green">Hiện</span>' : '<span class="ap-badge gray">Ẩn</span>') + '</td>' +
+          '<td style="text-align:right;white-space:nowrap"><button class="ap-btn sm" data-edit="' + c.id + '">Sửa</button> <button class="ap-btn sm danger" data-del="' + c.id + '">Xóa</button></td></tr>';
+      }).join('') || emptyRow(6, 'Chưa có danh mục');
+      card.innerHTML = '<div class="ap-table-wrap"><table class="ap-table"><thead><tr><th>Tên</th><th>Slug</th><th>Loại</th><th>Thứ tự</th><th>Trạng thái</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+      card.querySelectorAll('[data-edit]').forEach(function (b) { b.addEventListener('click', function () { categoryForm((cats || []).find(function (x) { return x.id == b.getAttribute('data-edit'); })); }); });
+      card.querySelectorAll('[data-del]').forEach(function (b) { b.addEventListener('click', function () {
+        if (!confirm('Xóa danh mục này?')) return;
+        api('/categories/' + b.getAttribute('data-del'), { method: 'DELETE' }).then(function () { toast('Đã xóa', 'success'); loadCategories(); }).catch(function (e) { toast(e.message, 'error'); });
+      }); });
+    }).catch(function (e) { card.innerHTML = '<div class="ap-empty">' + ICON('alert') + '<div>' + esc(e.message) + '</div></div>'; });
+  }
+  function categoryForm(c) {
+    c = c || {};
+    var body = inp('cf-name', 'Tên danh mục', c.name, 'text', 'VD: Tài khoản Premium') +
+      inp('cf-type', 'Loại (tùy chọn)', c.productType, 'text', 'account / key / ...') +
+      inp('cf-icon', 'Icon URL', c.iconUrl, 'text', 'https://...') +
+      inp('cf-image', 'Ảnh URL', c.imageUrl, 'text', 'https://...') +
+      '<div class="ap-form-row">' + inp('cf-sort', 'Thứ tự', c.sortOrder || 0, 'number') + '</div>' +
+      switchRow('cf-active', 'Hiển thị', '', c.isActive !== false);
+    openModal(c.id ? 'Sửa danh mục' : 'Thêm danh mục', body, function (btn) {
+      var name = v('cf-name'); if (!name) { toast('Nhập tên', 'error'); return; }
+      btnLoad(btn, true);
+      var payload = { name: name, product_type: v('cf-type'), icon_url: v('cf-icon'), image_url: v('cf-image'), sort_order: vn('cf-sort'), is_active: vc('cf-active') };
+      var req = c.id ? api('/categories/' + c.id, { method: 'PATCH', body: payload }) : api('/categories', { method: 'POST', body: payload });
+      req.then(function () { toast('Đã lưu', 'success'); closeModal(); loadCategories(); }).catch(function (e) { toast(e.message, 'error'); btnLoad(btn, false); });
+    });
+  }
+
+  // ── SCREEN: Coupons ──────────────────────────────────
+  function screenCoupons(view) {
+    view.innerHTML = pageHead('Mã giảm giá', 'Quản lý coupon / gift code', '<button class="ap-btn primary" id="ap-cp-add">+ Tạo mã</button>') +
+      '<div class="ap-card" id="ap-cp-card"><div style="display:grid;place-items:center;min-height:220px"><div class="ap-spinner"></div></div></div>';
+    $('#ap-cp-add').addEventListener('click', function () { couponForm(); });
+    loadCoupons();
+  }
+  function loadCoupons() {
+    var card = $('#ap-cp-card'); if (!card) return;
+    api('/admin/gift-codes').then(function (codes) {
+      var rows = (codes || []).map(function (c) {
+        var val = c.discountType === 'percent' ? (c.discountValue + '%') : fmtMoney(c.discountValue);
+        return '<tr><td class="ap-mono"><b>' + esc(c.code) + '</b></td><td>' + esc(val) + '</td>' +
+          '<td>' + (c.usageCount || 0) + (c.usageLimit ? ' / ' + c.usageLimit : '') + '</td>' +
+          '<td>' + (c.minOrder ? fmtMoney(c.minOrder) : '—') + '</td>' +
+          '<td>' + (c.expiresAt ? fmtDate(c.expiresAt) : 'Không hạn') + '</td>' +
+          '<td>' + (c.isActive ? '<span class="ap-badge green">Bật</span>' : '<span class="ap-badge gray">Tắt</span>') + '</td>' +
+          '<td style="text-align:right"><button class="ap-btn sm danger" data-del="' + c.id + '">Xóa</button></td></tr>';
+      }).join('') || emptyRow(7, 'Chưa có mã giảm giá');
+      card.innerHTML = '<div class="ap-table-wrap"><table class="ap-table"><thead><tr><th>Mã</th><th>Giảm</th><th>Đã dùng</th><th>Đơn tối thiểu</th><th>Hết hạn</th><th>Trạng thái</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+      card.querySelectorAll('[data-del]').forEach(function (b) { b.addEventListener('click', function () {
+        if (!confirm('Xóa mã này?')) return;
+        api('/admin/gift-codes/' + b.getAttribute('data-del'), { method: 'DELETE' }).then(function () { toast('Đã xóa', 'success'); loadCoupons(); }).catch(function (e) { toast(e.message, 'error'); });
+      }); });
+    }).catch(function (e) { card.innerHTML = '<div class="ap-empty">' + ICON('alert') + '<div>' + esc(e.message) + '</div></div>'; });
+  }
+  function couponForm() {
+    var body = inp('cpf-code', 'Mã code', '', 'text', 'VD: SALE50') +
+      '<div class="ap-form-row">' + sel('cpf-type', 'Loại giảm', 'percent', [{ v: 'percent', t: 'Phần trăm (%)' }, { v: 'fixed', t: 'Số tiền (đ)' }]) + inp('cpf-value', 'Giá trị', 10, 'number') + '</div>' +
+      '<div class="ap-form-row">' + inp('cpf-min', 'Đơn tối thiểu (đ)', 0, 'number') + inp('cpf-max', 'Giảm tối đa (đ)', 0, 'number') + '</div>' +
+      '<div class="ap-form-row">' + inp('cpf-usage', 'Giới hạn lượt (0=∞)', 0, 'number') + inp('cpf-peruser', 'Mỗi người', 1, 'number') + '</div>' +
+      inp('cpf-expires', 'Hết hạn (tùy chọn)', '', 'datetime-local') +
+      ta('cpf-desc', 'Mô tả', '', '') +
+      switchRow('cpf-active', 'Kích hoạt', '', true) +
+      switchRow('cpf-public', 'Hiển thị công khai', 'Cho khách thấy ở trang ưu đãi', false);
+    openModal('Tạo mã giảm giá', body, function (btn) {
+      var code = v('cpf-code'); if (!code) { toast('Nhập mã', 'error'); return; }
+      btnLoad(btn, true);
+      var payload = { code: code, discount_type: v('cpf-type'), discount_value: vn('cpf-value'), min_order: vn('cpf-min'), max_discount: vn('cpf-max') || null, usage_limit: vn('cpf-usage'), per_user_limit: vn('cpf-peruser'), expires_at: v('cpf-expires') || null, is_active: vc('cpf-active'), is_public: vc('cpf-public'), description: v('cpf-desc') };
+      api('/admin/gift-codes', { method: 'POST', body: payload }).then(function () { toast('Đã tạo mã', 'success'); closeModal(); loadCoupons(); }).catch(function (e) { toast(e.message, 'error'); btnLoad(btn, false); });
+    }, 'Tạo mã');
+  }
+
+  // ── SCREEN: Flash Sales ──────────────────────────────
+  function screenFlashSales(view) {
+    view.innerHTML = pageHead('Flash Sale', 'Khuyến mãi giảm giá có thời hạn', '<button class="ap-btn primary" id="ap-fs-add">+ Tạo flash sale</button>') +
+      '<div class="ap-card" id="ap-fs-card"><div style="display:grid;place-items:center;min-height:220px"><div class="ap-spinner"></div></div></div>';
+    $('#ap-fs-add').addEventListener('click', function () { flashForm(); });
+    loadFlash();
+  }
+  function loadFlash() {
+    var card = $('#ap-fs-card'); if (!card) return;
+    api('/admin/flash-sales').then(function (items) {
+      var now = Date.now();
+      var rows = (items || []).map(function (f) {
+        var pkg = f.package || {}; var prod = pkg.product || {};
+        var active = new Date(f.startsAt) <= now && new Date(f.endsAt) >= now;
+        return '<tr><td><b>' + esc(prod.name || '—') + '</b><div style="font-size:12px;color:var(--ap-text-3)">' + esc(pkg.name || '') + '</div></td>' +
+          '<td><b>' + fmtMoney(f.salePrice) + '</b>' + (pkg.price ? ' <span style="text-decoration:line-through;color:var(--ap-text-3);font-size:12px">' + fmtMoney(pkg.price) + '</span>' : '') + '</td>' +
+          '<td style="font-size:12px">' + fmtDateTime(f.startsAt) + '<br>→ ' + fmtDateTime(f.endsAt) + '</td>' +
+          '<td>' + (active ? '<span class="ap-badge green">Đang chạy</span>' : '<span class="ap-badge gray">Ngoài hạn</span>') + '</td>' +
+          '<td style="text-align:right"><button class="ap-btn sm danger" data-del="' + f.id + '">Xóa</button></td></tr>';
+      }).join('') || emptyRow(5, 'Chưa có flash sale');
+      card.innerHTML = '<div class="ap-table-wrap"><table class="ap-table"><thead><tr><th>Sản phẩm / Gói</th><th>Giá sale</th><th>Thời gian</th><th>Trạng thái</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+      card.querySelectorAll('[data-del]').forEach(function (b) { b.addEventListener('click', function () {
+        if (!confirm('Xóa flash sale này?')) return;
+        api('/admin/flash-sales/' + b.getAttribute('data-del'), { method: 'DELETE' }).then(function () { toast('Đã xóa', 'success'); loadFlash(); }).catch(function (e) { toast(e.message, 'error'); });
+      }); });
+    }).catch(function (e) { card.innerHTML = '<div class="ap-empty">' + ICON('alert') + '<div>' + esc(e.message) + '</div></div>'; });
+  }
+  function flashForm() {
+    api('/products?active=all&limit=200').then(function (d) {
+      var opts = [];
+      (d.items || []).forEach(function (p) { (p.packages || []).forEach(function (pk) { opts.push({ v: pk.id, t: p.name + ' — ' + pk.name + ' (' + fmtMoney(pk.price) + ')' }); }); });
+      if (!opts.length) { toast('Chưa có gói sản phẩm nào', 'error'); return; }
+      var body = sel('fsf-pkg', 'Gói sản phẩm', opts[0].v, opts) +
+        inp('fsf-price', 'Giá sale (đ)', 0, 'number') +
+        inp('fsf-qty', 'Giới hạn số lượng (0=∞)', 0, 'number') +
+        '<div class="ap-form-row">' + inp('fsf-start', 'Bắt đầu', '', 'datetime-local') + inp('fsf-end', 'Kết thúc', '', 'datetime-local') + '</div>';
+      openModal('Tạo Flash Sale', body, function (btn) {
+        if (!v('fsf-start') || !v('fsf-end')) { toast('Chọn thời gian', 'error'); return; }
+        btnLoad(btn, true);
+        var payload = { package_id: parseInt(v('fsf-pkg'), 10), sale_price: vn('fsf-price'), quantity_limit: vn('fsf-qty'), starts_at: v('fsf-start'), ends_at: v('fsf-end') };
+        api('/admin/flash-sales', { method: 'POST', body: payload }).then(function () { toast('Đã tạo flash sale', 'success'); closeModal(); loadFlash(); }).catch(function (e) { toast(e.message, 'error'); btnLoad(btn, false); });
+      }, 'Tạo');
+    }).catch(function (e) { toast(e.message, 'error'); });
+  }
+
+  // ── SCREEN: Settings ─────────────────────────────────
+  function screenSettings(view) {
+    loading(view);
+    api('/admin/settings/unified').then(function (u) {
+      var g = u.settings_general || {}, fe = u.settings_features || {};
+      var featureDefs = [
+        ['blog', 'Blog'], ['offers', 'Ưu đãi / Gift Code'], ['affiliate', 'Affiliate'], ['support', 'Hỗ trợ / Ticket'],
+        ['flash_sales', 'Flash Sale'], ['reviews', 'Đánh giá'], ['announcements', 'Thông báo'], ['balance', 'Số dư / Nạp tiền'], ['wishlist', 'Yêu thích'],
+      ];
+      var featuresHtml = featureDefs.map(function (f) { return switchRow('set-fe-' + f[0], f[1], '', fe[f[0]] !== false); }).join('');
+      view.innerHTML = pageHead('Cài đặt', 'Cấu hình hệ thống', '<button class="ap-btn primary" id="ap-set-save">Lưu thay đổi</button>') +
+        '<div class="ap-grid cols-2" style="align-items:start">' +
+          '<div class="ap-card"><div class="ap-card-head"><h3>Thông tin chung</h3></div><div class="ap-card-body">' +
+            inp('set-title', 'Tên website', g.title || g.site_name) +
+            ta('set-desc', 'Mô tả', g.site_description || g.description) +
+            inp('set-copy', 'Dòng bản quyền', g.copyright_text) +
+          '</div></div>' +
+          '<div>' +
+            '<div class="ap-card" style="margin-bottom:16px"><div class="ap-card-head"><h3>Bật / tắt tính năng</h3></div><div class="ap-card-body" style="padding-top:4px">' + featuresHtml + '</div></div>' +
+            '<div class="ap-card"><div class="ap-card-head"><h3>🛠 Chế độ bảo trì</h3></div><div class="ap-card-body" style="padding-top:4px">' +
+              switchRow('set-maint', 'Bật bảo trì website', 'Chỉ nhân viên & admin đăng nhập được', fe.maintenance === true) +
+              ta('set-maint-msg', 'Thông báo cho khách', fe.maintenance_message, 'VD: Website đang bảo trì, quay lại sau ít phút.') +
+            '</div></div>' +
+          '</div>' +
+        '</div>';
+      $('#ap-set-save').addEventListener('click', function () {
+        var btn = this; btnLoad(btn, true);
+        var newFeatures = Object.assign({}, fe);
+        featureDefs.forEach(function (f) { newFeatures[f[0]] = vc('set-fe-' + f[0]); });
+        newFeatures.maintenance = vc('set-maint');
+        newFeatures.maintenance_message = v('set-maint-msg');
+        var payload = {
+          settings_general: Object.assign({}, g, { title: v('set-title'), site_description: v('set-desc'), copyright_text: v('set-copy') }),
+          settings_features: newFeatures,
+        };
+        api('/admin/settings/unified', { method: 'PUT', body: payload }).then(function () { toast('Đã lưu cài đặt', 'success'); btnLoad(btn, false); }).catch(function (e) { toast(e.message, 'error'); btnLoad(btn, false); });
+      });
+    }).catch(function (e) {
+      view.innerHTML = pageHead('Cài đặt', '') + '<div class="ap-card"><div class="ap-card-body"><div class="ap-empty">' + ICON('alert') + '<div>' + (e.status === 403 ? 'Chỉ admin (không phải nhân viên) mới truy cập cài đặt.' : esc(e.message)) + '</div></div></div></div>';
+    });
   }
 
 })();
