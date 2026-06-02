@@ -12,7 +12,7 @@ import Logo from '../../../components/logo';
 import Scrollbar from '../../../components/scrollbar';
 import { NavSectionVertical } from '../../../components/nav-section';
 //
-import navConfig from './config-navigation';
+import { useNavConfig } from './config-navigation';
 import NavDocs from './NavDocs';
 import NavAccount from './NavAccount';
 import NavToggleButton from './NavToggleButton';
@@ -26,6 +26,8 @@ type Props = {
 
 export default function NavVertical({ openNav, onCloseNav }: Props) {
   const { pathname } = useRouter();
+
+  const navData = useNavConfig();
 
   const isDesktop = useResponsive('up', 'lg');
 
@@ -61,7 +63,7 @@ export default function NavVertical({ openNav, onCloseNav }: Props) {
         <NavAccount />
       </Stack>
 
-      <NavSectionVertical data={navConfig} />
+      <NavSectionVertical data={navData} />
 
       <Box sx={{ flexGrow: 1 }} />
 

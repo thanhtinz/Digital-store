@@ -6,6 +6,8 @@ import useResponsive from '../../hooks/useResponsive';
 import { HEADER, NAV } from '../../config-global';
 // components
 import { useSettingsContext } from '../../components/settings';
+//
+import StorefrontFooter from './StorefrontFooter';
 
 // ----------------------------------------------------------------------
 
@@ -35,6 +37,7 @@ export default function Main({ children, sx, ...other }: BoxProps) {
         }}
       >
         {children}
+        <StorefrontFooter />
       </Box>
     );
   }
@@ -58,6 +61,7 @@ export default function Main({ children, sx, ...other }: BoxProps) {
       {...other}
     >
       {children}
+      <StorefrontFooter />
     </Box>
   );
 }
