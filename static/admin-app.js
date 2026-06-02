@@ -100,15 +100,15 @@
     ] },
     { group: 'Người dùng', items: [
       { p: '/admin/users', icon: 'users', label: 'Người dùng', ready: true },
-      { p: '/admin/affiliates', icon: 'affiliate', label: 'Affiliate' },
+      { p: '/admin/affiliates', icon: 'affiliate', label: 'Affiliate', ready: true },
     ] },
     { group: 'Nội dung', items: [
       { p: '/admin/blog', icon: 'blog', label: 'Blog' },
-      { p: '/admin/announcements', icon: 'announce', label: 'Thông báo' },
+      { p: '/admin/announcements', icon: 'announce', label: 'Thông báo', ready: true },
       { p: '/admin/tickets', icon: 'tickets', label: 'Hỗ trợ' },
     ] },
     { group: 'Hệ thống', items: [
-      { p: '/admin/payments', icon: 'payments', label: 'Thanh toán' },
+      { p: '/admin/payments', icon: 'payments', label: 'Thanh toán', ready: true },
       { p: '/admin/settings', icon: 'settings', label: 'Cài đặt', ready: true },
     ] },
   ];
@@ -138,6 +138,9 @@
     '/admin/coupons': screenCoupons,
     '/admin/flash-sales': screenFlashSales,
     '/admin/stock': screenStock,
+    '/admin/payments': screenPayments,
+    '/admin/announcements': screenAnnouncements,
+    '/admin/affiliates': screenAffiliate,
     '/admin/settings': screenSettings,
   };
   function go(path, replace) {
@@ -586,6 +589,134 @@
   function screenNotFound(view) {
     view.innerHTML = '<div class="ap-empty" style="min-height:60vh">' + ICON('alert') + '<div style="font-size:18px;font-weight:600">Không tìm thấy trang</div><div><a href="/admin" data-path="/admin" style="color:var(--ap-primary)">Về Dashboard</a></div></div>';
     var a = view.querySelector('[data-path]'); if (a) a.addEventListener('click', function (e) { e.preventDefault(); go('/admin'); });
+  }
+
+  // ── SCREEN: Payments (SePay) ─────────────────────────
+  function screenPayments(view) {
+    loading(view);
+    Promise.all([api('/payment/config').catch(function () { return {}; }), api('/admin/payment/history').catch(function () { return { items: [], stats: {} }; })])
+      .then(function (res) {
+        var cfg = res[0] || {}, hist = res[1] || {}, st = hist.stats || {};
+        var histRows = (hist.items || []).map(function (o) {
+          return '<tr><td class="ap-mono">' + esc(o.order_code) + '</td><td>' + esc(o.user_email || '—') + '</td><td><b>' + fmtMoney(o.amount) + '</b></td><td>' + statusBadge(o.status) + '</td><td style="color:var(--ap-text-3)">' + fmtDateTime(o.created_at) + '</td></tr>';
+        }).join('') || emptyRow(5, 'Chưa có giao dịch');
+        view.innerHTML = pageHead('Thanh toán', 'Cấu hình cổng SePay & lịch sử giao dịch') +
+          '<div class="ap-grid cols-4" style="margin-bottom:16px">' +
+            statCard('Doanh thu SePay', fmtMoney(st.total_revenue), 'revenue', '#16a34a') +
+            statCard('Đã thanh toán', fmtNum(st.paid), 'payments', '#0ea5e9') +
+            statCard('Hoàn tất', fmtNum(st.completed), 'orders', '#4f46e5') +
+            statCard('Chờ TT', fmtNum(st.pending), 'cart', '#d97706') +
+          '</div>' +
+          '<div class="ap-grid cols-2" style="align-items:start">' +
+            '<div class="ap-card"><div class="ap-card-head"><h3>Cấu hình SePay</h3>' + (cfg.has_env_override ? '<span class="ap-badge amber">ENV override</span>' : '') + '</div><div class="ap-card-body">' +
+              inp('pay-acc', 'Số tài khoản', cfg.sepay_account_number) +
+              inp('pay-bank', 'Mã ngân hàng (BIN/code)', cfg.sepay_bank_code, 'text', 'VD: MB, VCB, 970422...') +
+              inp('pay-key', 'API Key', cfg.sepay_api_key, 'text', 'Để trống nếu không đổi') +
+              inp('pay-secret', 'Webhook Secret', cfg.sepay_webhook_secret, 'text', 'Để trống nếu không đổi') +
+              inp('pay-base', 'App Base URL', cfg.app_base_url, 'text', 'https://yourdomain.com') +
+              '<div style="display:flex;gap:10px;margin-top:6px"><button class="ap-btn primary" id="pay-save">Lưu cấu hình</button><button class="ap-btn" id="pay-test">Kiểm tra kết nối</button></div>' +
+            '</div></div>' +
+            '<div class="ap-card"><div class="ap-card-head"><h3>Giao dịch gần đây</h3></div><div class="ap-table-wrap"><table class="ap-table"><thead><tr><th>Mã đơn</th><th>Khách</th><th>Số tiền</th><th>Trạng thái</th><th>Thời gian</th></tr></thead><tbody>' + histRows + '</tbody></table></div></div>' +
+          '</div>';
+        var masked = '••••••••';
+        $('#pay-save').addEventListener('click', function () {
+          var btn = this; btnLoad(btn, true);
+          var payload = { sepay_account_number: v('pay-acc'), sepay_bank_code: v('pay-bank'), app_base_url: v('pay-base') };
+          if (v('pay-key') && v('pay-key') !== masked) payload.sepay_api_key = v('pay-key');
+          if (v('pay-secret') && v('pay-secret') !== masked) payload.sepay_webhook_secret = v('pay-secret');
+          api('/payment/config', { method: 'POST', body: payload }).then(function () { toast('Đã lưu cấu hình', 'success'); btnLoad(btn, false); }).catch(function (e) { toast(e.message, 'error'); btnLoad(btn, false); });
+        });
+        $('#pay-test').addEventListener('click', function () {
+          var btn = this; btn.disabled = true; btn.textContent = 'Đang kiểm tra...';
+          api('/payment/test', { method: 'POST', body: { sepay_api_key: v('pay-key'), sepay_account_number: v('pay-acc') } })
+            .then(function (r) { toast(r.message || 'Kết nối OK', 'success'); }).catch(function (e) { toast(e.message, 'error'); })
+            .then(function () { btn.disabled = false; btn.textContent = 'Kiểm tra kết nối'; });
+        });
+      }).catch(function (e) {
+        view.innerHTML = pageHead('Thanh toán', '') + '<div class="ap-card"><div class="ap-card-body"><div class="ap-empty">' + ICON('alert') + '<div>' + (e.status === 403 ? 'Chỉ admin mới truy cập cấu hình thanh toán.' : esc(e.message)) + '</div></div></div></div>';
+      });
+  }
+
+  // ── SCREEN: Announcements ────────────────────────────
+  function screenAnnouncements(view) {
+    view.innerHTML = pageHead('Thông báo', 'Banner thông báo trên trang chủ', '<button class="ap-btn primary" id="ap-an-add">+ Thêm thông báo</button>') +
+      '<div class="ap-card" id="ap-an-card"><div style="display:grid;place-items:center;min-height:200px"><div class="ap-spinner"></div></div></div>';
+    $('#ap-an-add').addEventListener('click', function () { announcementForm(null); });
+    loadAnnouncements();
+  }
+  function loadAnnouncements() {
+    var card = $('#ap-an-card'); if (!card) return;
+    api('/announcements/admin/all').then(function (items) {
+      var rows = (items || []).map(function (a) {
+        var typeColors = { info: 'blue', success: 'green', warning: 'amber', danger: 'red', error: 'red' };
+        return '<tr><td><b>' + esc(a.title) + '</b><div style="font-size:12px;color:var(--ap-text-3);max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(a.content || '') + '</div></td>' +
+          '<td><span class="ap-badge ' + (typeColors[a.type] || 'gray') + '">' + esc(a.type || 'info') + '</span></td>' +
+          '<td>' + (a.sortOrder || 0) + '</td>' +
+          '<td>' + (a.isActive ? '<span class="ap-badge green">Hiện</span>' : '<span class="ap-badge gray">Ẩn</span>') + '</td>' +
+          '<td style="text-align:right;white-space:nowrap"><button class="ap-btn sm" data-edit="' + a.id + '">Sửa</button> <button class="ap-btn sm danger" data-del="' + a.id + '">Xóa</button></td></tr>';
+      }).join('') || emptyRow(5, 'Chưa có thông báo');
+      card.innerHTML = '<div class="ap-table-wrap"><table class="ap-table"><thead><tr><th>Tiêu đề</th><th>Loại</th><th>Thứ tự</th><th>Trạng thái</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+      card.querySelectorAll('[data-edit]').forEach(function (b) { b.addEventListener('click', function () { announcementForm((items || []).find(function (x) { return x.id == b.getAttribute('data-edit'); })); }); });
+      card.querySelectorAll('[data-del]').forEach(function (b) { b.addEventListener('click', function () { if (!confirm('Xóa thông báo này?')) return; api('/admin/announcements/' + b.getAttribute('data-del'), { method: 'DELETE' }).then(function () { toast('Đã xóa', 'success'); loadAnnouncements(); }).catch(function (e) { toast(e.message, 'error'); }); }); });
+    }).catch(function (e) { card.innerHTML = '<div class="ap-empty">' + ICON('alert') + '<div>' + esc(e.message) + '</div></div>'; });
+  }
+  function announcementForm(a) {
+    a = a || {};
+    var body = inp('anf-title', 'Tiêu đề', a.title) +
+      ta('anf-content', 'Nội dung', a.content) +
+      '<div class="ap-form-row">' + sel('anf-type', 'Loại', a.type || 'info', [{ v: 'info', t: 'Thông tin' }, { v: 'success', t: 'Thành công' }, { v: 'warning', t: 'Cảnh báo' }, { v: 'danger', t: 'Quan trọng' }]) + inp('anf-sort', 'Thứ tự', a.sortOrder || 0, 'number') + '</div>' +
+      switchRow('anf-active', 'Hiển thị', '', a.isActive !== false);
+    openModal(a.id ? 'Sửa thông báo' : 'Thêm thông báo', body, function (btn) {
+      var title = v('anf-title'); if (!title) { toast('Nhập tiêu đề', 'error'); return; }
+      btnLoad(btn, true);
+      var req;
+      if (a.id) req = api('/admin/announcements/' + a.id, { method: 'PATCH', body: { title: title, content: v('anf-content'), type: v('anf-type'), isActive: vc('anf-active'), sortOrder: vn('anf-sort') } });
+      else req = api('/admin/announcements', { method: 'POST', body: { title: title, content: v('anf-content'), type: v('anf-type'), is_active: vc('anf-active'), sort_order: vn('anf-sort') } });
+      req.then(function () { toast('Đã lưu', 'success'); closeModal(); loadAnnouncements(); }).catch(function (e) { toast(e.message, 'error'); btnLoad(btn, false); });
+    });
+  }
+
+  // ── SCREEN: Affiliate ────────────────────────────────
+  function screenAffiliate(view) {
+    view.innerHTML = pageHead('Affiliate', 'Chương trình giới thiệu & hoa hồng') +
+      '<div class="ap-card" id="ap-af-card"><div style="display:grid;place-items:center;min-height:200px"><div class="ap-spinner"></div></div></div>';
+    loadAffiliates();
+  }
+  function loadAffiliates() {
+    var card = $('#ap-af-card'); if (!card) return;
+    api('/affiliate/admin/list').then(function (affs) {
+      var rows = (affs || []).map(function (a) {
+        return '<tr class="clickable" data-aid="' + a.id + '"><td class="ap-mono">' + esc(a.ref_code) + '</td><td>' + esc(a.email || '—') + '</td><td>' + (a.commission_rate || 0) + '%</td><td><b>' + fmtMoney(a.total_earnings) + '</b></td><td>' + fmtMoney(a.total_paid) + '</td><td>' + (a.is_active ? '<span class="ap-badge green">Bật</span>' : '<span class="ap-badge gray">Tắt</span>') + '</td></tr>';
+      }).join('') || emptyRow(6, 'Chưa có cộng tác viên');
+      card.innerHTML = '<div class="ap-table-wrap"><table class="ap-table"><thead><tr><th>Mã ref</th><th>Email</th><th>Hoa hồng</th><th>Đã kiếm</th><th>Đã trả</th><th>Trạng thái</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+      card.querySelectorAll('tr[data-aid]').forEach(function (tr) { tr.addEventListener('click', function () { affiliateDrawer((affs || []).find(function (x) { return x.id == tr.getAttribute('data-aid'); })); }); });
+    }).catch(function (e) { card.innerHTML = '<div class="ap-empty">' + ICON('alert') + '<div>' + (e.status === 403 ? 'Chỉ admin truy cập được.' : esc(e.message)) + '</div></div>'; });
+  }
+  function affiliateDrawer(a) {
+    if (!a) return;
+    var dr = openDrawer('CTV: ' + (a.email || a.ref_code), '<div style="display:grid;place-items:center;min-height:140px"><div class="ap-spinner"></div></div>');
+    var body = dr.querySelector('.ap-drawer-body');
+    api('/affiliate/admin/' + a.id + '/referrals').then(function (refs) {
+      var refRows = (refs || []).map(function (r) {
+        var act = r.status === 'pending' ? '<button class="ap-btn sm primary" data-approve="' + r.id + '">Duyệt</button>' : statusBadge(r.status);
+        return '<tr><td>#' + r.order_id + '</td><td>' + fmtMoney(r.order_amount) + '</td><td><b>' + fmtMoney(r.commission) + '</b></td><td>' + act + '</td></tr>';
+      }).join('') || emptyRow(4, 'Chưa có lượt giới thiệu');
+      body.innerHTML =
+        '<div class="ap-field"><label>Tỷ lệ hoa hồng (%)</label><input class="ap-input" id="af-rate" type="number" value="' + (a.commission_rate || 0) + '"></div>' +
+        switchRow('af-active', 'Kích hoạt CTV', '', a.is_active !== false) +
+        '<button class="ap-btn primary" id="af-save" style="margin:8px 0 18px">Lưu</button>' +
+        '<h4 style="margin:0 0 8px;font-size:13px">Lượt giới thiệu</h4>' +
+        '<div class="ap-card"><div class="ap-table-wrap"><table class="ap-table"><thead><tr><th>Đơn</th><th>Giá trị</th><th>Hoa hồng</th><th></th></tr></thead><tbody>' + refRows + '</tbody></table></div></div>';
+      body.querySelector('#af-save').addEventListener('click', function () {
+        var btn = this; btnLoad(btn, true);
+        api('/affiliate/admin/' + a.id, { method: 'PUT', body: { commission_rate: vn('af-rate'), is_active: vc('af-active') } })
+          .then(function () { toast('Đã lưu', 'success'); btnLoad(btn, false); loadAffiliates(); }).catch(function (e) { toast(e.message, 'error'); btnLoad(btn, false); });
+      });
+      body.querySelectorAll('[data-approve]').forEach(function (b) { b.addEventListener('click', function () {
+        b.disabled = true;
+        api('/affiliate/admin/referral/' + b.getAttribute('data-approve') + '/approve', { method: 'PUT' }).then(function () { toast('Đã duyệt', 'success'); affiliateDrawer(a); loadAffiliates(); }).catch(function (e) { toast(e.message, 'error'); b.disabled = false; });
+      }); });
+    }).catch(function (e) { body.innerHTML = '<div class="ap-empty">' + esc(e.message) + '</div>'; });
   }
 
   // ── Modal + form helpers ─────────────────────────────
