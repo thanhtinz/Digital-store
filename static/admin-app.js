@@ -150,6 +150,7 @@
     { group: 'Nội dung', items: [
       { p: '/admin/blog', icon: 'blog', label: 'Blog', ready: true },
       { p: '/admin/banners', icon: 'box', label: 'Banner', ready: true },
+      { p: '/admin/images', icon: 'box', label: 'Thư viện ảnh', ready: true },
       { p: '/admin/announcements', icon: 'announce', label: 'Thông báo', ready: true },
       { p: '/admin/tickets', icon: 'tickets', label: 'Hỗ trợ', ready: true },
     ] },
@@ -191,6 +192,7 @@
     '/admin/affiliates': screenAffiliate,
     '/admin/blog': screenBlog,
     '/admin/banners': screenBanners,
+    '/admin/images': screenImages,
     '/admin/tickets': screenTickets,
     '/admin/connect': screenConnect,
     '/admin/settings': screenSettings,
@@ -790,6 +792,28 @@
         api('/admin/mail/test', { method: 'POST', body: { to: to } }).then(function (r) { toast(r.message || 'Đã gửi', 'success'); }).catch(function (e) { toast(e.message, 'error'); }).then(function () { btn.disabled = false; });
       });
     }).catch(function (e) { box.innerHTML = '<div class="ap-empty">' + (e.status === 403 ? 'Chỉ admin truy cập.' : esc(e.message)) + '</div>'; });
+  }
+
+  // ── SCREEN: Images library ───────────────────────────
+  function screenImages(view) {
+    view.innerHTML = pageHead('Thư viện ảnh', 'Ảnh đã upload (dùng cho sản phẩm/banner) — copy URL để dán vào nơi cần') +
+      '<div class="ap-card" id="ap-img-card"><div style="display:grid;place-items:center;min-height:200px"><div class="ap-spinner"></div></div></div>';
+    loadImages();
+  }
+  function loadImages() {
+    var card = $('#ap-img-card'); if (!card) return;
+    api('/banners/admin/images').then(function (imgs) {
+      if (!imgs || !imgs.length) { card.innerHTML = '<div class="ap-empty">' + ICON('box') + '<div>Chưa có ảnh nào trong thư viện</div></div>'; return; }
+      var grid = imgs.map(function (im) {
+        return '<div style="border:1px solid var(--ap-border);border-radius:10px;overflow:hidden;background:var(--ap-surface-2)">' +
+          '<img src="' + esc(im.url) + '" style="width:100%;height:120px;object-fit:cover;display:block" onerror="this.style.opacity=.3">' +
+          '<div style="padding:8px"><div style="font-size:12px;color:var(--ap-text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + esc(im.filename || '') + '">' + esc(im.filename || ('#' + im.id)) + '</div>' +
+          '<div style="display:flex;gap:6px;margin-top:6px"><button class="ap-btn sm" data-copy="' + esc(im.url) + '" style="flex:1">Copy URL</button><button class="ap-btn sm danger" data-del="' + im.id + '">Xóa</button></div></div></div>';
+      }).join('');
+      card.innerHTML = '<div class="ap-card-body"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px">' + grid + '</div></div>';
+      card.querySelectorAll('[data-copy]').forEach(function (b) { b.addEventListener('click', function () { var u = location.origin + b.getAttribute('data-copy'); if (navigator.clipboard) navigator.clipboard.writeText(u).then(function () { toast('Đã copy URL', 'success'); }); else { prompt('Copy URL:', u); } }); });
+      card.querySelectorAll('[data-del]').forEach(function (b) { b.addEventListener('click', function () { if (!confirm('Xóa ảnh này? Nơi đang dùng sẽ mất ảnh.')) return; api('/banners/admin/images/' + b.getAttribute('data-del'), { method: 'DELETE' }).then(function () { toast('Đã xóa', 'success'); loadImages(); }).catch(function (e) { toast(e.message, 'error'); }); }); });
+    }).catch(function (e) { card.innerHTML = '<div class="ap-empty">' + ICON('alert') + '<div>' + (e.status === 403 ? 'Chỉ admin.' : esc(e.message)) + '</div></div>'; });
   }
 
   // ── SCREEN: Banners ──────────────────────────────────
