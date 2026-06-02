@@ -260,6 +260,32 @@ router.delete('/admin/packages/:id', requireAdmin, async (req: Request, res: Res
   }
 });
 
+// ── Admin: TẤT CẢ gói của 1 sản phẩm (gồm gói ẩn) cho màn quản trị ──
+router.get('/admin/:productId/packages', requireStaffOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const productId = parseInt(req.params.productId);
+    const pkgs = await prisma.productPackage.findMany({
+      where: { productId },
+      orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+    });
+    res.json({
+      items: pkgs.map((pkg: any) => ({
+        id: pkg.id,
+        name: pkg.name,
+        price: money(pkg.price),
+        originalPrice: pkg.originalPrice != null ? money(pkg.originalPrice) : null,
+        deliveryType: pkg.deliveryType,
+        isActive: pkg.isActive,
+        sortOrder: pkg.sortOrder,
+        stockQuantity: pkg.stockQuantity,
+        isStockManaged: pkg.isStockManaged,
+      })),
+    });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
 // ── Helper ─────────────────────────────────────────────
 function serializeProduct(p: any, detailed = false): Record<string, any> {
   const packages = (p.packages || []).map((pkg: any) => {

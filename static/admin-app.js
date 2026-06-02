@@ -94,7 +94,7 @@
       { p: '/admin/orders', icon: 'orders', label: 'Đơn hàng', ready: true },
       { p: '/admin/products', icon: 'products', label: 'Sản phẩm', ready: true },
       { p: '/admin/categories', icon: 'categories', label: 'Danh mục', ready: true },
-      { p: '/admin/stock', icon: 'stock', label: 'Kho hàng' },
+      { p: '/admin/stock', icon: 'stock', label: 'Kho hàng', ready: true },
       { p: '/admin/coupons', icon: 'coupons', label: 'Mã giảm giá', ready: true },
       { p: '/admin/flash-sales', icon: 'flash', label: 'Flash Sale', ready: true },
     ] },
@@ -137,6 +137,7 @@
     '/admin/categories': screenCategories,
     '/admin/coupons': screenCoupons,
     '/admin/flash-sales': screenFlashSales,
+    '/admin/stock': screenStock,
     '/admin/settings': screenSettings,
   };
   function go(path, replace) {
@@ -435,13 +436,15 @@
 
   // ── SCREEN: Products ─────────────────────────────────
   var prodState = { page: 1, search: '' };
+  var prodCache = [];
   function screenProducts(view) {
     view.innerHTML =
-      pageHead('Sản phẩm', 'Quản lý sản phẩm và gói bán') +
+      pageHead('Sản phẩm', 'Quản lý sản phẩm và gói bán', '<button class="ap-btn primary" id="ap-pr-add">+ Thêm sản phẩm</button>') +
       '<div class="ap-toolbar"><div class="ap-search">' + ICON('search') + '<input id="ap-pr-search" placeholder="Tìm sản phẩm..." value="' + esc(prodState.search) + '"></div><button class="ap-btn" id="ap-pr-refresh">' + ICON('refresh') + '</button></div>' +
       '<div class="ap-card" id="ap-pr-card"><div style="display:grid;place-items:center;min-height:240px"><div class="ap-spinner"></div></div></div>';
     $('#ap-pr-search').addEventListener('input', debounce(function (e) { prodState.search = e.target.value.trim(); prodState.page = 1; loadProducts(); }, 350));
     $('#ap-pr-refresh').addEventListener('click', loadProducts);
+    $('#ap-pr-add').addEventListener('click', function () { productForm(null); });
     loadProducts();
   }
   function loadProducts() {
@@ -451,30 +454,95 @@
     if (prodState.search) q += '&search=' + encodeURIComponent(prodState.search);
     api(q).then(function (d) {
       var items = d.items || (Array.isArray(d) ? d : []);
+      prodCache = items;
       var rows = items.map(function (p) {
         var pkgs = p.packages || [];
         var price = pkgs.length ? Math.min.apply(null, pkgs.map(function (x) { return Number(x.price) || 0; })) : 0;
         var img = p.imageUrl ? '<img src="' + esc(p.imageUrl) + '" style="width:34px;height:34px;border-radius:8px;object-fit:cover" onerror="this.style.display=\'none\'">' : '';
         return '<tr><td><div style="display:flex;align-items:center;gap:10px">' + img + '<div><div style="font-weight:600">' + esc(p.name) + '</div><div style="font-size:12px;color:var(--ap-text-3)">' + esc((p.category && p.category.name) || '—') + '</div></div></div></td>' +
           '<td>' + (pkgs.length ? 'từ ' + fmtMoney(price) : '—') + '</td>' +
-          '<td>' + pkgs.length + ' gói</td>' +
+          '<td><button class="ap-btn sm" data-pkgs="' + p.id + '">' + pkgs.length + ' gói</button></td>' +
           '<td>' + (p.isFeatured ? '<span class="ap-badge indigo">Nổi bật</span>' : '') + '</td>' +
           '<td>' + (p.isActive ? '<span class="ap-badge green">Đang bán</span>' : '<span class="ap-badge gray">Ẩn</span>') + '</td>' +
-          '<td><button class="ap-btn sm" data-toggle="' + p.id + '" data-active="' + (p.isActive ? '1' : '0') + '">' + (p.isActive ? 'Ẩn' : 'Hiện') + '</button></td></tr>';
+          '<td style="text-align:right;white-space:nowrap"><button class="ap-btn sm" data-edit="' + p.id + '">Sửa</button> <button class="ap-btn sm danger" data-del="' + p.id + '">Xóa</button></td></tr>';
       }).join('') || emptyRow(6, 'Không có sản phẩm');
       card.innerHTML =
         '<div class="ap-table-wrap"><table class="ap-table"><thead><tr><th>Sản phẩm</th><th>Giá</th><th>Gói</th><th></th><th>Trạng thái</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
         pagination(d.total || items.length, prodState.page, limit, function (pg) { prodState.page = pg; loadProducts(); });
-      card.querySelectorAll('[data-toggle]').forEach(function (b) {
-        b.addEventListener('click', function () {
-          var id = b.getAttribute('data-toggle'), active = b.getAttribute('data-active') === '1';
-          b.disabled = true;
-          api('/products/admin/' + id, { method: 'PATCH', body: { is_active: !active } })
-            .then(function () { toast('Đã cập nhật', 'success'); loadProducts(); })
-            .catch(function (err) { toast(err.message, 'error'); b.disabled = false; });
-        });
-      });
+      var find = function (id) { return prodCache.find(function (x) { return x.id == id; }); };
+      card.querySelectorAll('[data-edit]').forEach(function (b) { b.addEventListener('click', function () { productForm(find(b.getAttribute('data-edit'))); }); });
+      card.querySelectorAll('[data-pkgs]').forEach(function (b) { b.addEventListener('click', function () { packagesDrawer(find(b.getAttribute('data-pkgs'))); }); });
+      card.querySelectorAll('[data-del]').forEach(function (b) { b.addEventListener('click', function () {
+        var p = find(b.getAttribute('data-del'));
+        if (!confirm('Xóa sản phẩm "' + (p ? p.name : '') + '"? Mọi gói & kho liên quan cũng bị xóa.')) return;
+        api('/products/admin/' + b.getAttribute('data-del'), { method: 'DELETE' }).then(function () { toast('Đã xóa', 'success'); loadProducts(); }).catch(function (e) { toast(e.message, 'error'); });
+      }); });
     }).catch(function (err) { card.innerHTML = '<div class="ap-empty">' + ICON('alert') + '<div>' + esc(err.message) + '</div></div>'; });
+  }
+
+  // Product create/edit form (cần danh sách danh mục)
+  var catCache = null;
+  function ensureCategories() { return catCache ? Promise.resolve(catCache) : api('/categories').then(function (c) { catCache = c || []; return catCache; }); }
+  function productForm(p) {
+    p = p || {};
+    ensureCategories().then(function (cats) {
+      var catOpts = [{ v: '', t: '— Không danh mục —' }].concat((cats || []).map(function (c) { return { v: c.id, t: c.name }; }));
+      var body = inp('pf-name', 'Tên sản phẩm', p.name, 'text', 'VD: Netflix Premium') +
+        sel('pf-cat', 'Danh mục', p.categoryId || (p.category && p.category.id) || '', catOpts) +
+        inp('pf-img', 'Ảnh URL', p.imageUrl, 'text', 'https://...') +
+        ta('pf-desc', 'Mô tả', p.description, '') +
+        ta('pf-notes', 'Ghi chú (hiển thị sau khi mua)', p.notes, '') +
+        '<div class="ap-form-row">' + inp('pf-sort', 'Thứ tự', p.sortOrder || 0, 'number') + '</div>' +
+        switchRow('pf-featured', 'Sản phẩm nổi bật', '', !!p.isFeatured) +
+        switchRow('pf-active', 'Đang bán', '', p.isActive !== false);
+      openModal(p.id ? 'Sửa sản phẩm' : 'Thêm sản phẩm', body, function (btn) {
+        var name = v('pf-name'); if (!name) { toast('Nhập tên', 'error'); return; }
+        btnLoad(btn, true);
+        var payload = { name: name, category_id: v('pf-cat') ? parseInt(v('pf-cat'), 10) : null, image_url: v('pf-img'), description: v('pf-desc'), notes: v('pf-notes'), sort_order: vn('pf-sort'), is_featured: vc('pf-featured'), is_active: vc('pf-active') };
+        var req = p.id ? api('/products/admin/' + p.id, { method: 'PATCH', body: payload }) : api('/products/admin', { method: 'POST', body: payload });
+        req.then(function () { toast('Đã lưu', 'success'); closeModal(); loadProducts(); }).catch(function (e) { toast(e.message, 'error'); btnLoad(btn, false); });
+      });
+    });
+  }
+
+  // Packages drawer (quản lý gói của 1 sản phẩm) + kho
+  function packagesDrawer(p) {
+    if (!p) return;
+    var dr = openDrawer('Gói: ' + p.name, '<div style="display:grid;place-items:center;min-height:160px"><div class="ap-spinner"></div></div>');
+    var body = dr.querySelector('.ap-drawer-body');
+    var reload = function () {
+      api('/products/admin/' + p.id + '/packages').then(function (d) {
+        var pkgs = d.items || [];
+        var list = pkgs.map(function (pk) {
+          return '<div class="ap-card" style="margin-bottom:10px"><div class="ap-card-body" style="padding:12px 14px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px">' +
+            '<div><div style="font-weight:600">' + esc(pk.name) + (pk.isActive ? '' : ' <span class="ap-badge gray">Ẩn</span>') + '</div><div style="font-size:12px;color:var(--ap-text-3)">' + fmtMoney(pk.price) + ' · ' + (pk.deliveryType === 'auto' ? 'Tự động' : 'Thủ công') + (pk.deliveryType === 'auto' ? ' · kho: ' + (pk.stockQuantity || 0) : '') + '</div></div>' +
+            '<div style="display:flex;gap:6px">' + (pk.deliveryType === 'auto' ? '<button class="ap-btn sm" data-stock="' + pk.id + '" data-name="' + esc(pk.name) + '">Kho</button>' : '') + '<button class="ap-btn sm" data-pe="' + pk.id + '">Sửa</button><button class="ap-btn sm danger" data-pd="' + pk.id + '">Xóa</button></div>' +
+            '</div></div></div>';
+        }).join('') || '<div class="ap-empty" style="padding:24px">Chưa có gói nào</div>';
+        body.innerHTML = '<button class="ap-btn primary" id="ap-pkg-add" style="margin-bottom:14px;width:100%">+ Thêm gói</button>' + list;
+        body.querySelector('#ap-pkg-add').addEventListener('click', function () { packageForm(p.id, null, reload); });
+        var byId = function (id) { return pkgs.find(function (x) { return x.id == id; }); };
+        body.querySelectorAll('[data-pe]').forEach(function (b) { b.addEventListener('click', function () { packageForm(p.id, byId(b.getAttribute('data-pe')), reload); }); });
+        body.querySelectorAll('[data-pd]').forEach(function (b) { b.addEventListener('click', function () { if (!confirm('Xóa gói này?')) return; api('/products/admin/packages/' + b.getAttribute('data-pd'), { method: 'DELETE' }).then(function () { toast('Đã xóa gói', 'success'); reload(); loadProducts(); }).catch(function (e) { toast(e.message, 'error'); }); }); });
+        body.querySelectorAll('[data-stock]').forEach(function (b) { b.addEventListener('click', function () { stockModal(parseInt(b.getAttribute('data-stock'), 10), b.getAttribute('data-name'), reload); }); });
+      }).catch(function (e) { body.innerHTML = '<div class="ap-empty">' + esc(e.message) + '</div>'; });
+    };
+    reload();
+  }
+  function packageForm(productId, pk, onDone) {
+    pk = pk || {};
+    var body = inp('pkf-name', 'Tên gói', pk.name, 'text', 'VD: 1 tháng') +
+      '<div class="ap-form-row">' + inp('pkf-price', 'Giá (đ)', pk.price || 0, 'number') + inp('pkf-orig', 'Giá gốc (đ)', pk.originalPrice || '', 'number') + '</div>' +
+      sel('pkf-delivery', 'Kiểu giao', pk.deliveryType || 'manual', [{ v: 'manual', t: 'Thủ công' }, { v: 'auto', t: 'Tự động (từ kho)' }]) +
+      '<div class="ap-form-row">' + inp('pkf-sort', 'Thứ tự', pk.sortOrder || 0, 'number') + '</div>' +
+      switchRow('pkf-active', 'Đang bán', '', pk.isActive !== false);
+    openModal(pk.id ? 'Sửa gói' : 'Thêm gói', body, function (btn) {
+      var name = v('pkf-name'); if (!name) { toast('Nhập tên gói', 'error'); return; }
+      btnLoad(btn, true);
+      var payload = { name: name, price: vn('pkf-price'), original_price: v('pkf-orig') ? vn('pkf-orig') : null, delivery_type: v('pkf-delivery'), sort_order: vn('pkf-sort'), is_active: vc('pkf-active') };
+      var req = pk.id ? api('/products/admin/packages/' + pk.id, { method: 'PATCH', body: payload }) : api('/products/admin/' + productId + '/packages', { method: 'POST', body: payload });
+      req.then(function () { toast('Đã lưu gói', 'success'); closeModal(); if (onDone) onDone(); loadProducts(); }).catch(function (e) { toast(e.message, 'error'); btnLoad(btn, false); });
+    });
   }
 
   // ── SCREEN: Users ────────────────────────────────────
@@ -673,6 +741,55 @@
         api('/admin/flash-sales', { method: 'POST', body: payload }).then(function () { toast('Đã tạo flash sale', 'success'); closeModal(); loadFlash(); }).catch(function (e) { toast(e.message, 'error'); btnLoad(btn, false); });
       }, 'Tạo');
     }).catch(function (e) { toast(e.message, 'error'); });
+  }
+
+  // ── SCREEN: Stock ────────────────────────────────────
+  function statMini(label, val, color) { return '<div class="ap-card" style="flex:1;min-width:90px"><div style="padding:12px 14px"><div style="font-size:11px;color:var(--ap-text-3)">' + esc(label) + '</div><div style="font-size:20px;font-weight:700' + (color === 'green' ? ';color:var(--ap-success)' : '') + '">' + fmtNum(val) + '</div></div></div>'; }
+  function renderStockManager(container, pkgId, label) {
+    if (!container) return;
+    container.innerHTML = '<div style="display:grid;place-items:center;min-height:140px"><div class="ap-spinner"></div></div>';
+    api('/stock/package/' + pkgId).then(function (d) {
+      var items = d.items || [];
+      var rows = items.map(function (it) {
+        return '<tr><td class="ap-mono" style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(it.data) + '</td><td>' + (it.is_sold ? '<span class="ap-badge gray">Đã bán</span>' : '<span class="ap-badge green">Còn</span>') + '</td><td style="color:var(--ap-text-3)">' + fmtDate(it.created_at) + '</td><td style="text-align:right">' + (it.is_sold ? '' : '<button class="ap-btn sm danger" data-del="' + it.id + '">Xóa</button>') + '</td></tr>';
+      }).join('') || emptyRow(4, 'Kho trống');
+      container.innerHTML =
+        '<div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">' + statMini('Tổng', d.total) + statMini('Còn', d.available, 'green') + statMini('Đã bán', d.sold) + '</div>' +
+        '<div class="ap-field"><label>Nhập kho — mỗi dòng 1 mục</label><textarea class="ap-input" id="ap-stk-bulk" rows="4" placeholder="user1:pass1&#10;key-XXXX-YYYY&#10;..."></textarea></div>' +
+        '<button class="ap-btn primary" id="ap-stk-bulk-btn" style="margin-bottom:16px">+ Thêm vào kho</button>' +
+        '<div class="ap-card"><div class="ap-table-wrap"><table class="ap-table"><thead><tr><th>Dữ liệu</th><th>Trạng thái</th><th>Tạo</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
+      container.querySelector('#ap-stk-bulk-btn').addEventListener('click', function () {
+        var ta2 = container.querySelector('#ap-stk-bulk'); var data = ta2.value.trim();
+        if (!data) { toast('Nhập dữ liệu kho', 'error'); return; }
+        var btn = this; btnLoad(btn, true);
+        api('/stock/bulk', { method: 'POST', body: { package_id: pkgId, data: data } })
+          .then(function (r) { toast('Đã thêm ' + (r.added || 0) + ' mục', 'success'); renderStockManager(container, pkgId, label); })
+          .catch(function (e) { toast(e.message, 'error'); btnLoad(btn, false); });
+      });
+      container.querySelectorAll('[data-del]').forEach(function (b) { b.addEventListener('click', function () {
+        api('/stock/' + b.getAttribute('data-del'), { method: 'DELETE' }).then(function () { toast('Đã xóa', 'success'); renderStockManager(container, pkgId, label); }).catch(function (e) { toast(e.message, 'error'); });
+      }); });
+    }).catch(function (e) { container.innerHTML = '<div class="ap-empty">' + ICON('alert') + '<div>' + esc(e.message) + '</div></div>'; });
+  }
+  function stockModal(pkgId, label, onDone) {
+    openModal('Kho: ' + label, '<div id="ap-stock-mgr"></div>', function () { closeModal(); if (onDone) onDone(); }, 'Đóng');
+    renderStockManager($('#ap-stock-mgr'), pkgId, label);
+  }
+  function screenStock(view) {
+    view.innerHTML = pageHead('Kho hàng', 'Quản lý kho cho gói giao tự động') +
+      '<div class="ap-card" style="margin-bottom:16px"><div class="ap-card-body"><div class="ap-field" style="margin:0"><label>Chọn gói sản phẩm</label><select class="ap-select" id="ap-stk-pkg"><option>Đang tải...</option></select></div></div></div>' +
+      '<div id="ap-stk-panel"></div>';
+    api('/products?active=all&limit=200').then(function (d) {
+      var opts = [];
+      (d.items || []).forEach(function (p) { (p.packages || []).forEach(function (pk) { opts.push({ id: pk.id, label: p.name + ' — ' + pk.name }); }); });
+      var selEl = $('#ap-stk-pkg');
+      if (!opts.length) { selEl.innerHTML = '<option>Chưa có gói nào</option>'; $('#ap-stk-panel').innerHTML = '<div class="ap-empty">' + ICON('box') + '<div>Tạo sản phẩm & gói trước khi nhập kho.</div></div>'; return; }
+      selEl.innerHTML = opts.map(function (o) { return '<option value="' + o.id + '">' + esc(o.label) + '</option>'; }).join('');
+      var panel = $('#ap-stk-panel');
+      var renderSel = function () { renderStockManager(panel, parseInt(selEl.value, 10), selEl.options[selEl.selectedIndex].text); };
+      selEl.addEventListener('change', renderSel);
+      renderSel();
+    }).catch(function (e) { $('#ap-stk-panel').innerHTML = '<div class="ap-empty">' + ICON('alert') + '<div>' + esc(e.message) + '</div></div>'; });
   }
 
   // ── SCREEN: Settings ─────────────────────────────────
