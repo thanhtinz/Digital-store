@@ -47,10 +47,14 @@ app.use(compression());
 
 // ── CORS ───────────────────────────────────────────────
 const APP_BASE = process.env.APP_BASE_URL || `http://localhost:${PORT}`;
-const corsOrigins = [APP_BASE];
-// Chỉ cho phép origin localhost khi KHÔNG chạy production
+// Cho phép thêm origin frontend qua env: FRONTEND_URL hoặc CORS_ORIGINS (ngăn cách dấu phẩy)
+const extraOrigins = (process.env.CORS_ORIGINS || '')
+  .split(',').map((s) => s.trim()).filter(Boolean);
+const corsOrigins = [APP_BASE, ...extraOrigins];
+if (process.env.FRONTEND_URL) corsOrigins.push(process.env.FRONTEND_URL.trim());
+// Dev: cho phép các cổng local hay dùng (3000 backend, 5173 vite, 3039 Minimal frontend)
 if (process.env.NODE_ENV !== 'production') {
-  corsOrigins.push('http://localhost:3000', 'http://localhost:5173');
+  corsOrigins.push('http://localhost:3000', 'http://localhost:5173', 'http://localhost:3039');
 }
 app.use(cors({
   origin: corsOrigins,

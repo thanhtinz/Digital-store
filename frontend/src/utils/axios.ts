@@ -97,9 +97,10 @@ axiosInstance.interceptors.response.use(
     const url = response.config.url || '';
     const d = response.data;
 
-    // /api/products  -> { products: [...] }
-    if (/\/products(\?|$)/.test(url) && d?.products) {
-      d.products = d.products.map(adaptProduct);
+    // /api/products  -> chuẩn hoá về { products: [...] } (backend trả items HOẶC products)
+    if (/\/products(\?|$)/.test(url)) {
+      const list = d?.products || d?.items;
+      if (Array.isArray(list)) d.products = list.map(adaptProduct);
     }
     // /api/products/product?name=  -> { product: {...} }
     if (/\/products\/product/.test(url) && d?.product) {
