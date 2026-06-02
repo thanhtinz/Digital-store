@@ -107,3 +107,13 @@
   .pd-shop-grid { grid-template-columns: 1fr; gap: 20px; }
   .pd-shop-media { position: static; }
 }
+
+/* Số lượng (stepper kiểu minimals.cc): label trái, controls phải */
+.pd-qty-row { display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 12px; margin: 4px 0 14px; }
+.pd-qty-label { font-weight: 600 !important; color: var(--text-heading) !important; }
+.pd-qty-controls { display: inline-flex !important; align-items: center; border: 1px solid var(--border) !important; border-radius: 10px !important; overflow: hidden; }
+.pd-qty-btn { width: 36px; height: 36px; border: none !important; background: transparent !important; color: var(--text-heading) !important; font-size: 18px; cursor: pointer; display: grid; place-items: center; }
+.pd-qty-btn:hover:not(:disabled) { background: var(--grey-100) !important; }
+.pd-qty-btn:disabled { opacity: .4; cursor: not-allowed; }
+.pd-qty-val { min-width: 40px; text-align: center; font-weight: 600; }
+.pd-qty-avail { margin-left: auto; font-size: 13px; color: var(--text-muted); }

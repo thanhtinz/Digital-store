@@ -1457,6 +1457,12 @@ async function renderProduct(view, { slug }) {
           }
           const oos = isOutOfStock(selectedPkg);
           const price = getDisplayPrice(selectedPkg);
+          // Số lượng (thay "Size" của Minimal): giới hạn theo tồn kho; manual/api không giới hạn (cap 99)
+          const availStock = selectedPkg.delivery_type === 'auto' ? (selectedPkg.stock_count || 0)
+            : selectedPkg.is_stock_managed ? (selectedPkg.stock_quantity || 0) : null;
+          const maxQty = availStock == null ? 99 : Math.max(1, availStock);
+          if (quantity > maxQty) quantity = maxQty;
+          if (quantity < 1) quantity = 1;
 
           // B) Thông tin Order section
           const infoSection = el('div', 'pd-order-info');
@@ -1510,6 +1516,19 @@ async function renderProduct(view, { slug }) {
           }
           orderBody.appendChild(infoSection);
 
+          // C0) Số lượng — stepper kiểu Minimal (thay cho "Size")
+          const qtyRow = el('div', 'pd-qty-row');
+          qtyRow.innerHTML = `
+            <span class="pd-qty-label">Số lượng</span>
+            <div class="pd-qty-controls">
+              <button type="button" class="pd-qty-btn pd-qty-minus" id="pd-qty-minus" ${quantity <= 1 ? 'disabled' : ''}>−</button>
+              <span class="pd-qty-val" id="pd-qty-val">${quantity}</span>
+              <button type="button" class="pd-qty-btn pd-qty-plus" id="pd-qty-plus" ${quantity >= maxQty ? 'disabled' : ''}>+</button>
+            </div>
+            ${availStock != null ? `<span class="pd-qty-avail">Còn ${availStock}</span>` : ''}
+          `;
+          orderBody.appendChild(qtyRow);
+
           // C) Coupon/Discount accordion
           const couponWrap = el('div', 'pd-coupon-wrap');
           couponWrap.innerHTML = `
@@ -1547,19 +1566,22 @@ async function renderProduct(view, { slug }) {
           orderBody.appendChild(priceSummary);
 
           const updateProductCouponSummary = () => {
+            const subEl = qs('#pd-subtotal-price', orderBody);
             const discountRow = qs('#pd-discount-row', orderBody);
             const discountPrice = qs('#pd-discount-price', orderBody);
             const totalPrice = qs('#pd-total-price', orderBody);
             if (!totalPrice) return;
-            if (appliedCoupon?.discount) {
+            const subtotal = price * quantity;
+            if (subEl) subEl.innerHTML = fmt(subtotal);
+            const discount = appliedCoupon?.discount || 0;
+            if (discount > 0) {
               if (discountRow) discountRow.style.display = '';
-              if (discountPrice) discountPrice.innerHTML = `-${fmt(appliedCoupon.discount)}`;
-              totalPrice.innerHTML = fmt(Math.max(0, price - appliedCoupon.discount));
+              if (discountPrice) discountPrice.innerHTML = `-${fmt(discount)}`;
             } else {
               if (discountRow) discountRow.style.display = 'none';
               if (discountPrice) discountPrice.textContent = '-0';
-              totalPrice.innerHTML = fmt(price);
             }
+            totalPrice.innerHTML = fmt(Math.max(0, subtotal - discount));
           };
           updateProductCouponSummary();
 
@@ -1594,6 +1616,26 @@ async function renderProduct(view, { slug }) {
             return valid ? fieldVals : null;
           };
 
+          // Stepper số lượng (kiểu Minimal): cập nhật giá; nếu có coupon thì tính lại theo SL
+          const qtyValEl = qs('#pd-qty-val', orderBody);
+          const qtyMinusEl = qs('#pd-qty-minus', orderBody);
+          const qtyPlusEl = qs('#pd-qty-plus', orderBody);
+          const setQty = async (q) => {
+            quantity = Math.max(1, Math.min(maxQty, q));
+            if (qtyValEl) qtyValEl.textContent = quantity;
+            if (qtyMinusEl) qtyMinusEl.disabled = quantity <= 1;
+            if (qtyPlusEl) qtyPlusEl.disabled = quantity >= maxQty;
+            if (appliedCoupon?.code) {
+              try {
+                const quoted = await apiFetch('/gift-codes/quote', { method: 'POST', body: JSON.stringify({ code: appliedCoupon.code, amount: price * quantity }) });
+                appliedCoupon = { code: quoted.code, discount: quoted.discount, final_amount: quoted.final_amount };
+              } catch { /* giữ coupon cũ nếu lỗi */ }
+            }
+            updateProductCouponSummary();
+          };
+          if (qtyMinusEl) qtyMinusEl.onclick = () => setQty(quantity - 1);
+          if (qtyPlusEl) qtyPlusEl.onclick = () => setQty(quantity + 1);
+
           // Coupon toggle
           const couponToggle = qs('#pd-coupon-toggle', orderBody);
           const couponBody = qs('#pd-coupon-body', orderBody);
@@ -1615,7 +1657,7 @@ async function renderProduct(view, { slug }) {
             const code = codeInput?.value.trim();
             if (!code) return toast('Nhập mã giảm giá', 'error');
             try {
-              const quoted = await apiFetch('/gift-codes/quote', { method: 'POST', body: JSON.stringify({ code, amount: price }) });
+              const quoted = await apiFetch('/gift-codes/quote', { method: 'POST', body: JSON.stringify({ code, amount: price * quantity }) });
               appliedCoupon = { code: quoted.code, discount: quoted.discount, final_amount: quoted.final_amount };
               if (status) status.textContent = `Đã áp dụng mã ${quoted.code} (-${fmt(quoted.discount)})`;
               updateProductCouponSummary();
