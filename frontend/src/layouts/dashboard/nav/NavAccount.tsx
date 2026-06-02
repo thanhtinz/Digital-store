@@ -29,7 +29,7 @@ export default function NavAccount() {
   const { user } = useAuthContext();
 
   return (
-    <Link component={NextLink} href={PATH_DASHBOARD.user.account} underline="none" color="inherit">
+    <Link component={NextLink} href={PATH_DASHBOARD.myAccount} underline="none" color="inherit">
       <StyledRoot>
         <CustomAvatar src={user?.photoURL} alt={user?.displayName} name={user?.displayName} />
 
