@@ -36,6 +36,21 @@
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
     toast('Đã xuất ' + items.length + ' dòng', 'success');
   }
+  // Xuất CSV TẤT CẢ trang (theo bộ lọc) — lặp gọi API tới khi hết, tối đa ~10k dòng
+  function exportAllCSV(filename, columns, makeUrl, btn) {
+    var limit = 100, page = 1, acc = [];
+    if (btn) { btn.disabled = true; btn.dataset.t = btn.textContent; btn.textContent = 'Đang xuất...'; }
+    var done = function () { if (btn) { btn.disabled = false; btn.textContent = btn.dataset.t; } };
+    function next() {
+      return api(makeUrl(page, limit)).then(function (d) {
+        var items = d.items || (Array.isArray(d) ? d : []);
+        acc = acc.concat(items);
+        if (items.length >= limit && page < 100) { page++; return next(); }
+        return acc;
+      });
+    }
+    next().then(function (all) { exportCSV(filename, columns, all); done(); }).catch(function (e) { toast(e.message, 'error'); done(); });
+  }
   // Quản lý chọn nhiều: gắn vào 1 card có checkbox.row-chk + #ap-chk-all + thanh #ap-bulkbar (.count)
   function setupBulk(card, onRender) {
     var sel = new Set();
@@ -418,13 +433,14 @@
     $('#ap-ord-status').addEventListener('change', function (e) { ordersState.status = e.target.value; ordersState.page = 1; loadOrders(); });
     $('#ap-ord-refresh').addEventListener('click', loadOrders);
     $('#ap-ord-csv').addEventListener('click', function () {
-      exportCSV('don-hang.csv', [
+      var self = this;
+      exportAllCSV('don-hang.csv', [
         { label: 'Mã đơn', get: function (o) { return o.orderCode; } },
         { label: 'Khách', get: function (o) { return o.userEmail; } },
         { label: 'Tổng', get: function (o) { return o.totalAmount; } },
         { label: 'Trạng thái', get: function (o) { return (STATUS[o.status] || {}).t || o.status; } },
         { label: 'Thời gian', get: function (o) { return fmtDateTime(o.createdAt); } },
-      ], ordersItems);
+      ], function (page, limit) { var u = '/orders/admin/all?page=' + page + '&limit=' + limit; if (ordersState.status) u += '&status=' + encodeURIComponent(ordersState.status); if (ordersState.search) u += '&search=' + encodeURIComponent(ordersState.search); return u; }, self);
     });
     loadOrders();
   }
@@ -508,13 +524,14 @@
     $('#ap-pr-refresh').addEventListener('click', loadProducts);
     $('#ap-pr-add').addEventListener('click', function () { productForm(null); });
     $('#ap-pr-csv').addEventListener('click', function () {
-      exportCSV('san-pham.csv', [
+      var self = this;
+      exportAllCSV('san-pham.csv', [
         { label: 'Tên', get: function (p) { return p.name; } },
         { label: 'Danh mục', get: function (p) { return (p.category && p.category.name) || ''; } },
         { label: 'Số gói', get: function (p) { return (p.packages || []).length; } },
         { label: 'Giá thấp nhất', get: function (p) { var k = p.packages || []; return k.length ? Math.min.apply(null, k.map(function (x) { return Number(x.price) || 0; })) : 0; } },
         { label: 'Trạng thái', get: function (p) { return p.isActive ? 'Đang bán' : 'Ẩn'; } },
-      ], prodCache);
+      ], function (page, limit) { var u = '/products?active=all&sort=newest&page=' + page + '&limit=' + limit; if (prodState.search) u += '&search=' + encodeURIComponent(prodState.search); return u; }, self);
     });
     loadProducts();
   }
@@ -634,13 +651,14 @@
     $('#ap-us-search').addEventListener('input', debounce(function (e) { userState.search = e.target.value.trim(); userState.page = 1; loadUsers(); }, 350));
     $('#ap-us-refresh').addEventListener('click', loadUsers);
     $('#ap-us-csv').addEventListener('click', function () {
-      exportCSV('nguoi-dung.csv', [
+      var self = this;
+      exportAllCSV('nguoi-dung.csv', [
         { label: 'Email', get: function (u) { return u.email; } },
         { label: 'Tên', get: function (u) { return u.displayName; } },
         { label: 'Số dư', get: function (u) { return u.balance; } },
         { label: 'Trạng thái', get: function (u) { return u.isActive ? 'Hoạt động' : 'Khóa'; } },
         { label: 'Tham gia', get: function (u) { return fmtDate(u.createdAt); } },
-      ], usersItems);
+      ], function (page, limit) { var u = '/admin/users?page=' + page + '&limit=' + limit; if (userState.search) u += '&search=' + encodeURIComponent(userState.search); return u; }, self);
     });
     loadUsers();
   }
