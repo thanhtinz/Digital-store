@@ -78,6 +78,8 @@ app.use('/api', defaultRateLimit);
 // ── Static files ───────────────────────────────────────
 // index:false để '/' KHÔNG bị phục vụ index.html thô — phải đi qua serveHtml
 // (render SEO + gắn nonce CSP). Tránh trang chủ thiếu CSP & meta chưa render.
+// Phục vụ asset tại CẢ '/static/*' (HTML tham chiếu /static/...) và root.
+app.use('/static', express.static(STATIC_DIR, { maxAge: '1h', etag: true, index: false }));
 app.use(express.static(STATIC_DIR, { maxAge: '1h', etag: true, index: false }));
 
 // ── Public settings helper ─────────────────────────────
@@ -251,9 +253,10 @@ async function serveHtml(req: express.Request, res: express.Response, template: 
   }
 }
 
-// Admin pages (không index trên search engine)
-app.get('/admin', (req, res) => serveHtml(req, res, 'index.html', { robots: 'noindex, nofollow' }));
-app.get('/admin/*', (req, res) => serveHtml(req, res, 'index.html', { robots: 'noindex, nofollow' }));
+// Admin app riêng (tách hoàn toàn khỏi client SPA) — phục vụ admin.html.
+// Mọi /admin/* do admin-app.js tự định tuyến phía client.
+app.get('/admin', (req, res) => serveHtml(req, res, 'admin.html', { robots: 'noindex, nofollow' }));
+app.get('/admin/*', (req, res) => serveHtml(req, res, 'admin.html', { robots: 'noindex, nofollow' }));
 
 // Per-product SEO: tiêu đề/ảnh/mô tả theo sản phẩm để chia sẻ đẹp
 app.get('/products/:slug', async (req, res) => {

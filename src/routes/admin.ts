@@ -267,6 +267,108 @@ router.get(['/admin/stats', '/admin/dashboard'], requireStaffOrAdmin, async (_re
   }
 });
 
+// Dashboard A-Z — số liệu giàu hơn cho admin mới (doanh thu ngày/tuần/tháng,
+// trạng thái đơn, đơn mới nhất, cảnh báo tồn kho, biểu đồ 14 ngày).
+router.get('/admin/stats/overview', requireStaffOrAdmin, async (_req: Request, res: Response) => {
+  try {
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekAgo = new Date(startOfDay.getTime() - 6 * 86400000);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const series14Start = new Date(startOfDay.getTime() - 13 * 86400000);
+    const COMPLETED = ['completed'];
+
+    const [
+      totalOrders, totalUsers, totalProducts, newUsersMonth,
+      revAll, revMonth, revWeek, revToday,
+      statusGroups, recentOrders, seriesOrders, autoPkgs,
+    ] = await Promise.all([
+      prisma.order.count(),
+      prisma.user.count(),
+      prisma.product.count({ where: { isActive: true } }),
+      prisma.user.count({ where: { createdAt: { gte: monthStart } } }),
+      prisma.order.aggregate({ where: { status: { in: COMPLETED } }, _sum: { totalAmount: true } }),
+      prisma.order.aggregate({ where: { status: { in: COMPLETED }, createdAt: { gte: monthStart } }, _sum: { totalAmount: true } }),
+      prisma.order.aggregate({ where: { status: { in: COMPLETED }, createdAt: { gte: weekAgo } }, _sum: { totalAmount: true } }),
+      prisma.order.aggregate({ where: { status: { in: COMPLETED }, createdAt: { gte: startOfDay } }, _sum: { totalAmount: true } }),
+      prisma.order.groupBy({ by: ['status'], _count: { _all: true } }),
+      prisma.order.findMany({
+        orderBy: { createdAt: 'desc' }, take: 8,
+        include: { package: { include: { product: true } } },
+      }),
+      prisma.order.findMany({
+        where: { status: { in: COMPLETED }, createdAt: { gte: series14Start } },
+        select: { createdAt: true, totalAmount: true },
+      }),
+      prisma.productPackage.findMany({
+        where: { deliveryType: 'auto', isActive: true },
+        select: { id: true, name: true, product: { select: { name: true } } },
+        take: 1000,
+      }),
+    ]);
+
+    // Trạng thái đơn -> map
+    const statusBreakdown: Record<string, number> = {};
+    for (const g of statusGroups as any[]) statusBreakdown[g.status] = g._count._all;
+
+    // Chuỗi doanh thu 14 ngày
+    const dayKey = (d: Date) => d.toISOString().slice(0, 10);
+    const seriesMap: Record<string, number> = {};
+    for (let i = 0; i < 14; i++) seriesMap[dayKey(new Date(series14Start.getTime() + i * 86400000))] = 0;
+    for (const o of seriesOrders as any[]) {
+      const k = dayKey(new Date(o.createdAt));
+      if (k in seriesMap) seriesMap[k] += money(o.totalAmount);
+    }
+    const revenueSeries = Object.entries(seriesMap).map(([date, revenue]) => ({ date, revenue }));
+
+    // Cảnh báo tồn kho thấp (gói auto còn <=5)
+    let lowStock: Array<{ product: string; package: string; remaining: number }> = [];
+    if (autoPkgs.length) {
+      const counts = await prisma.stockItem.groupBy({
+        by: ['packageId'],
+        where: { isSold: false, packageId: { in: (autoPkgs as any[]).map((p) => p.id) } },
+        _count: { _all: true },
+      });
+      const cmap: Record<number, number> = {};
+      for (const c of counts as any[]) cmap[c.packageId] = c._count._all;
+      lowStock = (autoPkgs as any[])
+        .map((p) => ({ product: p.product?.name || '', package: p.name, remaining: cmap[p.id] || 0 }))
+        .filter((x) => x.remaining <= 5)
+        .sort((a, b) => a.remaining - b.remaining)
+        .slice(0, 12);
+    }
+
+    res.json({
+      totals: {
+        orders: totalOrders,
+        users: totalUsers,
+        products: totalProducts,
+        new_users_month: newUsersMonth,
+      },
+      revenue: {
+        total: money(revAll._sum.totalAmount),
+        month: money(revMonth._sum.totalAmount),
+        week: money(revWeek._sum.totalAmount),
+        today: money(revToday._sum.totalAmount),
+      },
+      status_breakdown: statusBreakdown,
+      pending_orders: (statusBreakdown['pending'] || 0) + (statusBreakdown['pending_payment'] || 0) + (statusBreakdown['paid'] || 0),
+      revenue_series: revenueSeries,
+      low_stock: lowStock,
+      recent_orders: (recentOrders as any[]).map((o) => ({
+        order_code: o.orderCode,
+        user_email: o.userEmail,
+        product_name: o.package?.product?.name || null,
+        total: money(o.totalAmount),
+        status: o.status,
+        created_at: o.createdAt?.toISOString(),
+      })),
+    });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
 // ════════════════════════════════════════════════════
 // ANNOUNCEMENTS
 // ════════════════════════════════════════════════════
