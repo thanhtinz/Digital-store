@@ -113,8 +113,9 @@ router.post('/', requireUser, async (req: Request, res: Response) => {
     const taxConfig = await prisma.siteConfig.findUnique({ where: { key: 'tax_rate' } });
     const taxRate = taxConfig ? parseFloat(taxConfig.value || '0') : 0;
     const taxableAmount = subtotal - discountAmount;
-    const taxAmount = taxableAmount * (taxRate / 100);
-    const totalAmount = taxableAmount + taxAmount;
+    // Làm tròn về số nguyên đồng (VND không có phần lẻ) -> tránh sai số float
+    const taxAmount = Math.round(taxableAmount * (taxRate / 100));
+    const totalAmount = Math.round(taxableAmount + taxAmount);
 
     // Balance payment
     if (payment_method === 'balance') {
@@ -306,9 +307,15 @@ router.get('/admin/all', requireStaffOrAdmin, async (req: Request, res: Response
 });
 
 // ── Admin: cập nhật trạng thái ────────────────────────
+const VALID_ORDER_STATUSES = ['pending', 'pending_payment', 'paid', 'processing', 'completed', 'cancelled', 'failed', 'refunded'];
+
 router.patch('/admin/:order_code/status', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const { status, delivery_data, notes } = req.body;
+    if (!status || !VALID_ORDER_STATUSES.includes(status)) {
+      res.status(400).json({ detail: `Trạng thái không hợp lệ. Cho phép: ${VALID_ORDER_STATUSES.join(', ')}` });
+      return;
+    }
     const order = await prisma.order.findUnique({ where: { orderCode: req.params.order_code } });
     if (!order) { res.status(404).json({ detail: 'Không tìm thấy đơn hàng' }); return; }
 

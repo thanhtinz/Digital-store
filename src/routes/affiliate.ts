@@ -78,8 +78,15 @@ router.post('/register', requireUser, async (req: Request, res: Response) => {
 });
 
 // ── Admin ───────────────────────────────────────────────
-router.get('/admin/list', requireAdmin, async (_req: Request, res: Response) => {
-  const affs = await prisma.affiliateUser.findMany({ orderBy: { id: 'desc' } });
+router.get('/admin/list', requireAdmin, async (req: Request, res: Response) => {
+  // Giữ shape mảng (tương thích frontend) nhưng có giới hạn + phân trang tùy chọn
+  const page = Math.max(parseInt(req.query.page as string) || 1, 1);
+  const limit = Math.min(parseInt(req.query.limit as string) || 200, 500);
+  const affs = await prisma.affiliateUser.findMany({
+    orderBy: { id: 'desc' },
+    skip: (page - 1) * limit,
+    take: limit,
+  });
   res.json(affs.map(affToDict));
 });
 
