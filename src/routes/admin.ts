@@ -1,9 +1,13 @@
 import { Router, Request, Response } from 'express';
 import slugify from 'slugify';
+import multer from 'multer';
+import sharp from 'sharp';
 import prisma from '../db';
 import { requireAdmin, requireStaffOrAdmin } from '../middleware/auth';
 import { money } from '../services/orders';
 import { getFeatures } from '../services/features';
+
+const uploadImage = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
 
 const router = Router();
 
@@ -725,6 +729,25 @@ router.post('/categories/bulk-delete', requireAdmin, async (req: Request, res: R
 router.get('/banners/admin/images', requireAdmin, async (_req: Request, res: Response) => {
   const imgs = await prisma.uploadedImage.findMany({ orderBy: { id: 'desc' }, take: 100, select: { id: true, filename: true, createdAt: true } });
   res.json(imgs.map((i: any) => ({ id: i.id, filename: i.filename, url: `/api/images/${i.id}`, created_at: i.createdAt?.toISOString() })));
+});
+
+// Upload ảnh -> lưu DB, nén/chuẩn hóa qua sharp (an toàn: lỗi thì giữ gốc).
+// Trả về { id, url } để dán vào product/banner...
+router.post('/banners/admin/upload-image', requireStaffOrAdmin, uploadImage.single('file'), async (req: Request, res: Response) => {
+  try {
+    const f = (req as any).file;
+    if (!f || !f.buffer) { res.status(400).json({ detail: 'Thiếu file ảnh' }); return; }
+    let data: Buffer = f.buffer;
+    let mime = f.mimetype || 'image/jpeg';
+    try {
+      data = await sharp(f.buffer).rotate().resize({ width: 1600, withoutEnlargement: true }).webp({ quality: 82 }).toBuffer();
+      mime = 'image/webp';
+    } catch { /* không phải ảnh xử lý được -> giữ buffer gốc */ }
+    const img = await prisma.uploadedImage.create({ data: { filename: f.originalname || null, data, mimeType: mime } });
+    res.status(201).json({ id: img.id, url: `/api/images/${img.id}`, filename: img.filename });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
 });
 
 router.delete('/banners/admin/images/:id', requireAdmin, async (req: Request, res: Response) => {

@@ -87,6 +87,30 @@
     });
   }
 
+  // Upload file (multipart) — không set Content-Type để trình duyệt tự thêm boundary
+  function apiUpload(path, file) {
+    var fd = new FormData(); fd.append('file', file);
+    var headers = {}; var tk = getToken(); if (tk) headers['Authorization'] = 'Bearer ' + tk;
+    return fetch(API + path, { method: 'POST', headers: headers, body: fd }).then(function (r) {
+      return r.text().then(function (txt) { var d = {}; try { d = txt ? JSON.parse(txt) : {}; } catch (e) {} if (!r.ok) { var err = new Error(d.detail || ('Lỗi ' + r.status)); err.status = r.status; throw err; } return d; });
+    });
+  }
+  // Trường ảnh: input URL + nút tải ảnh (upload -> điền URL)
+  function imgField(id, label, val) {
+    return '<div class="ap-field"><label>' + esc(label) + '</label><div style="display:flex;gap:8px"><input class="ap-input" id="' + id + '" value="' + esc(val || '') + '" placeholder="https://... hoặc tải ảnh"><label class="ap-btn" style="white-space:nowrap;cursor:pointer">Tải ảnh<input type="file" accept="image/*" data-upl="' + id + '" style="display:none"></label></div></div>';
+  }
+  function wireImgFields(scope) {
+    (scope || document).querySelectorAll('[data-upl]').forEach(function (fi) {
+      if (fi.dataset.w) return; fi.dataset.w = '1';
+      fi.addEventListener('change', function () {
+        var file = fi.files && fi.files[0]; if (!file) return;
+        var target = $('#' + fi.getAttribute('data-upl'));
+        toast('Đang tải ảnh...');
+        apiUpload('/banners/admin/upload-image', file).then(function (r) { if (target) target.value = r.url; toast('Đã tải ảnh', 'success'); }).catch(function (e) { toast(e.message, 'error'); });
+      });
+    });
+  }
+
   // ── Toast ────────────────────────────────────────────
   function toast(msg, type) {
     var wrap = $('#ap-toasts'); if (!wrap) return;
@@ -323,6 +347,7 @@
     document.body.appendChild(bd); document.body.appendChild(dr);
     requestAnimationFrame(function () { bd.classList.add('open'); dr.classList.add('open'); });
     bd.addEventListener('click', closeDrawer);
+    wireImgFields(dr);
     $('#ap-drawer-close').addEventListener('click', closeDrawer);
     return dr;
   }
@@ -593,7 +618,7 @@
       var catOpts = [{ v: '', t: '— Không danh mục —' }].concat((cats || []).map(function (c) { return { v: c.id, t: c.name }; }));
       var body = inp('pf-name', 'Tên sản phẩm', p.name, 'text', 'VD: Netflix Premium') +
         sel('pf-cat', 'Danh mục', p.categoryId || (p.category && p.category.id) || '', catOpts) +
-        inp('pf-img', 'Ảnh URL', p.imageUrl, 'text', 'https://...') +
+        imgField('pf-img', 'Ảnh sản phẩm', p.imageUrl) +
         ta('pf-desc', 'Mô tả', p.description, '') +
         ta('pf-notes', 'Ghi chú (hiển thị sau khi mua)', p.notes, '') +
         '<div class="ap-form-row">' + inp('pf-sort', 'Thứ tự', p.sortOrder || 0, 'number') + '</div>' +
@@ -796,8 +821,14 @@
 
   // ── SCREEN: Images library ───────────────────────────
   function screenImages(view) {
-    view.innerHTML = pageHead('Thư viện ảnh', 'Ảnh đã upload (dùng cho sản phẩm/banner) — copy URL để dán vào nơi cần') +
+    view.innerHTML = pageHead('Thư viện ảnh', 'Tải ảnh & copy URL để dùng cho sản phẩm/banner', '<label class="ap-btn primary" style="cursor:pointer">+ Tải ảnh lên<input type="file" accept="image/*" id="ap-img-upl" style="display:none"></label>') +
       '<div class="ap-card" id="ap-img-card"><div style="display:grid;place-items:center;min-height:200px"><div class="ap-spinner"></div></div></div>';
+    $('#ap-img-upl').addEventListener('change', function () {
+      var file = this.files && this.files[0]; if (!file) return;
+      toast('Đang tải ảnh...');
+      apiUpload('/banners/admin/upload-image', file).then(function () { toast('Đã tải lên', 'success'); loadImages(); }).catch(function (e) { toast(e.message, 'error'); });
+      this.value = '';
+    });
     loadImages();
   }
   function loadImages() {
@@ -841,7 +872,7 @@
   function bannerForm(b) {
     b = b || {};
     var body = inp('bnf-title', 'Tiêu đề', b.title) +
-      inp('bnf-img', 'Ảnh URL', b.imageUrl, 'text', 'https://...') +
+      imgField('bnf-img', 'Ảnh banner', b.imageUrl) +
       inp('bnf-link', 'Liên kết khi bấm', b.link, 'text', '/products/... hoặc https://...') +
       '<div class="ap-form-row">' + sel('bnf-type', 'Loại', b.bannerType || 'hero', [{ v: 'hero', t: 'Hero (lớn)' }, { v: 'side', t: 'Phụ' }, { v: 'popup', t: 'Popup' }]) + inp('bnf-sort', 'Thứ tự', b.sortOrder || 0, 'number') + '</div>' +
       switchRow('bnf-active', 'Hiển thị', '', b.isActive !== false);
@@ -908,7 +939,7 @@
   }
   function smmPlatformForm(p) {
     p = p || {};
-    var body = inp('spf-name', 'Tên nền tảng', p.name, 'text', 'VD: Facebook') + inp('spf-icon', 'Icon URL', p.iconUrl) + inp('spf-sort', 'Thứ tự', p.sortOrder || 0, 'number') + switchRow('spf-active', 'Hiển thị', '', p.isActive !== false);
+    var body = inp('spf-name', 'Tên nền tảng', p.name, 'text', 'VD: Facebook') + imgField('spf-icon', 'Icon', p.iconUrl) + inp('spf-sort', 'Thứ tự', p.sortOrder || 0, 'number') + switchRow('spf-active', 'Hiển thị', '', p.isActive !== false);
     openModal(p.id ? 'Sửa nền tảng' : 'Thêm nền tảng', body, function (btn) {
       if (!v('spf-name')) { toast('Nhập tên', 'error'); return; } btnLoad(btn, true);
       var payload = { name: v('spf-name'), icon_url: v('spf-icon'), sort_order: vn('spf-sort'), is_active: vc('spf-active') };
@@ -1034,7 +1065,7 @@
       var catOpts = [{ v: '', t: '— Không chuyên mục —' }].concat(cats.map(function (c) { return { v: c.id, t: c.name }; }));
       var body = inp('blf-title', 'Tiêu đề', p.title) +
         sel('blf-cat', 'Chuyên mục', p.categoryId || '', catOpts) +
-        inp('blf-thumb', 'Ảnh thumbnail URL', p.thumbnailUrl, 'text', 'https://...') +
+        imgField('blf-thumb', 'Ảnh thumbnail', p.thumbnailUrl) +
         ta('blf-excerpt', 'Tóm tắt', p.excerpt, '') +
         rteHtml('blf-content', p.content, 'Viết nội dung bài...') +
         switchRow('blf-pub', 'Đăng bài (publish)', 'Tắt = lưu nháp', !!p.isPublished);
@@ -1259,6 +1290,7 @@
     document.body.appendChild(bd);
     requestAnimationFrame(function () { bd.classList.add('open'); });
     bd.addEventListener('click', function (e) { if (e.target === bd) closeModal(); });
+    wireImgFields(bd);
     $('#ap-modal-x').addEventListener('click', closeModal);
     $('#ap-modal-cancel').addEventListener('click', closeModal);
     $('#ap-modal-ok').addEventListener('click', function () { if (onSubmit) onSubmit($('#ap-modal-ok')); });
@@ -1327,8 +1359,8 @@
     c = c || {};
     var body = inp('cf-name', 'Tên danh mục', c.name, 'text', 'VD: Tài khoản Premium') +
       inp('cf-type', 'Loại (tùy chọn)', c.productType, 'text', 'account / key / ...') +
-      inp('cf-icon', 'Icon URL', c.iconUrl, 'text', 'https://...') +
-      inp('cf-image', 'Ảnh URL', c.imageUrl, 'text', 'https://...') +
+      imgField('cf-icon', 'Icon', c.iconUrl) +
+      imgField('cf-image', 'Ảnh', c.imageUrl) +
       '<div class="ap-form-row">' + inp('cf-sort', 'Thứ tự', c.sortOrder || 0, 'number') + '</div>' +
       switchRow('cf-active', 'Hiển thị', '', c.isActive !== false);
     openModal(c.id ? 'Sửa danh mục' : 'Thêm danh mục', body, function (btn) {
