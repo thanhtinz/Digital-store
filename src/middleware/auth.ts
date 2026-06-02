@@ -2,7 +2,23 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { JwtPayload, AdminPayload } from '../types/index';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
+/**
+ * Khóa JWT dùng chung toàn hệ thống.
+ * - Production: bắt buộc có JWT_SECRET, nếu thiếu thì dừng app (fail-closed)
+ *   để tránh dùng khóa mặc định khiến ai cũng tự ký được token admin.
+ * - Dev: cho phép fallback nhưng cảnh báo rõ.
+ */
+function resolveJwtSecret(): string {
+  const fromEnv = process.env.JWT_SECRET;
+  if (fromEnv && fromEnv.length >= 16) return fromEnv;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET environment variable is required (>=16 ký tự) ở production');
+  }
+  console.warn('[security] JWT_SECRET chưa đặt/đủ dài — đang dùng khóa dev KHÔNG an toàn. Tuyệt đối không dùng ở production.');
+  return 'dev-secret-change-in-production';
+}
+
+export const JWT_SECRET = resolveJwtSecret();
 
 export function requireUser(req: Request, res: Response, next: NextFunction): void {
   const header = req.headers.authorization;

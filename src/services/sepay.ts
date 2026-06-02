@@ -172,11 +172,15 @@ export function verifySepayWebhook(
   signature: string,
   secret: string
 ): boolean {
-  if (!secret) return true; // Bỏ qua verify nếu chưa cấu hình
+  if (!secret || !signature) return false; // Fail-closed: thiếu secret/chữ ký = không hợp lệ
   const hmac = crypto.createHmac('sha256', secret);
   hmac.update(JSON.stringify(body));
   const expected = hmac.digest('hex');
-  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+  const sigBuf = Buffer.from(signature);
+  const expBuf = Buffer.from(expected);
+  // timingSafeEqual ném lỗi nếu khác độ dài → so sánh độ dài trước
+  if (sigBuf.length !== expBuf.length) return false;
+  return crypto.timingSafeEqual(sigBuf, expBuf);
 }
 
 /**

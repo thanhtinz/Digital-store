@@ -2,7 +2,8 @@ import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import axios from 'axios';
 import prisma from '../db';
-import { signToken, requireUser, requireAdmin } from '../middleware/auth';
+import crypto from 'crypto';
+import { signToken, requireUser, requireAdmin, JWT_SECRET } from '../middleware/auth';
 import { authRateLimit } from '../middleware/rateLimit';
 import { notifyNewUser } from '../services/telegram';
 import * as otplib from 'otplib';
@@ -233,7 +234,6 @@ router.post('/forgot-password', authRateLimit, async (req: Request, res: Respons
     if (!user || !user.isActive || !user.passwordHash) { res.json(generic); return; }
 
     // Token reset = JWT ngắn hạn (15 phút), ký kèm passwordHash để 1 lần dùng
-    const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
     const token = jwt.sign(
       { uid: user.id, purpose: 'reset', v: (user.passwordHash || '').slice(-8) },
       JWT_SECRET, { expiresIn: '15m' }
@@ -261,7 +261,6 @@ router.post('/reset-password', authRateLimit, async (req: Request, res: Response
     const { token, new_password } = req.body;
     if (!new_password || new_password.length < 8) { res.status(400).json({ detail: 'Mật khẩu tối thiểu 8 ký tự' }); return; }
 
-    const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
     let payload: any;
     try { payload = jwt.verify(token, JWT_SECRET); } catch { res.status(400).json({ detail: 'Link không hợp lệ hoặc đã hết hạn' }); return; }
     if (payload.purpose !== 'reset') { res.status(400).json({ detail: 'Token không hợp lệ' }); return; }
@@ -280,9 +279,18 @@ router.post('/reset-password', authRateLimit, async (req: Request, res: Response
 });
 
 // ── Make admin (with secret key) ───────────────────────
-router.post('/make-admin', async (req: Request, res: Response) => {
+router.post('/make-admin', authRateLimit, async (req: Request, res: Response) => {
   const { email, secret } = req.body;
-  if (secret !== process.env.ADMIN_SECRET) {
+  const adminSecret = process.env.ADMIN_SECRET || '';
+  // Fail-closed: chưa cấu hình ADMIN_SECRET thì không cho dùng
+  if (!adminSecret || adminSecret.length < 16) {
+    res.status(503).json({ detail: 'ADMIN_SECRET chưa được cấu hình (>=16 ký tự)' });
+    return;
+  }
+  // So sánh hằng thời gian để chống dò (timing attack)
+  const a = Buffer.from(String(secret || ''));
+  const b = Buffer.from(adminSecret);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
     res.status(403).json({ detail: 'Invalid secret' });
     return;
   }

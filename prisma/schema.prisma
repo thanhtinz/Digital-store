@@ -270,7 +270,8 @@ model User {
   balanceTransactions BalanceTransaction[]
   smmOrders           SmmOrder[]
   cardTransactions    CardChargeTransaction[]
-  wishlists           Wishlist[]
+  // Lưu ý: Wishlist tham chiếu user qua userId dạng String (giống Order),
+  // không khai báo quan hệ Prisma ở đây để tránh lỗi validate (User.id là Int).
 
   @@index([email])
   @@map("users")

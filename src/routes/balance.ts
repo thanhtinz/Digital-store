@@ -1,10 +1,18 @@
 import { Router, Request, Response } from 'express';
+import crypto from 'crypto';
 import prisma from '../db';
 import { notifyWithdrawal } from '../services/telegram';
 import { requireUser, requireAdmin } from '../middleware/auth';
 import { money } from '../services/orders';
 
 const router = Router();
+
+/** Lấy IP thật của client (qua proxy/nginx) */
+function clientIp(req: Request): string {
+  return (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim()
+    || req.socket.remoteAddress
+    || '';
+}
 
 // ── Lấy số dư ─────────────────────────────────────────
 router.get('/me', requireUser, async (req: Request, res: Response) => {
@@ -80,39 +88,89 @@ router.post('/admin/adjust', requireAdmin, async (req: Request, res: Response) =
   }
 });
 
-// ── Admin: nạp thẻ callback ───────────────────────────
+// ── Callback từ provider nạp thẻ ──────────────────────
+// BẢO MẬT: endpoint này cộng tiền vào ví nên BẮT BUỘC xác thực.
+//  1) Chữ ký HMAC-SHA256(`request_id|status|real_value`) ký bằng apiSecret của provider,
+//     gửi trong field `sign` (hoặc header `x-callback-sign`).
+//  2) (Tùy chọn) IP allowlist cấu hình tại provider.settings.callback_ips = ["1.2.3.4"].
+//  3) Idempotent: chỉ xử lý khi giao dịch còn 'pending' (chống replay cộng tiền nhiều lần).
+//  4) Atomic: cập nhật trạng thái có điều kiện + cộng tiền trong cùng transaction.
 router.post('/card-charge/callback', async (req: Request, res: Response) => {
-  // Xử lý callback từ provider nạp thẻ
   try {
-    const { request_id, status, real_value, trans_id } = req.body;
-    const tx = await prisma.cardChargeTransaction.findUnique({ where: { requestId: request_id } });
+    const { request_id, status, real_value, trans_id, sign } = req.body;
+    if (!request_id) { res.status(400).json({ status: 0, message: 'missing request_id' }); return; }
+
+    const tx = await prisma.cardChargeTransaction.findUnique({
+      where: { requestId: request_id },
+      include: { apiProvider: true },
+    });
     if (!tx) { res.json({ status: 1, message: 'ok' }); return; }
 
+    const secret = tx.apiProvider?.apiSecret || '';
+    if (!secret) {
+      console.error('Card-charge callback bị từ chối: provider chưa cấu hình apiSecret');
+      res.status(503).json({ status: 0, message: 'callback not configured' });
+      return;
+    }
+
+    // IP allowlist (nếu có cấu hình)
+    const settings: any = tx.apiProvider?.settings || {};
+    const allowIps: string[] = Array.isArray(settings.callback_ips) ? settings.callback_ips : [];
+    const ip = clientIp(req);
+    if (allowIps.length && !allowIps.includes(ip)) {
+      res.status(403).json({ status: 0, message: 'ip not allowed' });
+      return;
+    }
+
+    // Xác thực chữ ký HMAC
+    const provided = String(sign || req.headers['x-callback-sign'] || '');
+    const expected = crypto.createHmac('sha256', secret)
+      .update(`${request_id}|${status}|${real_value ?? ''}`)
+      .digest('hex');
+    const pb = Buffer.from(provided);
+    const eb = Buffer.from(expected);
+    if (pb.length !== eb.length || !crypto.timingSafeEqual(pb, eb)) {
+      res.status(403).json({ status: 0, message: 'invalid signature' });
+      return;
+    }
+
+    // Idempotent: đã xử lý rồi thì thôi
+    if (tx.status !== 'pending') { res.json({ status: 1, message: 'already processed' }); return; }
+
     if (status === 1 && real_value > 0) {
-      const creditAmount = real_value * (1 - money(tx.discountRate) / 100);
-      const dbUser = await prisma.user.update({
-        where: { id: tx.userId },
-        data: { balance: { increment: creditAmount } },
-      });
-      const balTx = await prisma.balanceTransaction.create({
-        data: {
-          userId: tx.userId,
-          amount: creditAmount,
-          balanceAfter: money(dbUser.balance),
-          type: 'topup',
-          status: 'completed',
-          reference: request_id,
-          description: `Nạp thẻ ${tx.telco} ${real_value.toLocaleString()}đ`,
-        },
-      });
-      await prisma.cardChargeTransaction.update({
-        where: { id: tx.id },
-        data: { status: 'success', realValue: real_value, creditedAmount: creditAmount, transId: trans_id, balanceTransactionId: balTx.id, callbackData: req.body },
+      // Tiền VND là số nguyên (đồng) — làm tròn để tránh sai số float
+      const creditAmount = Math.round(real_value * (1 - money(tx.discountRate) / 100));
+      await prisma.$transaction(async (txc: any) => {
+        // Chốt trạng thái có điều kiện: chỉ 1 callback đồng thời thắng
+        const upd = await txc.cardChargeTransaction.updateMany({
+          where: { id: tx.id, status: 'pending' },
+          data: { status: 'success', realValue: real_value, creditedAmount: creditAmount, transId: trans_id, callbackData: req.body, ipAddress: ip || null },
+        });
+        if (upd.count === 0) return; // request khác đã xử lý
+        const dbUser = await txc.user.update({
+          where: { id: tx.userId },
+          data: { balance: { increment: creditAmount } },
+        });
+        const balTx = await txc.balanceTransaction.create({
+          data: {
+            userId: tx.userId,
+            amount: creditAmount,
+            balanceAfter: money(dbUser.balance),
+            type: 'topup',
+            status: 'completed',
+            reference: request_id,
+            description: `Nạp thẻ ${tx.telco} ${Number(real_value).toLocaleString()}đ`,
+          },
+        });
+        await txc.cardChargeTransaction.update({
+          where: { id: tx.id },
+          data: { balanceTransactionId: balTx.id },
+        });
       });
     } else {
-      await prisma.cardChargeTransaction.update({
-        where: { id: tx.id },
-        data: { status: status === 2 ? 'wrong_amount' : 'failed', realValue: real_value || null, transId: trans_id, callbackData: req.body },
+      await prisma.cardChargeTransaction.updateMany({
+        where: { id: tx.id, status: 'pending' },
+        data: { status: status === 2 ? 'wrong_amount' : 'failed', realValue: real_value || null, transId: trans_id, callbackData: req.body, ipAddress: ip || null },
       });
     }
     res.json({ status: 1, message: 'ok' });

@@ -749,7 +749,7 @@ async function renderAllProducts(view) {
     const descEl = qs('#ph-desc', heroHead);
     const bcEl = qs('#ph-bc', heroHead);
     if (titleEl) titleEl.innerHTML = `${ico.shield} ${pageTitle}`;
-    if (descEl) descEl.innerHTML = pageDesc;
+    if (descEl) descEl.textContent = pageDesc;
     if (bcEl) bcEl.innerHTML = bcHtml;
 
     let qs_parts = [`page=${page}`, `limit=20`];
@@ -1291,7 +1291,7 @@ async function renderProduct(view, { slug }) {
         const descCard = el('div', 'pd-card');
         descCard.innerHTML = '<div class="pd-card-title">Mô tả sản phẩm</div>';
         const descBody = el('div', 'pd-desc-body');
-        descBody.innerHTML = p.description;
+        descBody.innerHTML = sanitizeHtml(p.description);
         descCard.appendChild(descBody);
         cards.appendChild(descCard);
 

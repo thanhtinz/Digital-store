@@ -48,7 +48,6 @@ router.get('/blog/posts', async (req: Request, res: Response) => {
         orderBy: { publishedAt: 'desc' },
         skip: (parseInt(page as string) - 1) * parseInt(limit as string),
         take: parseInt(limit as string),
-        include: { category: true },
         select: {
           id: true, title: true, slug: true, excerpt: true, thumbnailUrl: true,
           publishedAt: true, viewCount: true, category: true,
@@ -378,7 +377,7 @@ router.post('/support/tickets/:id/messages', requireUser, async (req: Request, r
     const ticket = await prisma.supportTicket.findFirst({ where: { id: parseInt(req.params.id), userId: String(user.user_id) } });
     if (!ticket) { res.status(404).json({ detail: 'Không tìm thấy ticket' }); return; }
     const msg = await prisma.ticketMessage.create({
-      data: { ticketId: ticket.id, senderId: String(user.user_id), senderName: user.display_name || user.email, isStaff: false, message: req.body.message },
+      data: { ticketId: ticket.id, senderId: String(user.user_id), senderName: user.display_name || user.email, senderType: 'user', message: req.body.message },
     });
     res.status(201).json(msg);
   } catch (e: any) { res.status(500).json({ detail: e.message }); }

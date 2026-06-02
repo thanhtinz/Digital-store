@@ -160,15 +160,20 @@ router.post('/', requireUser, async (req: Request, res: Response) => {
       }
 
       if (payment_method === 'balance') {
-        const dbUser = await tx.user.update({
-          where: { id: user.user_id },
+        // Trừ tiền có điều kiện (atomic) — chống race khi 2 đơn cùng lúc làm âm ví
+        const deducted = await tx.user.updateMany({
+          where: { id: user.user_id, balance: { gte: totalAmount } },
           data: { balance: { decrement: totalAmount } },
         });
+        if (deducted.count === 0) {
+          throw new Error('INSUFFICIENT_BALANCE');
+        }
+        const dbUser = await tx.user.findUnique({ where: { id: user.user_id } });
         await tx.balanceTransaction.create({
           data: {
             userId: user.user_id,
             amount: -totalAmount,
-            balanceAfter: money(dbUser.balance),
+            balanceAfter: money(dbUser?.balance),
             type: 'purchase',
             status: 'completed',
             reference: orderCode,
@@ -195,6 +200,10 @@ router.post('/', requireUser, async (req: Request, res: Response) => {
     notifyNewOrder(order.id).catch(() => {}); // Telegram thông báo (không chặn response)
     res.status(201).json(orderToDict(result!));
   } catch (e: any) {
+    if (e?.message === 'INSUFFICIENT_BALANCE') {
+      res.status(400).json({ detail: 'Số dư không đủ' });
+      return;
+    }
     res.status(500).json({ detail: e.message });
   }
 });

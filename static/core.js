@@ -37,6 +37,15 @@ const fmt = (n) => {
 };
 const fmtDate = (s) => s ? new Date(s).toLocaleString('vi-VN') : '—';
 const esc = (s) => { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; };
+// Làm sạch HTML trước khi gán innerHTML (chống XSS). Dùng cho nội dung HTML do admin/user nhập
+// như mô tả sản phẩm, bài viết... Nếu DOMPurify chưa tải được thì fallback an toàn = escape thành text.
+const sanitizeHtml = (s) => {
+  if (!s) return '';
+  if (window.DOMPurify && typeof window.DOMPurify.sanitize === 'function') {
+    return window.DOMPurify.sanitize(s, { USE_PROFILES: { html: true } });
+  }
+  return esc(s);
+};
 const qs = (s, el = document) => el.querySelector(s);
 const qsa = (s, el = document) => [...el.querySelectorAll(s)];
 const el = (tag, cls = '', html = '') => {

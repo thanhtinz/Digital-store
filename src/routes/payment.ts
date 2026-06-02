@@ -185,12 +185,16 @@ router.post('/webhook/sepay', webhookRateLimit, async (req: Request, res: Respon
     const cfg = await getSepayConfigFromDb();
     const signature = req.headers['x-sepay-signature'] as string || '';
 
-    if (cfg.webhookSecret && signature) {
-      const valid = verifySepayWebhook(req.body, signature, cfg.webhookSecret);
-      if (!valid) {
-        res.status(400).json({ success: false, message: 'Invalid signature' });
-        return;
-      }
+    // Fail-closed: bắt buộc cấu hình webhook secret + có chữ ký hợp lệ,
+    // nếu không kẻ gian có thể giả webhook để đánh dấu đơn "đã thanh toán".
+    if (!cfg.webhookSecret) {
+      console.error('SePay webhook bị từ chối: chưa cấu hình sepay_webhook_secret');
+      res.status(503).json({ success: false, message: 'Webhook chưa được cấu hình' });
+      return;
+    }
+    if (!signature || !verifySepayWebhook(req.body, signature, cfg.webhookSecret)) {
+      res.status(401).json({ success: false, message: 'Invalid signature' });
+      return;
     }
 
     const body = req.body;

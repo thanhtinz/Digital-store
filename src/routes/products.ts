@@ -38,7 +38,7 @@ router.get('/', optionalUser, async (req: Request, res: Response) => {
       }),
     ]);
 
-    res.json({ total, page: parseInt(page as string), items: products.map(serializeProduct) });
+    res.json({ total, page: parseInt(page as string), items: products.map((p) => serializeProduct(p)) });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
   }
