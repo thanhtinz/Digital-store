@@ -141,6 +141,7 @@
       { p: '/admin/stock', icon: 'stock', label: 'Kho hàng', ready: true },
       { p: '/admin/coupons', icon: 'coupons', label: 'Mã giảm giá', ready: true },
       { p: '/admin/flash-sales', icon: 'flash', label: 'Flash Sale', ready: true },
+      { p: '/admin/smm', icon: 'affiliate', label: 'SMM Panel', ready: true },
     ] },
     { group: 'Người dùng', items: [
       { p: '/admin/users', icon: 'users', label: 'Người dùng', ready: true },
@@ -183,6 +184,7 @@
     '/admin/categories': screenCategories,
     '/admin/coupons': screenCoupons,
     '/admin/flash-sales': screenFlashSales,
+    '/admin/smm': screenSmm,
     '/admin/stock': screenStock,
     '/admin/payments': screenPayments,
     '/admin/announcements': screenAnnouncements,
@@ -826,6 +828,142 @@
       var req = b.id ? api('/banners/' + b.id, { method: 'PATCH', body: payload }) : api('/banners', { method: 'POST', body: payload });
       req.then(function () { toast('Đã lưu', 'success'); closeModal(); loadBanners(); }).catch(function (e) { toast(e.message, 'error'); btnLoad(btn, false); });
     });
+  }
+
+  // ── SCREEN: SMM Panel (tabs) ─────────────────────────
+  var smmTab = 'orders';
+  var smmPlats = [], smmCats = [];
+  function screenSmm(view) {
+    view.innerHTML = pageHead('SMM Panel', 'Quản lý dịch vụ tăng tương tác mạng xã hội') +
+      '<div class="ap-tabs" id="ap-smm-tabs">' +
+        [['orders', 'Đơn hàng'], ['platforms', 'Nền tảng'], ['categories', 'Danh mục'], ['services', 'Dịch vụ'], ['providers', 'Đấu API']].map(function (t) { return '<button class="ap-tab' + (smmTab === t[0] ? ' active' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>'; }).join('') +
+      '</div><div id="ap-smm-body"></div>';
+    view.querySelectorAll('#ap-smm-tabs .ap-tab').forEach(function (b) { b.addEventListener('click', function () { smmTab = b.getAttribute('data-tab'); view.querySelectorAll('.ap-tab').forEach(function (x) { x.classList.toggle('active', x === b); }); smmRenderTab(); }); });
+    smmRenderTab();
+  }
+  function smmRenderTab() {
+    var box = $('#ap-smm-body'); if (!box) return;
+    box.innerHTML = '<div class="ap-card"><div style="display:grid;place-items:center;min-height:200px"><div class="ap-spinner"></div></div></div>';
+    ({ orders: smmOrders, platforms: smmPlatforms, categories: smmCategories, services: smmServices, providers: smmProviders }[smmTab] || smmOrders)(box);
+  }
+  function smmEnsurePlats() { return smmPlats.length ? Promise.resolve(smmPlats) : api('/smm/platforms').then(function (p) { smmPlats = p || []; return smmPlats; }); }
+  function smmEnsureCats() { return smmCats.length ? Promise.resolve(smmCats) : api('/smm/categories/all').then(function (c) { smmCats = c || []; return smmCats; }); }
+
+  function smmOrders(box) {
+    api('/smm/admin/orders?limit=50').then(function (d) {
+      var orders = d.orders || [];
+      var rows = orders.map(function (o) {
+        return '<tr class="clickable" data-id="' + o.id + '"><td class="ap-mono">' + esc(o.order_code || ('#' + o.id)) + '</td><td>' + esc(o.user_email || '—') + '</td><td>' + esc(o.service_name || '') + '</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><a href="' + esc(o.link || '#') + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">' + esc(o.link || '') + '</a></td><td>' + fmtNum(o.quantity) + '</td><td><b>' + fmtMoney(o.charge) + '</b></td><td>' + statusBadge(o.status) + '</td></tr>';
+      }).join('') || emptyRow(7, 'Chưa có đơn SMM');
+      box.innerHTML = '<div class="ap-card"><div class="ap-table-wrap"><table class="ap-table"><thead><tr><th>Mã</th><th>Khách</th><th>Dịch vụ</th><th>Link</th><th>SL</th><th>Giá</th><th>Trạng thái</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
+      box.querySelectorAll('tr[data-id]').forEach(function (tr) { tr.addEventListener('click', function () { smmOrderDrawer(orders.find(function (x) { return x.id == tr.getAttribute('data-id'); })); }); });
+    }).catch(function (e) { box.innerHTML = '<div class="ap-empty">' + ICON('alert') + '<div>' + (e.status === 403 ? 'Chỉ admin.' : esc(e.message)) + '</div></div>'; });
+  }
+  function smmOrderDrawer(o) {
+    if (!o) return;
+    var sts = ['pending', 'processing', 'in_progress', 'completed', 'partial', 'cancelled', 'failed'];
+    var body = '<dl class="ap-dl"><dt>Mã</dt><dd class="ap-mono">' + esc(o.order_code) + '</dd><dt>Dịch vụ</dt><dd>' + esc(o.service_name || '') + '</dd><dt>Link</dt><dd style="word-break:break-all">' + esc(o.link || '') + '</dd><dt>Số lượng</dt><dd>' + fmtNum(o.quantity) + '</dd><dt>Giá</dt><dd><b>' + fmtMoney(o.charge) + '</b></dd></dl>' +
+      '<div class="ap-field" style="margin-top:12px"><label>Trạng thái</label><select class="ap-select" id="so-status">' + sts.map(function (s) { return '<option value="' + s + '"' + (o.status === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select></div>' +
+      '<div style="display:flex;gap:8px"><button class="ap-btn primary" id="so-save">Lưu trạng thái</button><button class="ap-btn" id="so-check">Kiểm tra từ provider</button></div>';
+    openDrawer('Đơn SMM ' + (o.order_code || ''), body);
+    $('#so-save').addEventListener('click', function () { var btn = this; btnLoad(btn, true); api('/smm/admin/orders/' + o.id + '/status', { method: 'PUT', body: { status: $('#so-status').value } }).then(function () { toast('Đã lưu', 'success'); closeDrawer(); smmRenderTab(); }).catch(function (e) { toast(e.message, 'error'); btnLoad(btn, false); }); });
+    $('#so-check').addEventListener('click', function () { var btn = this; btn.disabled = true; api('/smm/admin/orders/' + o.id + '/check', { method: 'POST' }).then(function (r) { toast(r.message || r.status || 'Đã kiểm tra', 'success'); closeDrawer(); smmRenderTab(); }).catch(function (e) { toast(e.message, 'error'); btn.disabled = false; }); });
+  }
+
+  function smmPlatforms(box) {
+    api('/smm/platforms').then(function (items) {
+      smmPlats = items || [];
+      var rows = (items || []).map(function (p) {
+        return '<tr><td><b>' + esc(p.name) + '</b></td><td class="ap-mono">' + esc(p.slug) + '</td><td>' + (p.sortOrder || 0) + '</td><td>' + (p.isActive ? '<span class="ap-badge green">Hiện</span>' : '<span class="ap-badge gray">Ẩn</span>') + '</td><td style="text-align:right;white-space:nowrap"><button class="ap-btn sm" data-edit="' + p.id + '">Sửa</button> <button class="ap-btn sm danger" data-del="' + p.id + '">Xóa</button></td></tr>';
+      }).join('') || emptyRow(5, 'Chưa có nền tảng');
+      box.innerHTML = '<div style="margin-bottom:12px"><button class="ap-btn primary" id="sp-add">+ Thêm nền tảng</button></div><div class="ap-card"><div class="ap-table-wrap"><table class="ap-table"><thead><tr><th>Tên</th><th>Slug</th><th>Thứ tự</th><th>Trạng thái</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
+      $('#sp-add').addEventListener('click', function () { smmPlatformForm(null); });
+      box.querySelectorAll('[data-edit]').forEach(function (b) { b.addEventListener('click', function () { smmPlatformForm((items || []).find(function (x) { return x.id == b.getAttribute('data-edit'); })); }); });
+      box.querySelectorAll('[data-del]').forEach(function (b) { b.addEventListener('click', function () { if (!confirm('Xóa nền tảng (kèm danh mục/dịch vụ)?')) return; api('/smm/platforms/' + b.getAttribute('data-del'), { method: 'DELETE' }).then(function () { smmPlats = []; toast('Đã xóa', 'success'); smmRenderTab(); }).catch(function (e) { toast(e.message, 'error'); }); }); });
+    }).catch(function (e) { box.innerHTML = '<div class="ap-empty">' + esc(e.message) + '</div>'; });
+  }
+  function smmPlatformForm(p) {
+    p = p || {};
+    var body = inp('spf-name', 'Tên nền tảng', p.name, 'text', 'VD: Facebook') + inp('spf-icon', 'Icon URL', p.iconUrl) + inp('spf-sort', 'Thứ tự', p.sortOrder || 0, 'number') + switchRow('spf-active', 'Hiển thị', '', p.isActive !== false);
+    openModal(p.id ? 'Sửa nền tảng' : 'Thêm nền tảng', body, function (btn) {
+      if (!v('spf-name')) { toast('Nhập tên', 'error'); return; } btnLoad(btn, true);
+      var payload = { name: v('spf-name'), icon_url: v('spf-icon'), sort_order: vn('spf-sort'), is_active: vc('spf-active') };
+      var req = p.id ? api('/smm/platforms/' + p.id, { method: 'PUT', body: payload }) : api('/smm/platforms', { method: 'POST', body: payload });
+      req.then(function () { smmPlats = []; toast('Đã lưu', 'success'); closeModal(); smmRenderTab(); }).catch(function (e) { toast(e.message, 'error'); btnLoad(btn, false); });
+    });
+  }
+
+  function smmCategories(box) {
+    Promise.all([smmEnsurePlats(), api('/smm/categories/all')]).then(function (r) {
+      var plats = r[0], cats = r[1] || []; smmCats = cats;
+      var pname = function (c) { return (c.platform && c.platform.name) || c.platformName || (plats.find(function (p) { return p.id == c.platformId; }) || {}).name || '—'; };
+      var rows = cats.map(function (c) {
+        return '<tr><td><b>' + esc(c.name) + '</b></td><td>' + esc(pname(c)) + '</td><td>' + (c.sortOrder || 0) + '</td><td>' + (c.isActive ? '<span class="ap-badge green">Hiện</span>' : '<span class="ap-badge gray">Ẩn</span>') + '</td><td style="text-align:right;white-space:nowrap"><button class="ap-btn sm" data-edit="' + c.id + '">Sửa</button> <button class="ap-btn sm danger" data-del="' + c.id + '">Xóa</button></td></tr>';
+      }).join('') || emptyRow(5, 'Chưa có danh mục');
+      box.innerHTML = '<div style="margin-bottom:12px"><button class="ap-btn primary" id="sc-add">+ Thêm danh mục</button></div><div class="ap-card"><div class="ap-table-wrap"><table class="ap-table"><thead><tr><th>Tên</th><th>Nền tảng</th><th>Thứ tự</th><th>Trạng thái</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
+      $('#sc-add').addEventListener('click', function () { smmCategoryForm(null, plats); });
+      box.querySelectorAll('[data-edit]').forEach(function (b) { b.addEventListener('click', function () { smmCategoryForm(cats.find(function (x) { return x.id == b.getAttribute('data-edit'); }), plats); }); });
+      box.querySelectorAll('[data-del]').forEach(function (b) { b.addEventListener('click', function () { if (!confirm('Xóa danh mục?')) return; api('/smm/categories/' + b.getAttribute('data-del'), { method: 'DELETE' }).then(function () { smmCats = []; toast('Đã xóa', 'success'); smmRenderTab(); }).catch(function (e) { toast(e.message, 'error'); }); }); });
+    }).catch(function (e) { box.innerHTML = '<div class="ap-empty">' + esc(e.message) + '</div>'; });
+  }
+  function smmCategoryForm(c, plats) {
+    c = c || {};
+    var opts = (plats || []).map(function (p) { return { v: p.id, t: p.name }; });
+    var body = inp('scf-name', 'Tên danh mục', c.name) + (c.id ? '' : sel('scf-plat', 'Nền tảng', c.platformId || (opts[0] && opts[0].v), opts)) + inp('scf-sort', 'Thứ tự', c.sortOrder || 0, 'number') + switchRow('scf-active', 'Hiển thị', '', c.isActive !== false);
+    openModal(c.id ? 'Sửa danh mục' : 'Thêm danh mục', body, function (btn) {
+      if (!v('scf-name')) { toast('Nhập tên', 'error'); return; } btnLoad(btn, true);
+      var payload = { name: v('scf-name'), sort_order: vn('scf-sort'), is_active: vc('scf-active') };
+      var req = c.id ? api('/smm/categories/' + c.id, { method: 'PUT', body: payload }) : api('/smm/platforms/' + v('scf-plat') + '/categories', { method: 'POST', body: payload });
+      req.then(function () { smmCats = []; toast('Đã lưu', 'success'); closeModal(); smmRenderTab(); }).catch(function (e) { toast(e.message, 'error'); btnLoad(btn, false); });
+    });
+  }
+
+  function smmServices(box) {
+    api('/smm/services/all?limit=200').then(function (d) {
+      var items = d.items || [];
+      var rows = items.map(function (s) {
+        var cat = s.category || {}; var plat = cat.platform || {};
+        return '<tr><td><b>' + esc(s.name) + '</b><div style="font-size:12px;color:var(--ap-text-3)">' + esc((plat.name || '') + (cat.name ? ' / ' + cat.name : '')) + '</div></td><td><b>' + fmtMoney(s.rate) + '</b></td><td>' + fmtNum(s.minQuantity) + '–' + fmtNum(s.maxQuantity) + '</td><td>' + esc(s.deliveryType || 'manual') + '</td><td>' + (s.isActive ? '<span class="ap-badge green">Bật</span>' : '<span class="ap-badge gray">Tắt</span>') + '</td><td style="text-align:right;white-space:nowrap"><button class="ap-btn sm" data-tog="' + s.id + '" data-a="' + (s.isActive ? 1 : 0) + '">' + (s.isActive ? 'Tắt' : 'Bật') + '</button> <button class="ap-btn sm" data-edit="' + s.id + '">Sửa</button> <button class="ap-btn sm danger" data-del="' + s.id + '">Xóa</button></td></tr>';
+      }).join('') || emptyRow(6, 'Chưa có dịch vụ');
+      box.innerHTML = '<div style="margin-bottom:12px"><button class="ap-btn primary" id="ss-add">+ Thêm dịch vụ</button></div><div class="ap-card"><div class="ap-table-wrap"><table class="ap-table"><thead><tr><th>Dịch vụ</th><th>Giá/1000</th><th>SL min–max</th><th>Giao</th><th>Trạng thái</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
+      $('#ss-add').addEventListener('click', function () { smmServiceForm(null); });
+      box.querySelectorAll('[data-edit]').forEach(function (b) { b.addEventListener('click', function () { smmServiceForm(items.find(function (x) { return x.id == b.getAttribute('data-edit'); })); }); });
+      box.querySelectorAll('[data-tog]').forEach(function (b) { b.addEventListener('click', function () { api('/smm/services/' + b.getAttribute('data-tog') + '/active', { method: 'PATCH', body: { is_active: b.getAttribute('data-a') !== '1' } }).then(function () { toast('Đã cập nhật', 'success'); smmRenderTab(); }).catch(function (e) { toast(e.message, 'error'); }); }); });
+      box.querySelectorAll('[data-del]').forEach(function (b) { b.addEventListener('click', function () { if (!confirm('Xóa dịch vụ?')) return; api('/smm/services/' + b.getAttribute('data-del'), { method: 'DELETE' }).then(function () { toast('Đã xóa', 'success'); smmRenderTab(); }).catch(function (e) { toast(e.message, 'error'); }); }); });
+    }).catch(function (e) { box.innerHTML = '<div class="ap-empty">' + esc(e.message) + '</div>'; });
+  }
+  function smmServiceForm(s) {
+    s = s || {};
+    smmEnsureCats().then(function (cats) {
+      var copts = (cats || []).map(function (c) { return { v: c.id, t: ((c.platform && c.platform.name) || '') + ' / ' + c.name }; });
+      var body = inp('ssf-name', 'Tên dịch vụ', s.name) +
+        (s.id ? '' : sel('ssf-cat', 'Danh mục', s.categoryId || (copts[0] && copts[0].v), copts)) +
+        '<div class="ap-form-row">' + inp('ssf-rate', 'Giá / 1000 (đ)', s.rate || 0, 'number') + sel('ssf-delivery', 'Kiểu giao', s.deliveryType || 'manual', [{ v: 'manual', t: 'Thủ công' }, { v: 'api', t: 'API tự động' }]) + '</div>' +
+        '<div class="ap-form-row">' + inp('ssf-min', 'SL tối thiểu', s.minQuantity || 1, 'number') + inp('ssf-max', 'SL tối đa', s.maxQuantity || 10000, 'number') + '</div>' +
+        '<div class="ap-form-row">' + inp('ssf-extsvc', 'External Service ID (API)', s.externalServiceId) + inp('ssf-cost', 'Giá vốn/1000', s.costRate || 0, 'number') + '</div>' +
+        ta('ssf-desc', 'Mô tả', s.description) +
+        switchRow('ssf-active', 'Bật bán', '', s.isActive !== false);
+      openModal(s.id ? 'Sửa dịch vụ' : 'Thêm dịch vụ', body, function (btn) {
+        if (!v('ssf-name')) { toast('Nhập tên', 'error'); return; } btnLoad(btn, true);
+        var payload = { name: v('ssf-name'), rate: vn('ssf-rate'), delivery_type: v('ssf-delivery'), min_quantity: vn('ssf-min'), max_quantity: vn('ssf-max'), external_service_id: v('ssf-extsvc') || null, cost_rate: vn('ssf-cost'), description: v('ssf-desc'), is_active: vc('ssf-active') };
+        var req = s.id ? api('/smm/services/' + s.id, { method: 'PUT', body: payload }) : api('/smm/categories/' + v('ssf-cat') + '/services', { method: 'POST', body: payload });
+        req.then(function () { toast('Đã lưu', 'success'); closeModal(); smmRenderTab(); }).catch(function (e) { toast(e.message, 'error'); btnLoad(btn, false); });
+      }, null, true);
+    });
+  }
+
+  function smmProviders(box) {
+    api('/smm/providers').then(function (items) {
+      var rows = (items || []).map(function (p) {
+        return '<tr><td><b>' + esc(p.name) + '</b></td><td class="ap-mono" style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(p.baseUrl || '') + '</td><td>' + (p.isActive ? '<span class="ap-badge green">Bật</span>' : '<span class="ap-badge gray">Tắt</span>') + '</td><td style="text-align:right"><button class="ap-btn sm" data-bal="' + p.id + '">Số dư</button></td></tr>';
+      }).join('') || emptyRow(4, 'Chưa có nhà cung cấp');
+      box.innerHTML = '<div style="margin-bottom:12px"><button class="ap-btn primary" id="spv-add">+ Thêm provider</button></div><div class="ap-card"><div class="ap-table-wrap"><table class="ap-table"><thead><tr><th>Tên</th><th>Base URL</th><th>Trạng thái</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
+      $('#spv-add').addEventListener('click', function () {
+        var body = inp('spvf-name', 'Tên', '', 'text', 'VD: Provider A') + inp('spvf-url', 'Base URL', '', 'text', 'https://panel.com/api/v2') + inp('spvf-key', 'API Key', '', 'text', '');
+        openModal('Thêm provider SMM', body, function (btn) { if (!v('spvf-name') || !v('spvf-url')) { toast('Nhập tên & URL', 'error'); return; } btnLoad(btn, true); api('/smm/providers', { method: 'POST', body: { name: v('spvf-name'), base_url: v('spvf-url'), api_key: v('spvf-key') } }).then(function () { toast('Đã thêm', 'success'); closeModal(); smmRenderTab(); }).catch(function (e) { toast(e.message, 'error'); btnLoad(btn, false); }); });
+      });
+      box.querySelectorAll('[data-bal]').forEach(function (b) { b.addEventListener('click', function () { b.disabled = true; api('/smm/providers/' + b.getAttribute('data-bal') + '/balance').then(function (r) { toast('Số dư: ' + (r.balance != null ? r.balance + ' ' + (r.currency || '') : JSON.stringify(r)), 'success'); }).catch(function (e) { toast(e.message, 'error'); }).then(function () { b.disabled = false; }); }); });
+    }).catch(function (e) { box.innerHTML = '<div class="ap-empty">' + esc(e.message) + '</div>'; });
   }
 
   // ── SCREEN: Soon / 404 ───────────────────────────────
