@@ -155,8 +155,25 @@ router.post('/', requireUser, async (req: Request, res: Response) => {
       }
 
       if (couponId) {
-        await tx.giftCode.update({ where: { id: couponId }, data: { usageCount: { increment: 1 } } });
-        await tx.giftCodeUsage.create({ data: { codeId: couponId, userId: user.user_id.toString() } });
+        const c = await tx.giftCode.findUnique({ where: { id: couponId } });
+        if (c) {
+          // Tăng usageCount có điều kiện để chống vượt usageLimit khi đặt đồng thời
+          if (c.usageLimit > 0) {
+            const ok = await tx.giftCode.updateMany({
+              where: { id: couponId, usageCount: { lt: c.usageLimit } },
+              data: { usageCount: { increment: 1 } },
+            });
+            if (ok.count === 0) throw new Error('COUPON_LIMIT');
+          } else {
+            await tx.giftCode.update({ where: { id: couponId }, data: { usageCount: { increment: 1 } } });
+          }
+          // Re-check giới hạn theo người dùng ngay trong transaction
+          if (c.perUserLimit > 0) {
+            const used = await tx.giftCodeUsage.count({ where: { codeId: couponId, userId: user.user_id.toString() } });
+            if (used >= c.perUserLimit) throw new Error('COUPON_USER_LIMIT');
+          }
+          await tx.giftCodeUsage.create({ data: { codeId: couponId, userId: user.user_id.toString() } });
+        }
       }
 
       if (payment_method === 'balance') {
@@ -202,6 +219,14 @@ router.post('/', requireUser, async (req: Request, res: Response) => {
   } catch (e: any) {
     if (e?.message === 'INSUFFICIENT_BALANCE') {
       res.status(400).json({ detail: 'Số dư không đủ' });
+      return;
+    }
+    if (e?.message === 'COUPON_LIMIT') {
+      res.status(400).json({ detail: 'Mã giảm giá đã hết lượt sử dụng' });
+      return;
+    }
+    if (e?.message === 'COUPON_USER_LIMIT') {
+      res.status(400).json({ detail: 'Bạn đã dùng hết lượt cho mã giảm giá này' });
       return;
     }
     res.status(500).json({ detail: e.message });

@@ -259,10 +259,12 @@ router.get('/admin/withdrawals', requireAdmin, async (req: Request, res: Respons
 
 router.post('/admin/withdrawals/:id/approve', requireAdmin, async (req: Request, res: Response) => {
   try {
-    await prisma.balanceTransaction.update({
-      where: { id: parseInt(req.params.id) },
+    // Idempotent: chỉ duyệt yêu cầu đang pending. Tiền đã được giữ (totalPaid) lúc tạo yêu cầu.
+    const upd = await prisma.balanceTransaction.updateMany({
+      where: { id: parseInt(req.params.id), type: 'affiliate_withdraw', status: 'pending' },
       data: { status: 'completed' },
     });
+    if (upd.count === 0) { res.status(409).json({ detail: 'Yêu cầu không ở trạng thái chờ duyệt' }); return; }
     res.json({ ok: true });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
@@ -271,13 +273,21 @@ router.post('/admin/withdrawals/:id/approve', requireAdmin, async (req: Request,
 
 router.post('/admin/withdrawals/:id/reject', requireAdmin, async (req: Request, res: Response) => {
   try {
-    // Hoàn lại số tiền đã trừ khi từ chối
     const tx = await prisma.balanceTransaction.findUnique({ where: { id: parseInt(req.params.id) } });
     if (!tx) { res.status(404).json({ detail: 'Không tìm thấy' }); return; }
-    await prisma.$transaction([
-      prisma.balanceTransaction.update({ where: { id: tx.id }, data: { status: 'failed' } }),
-      prisma.user.update({ where: { id: tx.userId }, data: { balance: { increment: Math.abs(money(tx.amount)) } } }),
-    ]);
+    const amt = Math.abs(money(tx.amount));
+    // Idempotent + atomic: chỉ xử lý 1 lần, nhả lại quỹ hoa hồng đã giữ (KHÔNG cộng vào user.balance)
+    await prisma.$transaction(async (txc: any) => {
+      const upd = await txc.balanceTransaction.updateMany({
+        where: { id: tx.id, type: 'affiliate_withdraw', status: 'pending' },
+        data: { status: 'failed' },
+      });
+      if (upd.count === 0) return; // đã xử lý trước đó
+      await txc.affiliateUser.updateMany({
+        where: { userId: String(tx.userId) },
+        data: { totalPaid: { decrement: amt } },
+      });
+    });
     res.json({ ok: true });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
@@ -351,24 +361,39 @@ router.post('/affiliate-withdraw', requireUser, async (req: Request, res: Respon
 
     const aff = await prisma.affiliateUser.findUnique({ where: { userId: String(user.user_id) } });
     if (!aff) { res.status(400).json({ detail: 'Bạn chưa đăng ký affiliate' }); return; }
-    const available = money(aff.totalEarnings) - money(aff.totalPaid);
-    if (amount > available) { res.status(400).json({ detail: `Số dư hoa hồng không đủ (còn ${available.toLocaleString()}đ)` }); return; }
 
     const dbUser = await prisma.user.findUnique({ where: { id: user.user_id } });
-    const newBalance = money(dbUser!.balance);
-    const tx = await prisma.balanceTransaction.create({
-      data: {
-        userId: user.user_id,
-        amount: -amount,
-        balanceAfter: newBalance,
-        type: 'affiliate_withdraw',
-        status: 'pending',
-        description: `Rút hoa hồng ${amount.toLocaleString()}đ`,
-      },
+    const newBalance = money(dbUser?.balance);
+
+    // Giữ tiền (reserve) atomic: chỉ tăng totalPaid khi hoa hồng khả dụng còn đủ.
+    // Tránh race / gửi nhiều yêu cầu rút vượt hạn mức.
+    const tx = await prisma.$transaction(async (txc: any) => {
+      const reserved: number = await txc.$executeRaw`
+        UPDATE affiliate_users
+        SET total_paid = total_paid + ${amount}
+        WHERE user_id = ${String(user.user_id)}
+          AND (total_earnings - total_paid) >= ${amount}`;
+      if (!reserved) throw new Error('AFF_INSUFFICIENT');
+      return txc.balanceTransaction.create({
+        data: {
+          userId: user.user_id,
+          amount: -amount,
+          balanceAfter: newBalance,
+          type: 'affiliate_withdraw',
+          status: 'pending',
+          description: `Rút hoa hồng ${amount.toLocaleString()}đ`,
+        },
+      });
     });
     notifyWithdrawal(user.email, amount).catch(() => {});
     res.json({ txn_id: tx.id, status: 'pending', message: 'Đã gửi yêu cầu rút, chờ admin duyệt' });
   } catch (e: any) {
+    if (e?.message === 'AFF_INSUFFICIENT') {
+      const aff = await prisma.affiliateUser.findUnique({ where: { userId: String((req as any).user.user_id) } });
+      const available = aff ? money(aff.totalEarnings) - money(aff.totalPaid) : 0;
+      res.status(400).json({ detail: `Số dư hoa hồng không đủ (còn ${available.toLocaleString()}đ)` });
+      return;
+    }
     res.status(500).json({ detail: e.message });
   }
 });

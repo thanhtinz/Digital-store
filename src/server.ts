@@ -43,8 +43,13 @@ app.use(compression());
 
 // ── CORS ───────────────────────────────────────────────
 const APP_BASE = process.env.APP_BASE_URL || `http://localhost:${PORT}`;
+const corsOrigins = [APP_BASE];
+// Chỉ cho phép origin localhost khi KHÔNG chạy production
+if (process.env.NODE_ENV !== 'production') {
+  corsOrigins.push('http://localhost:3000', 'http://localhost:5173');
+}
 app.use(cors({
-  origin: [APP_BASE, 'http://localhost:3000', 'http://localhost:5173'],
+  origin: corsOrigins,
   credentials: true,
 }));
 
