@@ -350,6 +350,9 @@ app.get('/manifest.webmanifest', async (_req, res) => {
   }));
 });
 
+// ── Healthcheck (KHÔNG phụ thuộc DB) — cho Railway/Render ──
+app.get(['/healthz', '/api/health'], (_req, res) => res.status(200).type('text/plain').send('ok'));
+
 // ── 404 fallback ────────────────────────────────────────
 app.use((_req, res) => {
   res.status(404).json({ detail: 'Not Found' });
@@ -363,21 +366,30 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
 
 // ── Start server ────────────────────────────────────────
 async function main() {
-  try {
-    // Test DB connection
-    await prisma.$connect();
-    console.log('✅ Database connected');
+  // Mở cổng NGAY để healthcheck (/healthz) thấy server sống — không phụ thuộc DB sẵn sàng.
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Sweet Premium Store running on http://0.0.0.0:${PORT}`);
+    console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`   APP_BASE: ${APP_BASE}`);
+    startReportScheduler();
+  });
 
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Sweet Premium Store running on http://0.0.0.0:${PORT}`);
-      console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`   APP_BASE: ${APP_BASE}`);
-      startReportScheduler();
-    });
-  } catch (err) {
-    console.error('❌ Failed to start server:', err);
-    process.exit(1);
+  if (!process.env.DATABASE_URL) {
+    console.error('⚠️  DATABASE_URL CHƯA được đặt! Thêm PostgreSQL trên Railway và gắn biến DATABASE_URL cho service web (xem RAILWAY.md). App sẽ không truy vấn được DB cho tới khi có biến này.');
   }
+
+  // Kết nối DB có retry; KHÔNG kill tiến trình nếu DB chậm/tạm lỗi (tránh crash-loop -> healthcheck fail).
+  for (let attempt = 1; attempt <= 12; attempt++) {
+    try {
+      await prisma.$connect();
+      console.log('✅ Database connected');
+      return;
+    } catch (err: any) {
+      console.error(`DB connect lần ${attempt}/12 thất bại: ${err.message}`);
+      await new Promise((r) => setTimeout(r, 3000));
+    }
+  }
+  console.error('❌ Không kết nối được DB sau nhiều lần thử. Server vẫn chạy (healthcheck/log) — kiểm tra DATABASE_URL & dịch vụ Postgres.');
 }
 
 main();
