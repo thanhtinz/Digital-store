@@ -41,7 +41,7 @@ router.post('/register', authRateLimit, async (req: Request, res: Response) => {
     });
     const token = signToken({ user_id: user.id, email: user.email, display_name: user.displayName });
     notifyNewUser(user.id).catch(() => {}); // Telegram thông báo
-    res.json({ access_token: token, token_type: 'bearer', user: { id: user.id, email: user.email, display_name: user.displayName } });
+    res.json({ access_token: token, token, token_type: 'bearer', user: { id: user.id, email: user.email, display_name: user.displayName } });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
   }
@@ -82,6 +82,49 @@ router.post('/login', authRateLimit, async (req: Request, res: Response) => {
     const token = signToken({ user_id: user.id, email: user.email, display_name: user.displayName, role });
     res.json({
       access_token: token,
+      token, // alias cho frontend (auth-pages.js đọc data.token)
+      token_type: 'bearer',
+      user: { id: user.id, email: user.email, display_name: user.displayName, avatar_url: user.avatarUrl, balance: user.balance, role },
+    });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+// ── Admin / Staff login (tách riêng khỏi login khách) ──
+// Chỉ chấp nhận tài khoản có vai trò admin/superadmin/staff. User thường -> 403.
+// Không bị chặn bởi chế độ bảo trì.
+router.post('/admin/login', authRateLimit, async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      res.status(422).json({ detail: 'Email và mật khẩu không được để trống' });
+      return;
+    }
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || !user.passwordHash) {
+      res.status(401).json({ detail: 'Email hoặc mật khẩu không đúng' });
+      return;
+    }
+    const valid = await bcrypt.compare(password, user.passwordHash);
+    if (!valid) {
+      res.status(401).json({ detail: 'Email hoặc mật khẩu không đúng' });
+      return;
+    }
+    if (!user.isActive) {
+      res.status(403).json({ detail: 'Tài khoản đã bị khóa' });
+      return;
+    }
+    const adminUser = await prisma.adminUser.findUnique({ where: { email } });
+    const role = adminUser?.role || 'user';
+    if (!isStaffRole(role)) {
+      res.status(403).json({ detail: 'Tài khoản này không có quyền truy cập quản trị' });
+      return;
+    }
+    const token = signToken({ user_id: user.id, email: user.email, display_name: user.displayName, role });
+    res.json({
+      access_token: token,
+      token,
       token_type: 'bearer',
       user: { id: user.id, email: user.email, display_name: user.displayName, avatar_url: user.avatarUrl, balance: user.balance, role },
     });

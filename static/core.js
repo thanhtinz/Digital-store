@@ -195,7 +195,7 @@ function updateAuthUI() {
       dropdownBalance.innerHTML = `Số dư: ${bal.toLocaleString('vi-VN')} <img src="/static/candy-icon.png" class="currency-icon" alt="candy" />`;
     }
     renderAvatar();
-    if (dropdownAdmin) dropdownAdmin.style.display = currentUser.is_admin ? 'flex' : 'none';
+    if (dropdownAdmin) dropdownAdmin.style.display = ['admin', 'superadmin', 'staff'].includes(currentUser.role) ? 'flex' : 'none';
   } else {
     if (loggedIn) loggedIn.style.display = 'none';
     if (loggedOut) loggedOut.style.display = '';

@@ -41,6 +41,7 @@ const routes = {
     navigateTo(`/all?q=${encodeURIComponent(q)}`, { replace: true });
   },
   '/login': renderLogin,
+  '/admin/login': renderAdminLogin,
   '/register': renderRegister,
   '/reset-password': renderResetPassword,
   '/auth-callback': renderAuthCallback,
@@ -194,13 +195,15 @@ async function navigate() {
   if (!view) return;
 
   const path = pathWithQuery.split('?')[0] || '/';
-  const isAdmin = path.startsWith('/admin');
+  const isAdminLogin = path === '/admin/login';
+  // Trang đăng nhập quản trị là công khai -> không tính là khu vực admin (khung/guard)
+  const isAdmin = path.startsWith('/admin') && !isAdminLogin;
   const isPayosCheckout = path.startsWith('/checkout/payment/');
 
   // ── Chế độ bảo trì: chỉ staff/admin xem được; còn lại chỉ vào được trang đăng nhập ──
   const maint = (window.appSettings && window.appSettings.maintenance) || {};
   const isStaffUser = currentUser && ['admin', 'superadmin', 'staff'].includes(currentUser.role);
-  const maintAllowedPaths = ['/login', '/register', '/auth-callback'];
+  const maintAllowedPaths = ['/login', '/admin/login', '/register', '/auth-callback'];
   if (maint.on && !isStaffUser && !maintAllowedPaths.includes(path)) {
     view.innerHTML = renderMaintenancePage(maint.message);
     return;
@@ -251,10 +254,12 @@ async function navigate() {
     return;
   }
 
-  if (isAdmin && (!currentUser || !currentUser.is_admin)) {
-    view.innerHTML = '<div style="padding:60px;text-align:center;color:var(--text-3)">Bạn không có quyền truy cập Admin Panel.<br><a href="/" style="color:var(--primary)">Quay về trang chủ</a></div>';
-    return;
-  }
+  const ADMIN_ROLES = ['admin', 'superadmin', 'staff'];
+  const isStaffOrAdmin = currentUser && ADMIN_ROLES.includes(currentUser.role);
+  // Đã đăng nhập quản trị mà vào trang /admin/login -> vào thẳng panel
+  if (isAdminLogin && isStaffOrAdmin) return navigateTo('/admin', { replace: true });
+  // Vào khu vực admin nhưng chưa đăng nhập quản trị -> chuyển sang trang đăng nhập admin riêng
+  if (isAdmin && !isStaffOrAdmin) return navigateTo('/admin/login', { replace: true });
 
   const adminPath = path || '/admin';
   if (isAdmin && currentUser?.role === 'staff' && !STAFF_ALLOWED_ADMIN_ROUTES.has(adminPath)) {

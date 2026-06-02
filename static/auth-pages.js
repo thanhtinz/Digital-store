@@ -60,6 +60,7 @@ function renderLogin(view) {
       </form>
       <div class="auth-footer">
         Chưa có tài khoản? <a href="/register" class="auth-link">Tạo tài khoản mới →</a>
+        <div class="text-sm" style="margin-top:10px;"><a href="/admin/login" class="auth-link">Đăng nhập dành cho nhân viên / quản trị</a></div>
       </div>
     </div>
   `;
@@ -104,8 +105,9 @@ function renderLogin(view) {
         return;
       }
       
-      if (!data.token) throw new Error('Đăng nhập thất bại');
-      saveToken(data.token); await fetchMe(); updateAuthUI();
+      const token = data.token || data.access_token;
+      if (!token) throw new Error('Đăng nhập thất bại');
+      saveToken(token); await fetchMe(); updateAuthUI();
       toast('Đăng nhập thành công!', 'success'); navigateTo('/');
     } catch (err) {
       errText.textContent = err.message || 'Email hoặc mật khẩu không đúng';
@@ -141,6 +143,87 @@ function renderLogin(view) {
     };
   };
 }
+
+// ─── ADMIN / STAFF LOGIN PAGE (tách riêng khỏi login khách) ──────────────
+
+function renderAdminLogin(view) {
+  // Đã đăng nhập với quyền quản trị -> vào thẳng panel
+  if (currentUser && ['admin', 'superadmin', 'staff'].includes(currentUser.role)) {
+    return navigateTo('/admin');
+  }
+  view.innerHTML = '';
+  const page = el('div', 'auth-page');
+  page.innerHTML = `
+    <div class="auth-card">
+      <div class="auth-card-header">
+        <div class="auth-logo-mark">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <h1 class="auth-title">Đăng nhập quản trị</h1>
+        <p class="auth-subtitle">Khu vực dành cho nhân viên &amp; quản trị viên.</p>
+      </div>
+
+      <form id="admin-login-form" class="auth-form">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <div class="input-icon-wrap">
+            <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+            <input type="email" class="form-input has-icon" id="admin-login-email" placeholder="admin@example.com" required autocomplete="email" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mật khẩu</label>
+          <div class="input-icon-wrap">
+            <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input type="password" class="form-input has-icon" id="admin-login-pwd" placeholder="••••••••" required autocomplete="current-password" />
+          </div>
+        </div>
+        <div id="admin-login-error" class="auth-error" style="display:none">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          <span id="admin-login-error-text"></span>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full btn-lg auth-submit">
+          <span class="auth-submit-text">Đăng nhập</span>
+          <svg class="auth-submit-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+      </form>
+      <div class="auth-footer">
+        <a href="/login" class="auth-link">← Quay lại đăng nhập khách hàng</a>
+      </div>
+    </div>
+  `;
+  view.appendChild(page);
+
+  qs('#admin-login-form', page).onsubmit = async (e) => {
+    e.preventDefault();
+    const btn = qs('.auth-submit', page);
+    const errEl = qs('#admin-login-error', page);
+    const errText = qs('#admin-login-error-text', page);
+    btn.disabled = true;
+    btn.querySelector('.auth-submit-text').textContent = 'Đang đăng nhập...';
+    btn.classList.add('loading');
+    errEl.style.display = 'none';
+    try {
+      const payload = {
+        email: qs('#admin-login-email', page).value,
+        password: qs('#admin-login-pwd', page).value,
+      };
+      const data = await apiFetch('/auth/admin/login', { method: 'POST', body: JSON.stringify(payload) });
+      const token = data.token || data.access_token;
+      if (!token) throw new Error('Đăng nhập thất bại');
+      saveToken(token); await fetchMe(); updateAuthUI();
+      toast('Đăng nhập quản trị thành công!', 'success'); navigateTo('/admin');
+    } catch (err) {
+      errText.textContent = err.message || 'Email hoặc mật khẩu không đúng';
+      errEl.style.display = 'flex';
+    } finally {
+      btn.disabled = false;
+      btn.querySelector('.auth-submit-text').textContent = 'Đăng nhập';
+      btn.classList.remove('loading');
+    }
+  };
+}
+if (typeof window !== 'undefined') window.renderAdminLogin = renderAdminLogin;
 
 // ─── RESET PASSWORD PAGE ──────────────────────────────────
 
@@ -277,7 +360,8 @@ function renderRegister(view) {
         method: 'POST',
         body: JSON.stringify({ email, password: pwd, display_name: name })
       });
-      if (data.token) { saveToken(data.token); await fetchMe(); updateAuthUI(); toast('Đăng ký thành công!', 'success'); navigateTo('/'); }
+      const regToken = data.token || data.access_token;
+      if (regToken) { saveToken(regToken); await fetchMe(); updateAuthUI(); toast('Đăng ký thành công!', 'success'); navigateTo('/'); }
       else { toast('Đăng ký thành công! Vui lòng đăng nhập.', 'success'); navigateTo('/login'); }
     } catch (err) { errText.textContent = err.message || 'Đăng ký thất bại'; errEl.style.display = 'flex'; }
     finally { btn.classList.remove('loading'); btn.disabled = false; }
