@@ -43,6 +43,14 @@ export type IProduct = {
   packages?: IProductPackage[];
 };
 
+export type IProductPackageField = {
+  id?: number;
+  fieldName: string;
+  fieldType?: string; // text | textarea | select | number | email
+  isRequired?: boolean;
+  options?: string | null;
+};
+
 export type IProductPackage = {
   id: string | number;
   name: string;
@@ -51,6 +59,7 @@ export type IProductPackage = {
   stock?: number;
   isActive?: boolean;
   description?: string;
+  fields?: IProductPackageField[];
 };
 
 export type IProductFilter = {
@@ -77,6 +86,8 @@ export type ICheckoutCartItem = {
   // Digital Store: gói sản phẩm thực tế dùng để tạo đơn hàng
   packageId?: string | number;
   packageName?: string;
+  // Giá trị các trường tùy chỉnh người dùng nhập (theo gói)
+  customFields?: Record<string, string>;
 };
 
 export type ICheckoutBillingAddress = {

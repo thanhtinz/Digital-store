@@ -115,6 +115,7 @@ export default function CheckoutPayment({
           product_id: item.id,
           package_id: Number(item.packageId),
           quantity: item.quantity || 1,
+          custom_fields: item.customFields || undefined,
         }))
         .filter((it: any) => Number.isFinite(it.package_id) && it.package_id > 0);
       await axios.post('/api/orders', {

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { sentenceCase } from 'change-case';
 // next
 import { useRouter } from 'next/router';
@@ -13,6 +13,7 @@ import {
   Rating,
   Divider,
   MenuItem,
+  TextField,
   Typography,
   IconButton,
 } from '@mui/material';
@@ -99,15 +100,30 @@ export default function ProductDetailsSummary({
 
   const values = watch();
 
+  // Trường tùy chỉnh theo gói (Digital Store)
+  const selectedPackage = packages.find((p) => String(p.id) === String(values.packageId));
+  const packageFields = selectedPackage?.fields || [];
+  const [customFields, setCustomFields] = useState<Record<string, string>>({});
+
   const handleChangePackage = (event: React.ChangeEvent<HTMLInputElement>) => {
     const pkgId = event.target.value;
     const pkg = packages.find((p) => String(p.id) === String(pkgId));
     setValue('packageId', pkgId);
+    setCustomFields({}); // đổi gói thì xóa dữ liệu trường cũ
     if (pkg) {
       setValue('packageName', pkg.name);
       setValue('price', pkg.price);
     }
   };
+
+  const handleChangeCustomField = (fieldName: string, value: string) => {
+    setCustomFields((prev) => ({ ...prev, [fieldName]: value }));
+  };
+
+  // Kiểm tra các trường bắt buộc đã nhập đủ chưa.
+  const missingRequired = packageFields
+    .filter((f) => f.isRequired)
+    .some((f) => !(customFields[f.fieldName] || '').trim());
 
   useEffect(() => {
     if (product) {
@@ -118,11 +134,13 @@ export default function ProductDetailsSummary({
 
   const onSubmit = async (data: FormValuesProps) => {
     try {
+      if (missingRequired) return;
       if (!alreadyProduct) {
         onAddCart({
           ...data,
           colors: [values.colors],
           subtotal: data.price * data.quantity,
+          customFields,
         });
       }
       onGotoStep(0);
@@ -134,10 +152,12 @@ export default function ProductDetailsSummary({
 
   const handleAddCart = async () => {
     try {
+      if (missingRequired) return;
       onAddCart({
         ...values,
         colors: [values.colors],
         subtotal: values.price * values.quantity,
+        customFields,
       });
     } catch (error) {
       console.error(error);
@@ -280,6 +300,42 @@ export default function ProductDetailsSummary({
           </>
         )}
 
+        {/* Trường tùy chỉnh theo gói (Digital Store) */}
+        {packageFields.length > 0 && (
+          <Stack spacing={2}>
+            <Typography variant="subtitle2">Nhập thông tin</Typography>
+            {packageFields.map((f) => {
+              const isSelect = f.fieldType === 'select';
+              const opts = (f.options || '')
+                .split(/[\n,]/)
+                .map((o) => o.trim())
+                .filter(Boolean);
+              return (
+                <TextField
+                  key={f.fieldName}
+                  fullWidth
+                  size="small"
+                  select={isSelect}
+                  required={f.isRequired}
+                  label={f.fieldName}
+                  type={f.fieldType === 'number' ? 'number' : f.fieldType === 'email' ? 'email' : 'text'}
+                  multiline={f.fieldType === 'textarea'}
+                  minRows={f.fieldType === 'textarea' ? 2 : undefined}
+                  value={customFields[f.fieldName] || ''}
+                  onChange={(e) => handleChangeCustomField(f.fieldName, e.target.value)}
+                >
+                  {isSelect &&
+                    opts.map((o) => (
+                      <MenuItem key={o} value={o}>
+                        {o}
+                      </MenuItem>
+                    ))}
+                </TextField>
+              );
+            })}
+          </Stack>
+        )}
+
         <Stack direction="row" justifyContent="space-between">
           <Typography variant="subtitle2" sx={{ height: 36, lineHeight: '36px' }}>
             Quantity
@@ -310,7 +366,7 @@ export default function ProductDetailsSummary({
         <Stack direction="row" spacing={2}>
           <Button
             fullWidth
-            disabled={isMaxQuantity}
+            disabled={isMaxQuantity || missingRequired}
             size="large"
             color="warning"
             variant="contained"
@@ -321,7 +377,7 @@ export default function ProductDetailsSummary({
             Add to Cart
           </Button>
 
-          <Button fullWidth size="large" type="submit" variant="contained">
+          <Button fullWidth size="large" type="submit" variant="contained" disabled={missingRequired}>
             Buy Now
           </Button>
         </Stack>
