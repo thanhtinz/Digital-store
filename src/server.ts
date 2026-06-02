@@ -75,7 +75,9 @@ app.use((req, _res, next) => {
 app.use('/api', defaultRateLimit);
 
 // ── Static files ───────────────────────────────────────
-app.use(express.static(STATIC_DIR, { maxAge: '1h', etag: true }));
+// index:false để '/' KHÔNG bị phục vụ index.html thô — phải đi qua serveHtml
+// (render SEO + gắn nonce CSP). Tránh trang chủ thiếu CSP & meta chưa render.
+app.use(express.static(STATIC_DIR, { maxAge: '1h', etag: true, index: false }));
 
 // ── Public settings helper ─────────────────────────────
 const SEO_KEYS = [
@@ -128,7 +130,9 @@ app.use('/api/loyalty', loyaltyRouter); // điểm thưởng
 // ── Uploaded images ────────────────────────────────────
 app.get('/api/images/:id', async (req, res) => {
   try {
-    const img = await prisma.uploadedImage.findUnique({ where: { id: parseInt(req.params.id) } });
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isInteger(id)) { res.status(404).end(); return; }
+    const img = await prisma.uploadedImage.findUnique({ where: { id } });
     if (!img) { res.status(404).end(); return; }
     res.setHeader('Content-Type', img.mimeType);
     res.setHeader('Cache-Control', 'public, max-age=86400');
@@ -207,13 +211,39 @@ async function buildContext(req: express.Request, extra: Record<string, any> = {
   return ctx;
 }
 
+// ── Content Security Policy ────────────────────────────
+// CSP đặt riêng cho trang HTML (nơi có nonce). API không cần.
+// - script-src: chặn inline <script> chèn lén + eval; chỉ cho 'self' + nonce + CDN tin cậy
+//   (unpkg=neon-auth, jsdelivr=anime/tinymce, cdnjs=dompurify/font-awesome).
+// - script-src-attr 'unsafe-inline': giữ các handler onerror= của ảnh fallback (core.js).
+// - style-src 'unsafe-inline': SPA gắn style động + style= sẵn trong HTML.
+function buildCsp(nonce: string): string {
+  return [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    `script-src 'self' 'nonce-${nonce}' https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com`,
+    "script-src-attr 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
+    "connect-src 'self' https: wss:",
+    "worker-src 'self'",
+    "manifest-src 'self'",
+  ].join('; ');
+}
+
 // ── HTML route helper ──────────────────────────────────
 async function serveHtml(req: express.Request, res: express.Response, template: string, extra: Record<string, any> = {}): Promise<void> {
   try {
     const html = await fs.promises.readFile(path.join(STATIC_DIR, template), 'utf-8');
-    const ctx = await buildContext(req, extra);
+    const nonce = crypto.randomBytes(16).toString('base64');
+    const ctx = await buildContext(req, { ...extra, csp_nonce: nonce });
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Content-Security-Policy', buildCsp(nonce));
     res.send(renderTemplate(html, ctx));
   } catch {
     res.status(500).send('Server error');

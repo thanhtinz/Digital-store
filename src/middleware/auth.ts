@@ -36,6 +36,12 @@ export function requireUser(req: Request, res: Response, next: NextFunction): vo
   }
 }
 
+/**
+ * Chỉ ADMIN/SUPERADMIN. Dùng cho thao tác nhạy cảm: secret thanh toán/SMTP/OAuth,
+ * cấu hình DB, quản lý người dùng, xóa cứng dữ liệu, mã giảm giá, flash sale...
+ * (Staff bị từ chối — staff chỉ vận hành đơn/chat + quản lý sản phẩm/kho qua
+ *  requireStaffOrAdmin.)
+ */
 export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
   const header = req.headers.authorization;
   if (!header?.startsWith('Bearer ')) {
@@ -45,7 +51,7 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
   try {
     const token = header.slice(7);
     const payload = jwt.verify(token, JWT_SECRET) as AdminPayload;
-    if (!payload.role || !['admin', 'superadmin', 'staff'].includes(payload.role)) {
+    if (!payload.role || !['admin', 'superadmin'].includes(payload.role)) {
       res.status(403).json({ detail: 'Admin access required' });
       return;
     }
@@ -56,6 +62,10 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
   }
 }
 
+/**
+ * ADMIN/SUPERADMIN hoặc STAFF. Dùng cho vận hành hằng ngày: quản lý đơn,
+ * giao hàng, chat hỗ trợ, quản lý sản phẩm/gói/kho/danh mục/banner.
+ */
 export function requireStaffOrAdmin(req: Request, res: Response, next: NextFunction): void {
   const header = req.headers.authorization;
   if (!header?.startsWith('Bearer ')) {

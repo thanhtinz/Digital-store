@@ -378,11 +378,12 @@ router.patch('/admin/:order_code/status', requireStaffOrAdmin, async (req: Reque
 });
 
 // ── Admin: xóa hàng loạt ───────────────────────────────
-router.post('/admin/bulk-delete', requireStaffOrAdmin, async (req: Request, res: Response) => {
+router.post('/admin/bulk-delete', requireAdmin, async (req: Request, res: Response) => {
   try {
-    const ids = (req.body.ids || []).map((i: any) => parseInt(i));
-    await prisma.order.deleteMany({ where: { id: { in: ids } } });
-    res.json({ deleted: ids.length });
+    const ids = (req.body.ids || []).map((i: any) => parseInt(i, 10)).filter((n: number) => Number.isInteger(n));
+    if (ids.length === 0) { res.json({ deleted: 0 }); return; }
+    const r = await prisma.order.deleteMany({ where: { id: { in: ids } } });
+    res.json({ deleted: r.count });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
   }

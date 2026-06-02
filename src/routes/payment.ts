@@ -6,7 +6,7 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../db';
 import { requireUser, requireAdmin } from '../middleware/auth';
-import { paymentRateLimit, webhookRateLimit } from '../middleware/rateLimit';
+import { paymentRateLimit, webhookRateLimit, statusRateLimit } from '../middleware/rateLimit';
 import {
   createSepayPayment,
   checkSepayTransaction,
@@ -127,8 +127,18 @@ router.get('/checkout-data/:order_code', requireUser, async (req: Request, res: 
   }
 });
 
+// Throttle gọi API SePay theo từng đơn — tối đa 1 lần / khoảng dưới đây.
+// Tránh việc user poll dày (vài giây/lần) làm nổ quota API SePay.
+const SEPAY_CHECK_COOLDOWN_MS = 4000;
+const lastSepayCheck = new Map<string, number>();
+// Dọn map định kỳ để không phình bộ nhớ (đơn cũ không còn poll)
+setInterval(() => {
+  const cutoff = Date.now() - 10 * 60 * 1000;
+  for (const [k, t] of lastSepayCheck) if (t < cutoff) lastSepayCheck.delete(k);
+}, 10 * 60 * 1000).unref?.();
+
 // ── Kiểm tra trạng thái thanh toán ────────────────────
-router.get('/status/:order_code', requireUser, async (req: Request, res: Response) => {
+router.get('/status/:order_code', requireUser, statusRateLimit, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     const { order_code } = req.params;
@@ -143,8 +153,11 @@ router.get('/status/:order_code', requireUser, async (req: Request, res: Respons
       return;
     }
 
-    // Nếu còn pending, check SePay API
-    if (order.status === 'pending_payment' && order.paymentLinkId) {
+    // Nếu còn pending, check SePay API — nhưng có cooldown theo đơn
+    const last = lastSepayCheck.get(order.orderCode) || 0;
+    const withinCooldown = Date.now() - last < SEPAY_CHECK_COOLDOWN_MS;
+    if (order.status === 'pending_payment' && order.paymentLinkId && !withinCooldown) {
+      lastSepayCheck.set(order.orderCode, Date.now());
       const paid = await checkSepayTransaction(order.paymentLinkId);
       if (paid) {
         const now = new Date();

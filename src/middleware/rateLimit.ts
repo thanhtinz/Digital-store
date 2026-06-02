@@ -31,3 +31,13 @@ export const webhookRateLimit = rateLimit({
   legacyHeaders: false,
   message: { detail: 'Too many webhook calls' },
 });
+
+// Polling trạng thái thanh toán (trang checkout hỏi liên tục) — rộng tay hơn
+// nhưng vẫn chặn spam; việc gọi API SePay được throttle thêm ở tầng route.
+export const statusRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { detail: 'Too many status checks, please slow down' },
+});
