@@ -30,6 +30,7 @@ import userNotificationsRouter from './routes/userNotifications';
 import chatRouter from './routes/chat';
 import loyaltyRouter from './routes/loyalty';
 import { startReportScheduler } from './services/scheduler';
+import { featureGate } from './services/features';
 
 // __dirname is natively available in CommonJS
 
@@ -118,9 +119,9 @@ app.use('/api/smm', smmRouter); // SMM panel: catalog, orders, admin
 app.use('/api/admin', notificationsRouter); // email/SMTP config
 app.use('/api/telegram', telegramRouter); // telegram admin bot
 app.use('/api/admin/oauth', oauthRouter); // oauth provider config
-app.use('/api/affiliate', affiliateRouter); // affiliate program
+app.use('/api/affiliate', featureGate('affiliate'), affiliateRouter); // affiliate program (gate theo feature)
 app.use('/api', integrationsRouter); // api-providers + ai generate
-app.use('/api/card-charge', cardChargeRouter); // nạp thẻ
+app.use('/api/card-charge', featureGate('balance'), cardChargeRouter); // nạp thẻ (gate theo feature 'balance')
 app.use('/api/stock', stockRouter); // quản lý kho
 app.use('/api/admin/mail', mailRouter); // mail server config
 app.use('/api/notifications', userNotificationsRouter); // chuông thông báo user

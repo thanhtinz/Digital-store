@@ -168,6 +168,18 @@ function setActiveSidebarItem(pathWithQuery = getCurrentPath()) {
   });
 }
 
+function renderMaintenancePage(message) {
+  const msg = (message && String(message).trim()) || 'Website đang được bảo trì. Vui lòng quay lại sau ít phút.';
+  const safe = msg.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return `
+    <div class="empty-state" style="min-height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;gap:18px;">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary,#00AB55)"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      <h2 style="margin:0;font-size:24px;">Đang bảo trì</h2>
+      <p style="max-width:520px;color:var(--text-muted,#637381);font-size:16px;line-height:1.6;">${safe}</p>
+      <a href="/login" class="btn btn-primary" style="margin-top:8px;">Đăng nhập nhân viên</a>
+    </div>`;
+}
+
 async function navigate() {
   const pathWithQuery = getCurrentPath();
   
@@ -184,6 +196,15 @@ async function navigate() {
   const path = pathWithQuery.split('?')[0] || '/';
   const isAdmin = path.startsWith('/admin');
   const isPayosCheckout = path.startsWith('/checkout/payment/');
+
+  // ── Chế độ bảo trì: chỉ staff/admin xem được; còn lại chỉ vào được trang đăng nhập ──
+  const maint = (window.appSettings && window.appSettings.maintenance) || {};
+  const isStaffUser = currentUser && ['admin', 'superadmin', 'staff'].includes(currentUser.role);
+  const maintAllowedPaths = ['/login', '/register', '/auth-callback'];
+  if (maint.on && !isStaffUser && !maintAllowedPaths.includes(path)) {
+    view.innerHTML = renderMaintenancePage(maint.message);
+    return;
+  }
   updateHeaderMode(pathWithQuery, isAdmin);
 
   const sidebar = qs('#sidebar');

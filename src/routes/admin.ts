@@ -3,8 +3,23 @@ import slugify from 'slugify';
 import prisma from '../db';
 import { requireAdmin, requireStaffOrAdmin } from '../middleware/auth';
 import { money } from '../services/orders';
+import { getFeatures } from '../services/features';
 
 const router = Router();
+
+/** Gắn thêm `features` (boolean) + `maintenance` ({on,message}) vào payload public. */
+async function withPublicFlags(map: Record<string, any>): Promise<Record<string, any>> {
+  const f = await getFeatures();
+  const { maintenance, maintenance_message, ...features } = f;
+  return {
+    ...map,
+    features,
+    maintenance: {
+      on: maintenance === true || maintenance === '1' || maintenance === 'true',
+      message: String(maintenance_message || '').slice(0, 500),
+    },
+  };
+}
 
 // ════════════════════════════════════════════════════
 // CATEGORIES
@@ -132,7 +147,7 @@ router.get('/settings', async (_req: Request, res: Response) => {
     const publicKeys = ['site_name', 'site_logo', 'site_description', 'currency', 'tax_rate', 'home_categories'];
     const configs = await prisma.siteConfig.findMany({ where: { key: { in: publicKeys } } });
     const map = Object.fromEntries(configs.map((c: { key: string; value: string | null }) => [c.key, c.value]));
-    res.json(map);
+    res.json(await withPublicFlags(map));
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
   }
@@ -413,7 +428,8 @@ router.get('/admin/tickets', requireStaffOrAdmin, async (req: Request, res: Resp
 router.get('/admin/settings/public', async (_req: Request, res: Response) => {
   const publicKeys = ['site_name', 'site_logo', 'site_description', 'site_banner', 'currency', 'tax_rate', 'home_categories'];
   const configs = await prisma.siteConfig.findMany({ where: { key: { in: publicKeys } } });
-  res.json(Object.fromEntries(configs.map((c: { key: string; value: string | null }) => [c.key, c.value])));
+  const map = Object.fromEntries(configs.map((c: { key: string; value: string | null }) => [c.key, c.value]));
+  res.json(await withPublicFlags(map));
 });
 
 // Các nhóm cài đặt được lưu dưới dạng 1 row JSON mỗi nhóm (key = tên nhóm)

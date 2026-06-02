@@ -6,6 +6,9 @@ import crypto from 'crypto';
 import { signToken, requireUser, requireAdmin, JWT_SECRET } from '../middleware/auth';
 import { authRateLimit } from '../middleware/rateLimit';
 import { notifyNewUser } from '../services/telegram';
+import { getMaintenance, isStaffRole } from '../services/features';
+
+const MAINTENANCE_DEFAULT_MSG = 'Hệ thống đang bảo trì. Vui lòng quay lại sau.';
 import * as otplib from 'otplib';
 import QRCode from 'qrcode';
 import jwt from 'jsonwebtoken';
@@ -19,6 +22,12 @@ router.post('/register', authRateLimit, async (req: Request, res: Response) => {
     const { email, password, display_name } = req.body;
     if (!email || !password) {
       res.status(422).json({ detail: 'Email và mật khẩu không được để trống' });
+      return;
+    }
+    // Bảo trì: không cho đăng ký tài khoản mới
+    const maintReg = await getMaintenance();
+    if (maintReg.on) {
+      res.status(503).json({ detail: maintReg.message || MAINTENANCE_DEFAULT_MSG, maintenance: true });
       return;
     }
     const existing = await prisma.user.findUnique({ where: { email } });
@@ -62,6 +71,14 @@ router.post('/login', authRateLimit, async (req: Request, res: Response) => {
     }
     const adminUser = await prisma.adminUser.findUnique({ where: { email } });
     const role = adminUser?.role || 'user';
+    // Bảo trì: chỉ staff/admin được đăng nhập
+    if (!isStaffRole(role)) {
+      const maint = await getMaintenance();
+      if (maint.on) {
+        res.status(503).json({ detail: maint.message || MAINTENANCE_DEFAULT_MSG, maintenance: true });
+        return;
+      }
+    }
     const token = signToken({ user_id: user.id, email: user.email, display_name: user.displayName, role });
     res.json({
       access_token: token,
@@ -169,13 +186,20 @@ router.get('/google/callback', async (req: Request, res: Response) => {
     const { email, name, picture } = userResp.data;
 
     let user = await prisma.user.findUnique({ where: { email } });
+    // Bảo trì: chặn đăng ký/đăng nhập user thường qua OAuth (staff/admin vẫn được)
+    const adminUser = await prisma.adminUser.findUnique({ where: { email } });
+    const role = adminUser?.role || 'user';
+    if (!isStaffRole(role)) {
+      const maint = await getMaintenance();
+      if (maint.on) { res.redirect(`${baseUrl}/login?error=maintenance`); return; }
+    }
     if (!user) {
       user = await prisma.user.create({ data: { email, displayName: name, avatarUrl: picture, provider: 'google' } });
       notifyNewUser(user.id).catch(() => {});
     } else {
       user = await prisma.user.update({ where: { id: user.id }, data: { displayName: name, avatarUrl: picture } });
     }
-    const token = signToken({ user_id: user.id, email: user.email, display_name: user.displayName });
+    const token = signToken({ user_id: user.id, email: user.email, display_name: user.displayName, role });
     res.redirect(`${baseUrl}/auth-callback?token=${token}`);
   } catch (e: any) {
     res.redirect(`${process.env.APP_BASE_URL || ''}/login?error=oauth_failed`);
