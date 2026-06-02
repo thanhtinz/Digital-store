@@ -39,6 +39,33 @@ Tự động khi start (`prisma db push` trong `start:railway`). Không cần th
 
 Schema: PostgreSQL (`prisma/schema.prisma`, provider `postgresql`).
 
+### 2.4 (Thay thế) Dùng PostgreSQL BÊN THỨ 3 — khi Railway không cho thêm DB
+
+App chỉ cần biến **`DATABASE_URL`** trỏ tới một PostgreSQL bất kỳ. Khỏi cần DB của Railway.
+
+**Khuyến nghị: Neon (neon.tech) — miễn phí, không cần thẻ, tạo trong 1 phút.**
+
+1. Vào https://neon.tech → đăng nhập (GitHub) → **Create project**
+   (chọn region gần Railway, vd US East / EU).
+2. Neon hiện sẵn **Connection string**, dạng:
+   ```
+   postgresql://USER:PASSWORD@ep-xxxx.us-east-2.aws.neon.tech/neondb?sslmode=require
+   ```
+   → bấm **Copy** (dùng chuỗi mặc định/ "direct", KHÔNG cần bản "pooled" cho app này).
+3. Sang **Railway → service web → Variables** → thêm biến:
+   - Tên: `DATABASE_URL`
+   - Giá trị: dán nguyên chuỗi vừa copy (giữ cả `?sslmode=require`).
+4. **Redeploy**. Launcher tự chạy `prisma db push` → tạo bảng trên Neon.
+
+> Tùy chọn khác tương tự: **Supabase** (Project Settings → Database → Connection string,
+> chọn URI; nhớ thêm `?sslmode=require`), **Aiven**, **ElephantSQL**...
+> Bất kỳ Postgres nào có connection string đều dùng được.
+
+> ⚠️ Lưu ý SSL: DB ngoài thường bắt buộc SSL → chuỗi phải có `?sslmode=require`
+> (Neon/Supabase đã có sẵn). Nếu provider khác báo lỗi SSL, thêm `?sslmode=require`
+> vào cuối `DATABASE_URL`.
+
+
 ---
 
 ## 3. SECRETS / Biến môi trường
