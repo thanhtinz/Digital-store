@@ -5,7 +5,7 @@
    =================================================================== */
 
 :root {
-  --ap-bg: #f4f6fb;
+  --ap-bg: #f7f8fa;
   --ap-surface: #ffffff;
   --ap-surface-2: #f8fafc;
   --ap-border: #e6e9f0;
@@ -26,8 +26,9 @@
   --ap-sidebar: #0f172a;
   --ap-sidebar-text: #cbd5e1;
   --ap-sidebar-active: #4f46e5;
-  --ap-shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.1);
-  --ap-shadow-lg: 0 10px 30px rgba(16,24,40,.12);
+  /* Minimal: card đã có viền -> bỏ đổ bóng cho phẳng; overlay giữ nâng nhẹ */
+  --ap-shadow: none;
+  --ap-shadow-lg: 0 8px 28px rgba(16,24,40,.10);
   --ap-radius: 12px;
   --ap-radius-sm: 8px;
   --ap-sidebar-w: 252px;
@@ -45,7 +46,7 @@
   --ap-text-3: #6b7689;
   --ap-primary-soft: #1e1b4b;
   --ap-sidebar: #0a0f1c;
-  --ap-shadow: 0 1px 2px rgba(0,0,0,.4);
+  --ap-shadow: none;
   --ap-shadow-lg: 0 10px 30px rgba(0,0,0,.5);
 }
 

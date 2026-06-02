@@ -1,0 +1,74 @@
+/* ============================================================
+   MINIMAL THEME (client) — giữ NGUYÊN bố cục, chỉ đổi phong cách
+   sang phẳng/tối giản. Nạp SAU styles.css để override design token.
+
+   Ý tưởng: thay "đổ bóng mềm" bằng "viền hairline 1px" -> phẳng, sạch,
+   nhiều khoảng trắng; nền sáng; bo góc gọn. Không đụng tới layout.
+   ============================================================ */
+
+:root {
+  --bg-page:    #F7F8FA;
+  --bg-card:    #FFFFFF;
+  --bg-sidebar: #FFFFFF;
+  --bg-header:  rgba(255,255,255,0.92);
+
+  --border:      #EBECEF;
+  --border-dark: #E2E4E8;
+
+  /* Đổ bóng -> viền hairline phẳng (minimal). Overlay (modal/dropdown) giữ chút nâng nhẹ. */
+  --shadow-sm:     0 0 0 1px #ECEDF0;
+  --shadow:        0 0 0 1px #ECEDF0;
+  --shadow-card:   0 0 0 1px #ECEDF0;
+  --shadow-lg:     0 0 0 1px #ECEDF0, 0 10px 24px rgba(17,24,39,.06);
+  --shadow-dialog: 0 16px 48px rgba(17,24,39,.14);
+  --shadow-primary: none;
+
+  --radius:    12px;
+  --radius-sm:  8px;
+  --radius-xs:  6px;
+}
+
+[data-theme="dark"] {
+  --bg-page:    #0E1014;
+  --bg-card:    #15171C;
+  --bg-sidebar: #15171C;
+  --bg-header:  rgba(21,23,28,0.92);
+
+  --border:      #262A31;
+  --border-dark: #2F343C;
+
+  --shadow-sm:     0 0 0 1px #262A31;
+  --shadow:        0 0 0 1px #262A31;
+  --shadow-card:   0 0 0 1px #262A31;
+  --shadow-lg:     0 0 0 1px #262A31, 0 10px 24px rgba(0,0,0,.45);
+  --shadow-dialog: 0 16px 48px rgba(0,0,0,.55);
+  --shadow-primary: none;
+}
+
+/* Làm phẳng các "glow"/đổ bóng còn hardcode trên phần tử nổi bật (chỉ đổi
+   box-shadow, KHÔNG đổi kích thước/vị trí nên bố cục giữ nguyên). */
+.btn,
+.btn-primary,
+.btn-secondary,
+.product-card,
+.stat-card,
+.dashboard-card,
+.cui-card,
+.glass-card,
+.fab,
+.floating-cart,
+.chip {
+  box-shadow: none !important;
+}
+
+/* Header phẳng: bỏ đổ bóng đậm, dùng viền dưới mảnh */
+.header, #header {
+  box-shadow: none !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+/* Sidebar phẳng: viền phải thay vì đổ bóng */
+.sidebar, #sidebar {
+  box-shadow: none !important;
+  border-right: 1px solid var(--border) !important;
+}
