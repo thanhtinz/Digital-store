@@ -9,18 +9,27 @@ const router = Router();
 // ── Public: danh sách sản phẩm ────────────────────────
 router.get('/', optionalUser, async (req: Request, res: Response) => {
   try {
-    const { category, featured, active = 'true', page = '1', limit = '20', search } = req.query;
+    const { category, featured, active = 'true', page = '1', limit = '20', search, sort } = req.query;
     const where: any = {};
     if (active !== 'all') where.isActive = active !== 'false';
     if (category) where.category = { slug: category };
     if (featured === 'true') where.isFeatured = true;
     if (search) where.name = { contains: search as string, mode: 'insensitive' };
 
+    // Sắp xếp (lọc nâng cao): newest | oldest | name | popular | mặc định
+    const sortMap: Record<string, any> = {
+      newest: [{ createdAt: 'desc' }],
+      oldest: [{ createdAt: 'asc' }],
+      name: [{ name: 'asc' }],
+      popular: [{ isFeatured: 'desc' }, { reviews: { _count: 'desc' } }, { createdAt: 'desc' }],
+    };
+    const orderBy = sortMap[sort as string] || [{ sortOrder: 'asc' }, { createdAt: 'desc' }];
+
     const [total, products] = await Promise.all([
       prisma.product.count({ where }),
       prisma.product.findMany({
         where,
-        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+        orderBy,
         skip: (parseInt(page as string) - 1) * parseInt(limit as string),
         take: parseInt(limit as string),
         include: {
@@ -39,6 +48,62 @@ router.get('/', optionalUser, async (req: Request, res: Response) => {
     ]);
 
     res.json({ total, page: parseInt(page as string), items: products.map((p) => serializeProduct(p)) });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+// Include dùng chung cho thẻ sản phẩm (gợi ý)
+const CARD_INCLUDE = {
+  category: true,
+  packages: {
+    where: { isActive: true },
+    orderBy: [{ sortOrder: 'asc' as const }, { price: 'asc' as const }],
+    include: {
+      flashSales: {
+        where: { isActive: true, startsAt: { lte: new Date() }, endsAt: { gte: new Date() } },
+      },
+    },
+  },
+};
+
+// ── Public: sản phẩm nổi bật / bán chạy (gợi ý) ────────
+// "Trending" = ưu tiên sản phẩm nổi bật, rồi nhiều đánh giá, rồi mới nhất.
+router.get('/trending', async (req: Request, res: Response) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit as string) || 8, 24);
+    const products = await prisma.product.findMany({
+      where: { isActive: true },
+      orderBy: [{ isFeatured: 'desc' }, { reviews: { _count: 'desc' } }, { createdAt: 'desc' }],
+      take: limit,
+      include: CARD_INCLUDE,
+    });
+    res.json({ items: products.map((p) => serializeProduct(p)) });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+// ── Public: sản phẩm liên quan (cùng danh mục) ─────────
+router.get('/:slug/related', async (req: Request, res: Response) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit as string) || 8, 24);
+    const base = await prisma.product.findFirst({ where: { slug: req.params.slug }, select: { id: true, categoryId: true } });
+    if (!base) { res.json({ items: [] }); return; }
+    const where: any = { isActive: true, id: { not: base.id } };
+    if (base.categoryId) where.categoryId = base.categoryId;
+    let products = await prisma.product.findMany({
+      where, orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }], take: limit, include: CARD_INCLUDE,
+    });
+    // Nếu cùng danh mục không đủ, bù thêm sản phẩm khác
+    if (products.length < limit) {
+      const extra = await prisma.product.findMany({
+        where: { isActive: true, id: { notIn: [base.id, ...products.map((p) => p.id)] } },
+        orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }], take: limit - products.length, include: CARD_INCLUDE,
+      });
+      products = [...products, ...extra];
+    }
+    res.json({ items: products.map((p) => serializeProduct(p)) });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
   }
@@ -69,7 +134,17 @@ router.get('/:slug', optionalUser, async (req: Request, res: Response) => {
       },
     });
     if (!product) { res.status(404).json({ detail: 'Không tìm thấy sản phẩm' }); return; }
-    res.json(serializeProduct(product, true));
+
+    // Đính kèm sản phẩm liên quan (cùng danh mục) để frontend hiển thị mục "Sản phẩm liên quan"
+    const related = await prisma.product.findMany({
+      where: { isActive: true, id: { not: product.id }, ...(product.categoryId ? { categoryId: product.categoryId } : {}) },
+      orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
+      take: 8,
+      include: CARD_INCLUDE,
+    });
+    const dict = serializeProduct(product, true);
+    dict.related = related.map((r) => serializeProduct(r));
+    res.json(dict);
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
   }
