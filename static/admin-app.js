@@ -814,7 +814,7 @@
       $('#ml-test').addEventListener('click', function () {
         var to = prompt('Gửi mail test tới địa chỉ:'); if (!to) return;
         var btn = this; btn.disabled = true;
-        api('/admin/mail/test', { method: 'POST', body: { to: to } }).then(function (r) { toast(r.message || 'Đã gửi', 'success'); }).catch(function (e) { toast(e.message, 'error'); }).then(function () { btn.disabled = false; });
+        api('/admin/mail/test', { method: 'POST', body: { to_email: to } }).then(function (r) { toast(r.message || 'Đã gửi', 'success'); }).catch(function (e) { toast(e.message, 'error'); }).then(function () { btn.disabled = false; });
       });
     }).catch(function (e) { box.innerHTML = '<div class="ap-empty">' + (e.status === 403 ? 'Chỉ admin truy cập.' : esc(e.message)) + '</div>'; });
   }
