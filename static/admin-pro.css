@@ -4,50 +4,52 @@
    badge, button, input, drawer, toast.
    =================================================================== */
 
+/* Theo Minimal UI (minimals.cc): Public Sans, palette xám, primary xanh,
+   card bo 16px + đổ bóng mềm, sidebar sáng viền nét đứt. */
 :root {
-  --ap-bg: #f7f8fa;
-  --ap-surface: #ffffff;
-  --ap-surface-2: #f8fafc;
-  --ap-border: #e6e9f0;
-  --ap-text: #1a2233;
-  --ap-text-2: #5b6573;
-  --ap-text-3: #98a2b3;
-  --ap-primary: #4f46e5;
-  --ap-primary-600: #4338ca;
-  --ap-primary-soft: #eef2ff;
-  --ap-success: #16a34a;
-  --ap-success-soft: #dcfce7;
-  --ap-warning: #d97706;
-  --ap-warning-soft: #fef3c7;
-  --ap-danger: #dc2626;
-  --ap-danger-soft: #fee2e2;
-  --ap-info: #0ea5e9;
-  --ap-info-soft: #e0f2fe;
-  --ap-sidebar: #0f172a;
-  --ap-sidebar-text: #cbd5e1;
-  --ap-sidebar-active: #4f46e5;
-  /* Minimal: card đã có viền -> bỏ đổ bóng cho phẳng; overlay giữ nâng nhẹ */
-  --ap-shadow: none;
-  --ap-shadow-lg: 0 8px 28px rgba(16,24,40,.10);
-  --ap-radius: 12px;
+  --ap-bg: #FFFFFF;
+  --ap-surface: #FFFFFF;
+  --ap-surface-2: #F4F6F8;
+  --ap-border: rgba(145,158,171,0.20);
+  --ap-text: #212B36;
+  --ap-text-2: #637381;
+  --ap-text-3: #919EAB;
+  --ap-primary: #00AB55;
+  --ap-primary-600: #007B55;
+  --ap-primary-soft: rgba(0,171,85,0.08);
+  --ap-success: #22C55E;
+  --ap-success-soft: #D3FCD2;
+  --ap-warning: #FFAB00;
+  --ap-warning-soft: #FFF5CC;
+  --ap-danger: #FF5630;
+  --ap-danger-soft: #FFE9D5;
+  --ap-info: #00B8D9;
+  --ap-info-soft: #CAFDF5;
+  --ap-sidebar: #FFFFFF;
+  --ap-sidebar-text: #637381;
+  --ap-sidebar-active: #00AB55;
+  --ap-shadow: 0 0 2px 0 rgba(145,158,171,.2), 0 12px 24px -4px rgba(145,158,171,.12);
+  --ap-shadow-lg: -40px 40px 80px -8px rgba(145,158,171,.24);
+  --ap-radius: 16px;
   --ap-radius-sm: 8px;
-  --ap-sidebar-w: 252px;
-  --ap-topbar-h: 60px;
-  --ap-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --ap-sidebar-w: 280px;
+  --ap-topbar-h: 72px;
+  --ap-font: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 [data-theme="dark"] {
-  --ap-bg: #0b1120;
-  --ap-surface: #131a2b;
-  --ap-surface-2: #1a2335;
-  --ap-border: #283143;
-  --ap-text: #e6ebf5;
-  --ap-text-2: #9aa6b9;
-  --ap-text-3: #6b7689;
-  --ap-primary-soft: #1e1b4b;
-  --ap-sidebar: #0a0f1c;
-  --ap-shadow: none;
-  --ap-shadow-lg: 0 10px 30px rgba(0,0,0,.5);
+  --ap-bg: #161C24;
+  --ap-surface: #212B36;
+  --ap-surface-2: #2A3441;
+  --ap-border: rgba(145,158,171,0.20);
+  --ap-text: #FFFFFF;
+  --ap-text-2: #919EAB;
+  --ap-text-3: #637381;
+  --ap-primary-soft: rgba(0,171,85,0.16);
+  --ap-sidebar: #212B36;
+  --ap-sidebar-text: #919EAB;
+  --ap-shadow: 0 0 2px 0 rgba(0,0,0,.24), 0 12px 24px -4px rgba(0,0,0,.36);
+  --ap-shadow-lg: -40px 40px 80px -8px rgba(0,0,0,.36);
 }
 
 * { box-sizing: border-box; }
@@ -74,33 +76,34 @@ a { color: inherit; text-decoration: none; }
   color: var(--ap-sidebar-text);
   position: fixed; inset: 0 auto 0 0; z-index: 40;
   display: flex; flex-direction: column;
+  border-right: 1px dashed var(--ap-border);
   transition: transform .25s ease;
 }
 .ap-brand {
   display: flex; align-items: center; gap: 10px;
-  padding: 18px 20px; font-weight: 700; font-size: 16px; color: #fff;
-  border-bottom: 1px solid rgba(255,255,255,.07);
+  padding: 20px 20px; font-weight: 800; font-size: 16px; color: var(--ap-text);
 }
 .ap-brand-logo {
-  width: 34px; height: 34px; border-radius: 9px;
-  background: linear-gradient(135deg, var(--ap-primary), #7c3aed);
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, #5BE49B 0%, #00AB55 100%);
   display: grid; place-items: center; color: #fff; flex: none;
 }
 .ap-brand small { display: block; font-weight: 400; font-size: 11px; color: var(--ap-text-3); }
 .ap-nav { flex: 1; overflow-y: auto; padding: 12px 12px 24px; }
 .ap-nav-group { margin-top: 14px; }
 .ap-nav-group-title {
-  font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em;
-  color: #64748b; padding: 6px 12px; font-weight: 600;
+  font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--ap-text-3); padding: 8px 12px 6px; font-weight: 700;
 }
 .ap-nav-item {
-  display: flex; align-items: center; gap: 11px;
-  padding: 9px 12px; border-radius: var(--ap-radius-sm);
-  color: var(--ap-sidebar-text); font-weight: 500; cursor: pointer;
-  margin-bottom: 2px; transition: background .15s, color .15s;
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: var(--ap-radius-sm);
+  color: var(--ap-sidebar-text); font-weight: 600; cursor: pointer;
+  margin-bottom: 3px; transition: background .15s, color .15s;
 }
-.ap-nav-item:hover { background: rgba(255,255,255,.06); color: #fff; }
-.ap-nav-item.active { background: var(--ap-sidebar-active); color: #fff; box-shadow: 0 4px 12px rgba(79,70,229,.4); }
+.ap-nav-item:hover { background: rgba(145,158,171,.10); color: var(--ap-text); }
+.ap-nav-item.active { background: var(--ap-primary-soft); color: var(--ap-primary); box-shadow: none; }
+.ap-nav-item.active svg { color: var(--ap-primary); }
 .ap-nav-item svg { width: 18px; height: 18px; flex: none; }
 .ap-nav-item .ap-badge-mini {
   margin-left: auto; background: var(--ap-danger); color: #fff;
@@ -113,11 +116,12 @@ a { color: inherit; text-decoration: none; }
 .ap-main { flex: 1; margin-left: var(--ap-sidebar-w); min-width: 0; display: flex; flex-direction: column; }
 
 .ap-topbar {
-  height: var(--ap-topbar-h); background: var(--ap-surface);
-  border-bottom: 1px solid var(--ap-border);
-  display: flex; align-items: center; gap: 16px; padding: 0 22px;
+  height: var(--ap-topbar-h); background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  display: flex; align-items: center; gap: 16px; padding: 0 24px;
   position: sticky; top: 0; z-index: 30;
 }
+[data-theme="dark"] .ap-topbar { background: rgba(33,43,54,0.85); }
 .ap-burger { display: none; background: none; border: none; cursor: pointer; color: var(--ap-text-2); }
 .ap-breadcrumb { font-size: 13px; color: var(--ap-text-2); display: flex; align-items: center; gap: 8px; }
 .ap-breadcrumb b { color: var(--ap-text); font-weight: 600; font-size: 15px; }
@@ -141,7 +145,7 @@ a { color: inherit; text-decoration: none; }
 .ap-user:hover { background: var(--ap-surface-2); }
 .ap-avatar {
   width: 34px; height: 34px; border-radius: 50%; flex: none;
-  background: linear-gradient(135deg, var(--ap-primary), #7c3aed);
+  background: linear-gradient(135deg, #5BE49B 0%, #00AB55 100%);
   color: #fff; display: grid; place-items: center; font-weight: 600;
 }
 .ap-user-meta { line-height: 1.2; }
@@ -158,7 +162,7 @@ a { color: inherit; text-decoration: none; }
 .ap-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
 .ap-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
 .ap-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
-.ap-card { background: var(--ap-surface); border: 1px solid var(--ap-border); border-radius: var(--ap-radius); box-shadow: var(--ap-shadow); }
+.ap-card { background: var(--ap-surface); border: none; border-radius: var(--ap-radius); box-shadow: var(--ap-shadow); }
 .ap-card-head { padding: 16px 18px; border-bottom: 1px solid var(--ap-border); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .ap-card-head h3 { margin: 0; font-size: 15px; font-weight: 650; }
 .ap-card-body { padding: 18px; }
