@@ -1,114 +1,140 @@
 /* ============================================================
-   MINIMAL (minimals.cc) — client.
-   styles.css VỐN đã dựa trên Minimal UI (Public Sans, palette xám,
-   card bo 16px + đổ bóng mềm). Lớp này CHỈ thêm vài chữ ký đặc trưng
-   của minimals.cc, GIỮ NGUYÊN đổ bóng mềm & bo góc (không làm phẳng).
+   MINIMAL — bản ĐẬM (đổi design token toàn cục) cho client.
+   Nạp SAU styles.css. Vì styles.css dùng biến CSS, override biến ở
+   đây sẽ đổi TOÀN BỘ site đồng loạt: nền trắng, card viền hairline
+   phẳng, nút/input phẳng, nhiều khoảng trắng — phong cách tối giản rõ rệt.
    ============================================================ */
 
-/* Sidebar: viền phải NÉT ĐỨT (đặc trưng minimals.cc), bỏ đổ bóng */
-.sidebar {
-  border-right: 1px dashed var(--border) !important;
-  box-shadow: none !important;
+/* ── 1) Design tokens (đổi là cả site đổi theo) ─────────── */
+:root {
+  --bg-page:    #FFFFFF;
+  --bg-card:    #FFFFFF;
+  --bg-sidebar: #FFFFFF;
+  --bg-header:  rgba(255,255,255,0.88);
+
+  --grey-100: #F7F8FA;
+  --grey-200: #F1F3F5;
+
+  --border:      #E6E8EB;
+  --border-dark: #D7DBE0;
+
+  /* Bỏ đổ bóng mềm -> viền hairline phẳng (flat minimal) */
+  --shadow-sm:     none;
+  --shadow:        0 0 0 1px #ECEEF1;
+  --shadow-card:   0 0 0 1px #ECEEF1;
+  --shadow-lg:     0 0 0 1px #ECEEF1, 0 14px 34px rgba(16,24,40,.10);
+  --shadow-dialog: 0 24px 60px rgba(16,24,40,.18);
+  --shadow-primary: none;
+
+  --radius:    14px;
+  --radius-sm: 10px;
+  --radius-xs:  8px;
+}
+[data-theme="dark"] {
+  --bg-page:    #0F1115;
+  --bg-card:    #15181D;
+  --bg-sidebar: #14161B;
+  --bg-header:  rgba(20,22,27,0.88);
+  --grey-100: #1A1D23;
+  --grey-200: #20242B;
+  --border:      #282C33;
+  --border-dark: #333842;
+  --shadow-sm:     none;
+  --shadow:        0 0 0 1px #282C33;
+  --shadow-card:   0 0 0 1px #282C33;
+  --shadow-lg:     0 0 0 1px #282C33, 0 14px 34px rgba(0,0,0,.5);
+  --shadow-dialog: 0 24px 60px rgba(0,0,0,.6);
 }
 
-/* Header: trong suốt + blur (minimals.cc), không viền/đổ bóng đậm */
-.header, #header {
-  background: rgba(255,255,255,0.85) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  backdrop-filter: blur(8px) !important;
-  box-shadow: none !important;
-  border-bottom: none !important;
+/* ── 2) Nền trắng phẳng ─────────────────────────────────── */
+body, .main-content, .app-shell { background: var(--bg-page) !important; }
+
+/* ── 3) Card mọi nơi -> viền hairline phẳng, bo gọn, KHÔNG bóng ── */
+.card, .product-card, .pd-card, .order-card, .dashboard-card, .section-card,
+.review-card, .ticket-card, .cui-card, .info-card, .stat-card, .blog-card,
+.blog-article-content, .panel, .box {
+  border: none !important;
+  border-radius: 14px !important;
+  box-shadow: 0 0 0 1px var(--border) !important;
 }
-[data-theme="dark"] .header,
-[data-theme="dark"] #header {
-  background: rgba(22,28,36,0.85) !important;
+.product-card { transition: box-shadow .18s, transform .18s !important; }
+.product-card:hover {
+  box-shadow: 0 0 0 1px var(--border-dark), 0 14px 30px rgba(16,24,40,.08) !important;
+  transform: translateY(-3px);
 }
-.header-search {
-  background: var(--grey-100) !important;
+.blog-card { overflow: hidden; transition: box-shadow .18s, transform .18s !important; }
+.blog-card:hover { box-shadow: 0 0 0 1px var(--border-dark), 0 14px 30px rgba(16,24,40,.08) !important; }
+
+/* ── 4) Nút -> phẳng, bo gọn, không bóng/gradient ─────────── */
+.btn, button.btn {
   box-shadow: none !important;
   border-radius: 10px !important;
+  font-weight: 600 !important;
+}
+.btn-primary { background: var(--primary) !important; border: 1px solid var(--primary) !important; color: #fff !important; }
+.btn-primary:hover { background: var(--primary-dark) !important; }
+.btn-secondary, .btn-ghost, .btn-outline, .btn-light, .btn-default {
+  background: var(--grey-100) !important; border: 1px solid var(--border) !important; color: var(--text-heading) !important;
 }
 
-/* Nav item: bo góc + active nền tint primary (kiểu Minimal) */
-.nav-item, .nav-item-link { border-radius: 8px !important; font-weight: 600 !important; }
-.nav-item:hover, .nav-item-link:hover { background: rgba(145,158,171,0.10) !important; }
+/* ── 5) Input/select/textarea -> phẳng, viền mảnh ─────────── */
+.form-input, .form-select, .form-textarea, input.form-input, select.form-select,
+textarea.form-input, .header-search, .pd-coupon-input, .pd-qty-controls {
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), .12) !important;
+}
+
+/* ── 6) Header — phẳng, viền dưới mảnh, blur nhẹ ──────────── */
+.header, #header {
+  background: var(--bg-header) !important;
+  -webkit-backdrop-filter: blur(8px) !important; backdrop-filter: blur(8px) !important;
+  box-shadow: none !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+.header-search { background: var(--grey-100) !important; }
+.header-btn, .user-avatar-btn, .hamburger-btn { box-shadow: none !important; border-radius: 10px !important; }
+.header-btn:hover, .user-avatar-btn:hover, .hamburger-btn:hover { background: var(--grey-100) !important; }
+
+/* ── 7) Sidebar / menu — phẳng, viền phải mảnh, active tint ── */
+.sidebar { background: var(--bg-sidebar) !important; box-shadow: none !important; border-right: 1px solid var(--border) !important; }
+.sidebar-logo { box-shadow: none !important; border-bottom: 1px solid var(--border) !important; }
+.nav-item, .nav-item-link { border-radius: 10px !important; font-weight: 600 !important; box-shadow: none !important; }
+.nav-item:hover, .nav-item-link:hover { background: var(--grey-100) !important; }
 .nav-item.active, .nav-item-link.active,
 .nav-item.active:hover, .nav-item-link.active:hover {
-  background: rgba(var(--primary-rgb), 0.08) !important;
+  background: rgba(var(--primary-rgb), .10) !important;
   color: var(--primary) !important;
   font-weight: 700 !important;
 }
 
-/* Footer: thoáng, viền trên mảnh thay đổ bóng */
-.site-footer {
-  box-shadow: none !important;
-  border-top: 1px solid var(--border) !important;
-}
+/* ── 8) Dropdown / Modal ─────────────────────────────────── */
+.dropdown-menu { border: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: var(--shadow-lg) !important; }
+.dropdown-item { border-radius: 10px !important; margin: 1px 6px; }
+.dropdown-item:hover { background: var(--grey-100) !important; }
+.modal { border: 1px solid var(--border) !important; border-radius: 16px !important; box-shadow: var(--shadow-dialog) !important; }
+.modal-overlay { backdrop-filter: blur(2px); }
+
+/* ── 9) Footer — thoáng, viền trên mảnh ──────────────────── */
+.site-footer { background: var(--bg-card) !important; box-shadow: none !important; border-top: 1px solid var(--border) !important; }
 .footer-link:hover { color: var(--primary) !important; }
 
-/* ============================================================
-   TRANG CHI TIẾT (sản phẩm / đơn hàng / blog) — theo minimals.cc:
-   card = ĐỔ BÓNG MỀM + bo 16, KHÔNG viền cứng. Giữ phần đặc thù riêng
-   (hộp giao hàng xanh, mã code...) chỉ bo mềm lại.
-   ============================================================ */
+/* ── 10) Badge/chip -> pill sạch ─────────────────────────── */
+.badge, .chip, .pd-badge, .pd-chip, .tag, .pill { border-radius: 100px !important; box-shadow: none !important; }
 
-/* Card chính các trang chi tiết -> Minimal card (bóng, không viền) */
-.pd-card,
-.order-card,
-.blog-card,
-.blog-article-content,
-.review-card,
-.ticket-card {
-  border: none !important;
-  border-radius: 16px !important;
-  box-shadow: var(--shadow-card) !important;
-}
-.order-card { transition: box-shadow .2s !important; }
-.order-card:hover { box-shadow: var(--shadow) !important; }
-.blog-card { transition: box-shadow .2s, transform .2s !important; overflow: hidden; }
-.blog-card:hover { box-shadow: var(--shadow) !important; }
-
-/* Pills / chips / badges chi tiết SP -> pill sạch, không bóng */
-.pd-chip, .pd-badge, .pd-badge-sm, .pd-badge-green, .pd-badge-orange,
-.pd-badge-red, .pd-badge-blue, .pd-badge-flash, .pd-action-badge {
-  border-radius: 100px !important;
-  box-shadow: none !important;
-}
-
-/* Hộp đặc thù riêng (giao hàng, mã game/code) -> GIỮ màu, chỉ bo mềm + bỏ bóng nặng */
-.delivery-box, .delivery-data, .pd-game-code, .pd-game-info, .pd-code-row {
-  border-radius: 14px !important;
-  box-shadow: none !important;
-}
-
-/* Nút & input trên chi tiết SP / coupon -> bo gọn Minimal, phẳng */
-.pd-btn-buy, .pd-btn-cart, .pd-btn-login, .pd-coupon-btn, .pd-coupon-toggle {
-  border-radius: 10px !important;
-  box-shadow: none !important;
-}
-.pd-coupon-input, .pd-coupon-wrap { border-radius: 10px !important; }
-
-/* Thanh tiến trình (đánh giá/sold) bo tròn mềm */
-.pd-bar-track, .pd-bar-fill { border-radius: 100px !important; }
-
-/* ── Chi tiết SP: bố cục 2 cột kiểu minimals.cc (ảnh trái sticky + info phải) ── */
-.pd-shop-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
-  gap: 40px;
-  align-items: start;
-  margin: 8px 0 28px;
-}
+/* ── 11) Chi tiết SP: bố cục 2 cột (ảnh trái sticky + info phải) ── */
+.pd-shop-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.05fr); gap: 40px; align-items: start; margin: 8px 0 28px; }
 .pd-shop-media { position: sticky; top: 88px; }
 .pd-shop-media .pd-hero-img { margin: 0 !important; }
 .pd-shop-info { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .pd-shop-info > .pd-card, .pd-shop-info > .pd-name-row { margin: 0 !important; }
-@media (max-width: 920px) {
-  .pd-shop-grid { grid-template-columns: 1fr; gap: 20px; }
-  .pd-shop-media { position: static; }
-}
+@media (max-width: 920px) { .pd-shop-grid { grid-template-columns: 1fr; gap: 20px; } .pd-shop-media { position: static; } }
+.delivery-box, .pd-game-code, .pd-code-row { border-radius: 12px !important; box-shadow: none !important; }
 
-/* Số lượng (stepper kiểu minimals.cc): label trái, controls phải */
+/* ── 12) Số lượng (stepper) ──────────────────────────────── */
 .pd-qty-row { display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 12px; margin: 4px 0 14px; }
 .pd-qty-label { font-weight: 600 !important; color: var(--text-heading) !important; }
 .pd-qty-controls { display: inline-flex !important; align-items: center; border: 1px solid var(--border) !important; border-radius: 10px !important; overflow: hidden; }
