@@ -209,7 +209,11 @@ router.get(['/admin/users', '/auth/admin/users'], requireAdmin, async (req: Requ
       }),
     ]);
 
-    res.json({ total, page, items: users.map((u: any) => ({ ...u, balance: money(u.balance) })) });
+    // Gắn vai trò (từ bảng adminUser)
+    const emails = users.map((u: any) => u.email);
+    const admins = emails.length ? await prisma.adminUser.findMany({ where: { email: { in: emails } }, select: { email: true, role: true } }) : [];
+    const roleMap: Record<string, string> = Object.fromEntries(admins.map((a: any) => [a.email, a.role]));
+    res.json({ total, page, items: users.map((u: any) => ({ ...u, balance: money(u.balance), role: roleMap[u.email] || 'user' })) });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
   }
@@ -227,6 +231,35 @@ router.patch(['/admin/users/:id', '/auth/admin/users/:id'], requireAdmin, async 
       },
     });
     res.json({ id: user.id, email: user.email, isActive: user.isActive });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+// Đổi vai trò người dùng (user/staff/admin/superadmin) — quản lý bảng adminUser
+router.patch(['/admin/users/:id/role'], requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+    const role = String(req.body.role || 'user');
+    const allowed = ['user', 'staff', 'admin', 'superadmin'];
+    if (!allowed.includes(role)) { res.status(400).json({ detail: 'Vai trò không hợp lệ' }); return; }
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) { res.status(404).json({ detail: 'Không tìm thấy người dùng' }); return; }
+    // Không cho tự hạ quyền chính mình (tránh tự khóa khỏi admin)
+    const me = (req as any).admin;
+    if (me && String(me.user_id) === String(id) && role !== me.role) {
+      res.status(400).json({ detail: 'Không thể tự đổi vai trò của chính mình' }); return;
+    }
+    if (role === 'user') {
+      await prisma.adminUser.deleteMany({ where: { email: user.email } });
+    } else {
+      await prisma.adminUser.upsert({
+        where: { email: user.email },
+        update: { role },
+        create: { userId: String(user.id), email: user.email, role },
+      });
+    }
+    res.json({ ok: true, role });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
   }

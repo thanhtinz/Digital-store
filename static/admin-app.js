@@ -148,6 +148,7 @@
     ] },
     { group: 'Nội dung', items: [
       { p: '/admin/blog', icon: 'blog', label: 'Blog', ready: true },
+      { p: '/admin/banners', icon: 'box', label: 'Banner', ready: true },
       { p: '/admin/announcements', icon: 'announce', label: 'Thông báo', ready: true },
       { p: '/admin/tickets', icon: 'tickets', label: 'Hỗ trợ', ready: true },
     ] },
@@ -186,6 +187,7 @@
     '/admin/announcements': screenAnnouncements,
     '/admin/affiliates': screenAffiliate,
     '/admin/blog': screenBlog,
+    '/admin/banners': screenBanners,
     '/admin/tickets': screenTickets,
     '/admin/settings': screenSettings,
   };
@@ -671,17 +673,83 @@
     api(q).then(function (d) {
       var items = d.items || [];
       usersItems = items;
+      var roleBadge = function (r) { if (r === 'superadmin' || r === 'admin') return '<span class="ap-badge indigo">' + r + '</span>'; if (r === 'staff') return '<span class="ap-badge blue">staff</span>'; return '<span class="ap-badge gray">user</span>'; };
       var rows = items.map(function (u) {
         var ini = (u.displayName || u.email || '?').charAt(0).toUpperCase();
-        return '<tr><td><div style="display:flex;align-items:center;gap:10px"><div class="ap-avatar" style="width:30px;height:30px;font-size:13px">' + esc(ini) + '</div><div><div style="font-weight:600">' + esc(u.displayName || '—') + '</div><div style="font-size:12px;color:var(--ap-text-3)">' + esc(u.email) + '</div></div></div></td>' +
+        return '<tr class="clickable" data-id="' + u.id + '"><td><div style="display:flex;align-items:center;gap:10px"><div class="ap-avatar" style="width:30px;height:30px;font-size:13px">' + esc(ini) + '</div><div><div style="font-weight:600">' + esc(u.displayName || '—') + '</div><div style="font-size:12px;color:var(--ap-text-3)">' + esc(u.email) + '</div></div></div></td>' +
+          '<td>' + roleBadge(u.role) + '</td>' +
           '<td><b>' + fmtMoney(u.balance) + '</b></td>' +
           '<td>' + (u.isActive ? '<span class="ap-badge green">Hoạt động</span>' : '<span class="ap-badge red">Khóa</span>') + '</td>' +
           '<td style="color:var(--ap-text-3)">' + fmtDate(u.createdAt) + '</td></tr>';
-      }).join('') || emptyRow(4, 'Không có người dùng');
+      }).join('') || emptyRow(5, 'Không có người dùng');
       card.innerHTML =
-        '<div class="ap-table-wrap"><table class="ap-table"><thead><tr><th>Người dùng</th><th>Số dư</th><th>Trạng thái</th><th>Tham gia</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+        '<div class="ap-table-wrap"><table class="ap-table"><thead><tr><th>Người dùng</th><th>Vai trò</th><th>Số dư</th><th>Trạng thái</th><th>Tham gia</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
         pagination(d.total, userState.page, limit, function (pg) { userState.page = pg; loadUsers(); });
+      card.querySelectorAll('tr[data-id]').forEach(function (tr) { tr.addEventListener('click', function () { userDrawer(items.find(function (x) { return x.id == tr.getAttribute('data-id'); })); }); });
     }).catch(function (err) { card.innerHTML = '<div class="ap-empty">' + ICON('alert') + '<div>' + esc(err.message) + '</div></div>'; });
+  }
+  function userDrawer(u) {
+    if (!u) return;
+    var body =
+      '<dl class="ap-dl"><dt>Email</dt><dd>' + esc(u.email) + '</dd><dt>ID</dt><dd>' + u.id + '</dd><dt>Số dư</dt><dd><b>' + fmtMoney(u.balance) + '</b></dd></dl>' +
+      '<div class="ap-field" style="margin-top:12px"><label>Tên hiển thị</label><input class="ap-input" id="ud-name" value="' + esc(u.displayName || '') + '"></div>' +
+      switchRow('ud-active', 'Tài khoản hoạt động', 'Tắt = khóa đăng nhập', u.isActive !== false) +
+      sel('ud-role', 'Vai trò', u.role || 'user', [{ v: 'user', t: 'Khách hàng' }, { v: 'staff', t: 'Nhân viên' }, { v: 'admin', t: 'Quản trị' }, { v: 'superadmin', t: 'Super Admin' }]) +
+      '<button class="ap-btn primary" id="ud-save" style="margin:6px 0 18px;width:100%">Lưu thay đổi</button>' +
+      '<h4 style="margin:0 0 8px;font-size:13px">Điều chỉnh số dư</h4>' +
+      '<div class="ap-form-row">' + inp('ud-amt', 'Số tiền (+/-)', '', 'number') + inp('ud-reason', 'Lý do', '', 'text') + '</div>' +
+      '<button class="ap-btn" id="ud-adjust" style="width:100%">Cộng/Trừ số dư</button>';
+    openDrawer('Người dùng: ' + (u.displayName || u.email), body);
+    $('#ud-save').addEventListener('click', function () {
+      var btn = this; btnLoad(btn, true);
+      var tasks = [api('/admin/users/' + u.id, { method: 'PATCH', body: { display_name: v('ud-name'), is_active: vc('ud-active') } })];
+      if ((u.role || 'user') !== v('ud-role')) tasks.push(api('/admin/users/' + u.id + '/role', { method: 'PATCH', body: { role: v('ud-role') } }));
+      Promise.all(tasks).then(function () { toast('Đã lưu', 'success'); closeDrawer(); loadUsers(); }).catch(function (e) { toast(e.message, 'error'); btnLoad(btn, false); });
+    });
+    $('#ud-adjust').addEventListener('click', function () {
+      var amt = vn('ud-amt'); if (!amt) { toast('Nhập số tiền', 'error'); return; }
+      var btn = this; btn.disabled = true;
+      api('/balance/admin/adjust', { method: 'POST', body: { user_id: u.id, amount: amt, reason: v('ud-reason') || 'Điều chỉnh từ admin' } })
+        .then(function () { toast('Đã điều chỉnh số dư', 'success'); closeDrawer(); loadUsers(); }).catch(function (e) { toast(e.message, 'error'); btn.disabled = false; });
+    });
+  }
+
+  // ── SCREEN: Banners ──────────────────────────────────
+  function screenBanners(view) {
+    view.innerHTML = pageHead('Banner', 'Banner & điểm nhấn trang chủ', '<button class="ap-btn primary" id="ap-bn-add">+ Thêm banner</button>') +
+      '<div class="ap-card" id="ap-bn-card"><div style="display:grid;place-items:center;min-height:200px"><div class="ap-spinner"></div></div></div>';
+    $('#ap-bn-add').addEventListener('click', function () { bannerForm(null); });
+    loadBanners();
+  }
+  function loadBanners() {
+    var card = $('#ap-bn-card'); if (!card) return;
+    api('/banners/all').then(function (items) {
+      var rows = (items || []).map(function (b) {
+        var img = b.imageUrl ? '<img src="' + esc(b.imageUrl) + '" style="width:90px;height:42px;border-radius:6px;object-fit:cover" onerror="this.style.display=\'none\'">' : '—';
+        return '<tr><td>' + img + '</td><td><b>' + esc(b.title || '—') + '</b><div style="font-size:12px;color:var(--ap-text-3)">' + esc(b.link || '') + '</div></td>' +
+          '<td>' + esc(b.bannerType || 'hero') + '</td><td>' + (b.sortOrder || 0) + '</td>' +
+          '<td>' + (b.isActive ? '<span class="ap-badge green">Hiện</span>' : '<span class="ap-badge gray">Ẩn</span>') + '</td>' +
+          '<td style="text-align:right;white-space:nowrap"><button class="ap-btn sm" data-edit="' + b.id + '">Sửa</button> <button class="ap-btn sm danger" data-del="' + b.id + '">Xóa</button></td></tr>';
+      }).join('') || emptyRow(6, 'Chưa có banner');
+      card.innerHTML = '<div class="ap-table-wrap"><table class="ap-table"><thead><tr><th>Ảnh</th><th>Tiêu đề</th><th>Loại</th><th>Thứ tự</th><th>Trạng thái</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+      card.querySelectorAll('[data-edit]').forEach(function (b) { b.addEventListener('click', function () { bannerForm((items || []).find(function (x) { return x.id == b.getAttribute('data-edit'); })); }); });
+      card.querySelectorAll('[data-del]').forEach(function (b) { b.addEventListener('click', function () { if (!confirm('Xóa banner này?')) return; api('/banners/' + b.getAttribute('data-del'), { method: 'DELETE' }).then(function () { toast('Đã xóa', 'success'); loadBanners(); }).catch(function (e) { toast(e.message, 'error'); }); }); });
+    }).catch(function (e) { card.innerHTML = '<div class="ap-empty">' + ICON('alert') + '<div>' + esc(e.message) + '</div></div>'; });
+  }
+  function bannerForm(b) {
+    b = b || {};
+    var body = inp('bnf-title', 'Tiêu đề', b.title) +
+      inp('bnf-img', 'Ảnh URL', b.imageUrl, 'text', 'https://...') +
+      inp('bnf-link', 'Liên kết khi bấm', b.link, 'text', '/products/... hoặc https://...') +
+      '<div class="ap-form-row">' + sel('bnf-type', 'Loại', b.bannerType || 'hero', [{ v: 'hero', t: 'Hero (lớn)' }, { v: 'side', t: 'Phụ' }, { v: 'popup', t: 'Popup' }]) + inp('bnf-sort', 'Thứ tự', b.sortOrder || 0, 'number') + '</div>' +
+      switchRow('bnf-active', 'Hiển thị', '', b.isActive !== false);
+    openModal(b.id ? 'Sửa banner' : 'Thêm banner', body, function (btn) {
+      if (!v('bnf-img')) { toast('Nhập ảnh URL', 'error'); return; }
+      btnLoad(btn, true);
+      var payload = { title: v('bnf-title'), image_url: v('bnf-img'), link: v('bnf-link'), banner_type: v('bnf-type'), sort_order: vn('bnf-sort'), is_active: vc('bnf-active') };
+      var req = b.id ? api('/banners/' + b.id, { method: 'PATCH', body: payload }) : api('/banners', { method: 'POST', body: payload });
+      req.then(function () { toast('Đã lưu', 'success'); closeModal(); loadBanners(); }).catch(function (e) { toast(e.message, 'error'); btnLoad(btn, false); });
+    });
   }
 
   // ── SCREEN: Soon / 404 ───────────────────────────────
