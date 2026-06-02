@@ -22,6 +22,16 @@ if (process.env.DATABASE_URL) {
   } catch (e) {
     console.error('[start] prisma db push lỗi (vẫn khởi động server):', e.message);
   }
+  // Seed admin + dữ liệu mẫu khi bật biến RUN_SEED (chạy 1 lần rồi nên gỡ biến).
+  if (process.env.RUN_SEED === '1' || process.env.RUN_SEED === 'true') {
+    try {
+      console.log('[start] RUN_SEED=1 -> đang tạo admin + dữ liệu mẫu...');
+      execSync('npm run db:seed', { stdio: 'inherit' });
+      console.log('[start] ✅ Seed xong. Hãy GỠ biến RUN_SEED rồi redeploy.');
+    } catch (e) {
+      console.error('[start] seed lỗi:', e.message);
+    }
+  }
 } else {
   console.error('[start] ⚠️ THIẾU DATABASE_URL và không có PG*. Chưa thêm/gắn PostgreSQL trên Railway — xem RAILWAY.md. Server vẫn lên để healthcheck/log.');
 }

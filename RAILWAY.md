@@ -147,12 +147,12 @@ Lấy URL (vd `your-app.up.railway.app`) → cập nhật lại biến **`APP_BA
 
 ## 5. Tạo dữ liệu mẫu + admin (chạy 1 lần)
 
-Sau khi deploy xanh, mở **service web → Shell** và chạy:
-```bash
-npm run db:seed
-```
+**Cách dễ nhất (không cần máy local):**
+1. Service web → **Variables** → thêm `RUN_SEED` = `1`.
+2. **Redeploy**. Logs sẽ hiện `✅ Seed completed`.
+3. **Gỡ biến `RUN_SEED`** (hoặc đặt `0`) → redeploy lại để không seed mỗi lần.
 
-Hoặc bằng Railway CLI ở máy bạn:
+**Hoặc bằng Railway CLI ở máy bạn:**
 ```bash
 npm i -g @railway/cli
 railway login
