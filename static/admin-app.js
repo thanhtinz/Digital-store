@@ -23,6 +23,35 @@
   function getToken() { return localStorage.getItem(TOKEN_KEY); }
   function setToken(t) { if (t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY); }
 
+  // ── CSV export ───────────────────────────────────────
+  function csvCell(val) { var s = val == null ? '' : String(val); if (/[",\n\r]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"'; return s; }
+  function exportCSV(filename, columns, items) {
+    if (!items || !items.length) { toast('Không có dữ liệu để xuất', 'error'); return; }
+    var head = columns.map(function (c) { return csvCell(c.label); }).join(',');
+    var lines = items.map(function (it) { return columns.map(function (c) { return csvCell(c.get(it)); }).join(','); });
+    var csv = '﻿' + [head].concat(lines).join('\r\n');
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    toast('Đã xuất ' + items.length + ' dòng', 'success');
+  }
+  // Quản lý chọn nhiều: gắn vào 1 card có checkbox.row-chk + #ap-chk-all + thanh #ap-bulkbar (.count)
+  function setupBulk(card, onRender) {
+    var sel = new Set();
+    var all = card.querySelector('#ap-chk-all');
+    var bar = card.querySelector('#ap-bulkbar');
+    var sync = function () {
+      if (bar) { bar.style.display = sel.size ? 'flex' : 'none'; var c = bar.querySelector('.count'); if (c) c.textContent = sel.size + ' đã chọn'; }
+      if (all) { var boxes = card.querySelectorAll('.row-chk'); all.checked = boxes.length > 0 && sel.size === boxes.length; }
+      if (onRender) onRender(sel);
+    };
+    card.querySelectorAll('.row-chk').forEach(function (b) { b.addEventListener('change', function () { if (b.checked) sel.add(b.getAttribute('data-id')); else sel.delete(b.getAttribute('data-id')); sync(); }); });
+    if (all) all.addEventListener('change', function () { card.querySelectorAll('.row-chk').forEach(function (b) { b.checked = all.checked; if (all.checked) sel.add(b.getAttribute('data-id')); else sel.delete(b.getAttribute('data-id')); }); sync(); });
+    sync();
+    return { ids: function () { return Array.from(sel); } };
+  }
+
   // ── API client ───────────────────────────────────────
   function api(path, opts) {
     opts = opts || {};
@@ -380,14 +409,26 @@
           }).join('') +
         '</select>' +
         '<button class="ap-btn" id="ap-ord-refresh">' + ICON('refresh') + '</button>' +
+        '<div style="flex:1"></div>' +
+        '<button class="ap-btn" id="ap-ord-csv">⬇ CSV</button>' +
       '</div>' +
       '<div class="ap-card" id="ap-ord-card"><div style="display:grid;place-items:center;min-height:240px"><div class="ap-spinner"></div></div></div>';
 
     $('#ap-ord-search').addEventListener('input', debounce(function (e) { ordersState.search = e.target.value.trim(); ordersState.page = 1; loadOrders(); }, 350));
     $('#ap-ord-status').addEventListener('change', function (e) { ordersState.status = e.target.value; ordersState.page = 1; loadOrders(); });
     $('#ap-ord-refresh').addEventListener('click', loadOrders);
+    $('#ap-ord-csv').addEventListener('click', function () {
+      exportCSV('don-hang.csv', [
+        { label: 'Mã đơn', get: function (o) { return o.orderCode; } },
+        { label: 'Khách', get: function (o) { return o.userEmail; } },
+        { label: 'Tổng', get: function (o) { return o.totalAmount; } },
+        { label: 'Trạng thái', get: function (o) { return (STATUS[o.status] || {}).t || o.status; } },
+        { label: 'Thời gian', get: function (o) { return fmtDateTime(o.createdAt); } },
+      ], ordersItems);
+    });
     loadOrders();
   }
+  var ordersItems = [];
   function loadOrders() {
     var card = $('#ap-ord-card'); if (!card) return;
     var limit = 20;
@@ -396,17 +437,33 @@
     if (ordersState.search) q += '&search=' + encodeURIComponent(ordersState.search);
     api(q).then(function (d) {
       var items = d.items || [];
+      ordersItems = items;
       var rows = items.map(function (o) {
-        return '<tr class="clickable" data-code="' + esc(o.orderCode) + '"><td class="ap-mono">' + esc(o.orderCode) + '</td><td>' + esc(o.userEmail || '—') + '</td><td>' + esc(o.productName || (o.items && o.items[0] ? o.items[0].productName : '') || '—') + '</td><td><b>' + fmtMoney(o.totalAmount) + '</b></td><td>' + statusBadge(o.status) + '</td><td style="color:var(--ap-text-3)">' + fmtDateTime(o.createdAt) + '</td></tr>';
-      }).join('') || emptyRow(6, 'Không có đơn hàng');
+        return '<tr data-code="' + esc(o.orderCode) + '"><td><input type="checkbox" class="ap-chk row-chk" data-id="' + esc(o.orderCode) + '"></td><td class="ap-mono cell-go">' + esc(o.orderCode) + '</td><td class="cell-go">' + esc(o.userEmail || '—') + '</td><td class="cell-go">' + esc(o.productName || (o.items && o.items[0] ? o.items[0].productName : '') || '—') + '</td><td class="cell-go"><b>' + fmtMoney(o.totalAmount) + '</b></td><td class="cell-go">' + statusBadge(o.status) + '</td><td class="cell-go" style="color:var(--ap-text-3)">' + fmtDateTime(o.createdAt) + '</td></tr>';
+      }).join('') || emptyRow(7, 'Không có đơn hàng');
       card.innerHTML =
-        '<div class="ap-table-wrap"><table class="ap-table"><thead><tr><th>Mã đơn</th><th>Khách</th><th>Sản phẩm</th><th>Tổng</th><th>Trạng thái</th><th>Thời gian</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+        '<div class="ap-bulkbar" id="ap-bulkbar"><span class="count"></span><span class="sp"></span>' +
+          '<select class="ap-select" id="ap-ord-bulk-status" style="width:auto">' + ['pending', 'paid', 'processing', 'completed', 'cancelled', 'failed', 'refunded'].map(function (s) { return '<option value="' + s + '">' + (STATUS[s] ? STATUS[s].t : s) + '</option>'; }).join('') + '</select>' +
+          '<button class="ap-btn sm" id="ap-ord-bulk-apply">Áp dụng trạng thái</button>' +
+          '<button class="ap-btn sm danger" id="ap-ord-bulk-del">Xóa</button>' +
+        '</div>' +
+        '<div class="ap-table-wrap"><table class="ap-table"><thead><tr><th style="width:36px"><input type="checkbox" class="ap-chk" id="ap-chk-all"></th><th>Mã đơn</th><th>Khách</th><th>Sản phẩm</th><th>Tổng</th><th>Trạng thái</th><th>Thời gian</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
         pagination(d.total, ordersState.page, limit, function (p) { ordersState.page = p; loadOrders(); });
-      card.querySelectorAll('tr[data-code]').forEach(function (tr) {
-        tr.addEventListener('click', function () {
-          var o = items.find(function (x) { return x.orderCode === tr.getAttribute('data-code'); });
-          if (o) orderDrawer(o);
-        });
+      var bulk = setupBulk(card);
+      card.querySelectorAll('.cell-go').forEach(function (td) {
+        td.addEventListener('click', function () { var o = items.find(function (x) { return x.orderCode === td.parentNode.getAttribute('data-code'); }); if (o) orderDrawer(o); });
+      });
+      var apply = card.querySelector('#ap-ord-bulk-apply'); if (apply) apply.addEventListener('click', function () {
+        var ids = bulk.ids(); if (!ids.length) return; var status = card.querySelector('#ap-ord-bulk-status').value;
+        if (!confirm('Đổi ' + ids.length + ' đơn sang "' + (STATUS[status] ? STATUS[status].t : status) + '"?')) return;
+        this.disabled = true;
+        Promise.all(ids.map(function (code) { return api('/orders/admin/' + encodeURIComponent(code) + '/status', { method: 'PATCH', body: { status: status } }).catch(function () {}); })).then(function () { toast('Đã cập nhật ' + ids.length + ' đơn', 'success'); loadOrders(); });
+      });
+      var del = card.querySelector('#ap-ord-bulk-del'); if (del) del.addEventListener('click', function () {
+        var ids = bulk.ids(); if (!ids.length) return;
+        if (!confirm('Xóa ' + ids.length + ' đơn? Không thể hoàn tác.')) return;
+        var orderIds = items.filter(function (o) { return ids.indexOf(o.orderCode) >= 0; }).map(function (o) { return o.id; });
+        api('/orders/admin/bulk-delete', { method: 'POST', body: { ids: orderIds } }).then(function (r) { toast('Đã xóa ' + (r.deleted != null ? r.deleted : ids.length) + ' đơn', 'success'); loadOrders(); }).catch(function (e) { toast(e.message, 'error'); });
       });
     }).catch(function (err) { card.innerHTML = '<div class="ap-empty">' + ICON('alert') + '<div>' + esc(err.message) + '</div></div>'; });
   }
@@ -445,11 +502,20 @@
   function screenProducts(view) {
     view.innerHTML =
       pageHead('Sản phẩm', 'Quản lý sản phẩm và gói bán', '<button class="ap-btn primary" id="ap-pr-add">+ Thêm sản phẩm</button>') +
-      '<div class="ap-toolbar"><div class="ap-search">' + ICON('search') + '<input id="ap-pr-search" placeholder="Tìm sản phẩm..." value="' + esc(prodState.search) + '"></div><button class="ap-btn" id="ap-pr-refresh">' + ICON('refresh') + '</button></div>' +
+      '<div class="ap-toolbar"><div class="ap-search">' + ICON('search') + '<input id="ap-pr-search" placeholder="Tìm sản phẩm..." value="' + esc(prodState.search) + '"></div><button class="ap-btn" id="ap-pr-refresh">' + ICON('refresh') + '</button><div style="flex:1"></div><button class="ap-btn" id="ap-pr-csv">⬇ CSV</button></div>' +
       '<div class="ap-card" id="ap-pr-card"><div style="display:grid;place-items:center;min-height:240px"><div class="ap-spinner"></div></div></div>';
     $('#ap-pr-search').addEventListener('input', debounce(function (e) { prodState.search = e.target.value.trim(); prodState.page = 1; loadProducts(); }, 350));
     $('#ap-pr-refresh').addEventListener('click', loadProducts);
     $('#ap-pr-add').addEventListener('click', function () { productForm(null); });
+    $('#ap-pr-csv').addEventListener('click', function () {
+      exportCSV('san-pham.csv', [
+        { label: 'Tên', get: function (p) { return p.name; } },
+        { label: 'Danh mục', get: function (p) { return (p.category && p.category.name) || ''; } },
+        { label: 'Số gói', get: function (p) { return (p.packages || []).length; } },
+        { label: 'Giá thấp nhất', get: function (p) { var k = p.packages || []; return k.length ? Math.min.apply(null, k.map(function (x) { return Number(x.price) || 0; })) : 0; } },
+        { label: 'Trạng thái', get: function (p) { return p.isActive ? 'Đang bán' : 'Ẩn'; } },
+      ], prodCache);
+    });
     loadProducts();
   }
   function loadProducts() {
@@ -464,16 +530,24 @@
         var pkgs = p.packages || [];
         var price = pkgs.length ? Math.min.apply(null, pkgs.map(function (x) { return Number(x.price) || 0; })) : 0;
         var img = p.imageUrl ? '<img src="' + esc(p.imageUrl) + '" style="width:34px;height:34px;border-radius:8px;object-fit:cover" onerror="this.style.display=\'none\'">' : '';
-        return '<tr><td><div style="display:flex;align-items:center;gap:10px">' + img + '<div><div style="font-weight:600">' + esc(p.name) + '</div><div style="font-size:12px;color:var(--ap-text-3)">' + esc((p.category && p.category.name) || '—') + '</div></div></div></td>' +
+        return '<tr><td><input type="checkbox" class="ap-chk row-chk" data-id="' + p.id + '"></td><td><div style="display:flex;align-items:center;gap:10px">' + img + '<div><div style="font-weight:600">' + esc(p.name) + '</div><div style="font-size:12px;color:var(--ap-text-3)">' + esc((p.category && p.category.name) || '—') + '</div></div></div></td>' +
           '<td>' + (pkgs.length ? 'từ ' + fmtMoney(price) : '—') + '</td>' +
           '<td><button class="ap-btn sm" data-pkgs="' + p.id + '">' + pkgs.length + ' gói</button></td>' +
           '<td>' + (p.isFeatured ? '<span class="ap-badge indigo">Nổi bật</span>' : '') + '</td>' +
           '<td>' + (p.isActive ? '<span class="ap-badge green">Đang bán</span>' : '<span class="ap-badge gray">Ẩn</span>') + '</td>' +
           '<td style="text-align:right;white-space:nowrap"><button class="ap-btn sm" data-edit="' + p.id + '">Sửa</button> <button class="ap-btn sm danger" data-del="' + p.id + '">Xóa</button></td></tr>';
-      }).join('') || emptyRow(6, 'Không có sản phẩm');
+      }).join('') || emptyRow(7, 'Không có sản phẩm');
       card.innerHTML =
-        '<div class="ap-table-wrap"><table class="ap-table"><thead><tr><th>Sản phẩm</th><th>Giá</th><th>Gói</th><th></th><th>Trạng thái</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+        '<div class="ap-bulkbar" id="ap-bulkbar"><span class="count"></span><span class="sp"></span>' +
+          '<button class="ap-btn sm" id="ap-pr-bulk-show">Hiện</button><button class="ap-btn sm" id="ap-pr-bulk-hide">Ẩn</button><button class="ap-btn sm danger" id="ap-pr-bulk-del">Xóa</button>' +
+        '</div>' +
+        '<div class="ap-table-wrap"><table class="ap-table"><thead><tr><th style="width:36px"><input type="checkbox" class="ap-chk" id="ap-chk-all"></th><th>Sản phẩm</th><th>Giá</th><th>Gói</th><th></th><th>Trạng thái</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
         pagination(d.total || items.length, prodState.page, limit, function (pg) { prodState.page = pg; loadProducts(); });
+      var bulk = setupBulk(card);
+      var bulkSet = function (active) { var ids = bulk.ids(); if (!ids.length) return; Promise.all(ids.map(function (id) { return api('/products/admin/' + id, { method: 'PATCH', body: { is_active: active } }).catch(function () {}); })).then(function () { toast('Đã cập nhật ' + ids.length + ' sản phẩm', 'success'); loadProducts(); }); };
+      var bShow = card.querySelector('#ap-pr-bulk-show'); if (bShow) bShow.addEventListener('click', function () { bulkSet(true); });
+      var bHide = card.querySelector('#ap-pr-bulk-hide'); if (bHide) bHide.addEventListener('click', function () { bulkSet(false); });
+      var bDel = card.querySelector('#ap-pr-bulk-del'); if (bDel) bDel.addEventListener('click', function () { var ids = bulk.ids(); if (!ids.length) return; if (!confirm('Xóa ' + ids.length + ' sản phẩm? Mọi gói & kho liên quan cũng bị xóa.')) return; Promise.all(ids.map(function (id) { return api('/products/admin/' + id, { method: 'DELETE' }).catch(function () {}); })).then(function () { toast('Đã xóa ' + ids.length + ' sản phẩm', 'success'); loadProducts(); }); });
       var find = function (id) { return prodCache.find(function (x) { return x.id == id; }); };
       card.querySelectorAll('[data-edit]').forEach(function (b) { b.addEventListener('click', function () { productForm(find(b.getAttribute('data-edit'))); }); });
       card.querySelectorAll('[data-pkgs]').forEach(function (b) { b.addEventListener('click', function () { packagesDrawer(find(b.getAttribute('data-pkgs'))); }); });
@@ -555,12 +629,22 @@
   function screenUsers(view) {
     view.innerHTML =
       pageHead('Người dùng', 'Quản lý tài khoản khách hàng') +
-      '<div class="ap-toolbar"><div class="ap-search">' + ICON('search') + '<input id="ap-us-search" placeholder="Tìm email / tên..." value="' + esc(userState.search) + '"></div><button class="ap-btn" id="ap-us-refresh">' + ICON('refresh') + '</button></div>' +
+      '<div class="ap-toolbar"><div class="ap-search">' + ICON('search') + '<input id="ap-us-search" placeholder="Tìm email / tên..." value="' + esc(userState.search) + '"></div><button class="ap-btn" id="ap-us-refresh">' + ICON('refresh') + '</button><div style="flex:1"></div><button class="ap-btn" id="ap-us-csv">⬇ CSV</button></div>' +
       '<div class="ap-card" id="ap-us-card"><div style="display:grid;place-items:center;min-height:240px"><div class="ap-spinner"></div></div></div>';
     $('#ap-us-search').addEventListener('input', debounce(function (e) { userState.search = e.target.value.trim(); userState.page = 1; loadUsers(); }, 350));
     $('#ap-us-refresh').addEventListener('click', loadUsers);
+    $('#ap-us-csv').addEventListener('click', function () {
+      exportCSV('nguoi-dung.csv', [
+        { label: 'Email', get: function (u) { return u.email; } },
+        { label: 'Tên', get: function (u) { return u.displayName; } },
+        { label: 'Số dư', get: function (u) { return u.balance; } },
+        { label: 'Trạng thái', get: function (u) { return u.isActive ? 'Hoạt động' : 'Khóa'; } },
+        { label: 'Tham gia', get: function (u) { return fmtDate(u.createdAt); } },
+      ], usersItems);
+    });
     loadUsers();
   }
+  var usersItems = [];
   function loadUsers() {
     var card = $('#ap-us-card'); if (!card) return;
     var limit = 20;
@@ -568,6 +652,7 @@
     if (userState.search) q += '&search=' + encodeURIComponent(userState.search);
     api(q).then(function (d) {
       var items = d.items || [];
+      usersItems = items;
       var rows = items.map(function (u) {
         var ini = (u.displayName || u.email || '?').charAt(0).toUpperCase();
         return '<tr><td><div style="display:flex;align-items:center;gap:10px"><div class="ap-avatar" style="width:30px;height:30px;font-size:13px">' + esc(ini) + '</div><div><div style="font-weight:600">' + esc(u.displayName || '—') + '</div><div style="font-size:12px;color:var(--ap-text-3)">' + esc(u.email) + '</div></div></div></td>' +
