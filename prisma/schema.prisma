@@ -1,0 +1,658 @@
+// This is your Prisma schema file
+// Hỗ trợ đa database SQL: PostgreSQL (mặc định), MySQL, Supabase (= PostgreSQL)
+//
+// ĐỔI DATABASE:
+//   1. Đổi `provider` bên dưới: "postgresql" | "mysql"
+//      (Supabase / Neon / Railway Postgres → dùng "postgresql")
+//      (PlanetScale / MySQL thường → dùng "mysql")
+//   2. Đổi DATABASE_URL trong .env tương ứng
+//   3. Chạy: npx prisma generate && npx prisma db push
+//
+//   Hoặc dùng script nhanh: npm run db:switch postgresql | npm run db:switch mysql
+//
+// Các kiểu dữ liệu trong schema (@db.VarChar, @db.Decimal, Json) tương thích cả 2.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // ⬅️ ĐỔI Ở ĐÂY: "postgresql" hoặc "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model UploadedImage {
+  id        Int      @id @default(autoincrement())
+  filename  String?  @db.VarChar(255)
+  data      Bytes
+  mimeType  String   @default("application/octet-stream") @db.VarChar(100) @map("mime_type")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("uploaded_images")
+}
+
+model ApiProvider {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(255)
+  providerType String   @db.VarChar(50) @map("provider_type") // account_premium | topup_game | giftcard
+  partnerId    String?  @db.VarChar(100) @map("partner_id")
+  cardRates    Json?    @map("card_rates")
+  baseUrl      String   @db.VarChar(500) @map("base_url")
+  apiKey       String   @map("api_key")
+  apiSecret    String?  @map("api_secret")
+  isActive     Boolean  @default(true) @map("is_active")
+  settings     Json     @default("{}") @map("settings")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  packages         ProductPackage[]
+  smmServices      SmmService[]
+  orders           Order[]
+  orderItems       OrderItem[]
+  cardTransactions CardChargeTransaction[]
+  smmOrders        SmmOrder[]
+
+  @@map("api_providers")
+}
+
+model Category {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(255)
+  slug        String    @unique @db.VarChar(255)
+  iconUrl     String?   @map("icon_url")
+  imageUrl    String?   @db.VarChar(500) @map("image_url")
+  parentId    Int?      @map("parent_id")
+  productType String    @default("premium") @db.VarChar(20) @map("product_type")
+  sortOrder   Int       @default(0) @map("sort_order")
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  parent   Category?  @relation("CategoryParent", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryParent")
+  products Product[]
+
+  @@index([slug])
+  @@map("categories")
+}
+
+model Product {
+  id           Int      @id @default(autoincrement())
+  categoryId   Int?     @map("category_id")
+  name         String   @db.VarChar(255)
+  slug         String   @unique @db.VarChar(255)
+  description  String?
+  notes        String?
+  imageUrl     String?  @map("image_url")
+  isFeatured   Boolean  @default(false) @map("is_featured")
+  isActive     Boolean  @default(true) @map("is_active")
+  sortOrder    Int      @default(0) @map("sort_order")
+  topupType    String?  @db.VarChar(20) @map("topup_type")
+  serverRegion String?  @db.VarChar(20) @map("server_region")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  category Category?       @relation(fields: [categoryId], references: [id])
+  packages ProductPackage[]
+  reviews  Review[]
+  wishlists Wishlist[]
+
+  @@index([slug])
+  @@map("products")
+}
+
+model ProductPackage {
+  id                Int      @id @default(autoincrement())
+  productId         Int      @map("product_id")
+  name              String   @db.VarChar(255)
+  price             Decimal  @db.Decimal(12, 2)
+  originalPrice     Decimal? @db.Decimal(12, 2) @map("original_price")
+  description       String?
+  notes             String?
+  imageUrl          String?  @map("image_url")
+  deliveryType      String   @default("manual") @db.VarChar(20) @map("delivery_type")
+  isStockManaged    Boolean  @default(false) @map("is_stock_managed")
+  stockQuantity     Int      @default(0) @map("stock_quantity")
+  apiProviderId     Int?     @map("api_provider_id")
+  externalProductId String?  @db.VarChar(255) @map("external_product_id")
+  externalPlanId    String?  @db.VarChar(255) @map("external_plan_id")
+  autoMarkup        Boolean  @default(false) @map("auto_markup")
+  markupPercent     Decimal? @db.Decimal(5, 2) @map("markup_percent")
+  sortOrder         Int      @default(0) @map("sort_order")
+  isActive          Boolean  @default(true) @map("is_active")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  product     Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  apiProvider ApiProvider? @relation(fields: [apiProviderId], references: [id])
+  stockItems  StockItem[]
+  fields      PackageField[]
+  orders      Order[]
+  orderItems  OrderItem[]
+  flashSales  FlashSale[]
+
+  @@map("product_packages")
+}
+
+model StockItem {
+  id        Int       @id @default(autoincrement())
+  packageId Int       @map("package_id")
+  data      String
+  isSold    Boolean   @default(false) @map("is_sold")
+  soldAt    DateTime? @map("sold_at")
+  orderId   Int?      @map("order_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  package ProductPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@map("stock_items")
+}
+
+model PackageField {
+  id        Int     @id @default(autoincrement())
+  packageId Int     @map("package_id")
+  fieldName String  @db.VarChar(255) @map("field_name")
+  fieldType String  @default("text") @db.VarChar(50) @map("field_type")
+  isRequired Boolean @default(true) @map("is_required")
+  options   String?
+  sortOrder Int     @default(0) @map("sort_order")
+
+  package ProductPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@map("package_fields")
+}
+
+model Order {
+  id              Int      @id @default(autoincrement())
+  orderCode       String   @unique @db.VarChar(50) @map("order_code")
+  userId          String   @db.VarChar(255) @map("user_id")
+  userEmail       String?  @db.VarChar(255) @map("user_email")
+  packageId       Int?     @map("package_id")
+  quantity        Int      @default(1)
+  subtotalAmount  Decimal? @db.Decimal(12, 2) @map("subtotal_amount")
+  discountAmount  Decimal? @db.Decimal(12, 2) @map("discount_amount")
+  taxAmount       Decimal? @db.Decimal(12, 2) @map("tax_amount")
+  totalAmount     Decimal  @db.Decimal(12, 2) @map("total_amount")
+  couponCode      String?  @db.VarChar(100) @map("coupon_code")
+  status          String   @default("pending") @db.VarChar(20)
+  paymentMethod   String   @default("sepay") @db.VarChar(50) @map("payment_method")
+  paymentLinkId   String?  @db.VarChar(255) @map("payment_link_id")
+  customFieldsData Json?   @map("custom_fields_data")
+  deliveryData    String?  @map("delivery_data")
+  notes           String?
+  apiProviderId   Int?     @map("api_provider_id")
+  externalOrderId String?  @db.VarChar(255) @map("external_order_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  package     ProductPackage? @relation(fields: [packageId], references: [id])
+  apiProvider ApiProvider?    @relation(fields: [apiProviderId], references: [id])
+  items       OrderItem[]
+  affiliateReferrals AffiliateReferral[]
+  supportTickets     SupportTicket[]
+
+  @@index([orderCode])
+  @@index([userId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id                   Int      @id @default(autoincrement())
+  orderId              Int      @map("order_id")
+  packageId            Int?     @map("package_id")
+  productNameSnapshot  String?  @db.VarChar(255) @map("product_name_snapshot")
+  packageNameSnapshot  String?  @db.VarChar(255) @map("package_name_snapshot")
+  productImgSnapshot   String?  @map("product_img_snapshot")
+  quantity             Int      @default(1)
+  unitPrice            Decimal  @db.Decimal(12, 2) @map("unit_price")
+  lineTotal            Decimal  @db.Decimal(12, 2) @map("line_total")
+  customFieldsData     Json?    @map("custom_fields_data")
+  deliveryData         String?  @map("delivery_data")
+  status               String   @default("pending") @db.VarChar(20)
+  externalOrderId      String?  @db.VarChar(255) @map("external_order_id")
+  apiStatus            String?  @db.VarChar(50) @map("api_status")
+  apiProviderId        Int?     @map("api_provider_id")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  order       Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  package     ProductPackage? @relation(fields: [packageId], references: [id])
+  apiProvider ApiProvider?   @relation(fields: [apiProviderId], references: [id])
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model SiteSetting {
+  key       String   @id @db.VarChar(255)
+  value     String?
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("site_settings")
+}
+
+model SiteConfig {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique @db.VarChar(255)
+  value       String?
+  description String?
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([key])
+  @@map("site_config")
+}
+
+model Banner {
+  id         Int      @id @default(autoincrement())
+  title      String   @db.VarChar(255)
+  imageUrl   String   @map("image_url")
+  link       String?
+  bannerType String   @default("hero") @db.VarChar(20) @map("banner_type")
+  sortOrder  Int      @default(0) @map("sort_order")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("banners")
+}
+
+model User {
+  id              Int      @id @default(autoincrement())
+  email           String   @unique @db.VarChar(255)
+  passwordHash    String?  @db.VarChar(255) @map("password_hash")
+  displayName     String?  @db.VarChar(255) @map("display_name")
+  avatarUrl       String?  @map("avatar_url")
+  provider        String   @default("local") @db.VarChar(50)
+  providerId      String?  @db.VarChar(255) @map("provider_id")
+  twoFactorSecret String?  @db.VarChar(255) @map("two_factor_secret")
+  balance         Decimal  @default(0) @db.Decimal(12, 2)
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  balanceTransactions BalanceTransaction[]
+  smmOrders           SmmOrder[]
+  cardTransactions    CardChargeTransaction[]
+  wishlists           Wishlist[]
+
+  @@index([email])
+  @@map("users")
+}
+
+model AdminUser {
+  id        Int      @id @default(autoincrement())
+  userId    String   @unique @db.VarChar(255) @map("user_id")
+  email     String   @unique @db.VarChar(255)
+  role      String   @default("admin") @db.VarChar(50)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("admin_users")
+}
+
+
+model BalanceTransaction {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @map("user_id")
+  amount       Decimal  @db.Decimal(12, 2)
+  balanceAfter Decimal  @db.Decimal(12, 2) @map("balance_after")
+  type         String   @db.VarChar(30) // topup | purchase | affiliate_withdraw | admin_adjust | refund
+  status       String   @default("completed") @db.VarChar(20)
+  reference    String?  @db.VarChar(255)
+  description  String?
+  ipAddress    String?  @db.VarChar(50) @map("ip_address")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("balance_transactions")
+}
+
+model FlashSale {
+  id            Int      @id @default(autoincrement())
+  packageId     Int      @map("package_id")
+  salePrice     Decimal  @db.Decimal(12, 2) @map("sale_price")
+  quantityLimit Int      @default(0) @map("quantity_limit")
+  quantitySold  Int      @default(0) @map("quantity_sold")
+  startsAt      DateTime @map("starts_at")
+  endsAt        DateTime @map("ends_at")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  package ProductPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@map("flash_sales")
+}
+
+model GiftCode {
+  id            Int       @id @default(autoincrement())
+  code          String    @unique @db.VarChar(50)
+  discountType  String    @default("percent") @db.VarChar(10) @map("discount_type")
+  discountValue Decimal   @db.Decimal(12, 2) @map("discount_value")
+  minOrder      Decimal   @default(0) @db.Decimal(12, 2) @map("min_order")
+  maxDiscount   Decimal?  @db.Decimal(12, 2) @map("max_discount")
+  usageLimit    Int       @default(0) @map("usage_limit")
+  usageCount    Int       @default(0) @map("usage_count")
+  perUserLimit  Int       @default(1) @map("per_user_limit")
+  startsAt      DateTime? @map("starts_at")
+  expiresAt     DateTime? @map("expires_at")
+  isActive      Boolean   @default(true) @map("is_active")
+  isPublic      Boolean   @default(false) @map("is_public")
+  description   String?   @db.VarChar(500)
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  usages GiftCodeUsage[]
+
+  @@index([code])
+  @@map("gift_codes")
+}
+
+model GiftCodeUsage {
+  id       Int      @id @default(autoincrement())
+  codeId   Int      @map("code_id")
+  userId   String   @db.VarChar(255) @map("user_id")
+  usedAt   DateTime @default(now()) @map("used_at")
+
+  code GiftCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
+
+  @@index([codeId])
+  @@index([userId])
+  @@map("gift_code_usages")
+}
+
+model AffiliateUser {
+  id             Int      @id @default(autoincrement())
+  userId         String   @unique @db.VarChar(255) @map("user_id")
+  email          String?  @db.VarChar(255)
+  refCode        String   @unique @db.VarChar(50) @map("ref_code")
+  commissionRate Decimal  @default(5.00) @db.Decimal(5, 2) @map("commission_rate")
+  totalEarnings  Decimal  @default(0) @db.Decimal(12, 2) @map("total_earnings")
+  totalPaid      Decimal  @default(0) @db.Decimal(12, 2) @map("total_paid")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  referrals AffiliateReferral[]
+
+  @@map("affiliate_users")
+}
+
+model AffiliateReferral {
+  id          Int      @id @default(autoincrement())
+  affiliateId Int      @map("affiliate_id")
+  orderId     Int?     @map("order_id")
+  orderAmount Decimal  @default(0) @db.Decimal(12, 2) @map("order_amount")
+  commission  Decimal  @default(0) @db.Decimal(12, 2)
+  status      String   @default("pending") @db.VarChar(20)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  affiliate AffiliateUser @relation(fields: [affiliateId], references: [id])
+  order     Order?        @relation(fields: [orderId], references: [id])
+
+  @@map("affiliate_referrals")
+}
+
+model BlogCategory {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(255)
+  slug        String   @unique @db.VarChar(255)
+  description String?
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  posts BlogPost[]
+
+  @@map("blog_categories")
+}
+
+model BlogPost {
+  id              Int       @id @default(autoincrement())
+  categoryId      Int?      @map("category_id")
+  title           String    @db.VarChar(500)
+  slug            String    @unique @db.VarChar(500)
+  excerpt         String?
+  content         String
+  thumbnailUrl    String?   @map("thumbnail_url")
+  metaTitle       String?   @db.VarChar(500) @map("meta_title")
+  metaDescription String?   @map("meta_description")
+  isPublished     Boolean   @default(false) @map("is_published")
+  publishedAt     DateTime? @map("published_at")
+  authorId        String?   @db.VarChar(255) @map("author_id")
+  viewCount       Int       @default(0) @map("view_count")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  category BlogCategory? @relation(fields: [categoryId], references: [id])
+
+  @@map("blog_posts")
+}
+
+model Review {
+  id         Int      @id @default(autoincrement())
+  productId  Int      @map("product_id")
+  userId     String   @db.VarChar(255) @map("user_id")
+  userName   String?  @db.VarChar(255) @map("user_name")
+  rating     Int
+  comment    String?
+  isVerified Boolean  @default(false) @map("is_verified")
+  isVisible  Boolean  @default(true) @map("is_visible")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("reviews")
+}
+
+model SupportPage {
+  id              Int      @id @default(autoincrement())
+  slug            String   @unique @db.VarChar(255)
+  title           String   @db.VarChar(500)
+  content         String
+  pageType        String?  @db.VarChar(50) @map("page_type")
+  metaDescription String?  @map("meta_description")
+  isPublished     Boolean  @default(true) @map("is_published")
+  sortOrder       Int      @default(0) @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("support_pages")
+}
+
+model SupportTicket {
+  id           Int       @id @default(autoincrement())
+  ticketNumber String    @unique @db.VarChar(50) @map("ticket_number")
+  userId       String    @db.VarChar(255) @map("user_id")
+  userEmail    String    @db.VarChar(255) @map("user_email")
+  userName     String    @db.VarChar(255) @map("user_name")
+  subject      String    @db.VarChar(500)
+  description  String
+  priority     String    @default("normal") @db.VarChar(20)
+  status       String    @default("open") @db.VarChar(20)
+  category     String?   @db.VarChar(100)
+  orderId      Int?      @map("order_id")
+  assignedTo   String?   @db.VarChar(255) @map("assigned_to")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  resolvedAt   DateTime? @map("resolved_at")
+
+  order    Order?          @relation(fields: [orderId], references: [id])
+  messages TicketMessage[]
+
+  @@index([userId])
+  @@map("support_tickets")
+}
+
+model TicketMessage {
+  id         Int      @id @default(autoincrement())
+  ticketId   Int      @map("ticket_id")
+  senderId   String   @db.VarChar(255) @map("sender_id")
+  senderName String   @db.VarChar(255) @map("sender_name")
+  senderType String?  @db.VarChar(20) @map("sender_type")
+  message    String
+  attachments Json    @default("{}") @map("attachments")
+  isInternal Boolean  @default(false) @map("is_internal")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@map("ticket_messages")
+}
+
+model Announcement {
+  id        Int      @id @default(autoincrement())
+  title     String   @db.VarChar(500)
+  content   String
+  type      String   @default("info") @db.VarChar(30)
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("announcements")
+}
+
+model Wishlist {
+  id        Int      @id @default(autoincrement())
+  userId    String   @db.VarChar(255) @map("user_id")
+  productId Int      @map("product_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@map("wishlists")
+}
+
+model CardChargeTransaction {
+  id                    Int       @id @default(autoincrement())
+  userId                Int       @map("user_id")
+  telco                 String    @db.VarChar(30)
+  code                  String    @db.VarChar(100)
+  serial                String    @db.VarChar(100)
+  declaredAmount        Decimal   @db.Decimal(12, 2) @map("declared_amount")
+  realValue             Decimal?  @db.Decimal(12, 2) @map("real_value")
+  discountRate          Decimal   @default(0) @db.Decimal(5, 2) @map("discount_rate")
+  creditedAmount        Decimal?  @db.Decimal(12, 2) @map("credited_amount")
+  requestId             String    @unique @db.VarChar(100) @map("request_id")
+  transId               String?   @db.VarChar(100) @map("trans_id")
+  apiProviderId         Int?      @map("api_provider_id")
+  status                String    @default("pending") @db.VarChar(20)
+  callbackData          Json?     @map("callback_data")
+  balanceTransactionId  Int?      @map("balance_transaction_id")
+  ipAddress             String?   @db.VarChar(50) @map("ip_address")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  user        User         @relation(fields: [userId], references: [id])
+  apiProvider ApiProvider? @relation(fields: [apiProviderId], references: [id])
+
+  @@map("card_charge_transactions")
+}
+
+model SmmPlatform {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(255)
+  slug      String   @unique @db.VarChar(255)
+  iconUrl   String?  @map("icon_url")
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  categories SmmCategory[]
+
+  @@map("smm_platforms")
+}
+
+model SmmCategory {
+  id         Int      @id @default(autoincrement())
+  platformId Int      @map("platform_id")
+  name       String   @db.VarChar(255)
+  slug       String   @unique @db.VarChar(255)
+  sortOrder  Int      @default(0) @map("sort_order")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  platform SmmPlatform  @relation(fields: [platformId], references: [id], onDelete: Cascade)
+  services SmmService[]
+
+  @@map("smm_categories")
+}
+
+model SmmService {
+  id                Int      @id @default(autoincrement())
+  categoryId        Int      @map("category_id")
+  name              String   @db.VarChar(500)
+  description       String?
+  rate              Float    @default(0)
+  minQuantity       Int      @default(1) @map("min_quantity")
+  maxQuantity       Int      @default(10000) @map("max_quantity")
+  deliveryType      String   @default("manual") @db.VarChar(20) @map("delivery_type")
+  apiProviderId     Int?     @map("api_provider_id")
+  externalServiceId String?  @db.VarChar(100) @map("external_service_id")
+  canRefill         Boolean  @default(false) @map("can_refill")
+  canCancel         Boolean  @default(false) @map("can_cancel")
+  serviceType       String   @default("Default") @db.VarChar(50) @map("service_type")
+  dripFeed          Boolean  @default(false) @map("drip_feed")
+  avgTimeMinutes    Int?     @map("avg_time_minutes")
+  costRate          Float    @default(0) @map("cost_rate")
+  isActive          Boolean  @default(true) @map("is_active")
+  sortOrder         Int      @default(0) @map("sort_order")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  category    SmmCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  apiProvider ApiProvider? @relation(fields: [apiProviderId], references: [id])
+  smmOrders   SmmOrder[]
+
+  @@map("smm_services")
+}
+
+model SmmOrder {
+  id               Int       @id @default(autoincrement())
+  orderCode        String    @unique @db.VarChar(50) @map("order_code")
+  userId           Int       @map("user_id")
+  smmServiceId     Int?      @map("smm_service_id")
+  platformName     String?   @db.VarChar(255) @map("platform_name")
+  categoryName     String?   @db.VarChar(255) @map("category_name")
+  serviceName      String?   @db.VarChar(500) @map("service_name")
+  link             String
+  quantity         Int
+  charge           Decimal   @default(0) @db.Decimal(12, 2)
+  status           String    @default("pending") @db.VarChar(50)
+  deliveryType     String    @default("manual") @db.VarChar(20) @map("delivery_type")
+  apiProviderId    Int?      @map("api_provider_id")
+  externalOrderId  String?   @db.VarChar(100) @map("external_order_id")
+  startCount       Int?      @map("start_count")
+  remains          Int?
+  serviceType      String    @default("Default") @db.VarChar(50) @map("service_type")
+  extras           String?
+  adminNotes       String?   @map("admin_notes")
+  refillId         String?   @db.VarChar(100) @map("refill_id")
+  refillStatus     String?   @db.VarChar(50) @map("refill_status")
+  scheduledAt      DateTime? @map("scheduled_at")
+  repeatCount      Int       @default(0) @map("repeat_count")
+  repeatInterval   Int       @default(0) @map("repeat_interval")
+  repeatRemaining  Int       @default(0) @map("repeat_remaining")
+  parentOrderId    Int?      @map("parent_order_id")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  smmService  SmmService?  @relation(fields: [smmServiceId], references: [id])
+  apiProvider ApiProvider? @relation(fields: [apiProviderId], references: [id])
+
+  @@map("smm_orders")
+}
+
+model TelegramBot {
+  id            Int      @id @default(autoincrement())
+  name          String   @db.VarChar(255)
+  department    String   @db.VarChar(50)  // sale, tech, accounting, custom...
+  botToken      String   @db.VarChar(255) @map("bot_token")
+  chatId        String   @db.VarChar(100) @map("chat_id")
+  // Loại thông báo bot này nhận (JSON array): new_order, new_user, payment, report, error, low_stock...
+  notifyTypes   Json     @default("[]") @map("notify_types")
+  receiveReports Boolean @default(false) @map("receive_reports")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("telegram_bots")
+}
