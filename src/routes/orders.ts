@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../db';
 import { requireUser, requireAdmin, requireStaffOrAdmin } from '../middleware/auth';
-import { orderToDict, genOrderCode, applyCoupon, autoDeliver, money } from '../services/orders';
+import { orderToDict, genOrderCode, applyCoupon, autoDeliver, money, refundOrderBalance } from '../services/orders';
 import { notifyNewOrder } from '../services/telegram';
 import { createNotification } from '../services/notify';
 import { awardPointsForOrder, estimatePointDiscount, redeemPointsForOrder, refundPointsForOrder } from '../services/loyalty';
@@ -273,6 +273,7 @@ router.post('/my/:order_code/cancel', requireUser, async (req: Request, res: Res
     }
     await prisma.order.update({ where: { id: order.id }, data: { status: 'cancelled' } });
     refundPointsForOrder(order.userId, order.orderCode).catch(() => {}); // hoàn điểm đã đổi (nếu có)
+    await refundOrderBalance(order.orderCode); // hoàn tiền nếu đã trả bằng số dư (an toàn, idempotent)
     res.json({ message: 'Đã hủy đơn hàng' });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
@@ -368,6 +369,7 @@ router.patch('/admin/:order_code/status', requireStaffOrAdmin, async (req: Reque
       // Hoàn điểm đã đổi khi đơn bị hủy / hoàn tiền / thất bại
       if (['cancelled', 'refunded', 'failed'].includes(status)) {
         refundPointsForOrder(order.userId, order.orderCode).catch(() => {});
+        await refundOrderBalance(order.orderCode); // hoàn tiền nếu đã trả bằng số dư (an toàn, idempotent)
       }
     }
 
@@ -425,6 +427,7 @@ router.post('/admin/:order_code/cancel', requireStaffOrAdmin, async (req: Reques
     if (!order) { res.status(404).json({ detail: 'Không tìm thấy' }); return; }
     await prisma.order.update({ where: { id: order.id }, data: { status: 'cancelled' } });
     refundPointsForOrder(order.userId, order.orderCode).catch(() => {}); // hoàn điểm đã đổi (nếu có)
+    await refundOrderBalance(order.orderCode); // hoàn tiền nếu đã trả bằng số dư (an toàn, idempotent)
     res.json({ message: 'Đã hủy đơn' });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });

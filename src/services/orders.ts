@@ -192,6 +192,34 @@ export async function refundToBalance(
 }
 
 /**
+ * Hoàn TIỀN vào số dư khi hủy/hoàn một đơn đã thanh toán bằng số dư.
+ * Chỉ áp dụng paymentMethod='balance'. Idempotent (chống hoàn 2 lần). Không ném lỗi.
+ */
+export async function refundOrderBalance(orderCode: string): Promise<void> {
+  try {
+    if (!orderCode) return;
+    const order = await prisma.order.findUnique({ where: { orderCode } });
+    if (!order || order.paymentMethod !== 'balance') return;
+    const uid = parseInt(String(order.userId), 10);
+    if (!uid || Number.isNaN(uid)) return;
+    const amount = money(order.totalAmount);
+    if (amount <= 0) return;
+    const existed = await prisma.balanceTransaction.findFirst({ where: { reference: order.orderCode, type: 'refund' } });
+    if (existed) return; // đã hoàn -> bỏ qua
+    await prisma.$transaction(async (tx: any) => {
+      const u = await tx.user.update({ where: { id: uid }, data: { balance: { increment: amount } } });
+      await tx.balanceTransaction.create({
+        data: { userId: uid, amount, balanceAfter: money(u.balance), type: 'refund', status: 'completed', reference: order.orderCode, description: `Hoàn tiền hủy đơn ${order.orderCode}` },
+      });
+    });
+    const { createNotification } = await import('./notify');
+    createNotification(uid, { type: 'payment', title: `Hoàn ${amount.toLocaleString()}đ vào số dư`, body: `Đơn ${order.orderCode} đã hủy`, link: '/profile' }).catch(() => {});
+  } catch {
+    /* nuốt: hoàn tiền không được làm hỏng luồng hủy */
+  }
+}
+
+/**
  * Áp dụng mã giảm giá
  */
 export async function applyCoupon(
