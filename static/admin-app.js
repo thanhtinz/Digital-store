@@ -103,9 +103,9 @@
       { p: '/admin/affiliates', icon: 'affiliate', label: 'Affiliate', ready: true },
     ] },
     { group: 'Nội dung', items: [
-      { p: '/admin/blog', icon: 'blog', label: 'Blog' },
+      { p: '/admin/blog', icon: 'blog', label: 'Blog', ready: true },
       { p: '/admin/announcements', icon: 'announce', label: 'Thông báo', ready: true },
-      { p: '/admin/tickets', icon: 'tickets', label: 'Hỗ trợ' },
+      { p: '/admin/tickets', icon: 'tickets', label: 'Hỗ trợ', ready: true },
     ] },
     { group: 'Hệ thống', items: [
       { p: '/admin/payments', icon: 'payments', label: 'Thanh toán', ready: true },
@@ -141,6 +141,8 @@
     '/admin/payments': screenPayments,
     '/admin/announcements': screenAnnouncements,
     '/admin/affiliates': screenAffiliate,
+    '/admin/blog': screenBlog,
+    '/admin/tickets': screenTickets,
     '/admin/settings': screenSettings,
   };
   function go(path, replace) {
@@ -589,6 +591,123 @@
   function screenNotFound(view) {
     view.innerHTML = '<div class="ap-empty" style="min-height:60vh">' + ICON('alert') + '<div style="font-size:18px;font-weight:600">Không tìm thấy trang</div><div><a href="/admin" data-path="/admin" style="color:var(--ap-primary)">Về Dashboard</a></div></div>';
     var a = view.querySelector('[data-path]'); if (a) a.addEventListener('click', function (e) { e.preventDefault(); go('/admin'); });
+  }
+
+  // ── SCREEN: Blog ─────────────────────────────────────
+  var blogCatCache = null;
+  function ensureBlogCats() { return blogCatCache ? Promise.resolve(blogCatCache) : api('/blog/categories').then(function (c) { blogCatCache = c || []; return blogCatCache; }); }
+  function screenBlog(view) {
+    view.innerHTML = pageHead('Blog', 'Quản lý bài viết & chuyên mục', '<button class="ap-btn" id="ap-bl-cats">Chuyên mục</button> <button class="ap-btn primary" id="ap-bl-add">+ Viết bài</button>') +
+      '<div class="ap-card" id="ap-bl-card"><div style="display:grid;place-items:center;min-height:200px"><div class="ap-spinner"></div></div></div>';
+    $('#ap-bl-add').addEventListener('click', function () { blogPostForm(null); });
+    $('#ap-bl-cats').addEventListener('click', blogCatsDrawer);
+    loadBlogPosts();
+  }
+  function loadBlogPosts() {
+    var card = $('#ap-bl-card'); if (!card) return;
+    api('/admin/blog/posts/all').then(function (d) {
+      var rows = (d.items || []).map(function (p) {
+        return '<tr><td><b>' + esc(p.title) + '</b><div style="font-size:12px;color:var(--ap-text-3)">' + esc(p.slug) + '</div></td>' +
+          '<td>' + esc((p.category && p.category.name) || '—') + '</td>' +
+          '<td>' + (p.isPublished ? '<span class="ap-badge green">Đã đăng</span>' : '<span class="ap-badge amber">Nháp</span>') + '</td>' +
+          '<td>' + fmtNum(p.viewCount || 0) + '</td>' +
+          '<td style="color:var(--ap-text-3)">' + fmtDate(p.createdAt) + '</td>' +
+          '<td style="text-align:right;white-space:nowrap"><button class="ap-btn sm" data-edit="' + p.id + '">Sửa</button> <button class="ap-btn sm danger" data-del="' + p.id + '">Xóa</button></td></tr>';
+      }).join('') || emptyRow(6, 'Chưa có bài viết');
+      card.innerHTML = '<div class="ap-table-wrap"><table class="ap-table"><thead><tr><th>Tiêu đề</th><th>Chuyên mục</th><th>Trạng thái</th><th>Lượt xem</th><th>Tạo</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+      card.querySelectorAll('[data-edit]').forEach(function (b) { b.addEventListener('click', function () { blogPostForm(b.getAttribute('data-edit')); }); });
+      card.querySelectorAll('[data-del]').forEach(function (b) { b.addEventListener('click', function () { if (!confirm('Xóa bài viết này?')) return; api('/admin/blog/posts/' + b.getAttribute('data-del'), { method: 'DELETE' }).then(function () { toast('Đã xóa', 'success'); loadBlogPosts(); }).catch(function (e) { toast(e.message, 'error'); }); }); });
+    }).catch(function (e) { card.innerHTML = '<div class="ap-empty">' + ICON('alert') + '<div>' + esc(e.message) + '</div></div>'; });
+  }
+  function blogPostForm(id) {
+    Promise.all([ensureBlogCats(), id ? api('/admin/blog/posts/id/' + id) : Promise.resolve({})]).then(function (r) {
+      var cats = r[0] || [], p = r[1] || {};
+      var catOpts = [{ v: '', t: '— Không chuyên mục —' }].concat(cats.map(function (c) { return { v: c.id, t: c.name }; }));
+      var body = inp('blf-title', 'Tiêu đề', p.title) +
+        sel('blf-cat', 'Chuyên mục', p.categoryId || '', catOpts) +
+        inp('blf-thumb', 'Ảnh thumbnail URL', p.thumbnailUrl, 'text', 'https://...') +
+        ta('blf-excerpt', 'Tóm tắt', p.excerpt, '') +
+        '<div class="ap-field"><label>Nội dung (HTML/Markdown)</label><textarea class="ap-input" id="blf-content" rows="8" style="font-family:ui-monospace,monospace;font-size:12.5px">' + esc(p.content || '') + '</textarea></div>' +
+        switchRow('blf-pub', 'Đăng bài (publish)', 'Tắt = lưu nháp', !!p.isPublished);
+      openModal(id ? 'Sửa bài viết' : 'Viết bài mới', body, function (btn) {
+        var title = v('blf-title'); if (!title) { toast('Nhập tiêu đề', 'error'); return; }
+        btnLoad(btn, true);
+        var payload = { title: title, content: v('blf-content'), excerpt: v('blf-excerpt'), category_id: v('blf-cat') ? parseInt(v('blf-cat'), 10) : null, thumbnail_url: v('blf-thumb'), is_published: vc('blf-pub') };
+        var req = id ? api('/admin/blog/posts/' + id, { method: 'PATCH', body: payload }) : api('/admin/blog/posts', { method: 'POST', body: payload });
+        req.then(function () { toast('Đã lưu', 'success'); closeModal(); loadBlogPosts(); }).catch(function (e) { toast(e.message, 'error'); btnLoad(btn, false); });
+      });
+    }).catch(function (e) { toast(e.message, 'error'); });
+  }
+  function blogCatsDrawer() {
+    var dr = openDrawer('Chuyên mục blog', '<div style="display:grid;place-items:center;min-height:140px"><div class="ap-spinner"></div></div>');
+    var body = dr.querySelector('.ap-drawer-body');
+    var reload = function () {
+      api('/blog/categories').then(function (cats) {
+        blogCatCache = cats;
+        var list = (cats || []).map(function (c) { return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--ap-border)"><div><b>' + esc(c.name) + '</b><div style="font-size:12px;color:var(--ap-text-3)">' + esc(c.slug) + '</div></div><button class="ap-btn sm danger" data-del="' + c.id + '">Xóa</button></div>'; }).join('') || '<div class="ap-empty" style="padding:20px">Chưa có chuyên mục</div>';
+        body.innerHTML = '<div class="ap-field"><label>Tên chuyên mục mới</label><input class="ap-input" id="bc-name" placeholder="VD: Hướng dẫn"></div><button class="ap-btn primary" id="bc-add" style="margin-bottom:16px;width:100%">+ Thêm</button>' + list;
+        body.querySelector('#bc-add').addEventListener('click', function () {
+          var name = v('bc-name'); if (!name) { toast('Nhập tên', 'error'); return; }
+          api('/blog/admin/categories', { method: 'POST', body: { name: name } }).then(function () { toast('Đã thêm', 'success'); reload(); }).catch(function (e) { toast(e.message, 'error'); });
+        });
+        body.querySelectorAll('[data-del]').forEach(function (b) { b.addEventListener('click', function () { if (!confirm('Xóa chuyên mục?')) return; api('/blog/admin/categories/' + b.getAttribute('data-del'), { method: 'DELETE' }).then(function () { toast('Đã xóa', 'success'); reload(); }).catch(function (e) { toast(e.message, 'error'); }); }); });
+      }).catch(function (e) { body.innerHTML = '<div class="ap-empty">' + esc(e.message) + '</div>'; });
+    };
+    reload();
+  }
+
+  // ── SCREEN: Tickets ──────────────────────────────────
+  var ticketState = { status: '' };
+  var TICKET_STATUS = { open: { c: 'blue', t: 'Mở' }, answered: { c: 'indigo', t: 'Đã trả lời' }, pending: { c: 'amber', t: 'Chờ' }, resolved: { c: 'green', t: 'Đã xử lý' }, closed: { c: 'gray', t: 'Đóng' } };
+  function ticketBadge(s) { var m = TICKET_STATUS[s] || { c: 'gray', t: s }; return '<span class="ap-badge ' + m.c + '">' + esc(m.t) + '</span>'; }
+  function screenTickets(view) {
+    view.innerHTML = pageHead('Hỗ trợ', 'Xử lý ticket của khách hàng') +
+      '<div class="ap-toolbar"><select class="ap-select" id="ap-tk-status" style="width:200px">' +
+        ['', 'open', 'answered', 'pending', 'resolved', 'closed'].map(function (s) { return '<option value="' + s + '"' + (ticketState.status === s ? ' selected' : '') + '>' + (s ? TICKET_STATUS[s].t : 'Tất cả trạng thái') + '</option>'; }).join('') +
+      '</select><button class="ap-btn" id="ap-tk-refresh">' + ICON('refresh') + '</button></div>' +
+      '<div class="ap-card" id="ap-tk-card"><div style="display:grid;place-items:center;min-height:220px"><div class="ap-spinner"></div></div></div>';
+    $('#ap-tk-status').addEventListener('change', function (e) { ticketState.status = e.target.value; loadTickets(); });
+    $('#ap-tk-refresh').addEventListener('click', loadTickets);
+    loadTickets();
+  }
+  function loadTickets() {
+    var card = $('#ap-tk-card'); if (!card) return;
+    var q = '/admin/tickets?limit=50' + (ticketState.status ? '&status=' + ticketState.status : '');
+    api(q).then(function (d) {
+      var items = d.items || [];
+      var rows = items.map(function (t) {
+        return '<tr class="clickable" data-id="' + t.id + '"><td class="ap-mono">' + esc(t.ticketNumber || ('#' + t.id)) + '</td><td><b>' + esc(t.subject) + '</b></td><td>' + esc(t.userEmail || '—') + '</td><td>' + esc(t.priority || 'normal') + '</td><td>' + ticketBadge(t.status) + '</td><td style="color:var(--ap-text-3)">' + fmtDateTime(t.createdAt) + '</td></tr>';
+      }).join('') || emptyRow(6, 'Không có ticket');
+      card.innerHTML = '<div class="ap-table-wrap"><table class="ap-table"><thead><tr><th>Mã</th><th>Tiêu đề</th><th>Khách</th><th>Ưu tiên</th><th>Trạng thái</th><th>Thời gian</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+      card.querySelectorAll('tr[data-id]').forEach(function (tr) { tr.addEventListener('click', function () { ticketDrawer(items.find(function (x) { return x.id == tr.getAttribute('data-id'); })); }); });
+    }).catch(function (e) { card.innerHTML = '<div class="ap-empty">' + ICON('alert') + '<div>' + esc(e.message) + '</div></div>'; });
+  }
+  function ticketDrawer(t) {
+    if (!t) return;
+    var msgs = (t.messages || []).map(function (m) {
+      var mine = m.senderType === 'admin';
+      return '<div style="margin-bottom:10px;display:flex;' + (mine ? 'justify-content:flex-end' : '') + '"><div style="max-width:80%;background:' + (mine ? 'var(--ap-primary-soft)' : 'var(--ap-surface-2)') + ';padding:9px 12px;border-radius:10px"><div style="font-size:11px;color:var(--ap-text-3);margin-bottom:2px">' + esc(m.senderName || (mine ? 'Hỗ trợ' : 'Khách')) + ' · ' + fmtDateTime(m.createdAt) + '</div><div style="font-size:13px;white-space:pre-wrap">' + esc(m.message) + '</div></div></div>';
+    }).join('') || '<div class="ap-empty" style="padding:16px">Chưa có tin nhắn</div>';
+    var statusOpts = ['open', 'answered', 'pending', 'resolved', 'closed'].map(function (s) { return '<option value="' + s + '"' + (t.status === s ? ' selected' : '') + '>' + TICKET_STATUS[s].t + '</option>'; }).join('');
+    var body =
+      '<dl class="ap-dl"><dt>Mã</dt><dd class="ap-mono">' + esc(t.ticketNumber || ('#' + t.id)) + '</dd>' +
+      '<dt>Khách</dt><dd>' + esc(t.userName || '') + ' (' + esc(t.userEmail || '') + ')</dd>' +
+      '<dt>Tiêu đề</dt><dd>' + esc(t.subject) + '</dd>' +
+      '<dt>Trạng thái</dt><dd>' + ticketBadge(t.status) + '</dd></dl>' +
+      (t.description ? '<div style="background:var(--ap-surface-2);padding:12px;border-radius:8px;font-size:13px;margin:12px 0;white-space:pre-wrap">' + esc(t.description) + '</div>' : '') +
+      '<h4 style="margin:16px 0 8px;font-size:13px">Hội thoại</h4><div style="max-height:280px;overflow-y:auto">' + msgs + '</div>' +
+      '<div class="ap-field" style="margin-top:14px"><label>Trả lời</label><textarea class="ap-input" id="tk-reply" rows="3" placeholder="Nhập câu trả lời..."></textarea></div>' +
+      '<div style="display:flex;gap:8px"><button class="ap-btn primary" id="tk-send">Gửi trả lời</button><select class="ap-select" id="tk-status" style="width:auto">' + statusOpts + '</select><button class="ap-btn" id="tk-setstatus">Đổi</button></div>';
+    openDrawer('Ticket ' + (t.ticketNumber || ('#' + t.id)), body);
+    $('#tk-send').addEventListener('click', function () {
+      var msg = v('tk-reply'); if (!msg) { toast('Nhập nội dung', 'error'); return; }
+      var btn = this; btnLoad(btn, true);
+      api('/admin/tickets/' + t.id + '/reply', { method: 'POST', body: { message: msg } }).then(function () { toast('Đã gửi', 'success'); closeDrawer(); loadTickets(); }).catch(function (e) { toast(e.message, 'error'); btnLoad(btn, false); });
+    });
+    $('#tk-setstatus').addEventListener('click', function () {
+      var btn = this; btn.disabled = true;
+      api('/admin/tickets/' + t.id, { method: 'PATCH', body: { status: $('#tk-status').value } }).then(function () { toast('Đã đổi trạng thái', 'success'); closeDrawer(); loadTickets(); }).catch(function (e) { toast(e.message, 'error'); btn.disabled = false; });
+    });
   }
 
   // ── SCREEN: Payments (SePay) ─────────────────────────

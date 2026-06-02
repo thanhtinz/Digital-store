@@ -129,6 +129,35 @@ router.delete(['/admin/blog/posts/:id', '/blog/admin/posts/:id'], requireStaffOr
   }
 });
 
+// Admin: TẤT CẢ bài viết (gồm bản nháp) cho màn quản trị
+router.get(['/admin/blog/posts/all', '/blog/admin/posts/all'], requireStaffOrAdmin, async (_req: Request, res: Response) => {
+  try {
+    const posts = await prisma.blogPost.findMany({ orderBy: { createdAt: 'desc' }, include: { category: true } });
+    res.json({
+      items: posts.map((p: any) => ({
+        id: p.id, title: p.title, slug: p.slug, excerpt: p.excerpt, thumbnailUrl: p.thumbnailUrl,
+        isPublished: p.isPublished, viewCount: p.viewCount,
+        category: p.category ? { id: p.category.id, name: p.category.name } : null,
+        categoryId: p.categoryId,
+        createdAt: p.createdAt?.toISOString(), publishedAt: p.publishedAt?.toISOString(),
+      })),
+    });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+// Admin: chi tiết 1 bài (kèm nội dung) để sửa
+router.get(['/admin/blog/posts/id/:id', '/blog/admin/posts/id/:id'], requireStaffOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const p = await prisma.blogPost.findUnique({ where: { id: parseInt(req.params.id) } });
+    if (!p) { res.status(404).json({ detail: 'Không tìm thấy' }); return; }
+    res.json(p);
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
 // ════════════════════════════════════════════════════
 // REVIEWS
 // ════════════════════════════════════════════════════

@@ -526,6 +526,41 @@ router.get('/admin/tickets', requireStaffOrAdmin, async (req: Request, res: Resp
   }
 });
 
+// Admin trả lời ticket
+router.post('/admin/tickets/:id/reply', requireStaffOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+    const message = String(req.body.message || '').trim();
+    if (!message) { res.status(400).json({ detail: 'Nội dung không được trống' }); return; }
+    const ticket = await prisma.supportTicket.findUnique({ where: { id } });
+    if (!ticket) { res.status(404).json({ detail: 'Không tìm thấy ticket' }); return; }
+    const admin = (req as any).admin || {};
+    const msg = await prisma.ticketMessage.create({
+      data: { ticketId: id, senderId: String(admin.user_id || 'admin'), senderName: admin.display_name || admin.email || 'Hỗ trợ', senderType: 'admin', message },
+    });
+    await prisma.supportTicket.update({ where: { id }, data: { status: 'answered', updatedAt: new Date() } });
+    res.status(201).json(msg);
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+// Admin đổi trạng thái ticket
+router.patch('/admin/tickets/:id', requireStaffOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+    const status = String(req.body.status || '').trim();
+    const allowed = ['open', 'answered', 'pending', 'resolved', 'closed'];
+    if (!allowed.includes(status)) { res.status(400).json({ detail: 'Trạng thái không hợp lệ' }); return; }
+    const data: any = { status, updatedAt: new Date() };
+    if (status === 'resolved' || status === 'closed') data.resolvedAt = new Date();
+    const t = await prisma.supportTicket.update({ where: { id }, data });
+    res.json(t);
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
 // ── Settings: public / unified / database ──────────────
 router.get('/admin/settings/public', async (_req: Request, res: Response) => {
   const publicKeys = ['site_name', 'site_logo', 'site_description', 'site_banner', 'currency', 'tax_rate', 'home_categories'];
