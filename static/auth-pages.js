@@ -60,7 +60,6 @@ function renderLogin(view) {
       </form>
       <div class="auth-footer">
         Chưa có tài khoản? <a href="/register" class="auth-link">Tạo tài khoản mới →</a>
-        <div class="text-sm" style="margin-top:10px;"><a href="/admin/login" class="auth-link">Đăng nhập dành cho nhân viên / quản trị</a></div>
       </div>
     </div>
   `;
