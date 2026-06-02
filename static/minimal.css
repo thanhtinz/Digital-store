@@ -1,74 +1,190 @@
 /* ============================================================
-   MINIMAL THEME (client) — giữ NGUYÊN bố cục, chỉ đổi phong cách
-   sang phẳng/tối giản. Nạp SAU styles.css để override design token.
-
-   Ý tưởng: thay "đổ bóng mềm" bằng "viền hairline 1px" -> phẳng, sạch,
-   nhiều khoảng trắng; nền sáng; bo góc gọn. Không đụng tới layout.
+   MINIMAL THEME (client) — restyle COMPONENT theo phong cách minimal.
+   Nạp SAU styles.css. Chỉ đổi giao diện (màu/viền/bóng/bo góc/khoảng
+   cách nhỏ), KHÔNG đổi cấu trúc/layout/tính năng.
    ============================================================ */
 
+/* ── 1) Design tokens: phẳng, sáng, viền hairline ─────────── */
 :root {
-  --bg-page:    #F7F8FA;
+  --bg-page:    #FAFBFC;
   --bg-card:    #FFFFFF;
   --bg-sidebar: #FFFFFF;
-  --bg-header:  rgba(255,255,255,0.92);
-
-  --border:      #EBECEF;
-  --border-dark: #E2E4E8;
-
-  /* Đổ bóng -> viền hairline phẳng (minimal). Overlay (modal/dropdown) giữ chút nâng nhẹ. */
-  --shadow-sm:     0 0 0 1px #ECEDF0;
-  --shadow:        0 0 0 1px #ECEDF0;
-  --shadow-card:   0 0 0 1px #ECEDF0;
-  --shadow-lg:     0 0 0 1px #ECEDF0, 0 10px 24px rgba(17,24,39,.06);
-  --shadow-dialog: 0 16px 48px rgba(17,24,39,.14);
+  --bg-header:  #FFFFFF;
+  --border:      #ECEDF1;
+  --border-dark: #E2E4E9;
+  --shadow-sm:     0 0 0 1px #EEEFF2;
+  --shadow:        0 0 0 1px #EEEFF2;
+  --shadow-card:   0 0 0 1px #EEEFF2;
+  --shadow-lg:     0 0 0 1px #ECEDF1, 0 12px 28px rgba(17,24,39,.07);
+  --shadow-dialog: 0 20px 56px rgba(17,24,39,.16);
   --shadow-primary: none;
-
-  --radius:    12px;
-  --radius-sm:  8px;
-  --radius-xs:  6px;
+  --radius:    14px;
+  --radius-sm:  9px;
+  --radius-xs:  7px;
 }
-
 [data-theme="dark"] {
   --bg-page:    #0E1014;
   --bg-card:    #15171C;
-  --bg-sidebar: #15171C;
-  --bg-header:  rgba(21,23,28,0.92);
-
+  --bg-sidebar: #14161B;
+  --bg-header:  #14161B;
   --border:      #262A31;
   --border-dark: #2F343C;
-
   --shadow-sm:     0 0 0 1px #262A31;
   --shadow:        0 0 0 1px #262A31;
   --shadow-card:   0 0 0 1px #262A31;
-  --shadow-lg:     0 0 0 1px #262A31, 0 10px 24px rgba(0,0,0,.45);
-  --shadow-dialog: 0 16px 48px rgba(0,0,0,.55);
+  --shadow-lg:     0 0 0 1px #262A31, 0 12px 28px rgba(0,0,0,.5);
+  --shadow-dialog: 0 20px 56px rgba(0,0,0,.6);
   --shadow-primary: none;
 }
 
-/* Làm phẳng các "glow"/đổ bóng còn hardcode trên phần tử nổi bật (chỉ đổi
-   box-shadow, KHÔNG đổi kích thước/vị trí nên bố cục giữ nguyên). */
-.btn,
-.btn-primary,
-.btn-secondary,
-.product-card,
-.stat-card,
-.dashboard-card,
-.cui-card,
-.glass-card,
-.fab,
-.floating-cart,
-.chip {
-  box-shadow: none !important;
-}
-
-/* Header phẳng: bỏ đổ bóng đậm, dùng viền dưới mảnh */
-.header, #header {
-  box-shadow: none !important;
-  border-bottom: 1px solid var(--border) !important;
-}
-
-/* Sidebar phẳng: viền phải thay vì đổ bóng */
-.sidebar, #sidebar {
-  box-shadow: none !important;
+/* ── 2) Sidebar / menu ────────────────────────────────────── */
+.sidebar {
+  background: var(--bg-sidebar) !important;
   border-right: 1px solid var(--border) !important;
+  box-shadow: none !important;
 }
+.sidebar-logo {
+  border-bottom: 1px solid var(--border) !important;
+  box-shadow: none !important;
+}
+.logo-text { font-weight: 700 !important; letter-spacing: -.01em; }
+.sidebar-nav { padding: 10px 12px !important; }
+.nav-item, .nav-item-link {
+  border-radius: 9px !important;
+  font-weight: 500 !important;
+  color: var(--text-body) !important;
+  box-shadow: none !important;
+  transition: background .15s, color .15s !important;
+}
+.nav-item:hover, .nav-item-link:hover {
+  background: var(--grey-100) !important;
+  color: var(--text-heading) !important;
+}
+.nav-item.active, .nav-item-link.active,
+.nav-item.active:hover, .nav-item-link.active:hover {
+  background: rgba(var(--primary-rgb), .09) !important;
+  color: var(--primary) !important;
+  font-weight: 600 !important;
+  box-shadow: inset 3px 0 0 var(--primary) !important;
+}
+.nav-icon { opacity: .92; }
+.nav-section, .nav-section-title, .nav-group-title {
+  text-transform: uppercase !important;
+  font-size: 11px !important;
+  letter-spacing: .06em !important;
+  color: var(--text-muted) !important;
+  font-weight: 600 !important;
+}
+
+/* ── 3) Header ────────────────────────────────────────────── */
+.header, #header {
+  background: var(--bg-header) !important;
+  border-bottom: 1px solid var(--border) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+.header-search {
+  background: var(--grey-100) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+.header-search input { background: transparent !important; }
+.header-btn, .user-avatar-btn, .hamburger-btn {
+  border-radius: 10px !important;
+  box-shadow: none !important;
+  border: 1px solid transparent !important;
+}
+.header-btn:hover, .user-avatar-btn:hover, .hamburger-btn:hover {
+  background: var(--grey-100) !important;
+}
+.user-avatar { box-shadow: none !important; }
+.header-admin-link { border-radius: 9px !important; box-shadow: none !important; }
+
+/* ── 4) Dropdown tài khoản ───────────────────────────────── */
+.dropdown-menu {
+  border: 1px solid var(--border) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+.dropdown-item {
+  border-radius: 9px !important;
+  font-weight: 500 !important;
+  margin: 1px 6px;
+}
+.dropdown-item:hover { background: var(--grey-100) !important; }
+.dropdown-divider { background: var(--border) !important; }
+
+/* ── 5) Footer (thoáng, viền mảnh) ───────────────────────── */
+.site-footer {
+  background: var(--bg-card) !important;
+  border-top: 1px solid var(--border) !important;
+  box-shadow: none !important;
+}
+.footer-title { font-weight: 600 !important; font-size: 13px !important; letter-spacing: .01em; }
+.footer-link { color: var(--text-body) !important; transition: color .15s; }
+.footer-link:hover { color: var(--primary) !important; }
+.footer-bottom { border-top: 1px solid var(--border) !important; color: var(--text-muted) !important; }
+
+/* ── 6) Buttons (phẳng, bo gọn) ──────────────────────────── */
+.btn {
+  border-radius: 9px !important;
+  box-shadow: none !important;
+  font-weight: 600 !important;
+  transition: background .15s, border-color .15s, opacity .15s !important;
+}
+.btn-primary { background: var(--primary) !important; border: 1px solid var(--primary) !important; color: #fff !important; }
+.btn-primary:hover { background: var(--primary-dark) !important; }
+.btn-secondary, .btn-ghost, .btn-outline, .btn-default, .btn-light {
+  background: var(--grey-100) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-heading) !important;
+}
+.btn-secondary:hover, .btn-ghost:hover, .btn-outline:hover { background: var(--grey-200) !important; }
+
+/* ── 7) Cards (viền 1px, không bóng) ─────────────────────── */
+.card, .product-card, .dashboard-card, .cui-card, .info-card, .order-card, .stat-card, .section-card {
+  border: 1px solid var(--border) !important;
+  border-radius: 14px !important;
+  box-shadow: none !important;
+}
+.product-card { transition: border-color .15s, transform .15s, box-shadow .15s !important; }
+.product-card:hover {
+  border-color: var(--border-dark) !important;
+  box-shadow: 0 10px 26px rgba(17,24,39,.08) !important;
+}
+
+/* ── 8) Forms ─────────────────────────────────────────────── */
+.form-input, .form-select, select.form-input, textarea.form-input, input.form-input {
+  border: 1px solid var(--border) !important;
+  border-radius: 9px !important;
+  box-shadow: none !important;
+  background: var(--bg-card) !important;
+}
+.form-input:focus, .form-select:focus, textarea.form-input:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), .12) !important;
+  outline: none !important;
+}
+.form-label { font-weight: 600 !important; color: var(--text-heading) !important; }
+
+/* ── 9) Badges / chips ───────────────────────────────────── */
+.badge, .chip, .tag, .pill {
+  border-radius: 100px !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+
+/* ── 10) Modal / overlay ─────────────────────────────────── */
+.modal {
+  border: 1px solid var(--border) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--shadow-dialog) !important;
+}
+.modal-overlay { backdrop-filter: blur(2px); }
+.modal-header { border-bottom: 1px solid var(--border) !important; }
+
+/* ── 11) Misc: phẳng hoá glow/đổ bóng còn sót, nền trang ─── */
+.main-content { background: var(--bg-page) !important; }
+.fab, .floating-cart, .glass-card, .toast { box-shadow: var(--shadow-lg) !important; }
+.page-title, .section-title { letter-spacing: -.01em; }
