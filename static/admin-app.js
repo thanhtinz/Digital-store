@@ -730,15 +730,16 @@
         sel('blf-cat', 'Chuyên mục', p.categoryId || '', catOpts) +
         inp('blf-thumb', 'Ảnh thumbnail URL', p.thumbnailUrl, 'text', 'https://...') +
         ta('blf-excerpt', 'Tóm tắt', p.excerpt, '') +
-        '<div class="ap-field"><label>Nội dung (HTML/Markdown)</label><textarea class="ap-input" id="blf-content" rows="8" style="font-family:ui-monospace,monospace;font-size:12.5px">' + esc(p.content || '') + '</textarea></div>' +
+        rteHtml('blf-content', p.content, 'Viết nội dung bài...') +
         switchRow('blf-pub', 'Đăng bài (publish)', 'Tắt = lưu nháp', !!p.isPublished);
       openModal(id ? 'Sửa bài viết' : 'Viết bài mới', body, function (btn) {
         var title = v('blf-title'); if (!title) { toast('Nhập tiêu đề', 'error'); return; }
         btnLoad(btn, true);
-        var payload = { title: title, content: v('blf-content'), excerpt: v('blf-excerpt'), category_id: v('blf-cat') ? parseInt(v('blf-cat'), 10) : null, thumbnail_url: v('blf-thumb'), is_published: vc('blf-pub') };
+        var payload = { title: title, content: rteGet('blf-content'), excerpt: v('blf-excerpt'), category_id: v('blf-cat') ? parseInt(v('blf-cat'), 10) : null, thumbnail_url: v('blf-thumb'), is_published: vc('blf-pub') };
         var req = id ? api('/admin/blog/posts/' + id, { method: 'PATCH', body: payload }) : api('/admin/blog/posts', { method: 'POST', body: payload });
         req.then(function () { toast('Đã lưu', 'success'); closeModal(); loadBlogPosts(); }).catch(function (e) { toast(e.message, 'error'); btnLoad(btn, false); });
-      });
+      }, null, true);
+      wireRTE('blf-content');
     }).catch(function (e) { toast(e.message, 'error'); });
   }
   function blogCatsDrawer() {
@@ -943,10 +944,10 @@
 
   // ── Modal + form helpers ─────────────────────────────
   function closeModal() { var m = $('#ap-modal-bd'); if (m) { m.classList.remove('open'); setTimeout(function () { m.remove(); }, 200); } }
-  function openModal(title, bodyHtml, onSubmit, okLabel) {
+  function openModal(title, bodyHtml, onSubmit, okLabel, wide) {
     var ex = $('#ap-modal-bd'); if (ex) ex.remove();
     var bd = document.createElement('div'); bd.className = 'ap-modal-backdrop'; bd.id = 'ap-modal-bd';
-    bd.innerHTML = '<div class="ap-modal"><div class="ap-modal-head"><h3>' + esc(title) + '</h3><button class="ap-icon-btn" id="ap-modal-x">' + ICON('close') + '</button></div>' +
+    bd.innerHTML = '<div class="ap-modal' + (wide ? ' wide' : '') + '"><div class="ap-modal-head"><h3>' + esc(title) + '</h3><button class="ap-icon-btn" id="ap-modal-x">' + ICON('close') + '</button></div>' +
       '<div class="ap-modal-body">' + bodyHtml + '</div>' +
       '<div class="ap-modal-foot"><button class="ap-btn" id="ap-modal-cancel">Hủy</button><button class="ap-btn primary" id="ap-modal-ok">' + esc(okLabel || 'Lưu') + '</button></div></div>';
     document.body.appendChild(bd);
@@ -965,6 +966,31 @@
   function vc(id) { var e = $('#' + id); return e ? e.checked : false; }
   function toLocalInput(iso) { if (!iso) return ''; var d = new Date(iso); if (isNaN(d)) return ''; var p = function (n) { return ('0' + n).slice(-2); }; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()); }
   function btnLoad(btn, on) { if (!btn) return; btn.disabled = on; btn.dataset.txt = btn.dataset.txt || btn.textContent; btn.textContent = on ? 'Đang lưu...' : btn.dataset.txt; }
+
+  // Rich text editor tự chứa (contenteditable + execCommand) — không phụ thuộc CDN
+  function rteHtml(id, html, placeholder) {
+    var btns = [['bold', 'B', 'font-weight:800'], ['italic', 'I', 'font-style:italic'], ['underline', 'U', 'text-decoration:underline'], 'sep',
+      ['formatBlock:h2', 'H2'], ['formatBlock:h3', 'H3'], ['formatBlock:blockquote', '❝'], ['formatBlock:p', '¶'], 'sep',
+      ['insertUnorderedList', '• ds'], ['insertOrderedList', '1. ds'], 'sep',
+      ['createLink', '🔗'], ['insertImage', '🖼'], ['removeFormat', '✕']];
+    var tb = btns.map(function (b) { if (b === 'sep') return '<span class="ap-rte-sep"></span>'; return '<button type="button" class="ap-rte-btn" data-cmd="' + b[0] + '" title="' + esc(b[1]) + '" style="' + (b[2] || '') + '">' + esc(b[1]) + '</button>'; }).join('');
+    return '<div class="ap-field"><label>Nội dung</label><div class="ap-rte-toolbar" data-rte-tb="' + id + '">' + tb + '</div><div class="ap-rte" id="' + id + '" contenteditable="true" data-ph="' + esc(placeholder || 'Viết nội dung...') + '">' + (html || '') + '</div></div>';
+  }
+  function wireRTE(id) {
+    var tb = document.querySelector('[data-rte-tb="' + id + '"]'); var ed = $('#' + id);
+    if (!tb || !ed) return;
+    tb.querySelectorAll('[data-cmd]').forEach(function (b) {
+      b.addEventListener('mousedown', function (e) {
+        e.preventDefault(); ed.focus();
+        var cmd = b.getAttribute('data-cmd');
+        if (cmd.indexOf('formatBlock:') === 0) { document.execCommand('formatBlock', false, cmd.split(':')[1]); return; }
+        if (cmd === 'createLink') { var url = prompt('Nhập URL liên kết:'); if (url) document.execCommand('createLink', false, url); return; }
+        if (cmd === 'insertImage') { var u = prompt('Nhập URL ảnh:'); if (u) document.execCommand('insertImage', false, u); return; }
+        document.execCommand(cmd, false, null);
+      });
+    });
+  }
+  function rteGet(id) { var ed = $('#' + id); return ed ? ed.innerHTML : ''; }
 
   // ── SCREEN: Categories ───────────────────────────────
   function screenCategories(view) {

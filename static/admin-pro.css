@@ -224,6 +224,20 @@ a { color: inherit; text-decoration: none; }
 .ap-toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
 .ap-toolbar .ap-search { width: 280px; }
 
+/* ── Rich text editor (tự chứa) ─────────────────────── */
+.ap-rte-toolbar { display: flex; flex-wrap: wrap; gap: 2px; padding: 6px; border: 1px solid var(--ap-border); border-bottom: none; border-radius: 10px 10px 0 0; background: var(--ap-surface-2); }
+.ap-rte-btn { min-width: 30px; height: 28px; padding: 0 7px; border: none; background: none; border-radius: 6px; cursor: pointer; color: var(--ap-text-2); font-size: 13px; font-weight: 600; display: grid; place-items: center; }
+.ap-rte-btn:hover { background: var(--ap-border); color: var(--ap-text); }
+.ap-rte-sep { width: 1px; background: var(--ap-border); margin: 4px 3px; }
+.ap-rte { min-height: 220px; max-height: 420px; overflow-y: auto; padding: 12px 14px; border: 1px solid var(--ap-border); border-radius: 0 0 10px 10px; background: var(--ap-surface); color: var(--ap-text); font-size: 14px; line-height: 1.6; outline: none; }
+.ap-rte:focus { border-color: var(--ap-primary); }
+.ap-rte:empty::before { content: attr(data-ph); color: var(--ap-text-3); }
+.ap-rte img { max-width: 100%; border-radius: 8px; }
+.ap-rte a { color: var(--ap-primary); }
+.ap-rte h2 { font-size: 20px; margin: 12px 0 6px; }
+.ap-rte h3 { font-size: 17px; margin: 10px 0 6px; }
+.ap-rte blockquote { border-left: 3px solid var(--ap-border); margin: 8px 0; padding-left: 12px; color: var(--ap-text-2); }
+
 /* ── Bulk action bar ────────────────────────────────── */
 .ap-bulkbar { display: none; align-items: center; gap: 12px; padding: 10px 16px; background: var(--ap-primary-soft); border-bottom: 1px solid var(--ap-border); }
 .ap-bulkbar .count { font-weight: 600; font-size: 13px; color: var(--ap-primary); }
@@ -274,6 +288,7 @@ a { color: inherit; text-decoration: none; }
 .ap-modal-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,.5); z-index: 70; display: grid; place-items: center; opacity: 0; transition: opacity .2s; padding: 20px; pointer-events: none; }
 .ap-modal-backdrop.open { opacity: 1; pointer-events: auto; }
 .ap-modal { background: var(--ap-surface); border: 1px solid var(--ap-border); border-radius: 14px; box-shadow: var(--ap-shadow-lg); width: 500px; max-width: 100%; max-height: 90vh; display: flex; flex-direction: column; transform: translateY(12px); transition: transform .2s; }
+.ap-modal.wide { width: 780px; }
 .ap-modal-backdrop.open .ap-modal { transform: none; }
 .ap-modal-head { padding: 16px 20px; border-bottom: 1px solid var(--ap-border); display: flex; justify-content: space-between; align-items: center; }
 .ap-modal-head h3 { margin: 0; font-size: 16px; }
