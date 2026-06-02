@@ -46,7 +46,8 @@ COPY --from=backend /app/dist ./dist
 COPY --from=backend /app/node_modules ./node_modules
 COPY --from=backend /app/package.json ./package.json
 COPY --from=backend /app/prisma ./prisma
-COPY --from=backend /app/static ./static
+# static/ (admin SPA + ảnh upload/banner) copy thẳng từ build context.
+COPY static ./static
 
 # Frontend (Next.js standalone)
 COPY --from=frontend /app/frontend/.next/standalone ./frontend/
