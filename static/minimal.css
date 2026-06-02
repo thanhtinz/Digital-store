@@ -122,6 +122,18 @@ textarea.form-input, .header-search, .pd-coupon-input, .pd-qty-controls {
 .site-footer { background: var(--bg-card) !important; box-shadow: none !important; border-top: 1px solid var(--border) !important; }
 .footer-link:hover { color: var(--primary) !important; }
 
+/* ── Hero trang chủ: gradient xanh TƯƠI/SẠCH hơn (bớt nặng-tối), bo lớn, phẳng ── */
+.hero {
+  background: linear-gradient(120deg, #00B86B 0%, #00875A 100%) !important;
+  border-radius: 20px !important;
+  box-shadow: none !important;
+}
+.hero-tag {
+  background: rgba(255,255,255,0.16) !important;
+  border: 1px solid rgba(255,255,255,0.28) !important;
+  border-radius: 100px !important;
+}
+
 /* ── 10) Badge/chip -> pill sạch ─────────────────────────── */
 .badge, .chip, .pd-badge, .pd-chip, .tag, .pill { border-radius: 100px !important; box-shadow: none !important; }
 
