@@ -1852,6 +1852,27 @@ async function renderProduct(view, { slug }) {
       }
 
       view.appendChild(cards);
+
+      // ── Bố cục Minimal 2 cột (chỉ SP thường): ảnh trái (sticky) + thông tin/chọn gói phải.
+      //    Chỉ DI CHUYỂN node sẵn có nên giữ nguyên mọi sự kiện/logic. Mô tả & đánh giá ở dưới full-width. ──
+      if (!isGame && !isGiftcard) {
+        const grid = el('div', 'pd-shop-grid');
+        const media = el('div', 'pd-shop-media');
+        const info = el('div', 'pd-shop-info');
+        const moveTo = (parent, node) => { if (node) parent.appendChild(node); };
+        moveTo(media, qs('.pd-hero-img', view));
+        moveTo(info, qs('.pd-name-row', view));
+        moveTo(info, qs('.pd-rating-row', view));
+        moveTo(info, qs('.pd-meta-row', view));
+        moveTo(info, qs('.pd-pkg-grid', view)?.closest('.pd-card'));
+        moveTo(info, qs('.pd-order-body', view)?.closest('.pd-card'));
+        if (media.childNodes.length || info.childNodes.length) {
+          grid.appendChild(media);
+          grid.appendChild(info);
+          topSection.after(grid);
+        }
+      }
+
       // ── Anime.js detail page effects ──
       sfAnimateDetail(view);
     };

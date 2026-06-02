@@ -90,3 +90,20 @@
 
 /* Thanh tiến trình (đánh giá/sold) bo tròn mềm */
 .pd-bar-track, .pd-bar-fill { border-radius: 100px !important; }
+
+/* ── Chi tiết SP: bố cục 2 cột kiểu minimals.cc (ảnh trái sticky + info phải) ── */
+.pd-shop-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: 40px;
+  align-items: start;
+  margin: 8px 0 28px;
+}
+.pd-shop-media { position: sticky; top: 88px; }
+.pd-shop-media .pd-hero-img { margin: 0 !important; }
+.pd-shop-info { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.pd-shop-info > .pd-card, .pd-shop-info > .pd-name-row { margin: 0 !important; }
+@media (max-width: 920px) {
+  .pd-shop-grid { grid-template-columns: 1fr; gap: 20px; }
+  .pd-shop-media { position: static; }
+}
