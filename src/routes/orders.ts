@@ -4,7 +4,7 @@ import { requireUser, requireAdmin, requireStaffOrAdmin } from '../middleware/au
 import { orderToDict, genOrderCode, applyCoupon, autoDeliver, money } from '../services/orders';
 import { notifyNewOrder } from '../services/telegram';
 import { createNotification } from '../services/notify';
-import { awardPointsForOrder, estimatePointDiscount, redeemPointsForOrder } from '../services/loyalty';
+import { awardPointsForOrder, estimatePointDiscount, redeemPointsForOrder, refundPointsForOrder } from '../services/loyalty';
 
 const router = Router();
 
@@ -272,6 +272,7 @@ router.post('/my/:order_code/cancel', requireUser, async (req: Request, res: Res
       return;
     }
     await prisma.order.update({ where: { id: order.id }, data: { status: 'cancelled' } });
+    refundPointsForOrder(order.userId, order.orderCode).catch(() => {}); // hoàn điểm đã đổi (nếu có)
     res.json({ message: 'Đã hủy đơn hàng' });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
@@ -364,6 +365,10 @@ router.patch('/admin/:order_code/status', requireStaffOrAdmin, async (req: Reque
       if (status === 'completed') {
         awardPointsForOrder(order.userId, money(order.totalAmount), order.orderCode).catch(() => {});
       }
+      // Hoàn điểm đã đổi khi đơn bị hủy / hoàn tiền / thất bại
+      if (['cancelled', 'refunded', 'failed'].includes(status)) {
+        refundPointsForOrder(order.userId, order.orderCode).catch(() => {});
+      }
     }
 
     res.json({ message: 'Đã cập nhật', status: updated.status });
@@ -418,6 +423,7 @@ router.post('/admin/:order_code/cancel', requireStaffOrAdmin, async (req: Reques
     const order = await prisma.order.findUnique({ where: { orderCode: req.params.order_code } });
     if (!order) { res.status(404).json({ detail: 'Không tìm thấy' }); return; }
     await prisma.order.update({ where: { id: order.id }, data: { status: 'cancelled' } });
+    refundPointsForOrder(order.userId, order.orderCode).catch(() => {}); // hoàn điểm đã đổi (nếu có)
     res.json({ message: 'Đã hủy đơn' });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });

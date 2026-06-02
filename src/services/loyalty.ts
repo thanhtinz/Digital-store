@@ -85,6 +85,36 @@ export async function awardPointsForOrder(userId: number | string, amount: numbe
 }
 
 /**
+ * Hoàn lại điểm đã đổi cho một đơn (khi hủy / hoàn tiền). Idempotent, không ném lỗi.
+ * Chỉ hoàn phần điểm đã bị trừ (redeem_order); không đụng tới điểm đã tích.
+ */
+export async function refundPointsForOrder(userId: number | string | null | undefined, orderCode: string): Promise<void> {
+  try {
+    const uid = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+    if (!uid || Number.isNaN(uid) || !orderCode) return;
+    const refundedPts = await prisma.$transaction(async (tx: any) => {
+      const redeemed = await tx.pointTransaction.findMany({ where: { userId: uid, reference: orderCode, type: 'redeem_order' } });
+      if (!redeemed.length) return 0;
+      // Đã hoàn trước đó? -> bỏ qua (idempotent)
+      const already = await tx.pointTransaction.findFirst({ where: { userId: uid, reference: orderCode, type: 'refund_order' } });
+      if (already) return 0;
+      const totalUsed = redeemed.reduce((s: number, t: any) => s + Math.abs(t.amount), 0);
+      if (totalUsed <= 0) return 0;
+      const u = await tx.user.update({ where: { id: uid }, data: { points: { increment: totalUsed } } });
+      await tx.pointTransaction.create({
+        data: { userId: uid, amount: totalUsed, balanceAfter: u.points, type: 'refund_order', reference: orderCode, description: `Hoàn ${totalUsed} điểm do hủy đơn ${orderCode}` },
+      });
+      return totalUsed;
+    });
+    if (refundedPts > 0) {
+      createNotification(uid, { type: 'points', title: `+${refundedPts} điểm hoàn lại`, body: `Đơn ${orderCode} đã hủy`, link: '/profile' }).catch(() => {});
+    }
+  } catch {
+    /* bỏ qua */
+  }
+}
+
+/**
  * Quy đổi điểm thành tiền giảm khi đặt đơn (atomic).
  * Trả về { discount, used } — số đồng giảm và số điểm đã trừ. Nếu không hợp lệ trả 0.
  */

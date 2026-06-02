@@ -59,6 +59,47 @@ async function tick(): Promise<void> {
   // SMM scheduled & repeat (chạy mỗi tick, độc lập với báo cáo)
   try { await processScheduledSmm(); } catch (e) { console.error('SMM scheduled error:', e); }
   try { await processRepeatSmm(); } catch (e) { console.error('SMM repeat error:', e); }
+  // Tự hủy đơn chờ thanh toán quá hạn + hoàn điểm
+  try { await processExpiredOrders(); } catch (e) { console.error('Expire orders error:', e); }
+}
+
+// ── Tự hủy đơn chờ thanh toán quá hạn ──────────────────
+/**
+ * Hủy các đơn còn 'pending'/'pending_payment' tạo đã lâu hơn `order_expiry_minutes`
+ * và hoàn lại điểm đã đổi. Tắt khi config <= 0 (mặc định tắt).
+ */
+async function processExpiredOrders(): Promise<void> {
+  const cfg = await prisma.siteConfig.findUnique({ where: { key: 'order_expiry_minutes' } });
+  const minutes = cfg ? parseInt(cfg.value || '0', 10) : 0;
+  if (!Number.isFinite(minutes) || minutes <= 0) return;
+
+  const cutoff = new Date(Date.now() - minutes * 60000);
+  const orders = await prisma.order.findMany({
+    where: { status: { in: ['pending', 'pending_payment'] }, createdAt: { lt: cutoff } },
+    take: 50,
+    select: { id: true, orderCode: true, userId: true },
+  });
+  if (!orders.length) return;
+
+  const { refundPointsForOrder } = await import('./loyalty');
+  const { createNotification } = await import('./notify');
+  for (const o of orders) {
+    try {
+      await prisma.order.update({
+        where: { id: o.id },
+        data: { status: 'cancelled', notes: 'Tự hủy do quá hạn thanh toán' },
+      });
+      await refundPointsForOrder(o.userId, o.orderCode);
+      createNotification(o.userId, {
+        type: 'order',
+        title: `Đơn ${o.orderCode} đã hủy`,
+        body: 'Đơn quá hạn thanh toán nên đã tự hủy.',
+        link: `/orders/${o.orderCode}`,
+      }).catch(() => {});
+    } catch (e) {
+      console.error(`Expire order ${o.id} failed:`, e);
+    }
+  }
 }
 
 
