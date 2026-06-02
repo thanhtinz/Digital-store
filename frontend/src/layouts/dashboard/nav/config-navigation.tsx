@@ -41,7 +41,7 @@ const navConfig = [
     subheader: 'tài khoản',
     items: [
       { title: 'đơn hàng', path: PATH_DASHBOARD.orders.root, icon: ICONS.cart },
-      { title: 'tài khoản', path: PATH_DASHBOARD.user.account, icon: ICONS.user },
+      { title: 'tài khoản', path: PATH_DASHBOARD.myAccount, icon: ICONS.user },
       { title: 'blog', path: PATH_DASHBOARD.blog.posts, icon: ICONS.blog },
       { title: 'hỗ trợ', path: PATH_DASHBOARD.chat.root, icon: ICONS.chat },
     ],
