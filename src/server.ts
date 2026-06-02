@@ -35,7 +35,10 @@ import { featureGate } from './services/features';
 // __dirname is natively available in CommonJS
 
 const app = express();
-const PORT = parseInt(process.env.PORT || '3000', 10);
+// Trong chế độ gộp 1 container: Next.js chiếm PORT công khai, Express chạy nội bộ
+// ở BACKEND_PORT (Next proxy /api, /admin, /static sang đây). Chạy riêng lẻ thì
+// BACKEND_PORT không set -> dùng PORT như cũ.
+const PORT = parseInt(process.env.BACKEND_PORT || process.env.PORT || '3000', 10);
 const STATIC_DIR = path.join(__dirname, '..', 'static');
 
 // ── Security & Compression ─────────────────────────────
@@ -262,50 +265,8 @@ async function serveHtml(req: express.Request, res: express.Response, template: 
 app.get('/admin', (req, res) => serveHtml(req, res, 'admin.html', { robots: 'noindex, nofollow' }));
 app.get('/admin/*', (req, res) => serveHtml(req, res, 'admin.html', { robots: 'noindex, nofollow' }));
 
-// Per-product SEO: tiêu đề/ảnh/mô tả theo sản phẩm để chia sẻ đẹp
-app.get('/products/:slug', async (req, res) => {
-  try {
-    const p: any = await prisma.product.findFirst({
-      where: { slug: req.params.slug },
-      include: { category: true },
-    });
-    if (p) {
-      const desc = String(p.shortDescription || p.description || '').replace(/<[^>]*>/g, ' ').trim().slice(0, 200);
-      const img = p.imageUrl || '';
-      const jsonLd = {
-        '@context': 'https://schema.org', '@type': 'Product',
-        name: p.name, description: desc, image: img ? [img] : undefined,
-        category: p.category?.name,
-      };
-      await serveHtml(req, res, 'index.html', {
-        seo_title: p.name, seo_description: desc,
-        seo_image_url: img, og_image_alt: p.name, og_type: 'product',
-        json_ld: jsonLd,
-      });
-      return;
-    }
-  } catch { /* fallback dưới */ }
-  await serveHtml(req, res, 'index.html');
-});
-
-// Client pages - serve index.html for SPA routing
-app.get([
-  '/', '/login', '/register', '/profile', '/orders', '/orders/:code',
-  '/products', '/category/:slug',
-  '/checkout/:code', '/payment/:code',
-  '/blog', '/blog/:slug', '/wishlist', '/search',
-  '/auth-callback', '/smm', '/smm/history', '/smm/history/:id',
-], (req, res) => serveHtml(req, res, 'index.html'));
-
-// Blog public page
-app.get('/blog-public', (req, res) => serveHtml(req, res, 'blog.html'));
-
-// ── PWA service worker tại root scope ──────────────────
-app.get('/sw.js', (_req, res) => {
-  res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.sendFile(path.join(STATIC_DIR, 'sw.js'));
-});
+// Frontend khách (trang chủ, sản phẩm, blog, checkout...) do app Next.js Minimal Pro
+// đảm nhận. Express chỉ còn: /api, /admin (admin SPA), /static, và SEO/health bên dưới.
 
 // ── SEO: robots.txt + sitemap.xml ──────────────────────
 app.get('/robots.txt', (_req, res) => {

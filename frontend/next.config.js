@@ -9,12 +9,27 @@ const withTM = require('next-transpile-modules')([
   '@fullcalendar/timeline',
 ]);
 
+// Backend Express chạy nội bộ cùng container (chế độ gộp 1 service).
+// Next.js proxy /api, /admin, /static sang đây -> same-origin, KHÔNG cần CORS.
+const BACKEND_INTERNAL_URL = process.env.BACKEND_INTERNAL_URL || 'http://127.0.0.1:4000';
+
 module.exports = withTM({
   swcMinify: false,
   trailingSlash: true,
   // Build gọn cho Docker/VPS/Railway (chỉ copy file cần thiết khi chạy).
   output: 'standalone',
   eslint: { ignoreDuringBuilds: true },
+  async rewrites() {
+    return [
+      { source: '/api/:path*', destination: `${BACKEND_INTERNAL_URL}/api/:path*` },
+      { source: '/admin', destination: `${BACKEND_INTERNAL_URL}/admin` },
+      { source: '/admin/:path*', destination: `${BACKEND_INTERNAL_URL}/admin/:path*` },
+      { source: '/static/:path*', destination: `${BACKEND_INTERNAL_URL}/static/:path*` },
+      { source: '/healthz', destination: `${BACKEND_INTERNAL_URL}/healthz` },
+      { source: '/sitemap.xml', destination: `${BACKEND_INTERNAL_URL}/sitemap.xml` },
+      { source: '/robots.txt', destination: `${BACKEND_INTERNAL_URL}/robots.txt` },
+    ];
+  },
   env: {
     // HOST
     HOST_API_KEY: process.env.NEXT_PUBLIC_HOST_API || 'http://localhost:3000',

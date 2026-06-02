@@ -4,7 +4,14 @@ import { PATH_DASHBOARD } from './routes/paths';
 // API
 // ----------------------------------------------------------------------
 
-export const HOST_API_KEY = process.env.NEXT_PUBLIC_HOST_API || process.env.HOST_API_KEY || 'http://localhost:3000';
+// Nếu NEXT_PUBLIC_HOST_API được đặt RỖNG (hoặc 'same-origin') -> baseURL rỗng,
+// axios gọi đường dẫn tương đối /api... cùng origin (chế độ gộp 1 service, không CORS).
+// Nếu KHÔNG đặt -> mặc định localhost:3000 (chạy dev tách backend riêng).
+const RAW_HOST_API = process.env.NEXT_PUBLIC_HOST_API;
+export const HOST_API_KEY =
+  RAW_HOST_API === '' || RAW_HOST_API === 'same-origin'
+    ? ''
+    : RAW_HOST_API || process.env.HOST_API_KEY || 'http://localhost:3000';
 
 export const FIREBASE_API = {
   apiKey: process.env.FIREBASE_API_KEY,
