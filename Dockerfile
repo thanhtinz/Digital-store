@@ -9,14 +9,16 @@
 # ---------- 1) Build BACKEND ----------
 FROM node:20-alpine AS backend
 WORKDIR /app
+# Prisma trên Alpine cần openssl + libc6-compat.
+RUN apk add --no-cache openssl libc6-compat
+# Copy schema TRƯỚC khi install vì postinstall chạy `prisma generate`.
 COPY package.json package-lock.json* ./
-RUN npm install --include=dev
 COPY prisma ./prisma
-RUN npx prisma generate
+RUN npm install --include=dev
 COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build
-# Bỏ devDependencies để runtime gọn
+# Bỏ devDependencies để runtime gọn (giữ lại prisma CLI vì nó nằm ở dependencies).
 RUN npm prune --omit=dev
 
 # ---------- 2) Build FRONTEND ----------
@@ -33,6 +35,8 @@ RUN npm run build
 # ---------- 3) Runtime ----------
 FROM node:20-alpine AS runner
 WORKDIR /app
+# Prisma runtime cũng cần openssl (chạy `prisma db push` lúc khởi động).
+RUN apk add --no-cache openssl libc6-compat
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV BACKEND_PORT=4000
