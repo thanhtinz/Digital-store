@@ -78,6 +78,7 @@ export const PATH_DASHBOARD = {
     products: path(ROOTS_DASHBOARD, '/admin/products'),
     categories: path(ROOTS_DASHBOARD, '/admin/categories'),
     smm: path(ROOTS_DASHBOARD, '/admin/smm'),
+    marketing: path(ROOTS_DASHBOARD, '/admin/marketing'),
   },
   smm: {
     root: path(ROOTS_DASHBOARD, '/smm'),

@@ -410,8 +410,14 @@ router.get('/admin/stats/overview', requireStaffOrAdmin, async (_req: Request, r
 // ANNOUNCEMENTS
 // ════════════════════════════════════════════════════
 
-router.get(['/announcements', '/announcements/admin/all'], async (_req: Request, res: Response) => {
+router.get('/announcements', async (_req: Request, res: Response) => {
   const items = await prisma.announcement.findMany({ where: { isActive: true }, orderBy: { sortOrder: 'asc' } });
+  res.json(items);
+});
+
+// Admin: xem TẤT CẢ (kể cả đang ẩn) để quản lý.
+router.get('/announcements/admin/all', requireStaffOrAdmin, async (_req: Request, res: Response) => {
+  const items = await prisma.announcement.findMany({ orderBy: { sortOrder: 'asc' } });
   res.json(items);
 });
 
