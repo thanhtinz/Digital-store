@@ -40,7 +40,12 @@ export default function LanguagePopover() {
           }),
         }}
       >
-        <Image disabledEffect src={currentLang.icon} alt={currentLang.label} />
+        <Image
+          disabledEffect
+          src={currentLang.icon}
+          alt={currentLang.label}
+          sx={{ width: 26, height: 26, borderRadius: '50%', objectFit: 'cover' }}
+        />
       </IconButtonAnimate>
 
       <MenuPopover open={openPopover} onClose={handleClosePopover} sx={{ width: 180 }}>

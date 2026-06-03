@@ -80,6 +80,8 @@ export default function AccountPopover() {
         onClick={handleOpenPopover}
         sx={{
           p: 0,
+          width: 40,
+          height: 40,
           ...(openPopover && {
             '&:before': {
               zIndex: 1,
@@ -96,9 +98,9 @@ export default function AccountPopover() {
         <Avatar
           src={avatar || undefined}
           alt={name}
-          sx={{ width: 36, height: 36, bgcolor: 'primary.lighter', color: 'primary.main' }}
+          sx={{ width: 32, height: 32, bgcolor: 'primary.lighter', color: 'primary.main' }}
         >
-          <Iconify icon="solar:user-rounded-bold" width={22} />
+          <Iconify icon="solar:user-rounded-bold" width={20} />
         </Avatar>
       </IconButtonAnimate>
 

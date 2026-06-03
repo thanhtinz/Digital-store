@@ -14,6 +14,7 @@ import Iconify from '../../../components/iconify';
 import { useSettingsContext } from '../../../components/settings';
 //
 import ProductSearchbar from './ProductSearchbar';
+import CartButton from './CartButton';
 import AccountPopover from './AccountPopover';
 import LanguagePopover from './LanguagePopover';
 import NotificationsPopover from './NotificationsPopover';
@@ -55,8 +56,10 @@ export default function Header({ onOpenNav }: Props) {
         direction="row"
         alignItems="center"
         flexShrink={0}
-        spacing={{ xs: 0.25, sm: 1 }}
+        spacing={{ xs: 0.5, sm: 1 }}
       >
+        <CartButton />
+
         <LanguagePopover />
 
         <NotificationsPopover />

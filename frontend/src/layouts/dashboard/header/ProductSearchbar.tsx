@@ -69,7 +69,7 @@ export default function ProductSearchbar() {
       getOptionLabel={(o: any) => (typeof o === 'string' ? o : o.name)}
       noOptionsText={<SearchNotFound query={query} />}
       isOptionEqualToValue={(o: any, v: any) => o.id === v.id}
-      sx={{ width: 1 }}
+      sx={{ width: 1, '& .MuiInputBase-root': { height: 40 } }}
       renderInput={(params) => (
         <CustomTextField
           {...params}
