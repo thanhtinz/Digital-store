@@ -8,6 +8,10 @@ import { Box, Tab, Tabs, Card, Grid, Divider, Container, Typography, Stack } fro
 // redux
 import { useDispatch, useSelector } from '../../../../redux/store';
 import { getProduct, addToCart, gotoStep } from '../../../../redux/slices/product';
+// routes
+import { PATH_DASHBOARD } from '../../../../routes/paths';
+// locales
+import { useLocales } from '../../../../locales';
 // @types
 import { ICheckoutCartItem } from '../../../../@types/product';
 // layouts
@@ -15,6 +19,7 @@ import DashboardLayout from '../../../../layouts/dashboard';
 // components
 import Iconify from '../../../../components/iconify';
 import Markdown from '../../../../components/markdown';
+import CustomBreadcrumbs from '../../../../components/custom-breadcrumbs';
 import { useSettingsContext } from '../../../../components/settings';
 import { SkeletonProductDetails } from '../../../../components/skeleton';
 // sections
@@ -55,6 +60,8 @@ EcommerceProductDetailsPage.getLayout = (page: React.ReactElement) => (
 
 export default function EcommerceProductDetailsPage() {
   const { themeStretch } = useSettingsContext();
+  const { translate } = useLocales();
+  const tp = (k: string) => `${translate(`product_page.${k}`)}`;
 
   const {
     query: { name },
@@ -100,6 +107,14 @@ export default function EcommerceProductDetailsPage() {
       </Head>
 
       <Container maxWidth={themeStretch ? false : 'lg'} sx={{ pt: { xs: 2, md: 3 } }}>
+        <CustomBreadcrumbs
+          links={[
+            { name: tp('bc_home'), href: PATH_DASHBOARD.root },
+            { name: tp('bc_shop'), href: PATH_DASHBOARD.eCommerce.shop },
+            { name: product?.name || '' },
+          ]}
+        />
+
         <CartWidget totalItems={checkout.totalItems} />
 
         {product && (

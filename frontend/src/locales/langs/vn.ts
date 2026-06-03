@@ -410,6 +410,8 @@ const vn = {
     buy_now: `Mua ngay`,
     in_stock: `Còn hàng`,
     out_of_stock: `Hết hàng`,
+    bc_home: `Trang chủ`,
+    bc_shop: `Cửa hàng`,
   },
 };
 

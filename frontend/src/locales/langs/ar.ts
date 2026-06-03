@@ -410,6 +410,8 @@ const ar = {
     buy_now: `اشترِ الآن`,
     in_stock: `متوفر`,
     out_of_stock: `غير متوفر`,
+    bc_home: `الرئيسية`,
+    bc_shop: `المتجر`,
   },
 };
 

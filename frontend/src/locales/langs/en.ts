@@ -410,6 +410,8 @@ const en = {
     buy_now: `Buy now`,
     in_stock: `In stock`,
     out_of_stock: `Out of stock`,
+    bc_home: `Home`,
+    bc_shop: `Shop`,
   },
 };
 
