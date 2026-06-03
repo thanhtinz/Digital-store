@@ -408,6 +408,8 @@ const vn = {
     enter_info: `Nhập thông tin`,
     add_to_cart: `Thêm vào giỏ`,
     buy_now: `Mua ngay`,
+    in_stock: `Còn hàng`,
+    out_of_stock: `Hết hàng`,
   },
 };
 

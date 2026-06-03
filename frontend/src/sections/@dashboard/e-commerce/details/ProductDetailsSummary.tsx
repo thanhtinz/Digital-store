@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { sentenceCase } from 'change-case';
 // next
 import { useRouter } from 'next/router';
 // form
@@ -64,19 +63,24 @@ export default function ProductDetailsSummary({
     sizes,
     price,
     cover,
-    status,
     colors,
     available,
     priceSale,
     totalRating,
     totalReview,
-    inventoryType,
     packages = [],
   } = product;
 
   // Digital Store: bán theo gói. Nếu có gói thì dùng gói thay cho size/màu.
   const hasPackages = Array.isArray(packages) && packages.length > 0;
   const defaultPackage = hasPackages ? packages[0] : undefined;
+
+  // Còn hàng nếu có ít nhất 1 gói khả dụng (gói không quản kho hoặc còn tồn).
+  const inStock =
+    hasPackages &&
+    packages.some(
+      (pk: any) => pk.isActive !== false && (!pk.isStockManaged || (pk.stockQuantity || 0) > 0)
+    );
 
   const alreadyProduct = cart.map((item) => item.id).includes(id);
 
@@ -180,23 +184,9 @@ export default function ProductDetailsSummary({
         {...other}
       >
         <Stack spacing={2}>
-          <Label
-            variant="soft"
-            color={inventoryType === 'in_stock' ? 'success' : 'error'}
-            sx={{ textTransform: 'uppercase', mr: 'auto' }}
-          >
-            {sentenceCase(inventoryType || '')}
+          <Label variant="soft" color={inStock ? 'success' : 'error'} sx={{ mr: 'auto' }}>
+            {inStock ? tp('in_stock') : tp('out_of_stock')}
           </Label>
-
-          <Typography
-            variant="overline"
-            component="div"
-            sx={{
-              color: status === 'sale' ? 'error.main' : 'info.main',
-            }}
-          >
-            {status}
-          </Typography>
 
           <Typography variant="h5">{name}</Typography>
 

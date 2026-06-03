@@ -408,6 +408,8 @@ const ar = {
     enter_info: `أدخل المعلومات`,
     add_to_cart: `أضف إلى السلة`,
     buy_now: `اشترِ الآن`,
+    in_stock: `متوفر`,
+    out_of_stock: `غير متوفر`,
   },
 };
 

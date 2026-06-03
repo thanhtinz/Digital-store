@@ -50,11 +50,33 @@ router.get('/', optionalUser, async (req: Request, res: Response) => {
       }),
     ]);
 
+    await attachSoldCount(products);
     res.json({ total, page: parseInt(page as string), items: products.map((p) => serializeProduct(p)) });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
   }
 });
+
+// Tính "đã bán" cho danh sách sản phẩm: gộp đơn 1 gói (Order.packageId) + đơn nhiều gói (OrderItem).
+async function attachSoldCount(products: any[]): Promise<void> {
+  const pkgIds = products.flatMap((p: any) => (p.packages || []).map((pk: any) => pk.id));
+  if (!pkgIds.length) return;
+  const SOLD = ['completed', 'paid'];
+  const soldMap: Record<number, number> = {};
+  try {
+    const [items, orders] = await Promise.all([
+      prisma.orderItem.groupBy({ by: ['packageId'], where: { packageId: { in: pkgIds }, status: { in: SOLD } }, _sum: { quantity: true } }),
+      prisma.order.groupBy({ by: ['packageId'], where: { packageId: { in: pkgIds }, status: { in: SOLD } }, _sum: { quantity: true } }),
+    ]);
+    for (const r of items as any[]) if (r.packageId != null) soldMap[r.packageId] = (soldMap[r.packageId] || 0) + (r._sum.quantity || 0);
+    for (const r of orders as any[]) if (r.packageId != null) soldMap[r.packageId] = (soldMap[r.packageId] || 0) + (r._sum.quantity || 0);
+  } catch {
+    /* không chặn list nếu thống kê lỗi */
+  }
+  products.forEach((p: any) => {
+    p._soldCount = (p.packages || []).reduce((s: number, pk: any) => s + (soldMap[pk.id] || 0), 0);
+  });
+}
 
 // Include dùng chung cho thẻ sản phẩm (gợi ý)
 const CARD_INCLUDE = {
@@ -454,6 +476,7 @@ function serializeProduct(p: any, detailed = false): Record<string, any> {
     // Rating trung bình + số lượt (cho lọc theo sao ở trang gian hàng).
     rating: ratingAvg,
     ratingCount,
+    soldCount: p._soldCount || 0,
     reviews: detailed ? (p.reviews || []) : undefined,
     createdAt: p.createdAt?.toISOString(),
   };

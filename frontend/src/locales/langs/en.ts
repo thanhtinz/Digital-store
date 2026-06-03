@@ -408,6 +408,8 @@ const en = {
     enter_info: `Enter details`,
     add_to_cart: `Add to cart`,
     buy_now: `Buy now`,
+    in_stock: `In stock`,
+    out_of_stock: `Out of stock`,
   },
 };
 

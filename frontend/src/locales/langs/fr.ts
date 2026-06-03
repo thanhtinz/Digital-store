@@ -408,6 +408,8 @@ const fr = {
     enter_info: `Saisir les informations`,
     add_to_cart: `Ajouter au panier`,
     buy_now: `Acheter`,
+    in_stock: `En stock`,
+    out_of_stock: `Rupture de stock`,
   },
 };
 

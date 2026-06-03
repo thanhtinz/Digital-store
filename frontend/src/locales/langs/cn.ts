@@ -408,6 +408,8 @@ const cn = {
     enter_info: `填写信息`,
     add_to_cart: `加入购物车`,
     buy_now: `立即购买`,
+    in_stock: `有货`,
+    out_of_stock: `缺货`,
   },
 };
 
