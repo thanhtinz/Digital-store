@@ -10,6 +10,7 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../db';
 import { requireAdmin, requireStaffOrAdmin } from '../middleware/auth';
+import { notifyBackInStock } from '../services/stockAlert';
 
 const router = Router();
 
@@ -67,6 +68,9 @@ router.post('/bulk', requireStaffOrAdmin, async (req: Request, res: Response) =>
     const available = await prisma.stockItem.count({ where: { packageId: parseInt(package_id), isSold: false } });
     await prisma.productPackage.update({ where: { id: parseInt(package_id) }, data: { stockQuantity: available, isStockManaged: true } });
 
+    // Báo cho khách đã đăng ký "có hàng lại" (không chặn response).
+    if (available > 0) notifyBackInStock(parseInt(package_id)).catch(() => {});
+
     res.json({ added: lines.length, available });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
@@ -78,6 +82,7 @@ router.post('/', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const { package_id, data } = req.body;
     const item = await prisma.stockItem.create({ data: { packageId: parseInt(package_id), data } });
+    notifyBackInStock(parseInt(package_id)).catch(() => {});
     res.status(201).json({ id: item.id });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });

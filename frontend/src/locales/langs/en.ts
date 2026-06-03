@@ -484,6 +484,11 @@ const en = {
     load_failed: `Failed to load list`,
   },
   product_page: {
+    stock_alert_btn: `Notify when available`,
+    stock_alert_done: `We'll notify you`,
+    stock_alert_ok: `Subscribed! We'll notify you when it's back.`,
+    login_required_alert: `Please log in to get notified`,
+    action_failed: `Action failed`,
     related_title: `Related products`,
     recent_title: `Recently viewed`,
     package: `Package`,

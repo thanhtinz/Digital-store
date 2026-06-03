@@ -484,6 +484,11 @@ const cn = {
     load_failed: `加载列表失败`,
   },
   product_page: {
+    stock_alert_btn: `到货通知`,
+    stock_alert_done: `到货将通知您`,
+    stock_alert_ok: `已订阅！到货后会通知您。`,
+    login_required_alert: `请登录以接收通知`,
+    action_failed: `操作失败`,
     related_title: `相关产品`,
     recent_title: `最近浏览`,
     package: `套餐`,

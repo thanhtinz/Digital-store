@@ -222,6 +222,20 @@ model OrderItem {
   @@map("order_items")
 }
 
+// Đăng ký "báo có hàng lại" của khách cho 1 gói đang hết hàng.
+model StockAlert {
+  id        Int      @id @default(autoincrement())
+  userId    String   @db.VarChar(255) @map("user_id")
+  userEmail String?  @db.VarChar(255) @map("user_email")
+  packageId Int      @map("package_id")
+  notified  Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, packageId])
+  @@index([packageId])
+  @@map("stock_alerts")
+}
+
 model SiteSetting {
   key       String   @id @db.VarChar(255)
   value     String?

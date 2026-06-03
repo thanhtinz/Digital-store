@@ -484,6 +484,11 @@ const fr = {
     load_failed: `Échec du chargement`,
   },
   product_page: {
+    stock_alert_btn: `Me prévenir`,
+    stock_alert_done: `Vous serez prévenu`,
+    stock_alert_ok: `Inscrit ! Nous vous préviendrons du réapprovisionnement.`,
+    login_required_alert: `Connectez-vous pour être prévenu`,
+    action_failed: `Échec de l’action`,
     related_title: `Produits similaires`,
     recent_title: `Vus récemment`,
     package: `Forfait`,

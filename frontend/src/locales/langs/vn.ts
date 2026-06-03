@@ -484,6 +484,11 @@ const vn = {
     load_failed: `Không tải được danh sách`,
   },
   product_page: {
+    stock_alert_btn: `Báo khi có hàng`,
+    stock_alert_done: `Sẽ báo khi có hàng`,
+    stock_alert_ok: `Đã đăng ký. Bạn sẽ được báo khi có hàng lại!`,
+    login_required_alert: `Vui lòng đăng nhập để nhận thông báo`,
+    action_failed: `Thao tác thất bại`,
     related_title: `Sản phẩm liên quan`,
     recent_title: `Đã xem gần đây`,
     package: `Gói`,

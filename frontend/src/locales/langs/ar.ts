@@ -484,6 +484,11 @@ const ar = {
     load_failed: `فشل تحميل القائمة`,
   },
   product_page: {
+    stock_alert_btn: `أبلغني عند التوفر`,
+    stock_alert_done: `سنبلغك عند التوفر`,
+    stock_alert_ok: `تم الاشتراك! سنبلغك عند توفره.`,
+    login_required_alert: `يرجى تسجيل الدخول لتلقي الإشعار`,
+    action_failed: `فشلت العملية`,
     related_title: `منتجات ذات صلة`,
     recent_title: `شوهدت مؤخراً`,
     package: `الباقة`,

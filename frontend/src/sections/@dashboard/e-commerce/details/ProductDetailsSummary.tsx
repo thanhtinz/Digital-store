@@ -30,6 +30,10 @@ import Iconify from '../../../../components/iconify';
 import { IncrementerButton } from '../../../../components/custom-input';
 import { ColorSinglePicker } from '../../../../components/color-utils';
 import FormProvider, { RHFSelect } from '../../../../components/hook-form';
+import { useSnackbar } from '../../../../components/snackbar';
+// auth + utils
+import { useAuthContext } from '../../../../auth/useAuthContext';
+import axiosInstance from '../../../../utils/axios';
 // locales
 import { useLocales } from '../../../../locales';
 
@@ -55,7 +59,11 @@ export default function ProductDetailsSummary({
 }: Props) {
   const { push } = useRouter();
   const { translate } = useLocales();
+  const { isAuthenticated } = useAuthContext();
+  const { enqueueSnackbar } = useSnackbar();
   const tp = (k: string) => `${translate(`product_page.${k}`)}`;
+  const [alerting, setAlerting] = useState(false);
+  const [alerted, setAlerted] = useState(false);
 
   const {
     id,
@@ -112,6 +120,32 @@ export default function ProductDetailsSummary({
   const selectedPackage = packages.find((p) => String(p.id) === String(values.packageId));
   const packageFields = selectedPackage?.fields || [];
   const [customFields, setCustomFields] = useState<Record<string, string>>({});
+
+  // Gói đang chọn có hết hàng không (chỉ tính khi quản lý kho).
+  const sp: any = selectedPackage;
+  const selectedOutOfStock = !!sp && sp.isStockManaged && (sp.stockQuantity || 0) <= 0;
+
+  useEffect(() => {
+    setAlerted(false); // đổi gói thì reset trạng thái đã đăng ký
+  }, [values.packageId]);
+
+  const handleStockAlert = async () => {
+    if (!isAuthenticated) {
+      enqueueSnackbar(tp('login_required_alert'), { variant: 'warning' });
+      return;
+    }
+    if (!selectedPackage) return;
+    setAlerting(true);
+    try {
+      await axiosInstance.post('/api/products/stock-alert', { package_id: selectedPackage.id });
+      setAlerted(true);
+      enqueueSnackbar(tp('stock_alert_ok'));
+    } catch (e: any) {
+      enqueueSnackbar(e?.detail || e?.message || tp('action_failed'), { variant: 'error' });
+    } finally {
+      setAlerting(false);
+    }
+  };
 
   const handleChangePackage = (event: React.ChangeEvent<HTMLInputElement>) => {
     const pkgId = event.target.value;
@@ -356,24 +390,38 @@ export default function ProductDetailsSummary({
 
         <Divider sx={{ borderStyle: 'dashed' }} />
 
-        <Stack direction="row" spacing={2}>
+        {selectedOutOfStock ? (
           <Button
             fullWidth
-            disabled={isMaxQuantity || missingRequired}
             size="large"
-            color="warning"
+            color="info"
             variant="contained"
-            startIcon={<Iconify icon="ic:round-add-shopping-cart" />}
-            onClick={handleAddCart}
-            sx={{ whiteSpace: 'nowrap' }}
+            disabled={alerting || alerted}
+            startIcon={<Iconify icon={alerted ? 'eva:checkmark-fill' : 'solar:bell-bing-bold'} />}
+            onClick={handleStockAlert}
           >
-            {tp('add_to_cart')}
+            {alerted ? tp('stock_alert_done') : tp('stock_alert_btn')}
           </Button>
+        ) : (
+          <Stack direction="row" spacing={2}>
+            <Button
+              fullWidth
+              disabled={isMaxQuantity || missingRequired}
+              size="large"
+              color="warning"
+              variant="contained"
+              startIcon={<Iconify icon="ic:round-add-shopping-cart" />}
+              onClick={handleAddCart}
+              sx={{ whiteSpace: 'nowrap' }}
+            >
+              {tp('add_to_cart')}
+            </Button>
 
-          <Button fullWidth size="large" type="submit" variant="contained" disabled={missingRequired}>
-            {tp('buy_now')}
-          </Button>
-        </Stack>
+            <Button fullWidth size="large" type="submit" variant="contained" disabled={missingRequired}>
+              {tp('buy_now')}
+            </Button>
+          </Stack>
+        )}
 
         <Stack direction="row" alignItems="center" justifyContent="center">
           {_socials.map((social) => (

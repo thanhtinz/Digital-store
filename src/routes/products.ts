@@ -1,10 +1,29 @@
 import { Router, Request, Response } from 'express';
 import slugify from 'slugify';
 import prisma from '../db';
-import { requireAdmin, requireStaffOrAdmin, optionalUser } from '../middleware/auth';
+import { requireAdmin, requireStaffOrAdmin, optionalUser, requireUser } from '../middleware/auth';
 import { money } from '../services/orders';
 
 const router = Router();
+
+// ── Đăng ký "báo có hàng lại" cho 1 gói đang hết hàng ──
+router.post('/stock-alert', requireUser, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const packageId = parseInt(req.body.package_id);
+    if (!packageId) { res.status(422).json({ detail: 'Thiếu package_id' }); return; }
+    const pkg = await prisma.productPackage.findUnique({ where: { id: packageId } });
+    if (!pkg) { res.status(404).json({ detail: 'Không tìm thấy gói' }); return; }
+    await prisma.stockAlert.upsert({
+      where: { userId_packageId: { userId: user.user_id.toString(), packageId } },
+      create: { userId: user.user_id.toString(), userEmail: user.email, packageId, notified: false },
+      update: { notified: false },
+    });
+    res.json({ ok: true });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
 
 // ── Public: danh sách sản phẩm ────────────────────────
 router.get('/', optionalUser, async (req: Request, res: Response) => {
