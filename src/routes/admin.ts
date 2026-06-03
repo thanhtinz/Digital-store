@@ -2,10 +2,12 @@ import { Router, Request, Response } from 'express';
 import slugify from 'slugify';
 import multer from 'multer';
 import sharp from 'sharp';
+import bcrypt from 'bcryptjs';
 import prisma from '../db';
 import { requireAdmin, requireStaffOrAdmin } from '../middleware/auth';
 import { money } from '../services/orders';
 import { getFeatures } from '../services/features';
+import { sendMail } from '../services/mail';
 
 const uploadImage = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
 
@@ -148,7 +150,7 @@ router.delete(['/banners/:id', '/banners/admin/:id'], requireStaffOrAdmin, async
 
 router.get('/settings', async (_req: Request, res: Response) => {
   try {
-    const publicKeys = ['site_name', 'site_logo', 'site_description', 'currency', 'tax_rate', 'home_categories'];
+    const publicKeys = ['site_name', 'site_logo', 'site_description', 'currency', 'tax_rate', 'home_categories', 'contact_email', 'hotline', 'zalo', 'facebook', 'address', 'working_hours'];
     const configs = await prisma.siteConfig.findMany({ where: { key: { in: publicKeys } } });
     const map = Object.fromEntries(configs.map((c: { key: string; value: string | null }) => [c.key, c.value]));
     res.json(await withPublicFlags(map));
@@ -264,6 +266,27 @@ router.patch(['/admin/users/:id/role'], requireAdmin, async (req: Request, res: 
       });
     }
     res.json({ ok: true, role });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+/** Admin: đặt lại mật khẩu người dùng (sinh mật khẩu tạm + gửi email + trả về cho admin). */
+router.post(['/admin/users/:id/reset-password'], requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) { res.status(404).json({ detail: 'Không tìm thấy người dùng' }); return; }
+    const newPassword = Math.random().toString(36).slice(-4) + Math.random().toString(36).toUpperCase().slice(-4) + '@' + Math.floor(Math.random() * 90 + 10);
+    const hash = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({ where: { id }, data: { passwordHash: hash } });
+    // Cố gắng gửi email (không chặn nếu mail chưa cấu hình)
+    const mail = await sendMail({
+      to: user.email,
+      subject: '[Admin] Mật khẩu mới của bạn',
+      html: `<p>Mật khẩu mới của bạn là: <b>${newPassword}</b></p><p>Vui lòng đăng nhập và đổi lại mật khẩu.</p>`,
+    }).catch(() => ({ ok: false }));
+    res.json({ ok: true, new_password: newPassword, email_sent: !!mail.ok });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
   }
@@ -606,7 +629,7 @@ router.patch('/admin/tickets/:id', requireStaffOrAdmin, async (req: Request, res
 
 // ── Settings: public / unified / database ──────────────
 router.get('/admin/settings/public', async (_req: Request, res: Response) => {
-  const publicKeys = ['site_name', 'site_logo', 'site_description', 'site_banner', 'currency', 'tax_rate', 'home_categories'];
+  const publicKeys = ['site_name', 'site_logo', 'site_description', 'site_banner', 'currency', 'tax_rate', 'home_categories', 'contact_email', 'hotline', 'zalo', 'facebook', 'address', 'working_hours'];
   const configs = await prisma.siteConfig.findMany({ where: { key: { in: publicKeys } } });
   const map = Object.fromEntries(configs.map((c: { key: string; value: string | null }) => [c.key, c.value]));
   res.json(await withPublicFlags(map));

@@ -23,6 +23,10 @@ const FIELDS: { key: string; label: string; help?: string; multiline?: boolean }
   { key: 'tax_rate', label: 'Thuế VAT (%)', help: 'Ví dụ 8 = 8%.' },
   { key: 'contact_email', label: 'Email liên hệ' },
   { key: 'hotline', label: 'Hotline' },
+  { key: 'zalo', label: 'Zalo' },
+  { key: 'facebook', label: 'Facebook (URL)' },
+  { key: 'address', label: 'Địa chỉ' },
+  { key: 'working_hours', label: 'Giờ làm việc' },
 ];
 
 export default function AdminSettingsView() {

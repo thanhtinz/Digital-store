@@ -6,8 +6,10 @@ import {
   Card,
   CircularProgress,
   Container,
+  IconButton,
   MenuItem,
   Stack,
+  Tooltip,
   Table,
   TableBody,
   TableCell,
@@ -60,6 +62,19 @@ export default function AdminUsersView() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const resetPassword = async (u: User) => {
+    // eslint-disable-next-line no-alert
+    if (!window.confirm(`Đặt lại mật khẩu cho ${u.email}?`)) return;
+    try {
+      const r = await axiosInstance.post(`/api/admin/users/${u.id}/reset-password`);
+      const pw = r.data?.new_password;
+      const sent = r.data?.email_sent ? ' (đã gửi email)' : '';
+      enqueueSnackbar(pw ? `Mật khẩu mới: ${pw}${sent}` : 'Đã đặt lại mật khẩu', { variant: 'success', autoHideDuration: 10000 });
+    } catch (e: any) {
+      enqueueSnackbar(e?.detail || 'Đặt lại mật khẩu thất bại', { variant: 'error' });
+    }
+  };
 
   const changeRole = async (u: User, role: string) => {
     const prev = u.role;
@@ -137,19 +152,26 @@ export default function AdminUsersView() {
                     </TableCell>
                     <TableCell>{fDate(u.createdAt)}</TableCell>
                     <TableCell align="right">
-                      <TextField
-                        select
-                        size="small"
-                        value={ROLES.includes(u.role) ? u.role : 'user'}
-                        onChange={(e) => changeRole(u, e.target.value)}
-                        sx={{ minWidth: 110 }}
-                      >
-                        {ROLES.map((r) => (
-                          <MenuItem key={r} value={r}>
-                            {r}
-                          </MenuItem>
-                        ))}
-                      </TextField>
+                      <Stack direction="row" spacing={1} alignItems="center" justifyContent="flex-end">
+                        <Tooltip title="Đặt lại mật khẩu">
+                          <IconButton size="small" onClick={() => resetPassword(u)}>
+                            <Iconify icon="solar:key-bold" />
+                          </IconButton>
+                        </Tooltip>
+                        <TextField
+                          select
+                          size="small"
+                          value={ROLES.includes(u.role) ? u.role : 'user'}
+                          onChange={(e) => changeRole(u, e.target.value)}
+                          sx={{ minWidth: 110 }}
+                        >
+                          {ROLES.map((r) => (
+                            <MenuItem key={r} value={r}>
+                              {r}
+                            </MenuItem>
+                          ))}
+                        </TextField>
+                      </Stack>
                     </TableCell>
                   </TableRow>
                 ))}
