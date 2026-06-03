@@ -259,6 +259,11 @@ const en = {
     all: `All`,
     clear: `Clear`,
     products_found: `products found`,
+    price: `Price`,
+    rating: `Rating`,
+    and_up: `& Up`,
+    from: `From`,
+    to: `To`,
   },
   product_page: {
     package: `Package`,

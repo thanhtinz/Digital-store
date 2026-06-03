@@ -259,6 +259,11 @@ const cn = {
     all: `全部`,
     clear: `清除`,
     products_found: `件商品`,
+    price: `价格`,
+    rating: `评分`,
+    and_up: `及以上`,
+    from: `从`,
+    to: `到`,
   },
   product_page: {
     package: `套餐`,

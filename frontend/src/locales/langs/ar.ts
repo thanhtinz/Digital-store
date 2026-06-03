@@ -259,6 +259,11 @@ const ar = {
     all: `الكل`,
     clear: `مسح`,
     products_found: `منتج`,
+    price: `السعر`,
+    rating: `التقييم`,
+    and_up: `فأكثر`,
+    from: `من`,
+    to: `إلى`,
   },
   product_page: {
     package: `الباقة`,

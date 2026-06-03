@@ -36,6 +36,7 @@ router.get('/', optionalUser, async (req: Request, res: Response) => {
         take: parseInt(limit as string),
         include: {
           category: true,
+          reviews: { select: { rating: true } },
           packages: {
             where: { isActive: true },
             orderBy: [{ sortOrder: 'asc' }, { price: 'asc' }],
@@ -307,6 +308,11 @@ router.get('/admin/:productId/packages', requireStaffOrAdmin, async (req: Reques
 
 // ── Helper ─────────────────────────────────────────────
 function serializeProduct(p: any, detailed = false): Record<string, any> {
+  const revs = p.reviews || [];
+  const ratingCount = revs.length;
+  const ratingAvg = ratingCount
+    ? Math.round((revs.reduce((a: number, r: any) => a + (r.rating || 0), 0) / ratingCount) * 10) / 10
+    : 0;
   const packages = (p.packages || []).map((pkg: any) => {
     const flashSale = pkg.flashSales?.[0];
     return {
@@ -345,6 +351,9 @@ function serializeProduct(p: any, detailed = false): Record<string, any> {
     categoryId: p.categoryId,
     category: p.category ? { id: p.category.id, name: p.category.name, slug: p.category.slug } : null,
     packages,
+    // Rating trung bình + số lượt (cho lọc theo sao ở trang gian hàng).
+    rating: ratingAvg,
+    ratingCount,
     reviews: detailed ? (p.reviews || []) : undefined,
     createdAt: p.createdAt?.toISOString(),
   };

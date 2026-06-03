@@ -259,6 +259,11 @@ const vn = {
     all: `Tất cả`,
     clear: `Xoá lọc`,
     products_found: `sản phẩm`,
+    price: `Khoảng giá`,
+    rating: `Đánh giá`,
+    and_up: `trở lên`,
+    from: `Từ`,
+    to: `Đến`,
   },
   product_page: {
     package: `Gói`,

@@ -63,11 +63,14 @@ export default function EcommerceShopPage() {
       .catch(() => {});
   }, []);
 
+  // Giá cao nhất trong danh sách -> mốc cho slider lọc giá.
+  const maxPrice = products.reduce((m: number, p: any) => Math.max(m, effPrice(p)), 0);
+
   const defaultValues = {
     gender: [],
     category: 'All',
     colors: [],
-    priceRange: [0, 200],
+    priceRange: [0, 0],
     rating: '',
     sortBy: 'featured',
   };
@@ -82,7 +85,8 @@ export default function EcommerceShopPage() {
     formState: { dirtyFields },
   } = methods;
 
-  const isDefault = !dirtyFields.category;
+  const isDefault =
+    !dirtyFields.category && !dirtyFields.priceRange && !dirtyFields.rating;
 
   const values = watch();
 
@@ -132,6 +136,7 @@ export default function EcommerceShopPage() {
             <Stack direction="row" spacing={1} flexShrink={0} sx={{ my: 1 }}>
               <ShopFilterDrawer
                 categories={categories}
+                maxPrice={maxPrice}
                 isDefault={isDefault}
                 open={openFilter}
                 onOpen={handleOpenFilter}
@@ -167,8 +172,15 @@ function effPrice(product: any): number {
   return prices.length ? Math.min(...prices) : 0;
 }
 
+const RATING_THRESHOLD: Record<string, number> = {
+  up4Star: 4,
+  up3Star: 3,
+  up2Star: 2,
+  up1Star: 1,
+};
+
 function applyFilter(products: IProduct[], filters: IProductFilter) {
-  const { category, sortBy } = filters;
+  const { category, priceRange, rating, sortBy } = filters;
 
   // SORT BY
   if (sortBy === 'featured') {
@@ -187,6 +199,17 @@ function applyFilter(products: IProduct[], filters: IProductFilter) {
   // FILTER theo danh mục (so theo slug của danh mục thật)
   if (category && category !== 'All') {
     products = products.filter((product: any) => product.category?.slug === category);
+  }
+
+  // FILTER theo khoảng giá (VNĐ) — chỉ áp khi người dùng đặt mốc.
+  const [min, max] = priceRange || [0, 0];
+  if (min > 0) products = products.filter((p: any) => effPrice(p) >= min);
+  if (max > 0) products = products.filter((p: any) => effPrice(p) <= max);
+
+  // FILTER theo số sao đánh giá
+  if (rating) {
+    const th = RATING_THRESHOLD[rating] || 0;
+    products = products.filter((p: any) => (p.rating || 0) >= th);
   }
 
   return products;

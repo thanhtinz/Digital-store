@@ -259,6 +259,11 @@ const fr = {
     all: `Tous`,
     clear: `Effacer`,
     products_found: `produits trouvés`,
+    price: `Prix`,
+    rating: `Note`,
+    and_up: `et plus`,
+    from: `De`,
+    to: `À`,
   },
   product_page: {
     package: `Forfait`,
