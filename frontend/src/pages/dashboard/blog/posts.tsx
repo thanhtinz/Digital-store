@@ -4,7 +4,7 @@ import { useEffect, useCallback, useState } from 'react';
 import Head from 'next/head';
 import NextLink from 'next/link';
 // @mui
-import { Grid, Button, Container, Stack } from '@mui/material';
+import { Grid, Button, Container, Stack, Typography } from '@mui/material';
 // utils
 import axios from '../../../utils/axios';
 // routes
@@ -40,6 +40,8 @@ export default function BlogPostsPage() {
 
   const [posts, setPosts] = useState([]);
 
+  const [loaded, setLoaded] = useState(false);
+
   const [sortBy, setSortBy] = useState('latest');
 
   const sortedPosts = applySortBy(posts, sortBy);
@@ -47,9 +49,12 @@ export default function BlogPostsPage() {
   const getAllPosts = useCallback(async () => {
     try {
       const response = await axios.get('/api/blog/posts');
-      setPosts(response.data.posts);
+      // Backend trả { total, page, items: [...] }. Hỗ trợ cả 'posts' để an toàn.
+      setPosts(response.data.items || response.data.posts || []);
     } catch (error) {
       console.error(error);
+    } finally {
+      setLoaded(true);
     }
   }, []);
 
@@ -91,7 +96,7 @@ export default function BlogPostsPage() {
         </Stack>
 
         <Grid container spacing={3}>
-          {(!posts.length ? [...Array(12)] : sortedPosts).map((post, index) =>
+          {(!loaded ? [...Array(12)] : sortedPosts).map((post, index) =>
             post ? (
               <Grid key={post.id} item xs={12} sm={6} md={(index === 0 && 6) || 3}>
                 <BlogPostCard post={post} index={index} />
@@ -101,6 +106,13 @@ export default function BlogPostsPage() {
             )
           )}
         </Grid>
+
+        {loaded && !posts.length && (
+          <Stack alignItems="center" sx={{ py: 10, color: 'text.secondary' }}>
+            <Iconify icon="solar:document-text-bold-duotone" width={56} sx={{ mb: 1, opacity: 0.5 }} />
+            <Typography variant="body2">Chưa có bài viết nào.</Typography>
+          </Stack>
+        )}
       </Container>
     </>
   );

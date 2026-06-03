@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 // @mui
 import { Card, Container, Divider, Link, Stack, Typography } from '@mui/material';
+// locales
+import { useLocales } from '../../../locales';
 // utils
 import axiosInstance from '../../../utils/axios';
 import { fCurrency } from '../../../utils/formatNumber';
@@ -32,6 +34,9 @@ const STATUS_COLOR: Record<string, 'success' | 'warning' | 'info' | 'error' | 'd
 };
 
 export default function SmmOrdersView() {
+  const { translate } = useLocales();
+  const t = (k: string) => `${translate(`smm_orders.${k}`)}`;
+
   const [orders, setOrders] = useState<SmmOrder[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -52,13 +57,13 @@ export default function SmmOrdersView() {
   return (
     <Container sx={{ pb: 6 }}>
       <Typography variant="h4" sx={{ my: 3 }}>
-        Đơn hàng dịch vụ
+        {t('title')}
       </Typography>
 
       {loading ? (
-        <Typography sx={{ color: 'text.secondary' }}>Đang tải…</Typography>
+        <Typography sx={{ color: 'text.secondary' }}>{t('loading')}</Typography>
       ) : orders.length === 0 ? (
-        <Card sx={{ p: 5, textAlign: 'center', color: 'text.secondary' }}>Chưa có đơn dịch vụ.</Card>
+        <Card sx={{ p: 5, textAlign: 'center', color: 'text.secondary' }}>{t('empty')}</Card>
       ) : (
         <Stack spacing={2}>
           {orders.map((o) => (
@@ -78,7 +83,7 @@ export default function SmmOrdersView() {
               <Divider sx={{ borderStyle: 'dashed', my: 1.5 }} />
               <Stack direction="row" justifyContent="space-between">
                 <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                  SL: {o.quantity} · {o.created_at ? fDateTime(o.created_at) : ''}
+                  {t('quantity_short')}: {o.quantity} · {o.created_at ? fDateTime(o.created_at) : ''}
                 </Typography>
                 <Typography variant="subtitle2">{fCurrency(o.charge || 0)}</Typography>
               </Stack>

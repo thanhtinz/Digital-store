@@ -3,8 +3,6 @@ import { useEffect, useState } from 'react';
 import { PATH_DASHBOARD } from '../../../routes/paths';
 // utils
 import axiosInstance from '../../../utils/axios';
-// auth
-import { useAuthContext } from '../../../auth/useAuthContext';
 // locales
 import { useLocales } from '../../../locales';
 // components
@@ -83,9 +81,6 @@ const activeOf = (c: AnyCat) => c.isActive ?? c.is_active ?? true;
 export function useNavConfig() {
   const { translate } = useLocales();
   const t = (key: string) => `${translate(`nav.${key}`)}`;
-
-  const { user } = useAuthContext();
-  const isStaff = (user as any)?.role === 'admin' || (user as any)?.role === 'staff';
 
   const [categories, setCategories] = useState<AnyCat[]>([]);
   const [giftcards, setGiftcards] = useState<AnyProduct[]>([]);
@@ -172,23 +167,12 @@ export function useNavConfig() {
   const support = {
     subheader: t('support'),
     items: [
-      { title: t('topup'), path: PATH_DASHBOARD.wallet.topup, icon: ICONS.banking },
       { title: t('offers'), path: PATH_DASHBOARD.offers, icon: ICONS.label },
       { title: t('blog'), path: PATH_DASHBOARD.blog.posts, icon: ICONS.blog },
       { title: t('support'), path: PATH_DASHBOARD.support, icon: ICONS.chat },
     ],
   };
 
-  // Khu quản trị — chỉ hiện cho admin/staff. Dùng luôn theme Minimal.
-  const adminSection = {
-    subheader: t('admin'),
-    items: [
-      { title: t('admin_overview'), path: PATH_DASHBOARD.admin.root, icon: ICONS.dashboard },
-      { title: t('admin_settings'), path: PATH_DASHBOARD.admin.settings, icon: ICONS.banking },
-    ],
-  };
-
-  const sections: any[] = [shopping, { subheader: t('services'), items: serviceItems }, support];
-  if (isStaff) sections.push(adminSection);
-  return sections;
+  // Admin có MENU RIÊNG (AdminLayout) — không nhồi vào sidebar cửa hàng nữa.
+  return [shopping, { subheader: t('services'), items: serviceItems }, support];
 }

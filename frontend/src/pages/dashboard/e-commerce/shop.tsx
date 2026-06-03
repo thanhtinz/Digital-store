@@ -46,7 +46,7 @@ export default function EcommerceShopPage() {
 
   const { query } = useRouter();
 
-  const { products, checkout } = useSelector((state) => state.product);
+  const { products, checkout, isLoading } = useSelector((state) => state.product);
 
   const [openFilter, setOpenFilter] = useState(false);
 
@@ -156,7 +156,7 @@ export default function EcommerceShopPage() {
             )}
           </Stack>
 
-          <ShopProductList products={dataFiltered} loading={!products.length && isDefault} />
+          <ShopProductList products={dataFiltered} loading={isLoading} />
 
           <CartWidget totalItems={checkout.totalItems} />
         </Container>

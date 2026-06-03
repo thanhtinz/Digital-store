@@ -11,6 +11,8 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+// locales
+import { useLocales } from '../../locales';
 // utils
 import axiosInstance from '../../utils/axios';
 import { fCurrency } from '../../utils/formatNumber';
@@ -55,7 +57,15 @@ type BlogPost = {
 
 // ----------------------------------------------------------------------
 
-function SectionHead({ title, viewAllHref }: { title: string; viewAllHref?: string }) {
+function SectionHead({
+  title,
+  viewAllHref,
+  viewAllLabel,
+}: {
+  title: string;
+  viewAllHref?: string;
+  viewAllLabel: string;
+}) {
   return (
     <Stack
       direction="row"
@@ -71,7 +81,7 @@ function SectionHead({ title, viewAllHref }: { title: string; viewAllHref?: stri
           variant="subtitle2"
           sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}
         >
-          Xem tất cả
+          {viewAllLabel}
           <Iconify icon="eva:arrow-ios-forward-fill" />
         </Link>
       )}
@@ -82,6 +92,9 @@ function SectionHead({ title, viewAllHref }: { title: string; viewAllHref?: stri
 // ----------------------------------------------------------------------
 
 export default function HomeView() {
+  const { translate } = useLocales();
+  const t = (k: string) => `${translate(`home.${k}`)}`;
+
   const [featured, setFeatured] = useState<IProduct[]>([]);
   const [newest, setNewest] = useState<IProduct[]>([]);
   const [flash, setFlash] = useState<FlashSale[]>([]);
@@ -158,10 +171,8 @@ export default function HomeView() {
           }}
         >
           <Stack spacing={2} alignItems="flex-start" sx={{ maxWidth: 560 }}>
-            <Typography variant="h2">Sản phẩm số, giao hàng tự động</Typography>
-            <Typography sx={{ opacity: 0.9 }}>
-              Mua nhanh, nhận ngay. Thanh toán an toàn, hỗ trợ tận tâm.
-            </Typography>
+            <Typography variant="h2">{t('hero_title')}</Typography>
+            <Typography sx={{ opacity: 0.9 }}>{t('hero_desc')}</Typography>
             <Button
               component={NextLink}
               href={PATH_DASHBOARD.eCommerce.shop}
@@ -170,7 +181,7 @@ export default function HomeView() {
               color="inherit"
               sx={{ color: 'primary.main' }}
             >
-              Mua sắm ngay
+              {t('shop_now')}
             </Button>
           </Stack>
         </Card>
@@ -179,7 +190,11 @@ export default function HomeView() {
       {/* FLASH SALE */}
       {flash.length > 0 && (
         <>
-          <SectionHead title="⚡ Flash Sale" viewAllHref={PATH_DASHBOARD.eCommerce.shop} />
+          <SectionHead
+            title={t('flash_sale')}
+            viewAllHref={PATH_DASHBOARD.eCommerce.shop}
+            viewAllLabel={t('view_all')}
+          />
           <Box
             gap={2}
             display="grid"
@@ -215,7 +230,11 @@ export default function HomeView() {
       {/* SẢN PHẨM NỔI BẬT */}
       {(loading || featured.length > 0) && (
         <>
-          <SectionHead title="★ Sản phẩm nổi bật" viewAllHref={PATH_DASHBOARD.eCommerce.shop} />
+          <SectionHead
+            title={t('featured')}
+            viewAllHref={PATH_DASHBOARD.eCommerce.shop}
+            viewAllLabel={t('view_all')}
+          />
           <ShopProductList products={featured} loading={loading && featured.length === 0} />
         </>
       )}
@@ -223,7 +242,11 @@ export default function HomeView() {
       {/* SẢN PHẨM MỚI */}
       {newest.length > 0 && (
         <>
-          <SectionHead title="Sản phẩm mới" viewAllHref={PATH_DASHBOARD.eCommerce.shop} />
+          <SectionHead
+            title={t('newest')}
+            viewAllHref={PATH_DASHBOARD.eCommerce.shop}
+            viewAllLabel={t('view_all')}
+          />
           <ShopProductList products={newest} loading={false} />
         </>
       )}
@@ -231,7 +254,11 @@ export default function HomeView() {
       {/* BLOG */}
       {posts.length > 0 && (
         <>
-          <SectionHead title="Góc chia sẻ" viewAllHref={PATH_DASHBOARD.blog.posts} />
+          <SectionHead
+            title={t('blog')}
+            viewAllHref={PATH_DASHBOARD.blog.posts}
+            viewAllLabel={t('view_all')}
+          />
           <Box
             gap={3}
             display="grid"

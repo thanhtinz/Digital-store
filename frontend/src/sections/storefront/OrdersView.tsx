@@ -13,6 +13,8 @@ import {
   Tabs,
   Typography,
 } from '@mui/material';
+// locales
+import { useLocales } from '../../locales';
 // utils
 import axiosInstance from '../../utils/axios';
 import { fCurrency } from '../../utils/formatNumber';
@@ -29,7 +31,7 @@ import {
   ORDER_FILTER_TABS,
   matchOrderFilter,
   orderStatusColor,
-  orderStatusLabel,
+  orderStatusKey,
 } from './orderStatus';
 
 // ----------------------------------------------------------------------
@@ -51,19 +53,22 @@ type Order = {
   items?: OrderItem[];
 };
 
-function summaryLabel(o: Order): string {
-  if (o.items && o.items.length) {
-    const first = o.items[0];
-    const extra = o.items.length > 1 ? ` +${o.items.length - 1} sản phẩm khác` : '';
-    return `${first.productName || ''}${first.packageName ? ` - ${first.packageName}` : ''}${extra}`;
-  }
-  return o.productName || 'Đơn hàng';
-}
-
 // ----------------------------------------------------------------------
 
 export default function OrdersView() {
   const { enqueueSnackbar } = useSnackbar();
+  const { translate } = useLocales();
+  const t = (k: string) => `${translate(`orders_page.${k}`)}`;
+
+  const summaryLabel = (o: Order): string => {
+    if (o.items && o.items.length) {
+      const first = o.items[0];
+      const extra =
+        o.items.length > 1 ? ` +${o.items.length - 1} ${t('more_products')}` : '';
+      return `${first.productName || ''}${first.packageName ? ` - ${first.packageName}` : ''}${extra}`;
+    }
+    return o.productName || t('order');
+  };
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,7 +81,7 @@ export default function OrdersView() {
       .then((res) => {
         if (alive) setOrders(res.data?.items || []);
       })
-      .catch(() => enqueueSnackbar('Không tải được đơn hàng', { variant: 'error' }))
+      .catch(() => enqueueSnackbar(t('load_failed'), { variant: 'error' }))
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
@@ -85,8 +90,10 @@ export default function OrdersView() {
 
   const counts = useMemo(() => {
     const map: Record<string, number> = {};
-    ORDER_FILTER_TABS.forEach((t) => {
-      map[t.value] = orders.filter((o) => matchOrderFilter(o.status, t.value)).length;
+    ORDER_FILTER_TABS.forEach((tabItem) => {
+      map[tabItem.value] = orders.filter((o) =>
+        matchOrderFilter(o.status, tabItem.value)
+      ).length;
     });
     return map;
   }, [orders]);
@@ -97,10 +104,10 @@ export default function OrdersView() {
     <Container sx={{ pb: 6 }}>
       <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1, mt: 2 }}>
         <Iconify icon="solar:bill-list-bold-duotone" width={32} />
-        <Typography variant="h4">Đơn hàng của tôi</Typography>
+        <Typography variant="h4">{t('title')}</Typography>
       </Stack>
       <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
-        Tổng cộng {orders.length} đơn hàng
+        {t('total_prefix')} {orders.length} {t('total_suffix')}
       </Typography>
 
       <Tabs
@@ -110,23 +117,27 @@ export default function OrdersView() {
         scrollButtons="auto"
         sx={{ mb: 3 }}
       >
-        {ORDER_FILTER_TABS.map((t) => (
-          <Tab key={t.value} value={t.value} label={`${t.label} (${counts[t.value] || 0})`} />
+        {ORDER_FILTER_TABS.map((tabItem) => (
+          <Tab
+            key={tabItem.value}
+            value={tabItem.value}
+            label={`${t(tabItem.labelKey)} (${counts[tabItem.value] || 0})`}
+          />
         ))}
       </Tabs>
 
       {loading ? (
-        <Typography sx={{ color: 'text.secondary' }}>Đang tải…</Typography>
+        <Typography sx={{ color: 'text.secondary' }}>{t('loading')}</Typography>
       ) : filtered.length === 0 ? (
         <Card sx={{ p: 5, textAlign: 'center' }}>
-          <Typography sx={{ color: 'text.secondary' }}>Chưa có đơn hàng nào.</Typography>
+          <Typography sx={{ color: 'text.secondary' }}>{t('empty')}</Typography>
           <Button
             component={NextLink}
             href={PATH_DASHBOARD.eCommerce.shop}
             variant="contained"
             sx={{ mt: 2 }}
           >
-            Mua sắm ngay
+            {t('shop_now')}
           </Button>
         </Card>
       ) : (
@@ -136,7 +147,7 @@ export default function OrdersView() {
               <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Typography variant="subtitle1">#{o.orderCode}</Typography>
                 <Label variant="soft" color={orderStatusColor(o.status)}>
-                  {orderStatusLabel(o.status)}
+                  {orderStatusKey(o.status) ? t(orderStatusKey(o.status)) : o.status || '—'}
                 </Label>
               </Stack>
 
@@ -151,7 +162,7 @@ export default function OrdersView() {
                   {fDateTime(o.createdAt)}
                 </Typography>
                 <Typography variant="subtitle2">
-                  Tổng: {fCurrency(o.totalAmount)}
+                  {t('total_label')}: {fCurrency(o.totalAmount)}
                 </Typography>
               </Stack>
 
@@ -172,7 +183,7 @@ export default function OrdersView() {
                   variant="outlined"
                   endIcon={<Iconify icon="eva:arrow-ios-forward-fill" />}
                 >
-                  Xem chi tiết
+                  {t('view_detail')}
                 </Button>
               </Stack>
             </Card>

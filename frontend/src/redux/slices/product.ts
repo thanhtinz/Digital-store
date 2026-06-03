@@ -200,7 +200,8 @@ export function getProducts(params?: { category?: string; type?: string; limit?:
         // limit cao để trang "tất cả sản phẩm" (gian hàng) lấy hết.
         params: { limit: 500, ...(params || {}) },
       });
-      dispatch(slice.actions.getProductsSuccess(response.data.products));
+      // Backend trả { total, page, items: [...] }. Hỗ trợ cả 'products' để an toàn.
+      dispatch(slice.actions.getProductsSuccess(response.data.items || response.data.products || []));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }

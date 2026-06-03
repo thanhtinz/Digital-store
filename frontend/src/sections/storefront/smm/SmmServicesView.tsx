@@ -11,6 +11,8 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+// locales
+import { useLocales } from '../../../locales';
 // utils
 import axiosInstance from '../../../utils/axios';
 import { fCurrency } from '../../../utils/formatNumber';
@@ -30,6 +32,9 @@ type Row = {
 };
 
 export default function SmmServicesView() {
+  const { translate } = useLocales();
+  const t = (k: string) => `${translate(`smm_services.${k}`)}`;
+
   const [rows, setRows] = useState<Row[]>([]);
 
   useEffect(() => {
@@ -65,7 +70,7 @@ export default function SmmServicesView() {
   return (
     <Container sx={{ pb: 6 }}>
       <Typography variant="h4" sx={{ my: 3 }}>
-        Danh sách dịch vụ
+        {t('title')}
       </Typography>
       <Card>
         <Scrollbar>
@@ -73,12 +78,12 @@ export default function SmmServicesView() {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Nền tảng</TableCell>
-                  <TableCell>Danh mục</TableCell>
-                  <TableCell>Dịch vụ</TableCell>
-                  <TableCell align="right">Giá/1000</TableCell>
-                  <TableCell align="right">Tối thiểu</TableCell>
-                  <TableCell align="right">Tối đa</TableCell>
+                  <TableCell>{t('platform')}</TableCell>
+                  <TableCell>{t('category')}</TableCell>
+                  <TableCell>{t('service')}</TableCell>
+                  <TableCell align="right">{t('rate')}</TableCell>
+                  <TableCell align="right">{t('min')}</TableCell>
+                  <TableCell align="right">{t('max')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -95,7 +100,7 @@ export default function SmmServicesView() {
                 {rows.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} align="center" sx={{ color: 'text.secondary', py: 4 }}>
-                      Chưa có dịch vụ.
+                      {t('empty')}
                     </TableCell>
                   </TableRow>
                 )}

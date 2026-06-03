@@ -13,6 +13,8 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+// locales
+import { useLocales } from '../../locales';
 // utils
 import axiosInstance from '../../utils/axios';
 import { fCurrency } from '../../utils/formatNumber';
@@ -24,7 +26,7 @@ import Label from '../../components/label';
 import Iconify from '../../components/iconify';
 import { useSnackbar } from '../../components/snackbar';
 //
-import { orderStatusColor, orderStatusLabel } from './orderStatus';
+import { orderStatusColor, orderStatusKey } from './orderStatus';
 
 // ----------------------------------------------------------------------
 
@@ -64,6 +66,12 @@ export default function OrderDetailView() {
   const { query, push } = useRouter();
   const code = query.code as string;
   const { enqueueSnackbar } = useSnackbar();
+  const { translate } = useLocales();
+  const t = (k: string) => `${translate(`order_detail.${k}`)}`;
+  const statusLabel = (status?: string) => {
+    const key = orderStatusKey(status);
+    return key ? `${translate(`orders_page.${key}`)}` : status || '—';
+  };
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -73,7 +81,7 @@ export default function OrderDetailView() {
     axiosInstance
       .get(`/api/orders/my/${code}`)
       .then((res) => setOrder(res.data))
-      .catch(() => enqueueSnackbar('Không tìm thấy đơn hàng', { variant: 'error' }))
+      .catch(() => enqueueSnackbar(t('not_found_snackbar'), { variant: 'error' }))
       .finally(() => setLoading(false));
   };
 
@@ -84,13 +92,13 @@ export default function OrderDetailView() {
 
   const handleCopy = (text: string) => {
     navigator.clipboard?.writeText(text);
-    enqueueSnackbar('Đã sao chép');
+    enqueueSnackbar(t('copied'));
   };
 
   if (loading) {
     return (
       <Container sx={{ py: 4 }}>
-        <Typography sx={{ color: 'text.secondary' }}>Đang tải…</Typography>
+        <Typography sx={{ color: 'text.secondary' }}>{t('loading')}</Typography>
       </Container>
     );
   }
@@ -98,9 +106,9 @@ export default function OrderDetailView() {
   if (!order) {
     return (
       <Container sx={{ py: 4 }}>
-        <Typography>Không tìm thấy đơn hàng.</Typography>
+        <Typography>{t('not_found')}</Typography>
         <Button component={NextLink} href={PATH_DASHBOARD.orders.root} sx={{ mt: 2 }}>
-          ← Quay lại danh sách
+          ← {t('back_to_list')}
         </Button>
       </Container>
     );
@@ -119,7 +127,7 @@ export default function OrderDetailView() {
         sx={{ my: 2 }}
         color="inherit"
       >
-        Quay lại danh sách
+        {t('back_to_list')}
       </Button>
 
       <Grid container spacing={3}>
@@ -127,9 +135,11 @@ export default function OrderDetailView() {
         <Grid item xs={12} md={7}>
           <Card sx={{ p: 3, mb: 3, borderTop: (t) => `3px solid ${t.palette.primary.main}` }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
-              <Typography variant="h6">Chi tiết đơn hàng #{order.orderCode}</Typography>
+              <Typography variant="h6">
+                {t('order_title')} #{order.orderCode}
+              </Typography>
               <Label variant="soft" color={orderStatusColor(order.status)}>
-                {orderStatusLabel(order.status)}
+                {statusLabel(order.status)}
               </Label>
             </Stack>
             <Typography variant="caption" sx={{ color: 'text.secondary' }}>
@@ -139,7 +149,7 @@ export default function OrderDetailView() {
 
           <Card sx={{ p: 3, mb: 3 }}>
             <Typography variant="subtitle1" sx={{ mb: 2 }}>
-              Sản phẩm trong đơn
+              {t('products_in_order')}
             </Typography>
             <Stack spacing={2}>
               {(order.items || []).map((it) => (
@@ -147,7 +157,7 @@ export default function OrderDetailView() {
                   <Box>
                     <Typography variant="subtitle2">{it.productName}</Typography>
                     <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                      {it.packageName} · SL: {it.quantity}
+                      {it.packageName} · {t('quantity_short')}: {it.quantity}
                     </Typography>
                   </Box>
                   <Typography variant="subtitle2">{fCurrency(it.lineTotal || 0)}</Typography>
@@ -160,14 +170,14 @@ export default function OrderDetailView() {
             <Stack spacing={1}>
               <Stack direction="row" justifyContent="space-between">
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  Tạm tính
+                  {t('subtotal')}
                 </Typography>
                 <Typography variant="body2">{fCurrency(order.subtotalAmount)}</Typography>
               </Stack>
               {order.discountAmount > 0 && (
                 <Stack direction="row" justifyContent="space-between">
                   <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                    Giảm giá
+                    {t('discount')}
                   </Typography>
                   <Typography variant="body2" color="error.main">
                     -{fCurrency(order.discountAmount)}
@@ -175,7 +185,7 @@ export default function OrderDetailView() {
                 </Stack>
               )}
               <Stack direction="row" justifyContent="space-between">
-                <Typography variant="subtitle1">Tổng thanh toán</Typography>
+                <Typography variant="subtitle1">{t('total_payment')}</Typography>
                 <Typography variant="subtitle1">{fCurrency(order.totalAmount)}</Typography>
               </Stack>
             </Stack>
@@ -185,9 +195,9 @@ export default function OrderDetailView() {
           {isCompleted && orderDelivery && (
             <Card sx={{ p: 3, bgcolor: 'success.lighter' }}>
               <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
-                <Typography variant="subtitle1">Thông tin đã giao</Typography>
+                <Typography variant="subtitle1">{t('delivered_info')}</Typography>
                 <Button size="small" onClick={() => handleCopy(orderDelivery)} startIcon={<Iconify icon="eva:copy-fill" />}>
-                  Sao chép
+                  {t('copy')}
                 </Button>
               </Stack>
               <Box
@@ -212,14 +222,14 @@ export default function OrderDetailView() {
         <Grid item xs={12} md={5}>
           <Card sx={{ p: 3 }}>
             <Typography variant="subtitle1" sx={{ mb: 2 }}>
-              Trạng thái thanh toán
+              {t('payment_status')}
             </Typography>
 
             {isPending ? (
               <Stack spacing={2}>
                 <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'warning.lighter' }}>
                   <Typography variant="body2" color="warning.darker">
-                    Đơn chưa thanh toán. Hoàn tất thanh toán để được giao hàng tự động.
+                    {t('pending_note')}
                   </Typography>
                 </Box>
                 <Button
@@ -229,10 +239,10 @@ export default function OrderDetailView() {
                   component={NextLink}
                   href={PATH_DASHBOARD.eCommerce.checkout}
                 >
-                  Thanh toán ngay
+                  {t('pay_now')}
                 </Button>
                 <Button fullWidth variant="outlined" onClick={fetchOrder}>
-                  Cập nhật trạng thái
+                  {t('refresh_status')}
                 </Button>
               </Stack>
             ) : (
@@ -242,9 +252,9 @@ export default function OrderDetailView() {
                   width={48}
                   color={isCompleted ? 'success.main' : 'text.disabled'}
                 />
-                <Typography variant="subtitle1">{orderStatusLabel(order.status)}</Typography>
+                <Typography variant="subtitle1">{statusLabel(order.status)}</Typography>
                 <Button onClick={() => push(PATH_DASHBOARD.orders.root)} size="small">
-                  Về danh sách đơn
+                  {t('back_to_orders')}
                 </Button>
               </Stack>
             )}

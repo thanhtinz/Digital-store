@@ -1,0 +1,46 @@
+// components
+import SvgColor from '../../../components/svg-color';
+// routes
+import { PATH_DASHBOARD } from '../../../routes/paths';
+
+// ----------------------------------------------------------------------
+
+const icon = (name: string) => (
+  <SvgColor src={`/assets/icons/navbar/${name}.svg`} sx={{ width: 1, height: 1 }} />
+);
+
+const ICONS = {
+  dashboard: icon('ic_dashboard'),
+  banking: icon('ic_banking'),
+  user: icon('ic_user'),
+  cart: icon('ic_cart'),
+  ecommerce: icon('ic_ecommerce'),
+  label: icon('ic_label'),
+  blog: icon('ic_blog'),
+  external: icon('ic_external'),
+};
+
+// ----------------------------------------------------------------------
+// Menu RIÊNG cho khu quản trị (AdminLayout). Tách khỏi sidebar cửa hàng.
+// (Để tiếng Việt — sẽ đa ngôn ngữ sau nếu cần.)
+
+export function useAdminNavConfig() {
+  return [
+    {
+      subheader: 'Quản trị',
+      items: [
+        { title: 'Tổng quan', path: PATH_DASHBOARD.admin.root, icon: ICONS.dashboard },
+        { title: 'Người dùng', path: PATH_DASHBOARD.admin.users, icon: ICONS.user },
+        { title: 'Đơn hàng', path: PATH_DASHBOARD.admin.orders, icon: ICONS.cart },
+      ],
+    },
+    {
+      subheader: 'Cấu hình',
+      items: [{ title: 'Cài đặt cửa hàng', path: PATH_DASHBOARD.admin.settings, icon: ICONS.banking }],
+    },
+    {
+      subheader: 'Khác',
+      items: [{ title: 'Về cửa hàng', path: '/', icon: ICONS.external }],
+    },
+  ];
+}

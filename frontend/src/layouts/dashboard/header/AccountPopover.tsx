@@ -26,14 +26,16 @@ export default function AccountPopover() {
   const { user, logout } = useAuthContext();
 
   const { translate } = useLocales();
-  const t = (k: string) => `${translate(`nav.${k}`)}`;
+  // Viết hoa chữ cái đầu cho nhãn menu (một số key i18n đang viết thường).
+  const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+  const t = (k: string) => cap(`${translate(`nav.${k}`)}`);
 
   const isAdmin = (user as any)?.role === 'admin';
 
   const OPTIONS = [
-    { label: t('home'), linkTo: '/' },
     { label: t('account'), linkTo: PATH_DASHBOARD.myAccount },
     { label: t('orders'), linkTo: PATH_DASHBOARD.orders.root },
+    { label: t('topup'), linkTo: PATH_DASHBOARD.wallet.topup },
   ];
 
   const name =

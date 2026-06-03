@@ -30,7 +30,7 @@ import Iconify from '../../components/iconify';
 // sections (form đổi mật khẩu của Minimal)
 import AccountChangePassword from '../@dashboard/user/account/AccountChangePassword';
 //
-import { orderStatusColor, orderStatusLabel } from './orderStatus';
+import { orderStatusColor, orderStatusKey } from './orderStatus';
 
 // ----------------------------------------------------------------------
 
@@ -77,6 +77,18 @@ export default function ProfileView() {
     return v === k ? s : v;
   };
 
+  // Nhãn trạng thái đơn hàng (dùng key i18n trong namespace orders_page).
+  const orderStatusLabel = (status?: string) => {
+    const key = orderStatusKey(status);
+    return key ? `${translate(`orders_page.${key}`)}` : status || '—';
+  };
+  // Nhãn vai trò người dùng theo ngôn ngữ (fallback về giá trị gốc nếu thiếu key).
+  const roleLabel = (r: string) => {
+    const k = `account_page_extra.role_${r}`;
+    const v = `${translate(k)}`;
+    return v === k ? r : v;
+  };
+
   // Số dư hiển thị NGAY từ thông tin user; nếu chưa có thì mặc định 0 (luôn hiện).
   const initialBalance = Number((user as any)?.balance);
   const [balance, setBalance] = useState<number>(
@@ -120,7 +132,7 @@ export default function ProfileView() {
     (user as any)?.displayName ||
     (user as any)?.display_name ||
     (user as any)?.email ||
-    'Tài khoản';
+    `${translate('account_page_extra.default_name')}`;
   const email = (user as any)?.email || '';
   const role = (user as any)?.role || 'user';
   const createdAt = (user as any)?.created_at || (user as any)?.createdAt;
@@ -157,7 +169,7 @@ export default function ProfileView() {
             </Typography>
 
             <Label color="primary" variant="soft" sx={{ textTransform: 'capitalize' }}>
-              {role}
+              {roleLabel(role)}
             </Label>
 
             {createdAt && (

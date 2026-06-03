@@ -3,22 +3,22 @@ import Head from 'next/head';
 // layouts
 import AdminLayout from '../../../layouts/dashboard/AdminLayout';
 // sections
-import AdminOverviewView from '../../../sections/admin/AdminOverviewView';
+import AdminOrdersView from '../../../sections/admin/AdminOrdersView';
 
 // ----------------------------------------------------------------------
 
-AdminPage.getLayout = (page: React.ReactElement) => <AdminLayout>{page}</AdminLayout>;
+AdminOrdersPage.getLayout = (page: React.ReactElement) => <AdminLayout>{page}</AdminLayout>;
 
 // ----------------------------------------------------------------------
 
-export default function AdminPage() {
+export default function AdminOrdersPage() {
   return (
     <>
       <Head>
-        <title> Quản trị | Digital Store</title>
+        <title> Đơn hàng | Quản trị</title>
       </Head>
 
-      <AdminOverviewView />
+      <AdminOrdersView />
     </>
   );
 }

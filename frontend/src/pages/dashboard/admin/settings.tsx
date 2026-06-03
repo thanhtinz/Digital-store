@@ -1,13 +1,13 @@
 // next
 import Head from 'next/head';
 // layouts
-import DashboardLayout from '../../../layouts/dashboard';
+import AdminLayout from '../../../layouts/dashboard/AdminLayout';
 // sections
 import AdminSettingsView from '../../../sections/admin/AdminSettingsView';
 
 // ----------------------------------------------------------------------
 
-AdminSettingsPage.getLayout = (page: React.ReactElement) => <DashboardLayout>{page}</DashboardLayout>;
+AdminSettingsPage.getLayout = (page: React.ReactElement) => <AdminLayout>{page}</AdminLayout>;
 
 // ----------------------------------------------------------------------
 

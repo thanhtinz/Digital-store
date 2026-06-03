@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 // @mui
 import { Button, Card, Container, Stack, Typography } from '@mui/material';
+// locales
+import { useLocales } from '../../../locales';
 // utils
 import axiosInstance from '../../../utils/axios';
 // components
@@ -19,6 +21,8 @@ type WarrantyItem = {
 
 export default function SmmWarrantyView() {
   const { enqueueSnackbar } = useSnackbar();
+  const { translate } = useLocales();
+  const t = (k: string) => `${translate(`smm_warranty.${k}`)}`;
   const [items, setItems] = useState<WarrantyItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -37,24 +41,24 @@ export default function SmmWarrantyView() {
   const handleRefill = async (orderId: number) => {
     try {
       await axiosInstance.post(`/api/smm/orders/${orderId}/refill`);
-      enqueueSnackbar('Đã gửi yêu cầu bảo hành (refill)');
+      enqueueSnackbar(t('request_sent'));
       fetchItems();
     } catch (e: any) {
-      enqueueSnackbar(e?.detail || e?.message || 'Không gửi được yêu cầu', { variant: 'error' });
+      enqueueSnackbar(e?.detail || e?.message || t('request_failed'), { variant: 'error' });
     }
   };
 
   return (
     <Container sx={{ pb: 6 }}>
       <Typography variant="h4" sx={{ my: 3 }}>
-        Bảo hành
+        {t('title')}
       </Typography>
 
       {loading ? (
-        <Typography sx={{ color: 'text.secondary' }}>Đang tải…</Typography>
+        <Typography sx={{ color: 'text.secondary' }}>{t('loading')}</Typography>
       ) : items.length === 0 ? (
         <Card sx={{ p: 5, textAlign: 'center', color: 'text.secondary' }}>
-          Chưa có đơn nào cần bảo hành.
+          {t('empty')}
         </Card>
       ) : (
         <Stack spacing={2}>
@@ -74,7 +78,7 @@ export default function SmmWarrantyView() {
                     </Label>
                   )}
                   <Button size="small" variant="outlined" onClick={() => handleRefill(it.order_id)}>
-                    Yêu cầu bảo hành
+                    {t('request')}
                   </Button>
                 </Stack>
               </Stack>

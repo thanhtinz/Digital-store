@@ -1,23 +1,24 @@
-// Map trạng thái đơn hàng -> nhãn tiếng Việt + màu Label (đồng bộ store cũ).
+// Map trạng thái đơn hàng -> key i18n + màu Label (đồng bộ store cũ).
 
 export type OrderStatusColor = 'success' | 'warning' | 'info' | 'error' | 'default';
 
-export function orderStatusLabel(status?: string): string {
+// Trả về key i18n (namespace orders_page) cho trạng thái đơn hàng.
+export function orderStatusKey(status?: string): string {
   switch (status) {
     case 'completed':
-      return 'Đã giao hàng';
+      return 'status_completed';
     case 'paid':
-      return 'Đã thanh toán';
+      return 'status_paid';
     case 'pending':
     case 'pending_payment':
-      return 'Đặt hàng';
+      return 'status_pending';
     case 'cancelled':
     case 'expired':
-      return 'Đã hủy';
+      return 'status_cancelled';
     case 'failed':
-      return 'Lỗi';
+      return 'status_failed';
     default:
-      return status || '—';
+      return '';
   }
 }
 
@@ -39,14 +40,14 @@ export function orderStatusColor(status?: string): OrderStatusColor {
   }
 }
 
-// Nhóm trạng thái cho tab lọc.
+// Nhóm trạng thái cho tab lọc (label là key i18n trong namespace orders_page).
 export const ORDER_FILTER_TABS = [
-  { value: 'all', label: 'Tất cả' },
-  { value: 'pending', label: 'Đặt hàng' },
-  { value: 'paid', label: 'Đã thanh toán' },
-  { value: 'completed', label: 'Đã giao' },
-  { value: 'cancelled', label: 'Đã hủy' },
-  { value: 'failed', label: 'Lỗi' },
+  { value: 'all', labelKey: 'tab_all' },
+  { value: 'pending', labelKey: 'tab_pending' },
+  { value: 'paid', labelKey: 'tab_paid' },
+  { value: 'completed', labelKey: 'tab_completed' },
+  { value: 'cancelled', labelKey: 'tab_cancelled' },
+  { value: 'failed', labelKey: 'tab_failed' },
 ];
 
 export function matchOrderFilter(status: string | undefined, tab: string): boolean {

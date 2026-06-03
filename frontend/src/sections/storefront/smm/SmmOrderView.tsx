@@ -18,6 +18,8 @@ import {
 } from '@mui/material';
 // auth
 import { useAuthContext } from '../../../auth/useAuthContext';
+// locales
+import { useLocales } from '../../../locales';
 // utils
 import axiosInstance from '../../../utils/axios';
 import { fCurrency } from '../../../utils/formatNumber';
@@ -42,20 +44,22 @@ type Service = {
 type Category = { id: number; name: string; services: Service[] };
 type Platform = { id: number; name: string; categories: Category[] };
 
-// Định dạng thời gian trung bình từ phút.
-function fAvgTime(min?: number | null) {
-  if (!min || min <= 0) return null;
-  if (min < 60) return `${min} phút`;
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  return m ? `${h} giờ ${m} phút` : `${h} giờ`;
-}
-
 // ----------------------------------------------------------------------
 
 export default function SmmOrderView() {
   const { isAuthenticated } = useAuthContext();
   const { enqueueSnackbar } = useSnackbar();
+  const { translate } = useLocales();
+  const t = (k: string) => `${translate(`smm_order.${k}`)}`;
+
+  // Định dạng thời gian trung bình từ phút (đơn vị theo ngôn ngữ).
+  const fAvgTime = (min?: number | null) => {
+    if (!min || min <= 0) return null;
+    if (min < 60) return `${min} ${t('minutes')}`;
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    return m ? `${h} ${t('hours')} ${m} ${t('minutes')}` : `${h} ${t('hours')}`;
+  };
 
   const [catalog, setCatalog] = useState<Platform[]>([]);
   const [platformId, setPlatformId] = useState('');
@@ -129,7 +133,7 @@ export default function SmmOrderView() {
   const handleSubmit = async () => {
     if (!service) return;
     if (!isAuthenticated) {
-      enqueueSnackbar('Vui lòng đăng nhập để đặt đơn', { variant: 'warning' });
+      enqueueSnackbar(t('login_required'), { variant: 'warning' });
       return;
     }
     const extras: Record<string, string> = {};
@@ -147,12 +151,12 @@ export default function SmmOrderView() {
         repeat_count: dripOn && canDrip ? runs : 0,
         repeat_interval: dripOn && canDrip ? interval : 0,
       });
-      enqueueSnackbar('Đặt đơn thành công!');
+      enqueueSnackbar(t('success'));
       setLink('');
       setExtra('');
       refreshBalance(); // cập nhật số dư sau khi trừ tiền
     } catch (e: any) {
-      enqueueSnackbar(e?.detail || e?.message || 'Đặt đơn thất bại', { variant: 'error' });
+      enqueueSnackbar(e?.detail || e?.message || t('submit_failed'), { variant: 'error' });
     } finally {
       setSubmitting(false);
     }
@@ -161,14 +165,14 @@ export default function SmmOrderView() {
   return (
     <Container sx={{ pb: 6 }}>
       <Typography variant="h4" sx={{ my: 3 }}>
-        Đặt đơn dịch vụ
+        {t('title')}
       </Typography>
 
       <Card sx={{ p: 3, maxWidth: 640 }}>
         <Stack spacing={2.5}>
           <TextField
             select
-            label="Nền tảng"
+            label={t('platform')}
             value={platformId}
             onChange={(e) => {
               setPlatformId(e.target.value);
@@ -185,7 +189,7 @@ export default function SmmOrderView() {
 
           <TextField
             select
-            label="Danh mục"
+            label={t('category')}
             value={categoryId}
             disabled={!platform}
             onChange={(e) => {
@@ -202,7 +206,7 @@ export default function SmmOrderView() {
 
           <TextField
             select
-            label="Dịch vụ"
+            label={t('service')}
             value={serviceId}
             disabled={!category}
             onChange={(e) => setServiceId(e.target.value)}
@@ -219,9 +223,9 @@ export default function SmmOrderView() {
               {/* Thông tin dịch vụ */}
               <Box sx={{ p: 2, borderRadius: 1.5, bgcolor: 'background.neutral' }}>
                 <Stack direction="row" flexWrap="wrap" sx={{ gap: 1, mb: service.description ? 1.5 : 0 }}>
-                  <Chip size="small" variant="soft" label={`Giá ${fCurrency(service.rate)}/1000`} />
-                  <Chip size="small" variant="soft" label={`Tối thiểu ${service.min_quantity.toLocaleString()}`} />
-                  <Chip size="small" variant="soft" label={`Tối đa ${service.max_quantity.toLocaleString()}`} />
+                  <Chip size="small" variant="soft" label={`${t('price_label')} ${fCurrency(service.rate)}/1000`} />
+                  <Chip size="small" variant="soft" label={`${t('min_label')} ${service.min_quantity.toLocaleString()}`} />
+                  <Chip size="small" variant="soft" label={`${t('max_label')} ${service.max_quantity.toLocaleString()}`} />
                   {avgTime && (
                     <Chip
                       size="small"
@@ -232,10 +236,10 @@ export default function SmmOrderView() {
                     />
                   )}
                   {service.can_refill && (
-                    <Chip size="small" variant="soft" color="success" icon={<Iconify icon="solar:refresh-bold" />} label="Bảo hành" />
+                    <Chip size="small" variant="soft" color="success" icon={<Iconify icon="solar:refresh-bold" />} label={t('warranty')} />
                   )}
                   {service.can_cancel && (
-                    <Chip size="small" variant="soft" color="warning" label="Có thể huỷ" />
+                    <Chip size="small" variant="soft" color="warning" label={t('can_cancel')} />
                   )}
                 </Stack>
                 {service.description && (
@@ -246,7 +250,7 @@ export default function SmmOrderView() {
               </Box>
 
               <TextField
-                label="Link"
+                label={t('link')}
                 placeholder="https://..."
                 value={link}
                 onChange={(e) => setLink(e.target.value)}
@@ -254,7 +258,7 @@ export default function SmmOrderView() {
 
               {isComments || isHashtag || isSeo ? (
                 <TextField
-                  label={isComments ? 'Bình luận (mỗi dòng 1)' : isHashtag ? 'Hashtag' : 'Từ khoá SEO'}
+                  label={isComments ? t('comments_label') : isHashtag ? t('hashtag_label') : t('seo_label')}
                   multiline
                   minRows={3}
                   value={extra}
@@ -262,12 +266,15 @@ export default function SmmOrderView() {
                 />
               ) : (
                 <TextField
-                  label="Số lượng"
+                  label={t('quantity')}
                   type="number"
                   value={quantity}
                   disabled={isPackage}
                   onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 0))}
-                  helperText={`Tối thiểu ${service.min_quantity} - tối đa ${service.max_quantity}`}
+                  helperText={`${translate('smm_order.quantity_helper', {
+                    min: service.min_quantity,
+                    max: service.max_quantity,
+                  })}`}
                 />
               )}
 
@@ -276,29 +283,33 @@ export default function SmmOrderView() {
                 <Box sx={{ border: (t) => `dashed 1px ${t.palette.divider}`, borderRadius: 1.5, p: 2 }}>
                   <FormControlLabel
                     control={<Switch checked={dripOn} onChange={(e) => setDripOn(e.target.checked)} />}
-                    label="Drip-feed (giao dần để tăng tự nhiên)"
+                    label={t('drip_label')}
                   />
                   <Collapse in={dripOn}>
                     <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
                       <TextField
                         fullWidth
                         type="number"
-                        label="Số lần (runs)"
+                        label={t('runs_label')}
                         value={runs}
                         onChange={(e) => setRuns(Math.max(2, Number(e.target.value) || 2))}
-                        helperText="Giao thành nhiều lần"
+                        helperText={t('runs_helper')}
                       />
                       <TextField
                         fullWidth
                         type="number"
-                        label="Cách nhau (phút)"
+                        label={t('interval_label')}
                         value={interval}
                         onChange={(e) => setIntervalMin(Math.max(1, Number(e.target.value) || 1))}
-                        helperText="Khoảng cách mỗi lần"
+                        helperText={t('interval_helper')}
                       />
                     </Stack>
                     <Typography variant="caption" sx={{ color: 'text.secondary', mt: 1, display: 'block' }}>
-                      Mỗi lần giao {effectiveQty.toLocaleString()}, tổng {runs} lần, cách nhau {interval} phút.
+                      {`${translate('smm_order.drip_summary', {
+                        qty: effectiveQty.toLocaleString(),
+                        runs,
+                        interval,
+                      })}`}
                     </Typography>
                   </Collapse>
                 </Box>
@@ -306,7 +317,7 @@ export default function SmmOrderView() {
 
               <Divider sx={{ borderStyle: 'dashed' }} />
               <Stack direction="row" justifyContent="space-between">
-                <Typography variant="subtitle1">Tạm tính</Typography>
+                <Typography variant="subtitle1">{t('subtotal')}</Typography>
                 <Typography variant="subtitle1" color="primary.main">
                   {fCurrency(estimate)}
                 </Typography>
@@ -314,7 +325,7 @@ export default function SmmOrderView() {
 
               {insufficient && (
                 <Alert severity="warning">
-                  Số dư không đủ (cần {fCurrency(estimate)}). Vui lòng nạp thêm.
+                  {`${translate('smm_order.insufficient', { amount: fCurrency(estimate) })}`}
                 </Alert>
               )}
 
@@ -324,7 +335,7 @@ export default function SmmOrderView() {
                 onClick={handleSubmit}
                 disabled={submitting || !link || effectiveQty < 1 || insufficient}
               >
-                Đặt đơn
+                {t('submit')}
               </Button>
             </>
           )}
