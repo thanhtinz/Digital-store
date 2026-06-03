@@ -133,8 +133,20 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
       const res = isEdit
         ? await axiosInstance.patch(`/api/products/admin/${current.id}`, payload)
         : await axiosInstance.post('/api/products/admin', payload);
-      // Xác nhận danh mục đã lưu thật sự (đọc lại từ server).
-      const savedCat = res?.data?.category?.name;
+      // Xác nhận danh mục đã lưu THẬT: ưu tiên response, nếu thiếu thì đọc lại
+      // từ danh sách (serializer luôn trả category) — tránh báo nhầm khi backend
+      // bản cũ không trả kèm category trong response lưu.
+      const savedId = isEdit ? current.id : res?.data?.id;
+      let savedCat: string | undefined = res?.data?.category?.name;
+      if (payload.category_id && !savedCat && savedId) {
+        try {
+          const chk = await axiosInstance.get('/api/products', { params: { limit: 300 } });
+          const found = (chk.data?.items || []).find((x: any) => x.id === savedId);
+          savedCat = found?.category?.name;
+        } catch {
+          /* bỏ qua lỗi kiểm tra */
+        }
+      }
       enqueueSnackbar(
         `${isEdit ? 'Đã cập nhật sản phẩm' : 'Đã tạo sản phẩm'}${
           payload.category_id ? ` — Danh mục: ${savedCat || '⚠ không lưu được'}` : ''
