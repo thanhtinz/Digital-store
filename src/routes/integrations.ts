@@ -5,8 +5,10 @@
  */
 
 import { Router, Request, Response } from 'express';
+import axios from 'axios';
 import prisma from '../db';
 import { requireAdmin } from '../middleware/auth';
+import { getProvider } from '../services/providers';
 import {
   AI_PROVIDERS, AI_CONFIG_KEY, getAiConfig, saveAiConfig,
   callProvider, buildMessages, maskKey,
@@ -89,6 +91,29 @@ router.delete('/api-providers/:id', requireAdmin, async (req: Request, res: Resp
     res.json({ ok: true });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
+  }
+});
+
+/** Kiểm tra kết nối tới nguồn cung cấp. */
+router.post('/api-providers/:id/test', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const provider = await prisma.apiProvider.findUnique({ where: { id: parseInt(req.params.id) } });
+    if (!provider) { res.status(404).json({ detail: 'Không tìm thấy nguồn' }); return; }
+    if (provider.providerType === 'smm_panel') {
+      const balance = await getProvider(provider).getBalance();
+      res.json({ ok: true, message: `Kết nối OK · số dư: ${balance.formatted || balance.amount}` });
+      return;
+    }
+    // Các loại khác: kiểm tra reachability cơ bản tới base_url.
+    if (!provider.baseUrl) { res.status(400).json({ detail: 'Chưa cấu hình Base URL' }); return; }
+    try {
+      const r = await axios.get(provider.baseUrl, { timeout: 8000, validateStatus: () => true });
+      res.json({ ok: true, message: `Máy chủ phản hồi (HTTP ${r.status})` });
+    } catch (e: any) {
+      res.status(400).json({ detail: `Không kết nối được: ${e.message}` });
+    }
+  } catch (e: any) {
+    res.status(400).json({ detail: e.message });
   }
 });
 

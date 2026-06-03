@@ -66,12 +66,14 @@ export default function AdminIntegrationsView() {
       </Typography>
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }} variant="scrollable" scrollButtons="auto">
         <Tab value="telegram" label="Telegram Bot" icon={<Iconify icon="solar:bell-bing-bold" />} iconPosition="start" />
+        <Tab value="discord" label="Discord" icon={<Iconify icon="ic:baseline-discord" />} iconPosition="start" />
         <Tab value="email" label="Email / SMTP" icon={<Iconify icon="solar:letter-bold" />} iconPosition="start" />
         <Tab value="oauth" label="Đăng nhập OAuth" icon={<Iconify icon="solar:key-bold" />} iconPosition="start" />
         <Tab value="payment" label="Thanh toán" icon={<Iconify icon="solar:card-bold" />} iconPosition="start" />
         <Tab value="providers" label="Nguồn cung cấp" icon={<Iconify icon="solar:server-square-bold" />} iconPosition="start" />
       </Tabs>
       {tab === 'telegram' && <TelegramTab />}
+      {tab === 'discord' && <DiscordTab />}
       {tab === 'email' && <EmailTab />}
       {tab === 'oauth' && <OAuthTab />}
       {tab === 'payment' && <PaymentTab />}
@@ -282,6 +284,74 @@ function TelegramTab() {
           </Button>
         }
       />
+    </Card>
+  );
+}
+
+// ----------------------------------------------------------------------
+// DISCORD
+
+function DiscordTab() {
+  const { ok, err } = useSnack();
+  const [cfg, setCfg] = useState<any>({ discord_webhook_url: '', discord_enabled: false });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    axiosInstance.get('/api/admin/bot-config/discord').then((r) => setCfg(r.data)).catch(err).finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await axiosInstance.put('/api/admin/bot-config/discord', {
+        discord_enabled: cfg.discord_enabled,
+        ...(cfg.discord_webhook_url && cfg.discord_webhook_url !== '••••••••' ? { discord_webhook_url: cfg.discord_webhook_url } : {}),
+      });
+      ok('Đã lưu cấu hình Discord');
+    } catch (e) {
+      err(e);
+    } finally {
+      setSaving(false);
+    }
+  };
+  const test = async () => {
+    try {
+      const r = await axiosInstance.post('/api/admin/bot-config/test-discord', {
+        ...(cfg.discord_webhook_url && cfg.discord_webhook_url !== '••••••••' ? { discord_webhook_url: cfg.discord_webhook_url } : {}),
+      });
+      ok(r.data?.message || 'Đã gửi');
+    } catch (e) {
+      err(e);
+    }
+  };
+
+  if (loading) return <Loading />;
+  return (
+    <Card sx={{ maxWidth: 560 }}>
+      <CardHeader
+        title="Discord Webhook"
+        subheader="Nhận thông báo đơn hàng qua kênh Discord"
+        action={<Switch checked={!!cfg.discord_enabled} onChange={(e) => setCfg({ ...cfg, discord_enabled: e.target.checked })} />}
+      />
+      <CardContent>
+        <Stack spacing={2.5}>
+          <TextField
+            label="Webhook URL"
+            placeholder={cfg.discord_webhook_url === '••••••••' ? '•••••••• (đã lưu)' : 'https://discord.com/api/webhooks/...'}
+            onChange={(e) => setCfg({ ...cfg, discord_webhook_url: e.target.value })}
+          />
+          <Stack direction="row" spacing={1.5}>
+            <Button variant="contained" onClick={save} disabled={saving}>
+              Lưu
+            </Button>
+            <Button variant="outlined" onClick={test} startIcon={<Iconify icon="solar:plain-bold" />}>
+              Gửi test
+            </Button>
+          </Stack>
+        </Stack>
+      </CardContent>
     </Card>
   );
 }
@@ -512,6 +582,14 @@ function ProvidersTab() {
       setToDelete(null);
     }
   };
+  const testProvider = async (id: number) => {
+    try {
+      const r = await axiosInstance.post(`/api/api-providers/${id}/test`);
+      ok(r.data?.message || 'Kết nối OK');
+    } catch (e) {
+      err(e, 'Kết nối thất bại');
+    }
+  };
 
   if (loading) return <Loading />;
   return (
@@ -552,6 +630,9 @@ function ProvidersTab() {
                   <Label color={p.is_active ? 'success' : 'default'}>{p.is_active ? 'Bật' : 'Tắt'}</Label>
                 </TableCell>
                 <TableCell align="right">
+                  <IconButton title="Test kết nối" onClick={() => testProvider(p.id)}>
+                    <Iconify icon="solar:plug-circle-bold" />
+                  </IconButton>
                   <IconButton onClick={() => openEdit(p)}>
                     <Iconify icon="solar:pen-bold" />
                   </IconButton>
