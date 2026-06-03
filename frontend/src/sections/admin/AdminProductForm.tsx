@@ -69,7 +69,8 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
       name: current?.name || '',
       description: current?.description || '',
       images,
-      category_id: current?.categoryId || '',
+      // Chuỗi để khớp value của <option> (native select dùng chuỗi).
+      category_id: current?.categoryId ? String(current.categoryId) : '',
       is_featured: !!current?.isFeatured,
       is_active: current?.isActive ?? true,
     };
@@ -122,7 +123,8 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
       // Ảnh đầu tiên là ảnh đại diện; cả danh sách lưu vào album.
       image_url: data.images[0] || '',
       images: data.images,
-      category_id: data.category_id || null,
+      // Gửi dạng số (RHFSelect trả chuỗi) để Prisma nhận đúng kiểu Int.
+      category_id: data.category_id ? Number(data.category_id) : null,
       is_featured: data.is_featured,
       is_active: data.is_active,
     };
