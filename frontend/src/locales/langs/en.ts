@@ -331,6 +331,9 @@ const en = {
     sort_price_low: `Price: Low → High`,
   },
   checkout_page: {
+    use_points: `Use reward points`,
+    points_balance: `You have {n} points`,
+    points_discount: `-{v} from points`,
     method_balance: `Account balance`,
     method_vietqr: `VietQR transfer`,
     vietqr_desc: `Scan the bank QR to pay your order`,

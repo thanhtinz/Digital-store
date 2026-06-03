@@ -331,6 +331,9 @@ const ar = {
     sort_price_low: `السعر: من الأدنى`,
   },
   checkout_page: {
+    use_points: `استخدام النقاط`,
+    points_balance: `لديك {n} نقطة`,
+    points_discount: `خصم {v} من النقاط`,
     method_balance: `رصيد الحساب`,
     method_vietqr: `تحويل VietQR`,
     vietqr_desc: `امسح رمز QR البنكي لدفع طلبك`,

@@ -331,6 +331,9 @@ const cn = {
     sort_price_low: `价格：低→高`,
   },
   checkout_page: {
+    use_points: `使用积分`,
+    points_balance: `您有 {n} 积分`,
+    points_discount: `积分抵扣 {v}`,
     method_balance: `账户余额`,
     method_vietqr: `VietQR 转账`,
     vietqr_desc: `扫描银行二维码支付订单`,

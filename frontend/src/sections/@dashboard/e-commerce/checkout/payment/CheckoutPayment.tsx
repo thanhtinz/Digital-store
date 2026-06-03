@@ -1,7 +1,7 @@
 // @mui
-import { Box, Card, Grid, Stack, Alert, Button, Typography } from '@mui/material';
+import { Box, Card, Grid, Stack, Alert, Button, Switch, Typography } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 // next
 import NextLink from 'next/link';
 import { useRouter } from 'next/router';
@@ -51,8 +51,49 @@ export default function CheckoutPayment({
   const [submitting, setSubmitting] = useState(false);
   const [method, setMethod] = useState<'balance' | 'vietqr'>('balance');
 
+  // Điểm thưởng (loyalty) — cho phép đổi điểm để giảm giá đơn.
+  const [loyalty, setLoyalty] = useState<{
+    points: number;
+    redeemValue: number;
+    minRedeem: number;
+    maxPercent: number;
+    enabled: boolean;
+  } | null>(null);
+  const [usePoints, setUsePoints] = useState(false);
+
+  useEffect(() => {
+    axios
+      .get('/api/loyalty/me')
+      .then((r) => {
+        const c = r.data?.config || {};
+        setLoyalty({
+          points: Number(r.data?.points) || 0,
+          redeemValue: Number(c.redeem_value) || 0,
+          minRedeem: Number(c.min_redeem) || 0,
+          maxPercent: Number(c.max_percent) || 0,
+          enabled: !!c.enabled,
+        });
+      })
+      .catch(() => {});
+  }, []);
+
+  // Số điểm tối đa có thể dùng & số tiền giảm tương ứng cho đơn này.
+  const { redeemPoints, pointDiscount } = useMemo(() => {
+    if (!loyalty || !loyalty.enabled || loyalty.redeemValue <= 0 || loyalty.points < loyalty.minRedeem) {
+      return { redeemPoints: 0, pointDiscount: 0 };
+    }
+    const maxByPercent = loyalty.maxPercent > 0 ? (total * loyalty.maxPercent) / 100 : total;
+    const maxPts = Math.floor(Math.min(loyalty.points, maxByPercent / loyalty.redeemValue));
+    const pts = Math.max(0, maxPts);
+    return { redeemPoints: pts, pointDiscount: Math.round(pts * loyalty.redeemValue) };
+  }, [loyalty, total]);
+
+  const canUsePoints = redeemPoints > 0 && pointDiscount > 0;
+  const appliedPointDiscount = usePoints && canUsePoints ? pointDiscount : 0;
+  const payable = Math.max(0, total - appliedPointDiscount);
+
   const balance = Number((user as any)?.balance || 0);
-  const enough = balance >= total;
+  const enough = balance >= payable;
 
   const placeOrder = async () => {
     const items = (checkout.cart || [])
@@ -75,6 +116,7 @@ export default function CheckoutPayment({
         // 'sepay' = chuyển khoản VietQR (đơn tạo ở trạng thái chờ thanh toán)
         payment_method: method === 'balance' ? 'balance' : 'sepay',
         coupon_code: (checkout as any).couponCode || undefined,
+        redeem_points: usePoints && canUsePoints ? redeemPoints : undefined,
       });
       const code = res.data?.order_code || res.data?.orderCode || '';
       if (typeof window !== 'undefined') window.dispatchEvent(new Event('balance:refresh'));
@@ -160,6 +202,31 @@ export default function CheckoutPayment({
             />
           </Stack>
 
+          {/* Đổi điểm thưởng */}
+          {canUsePoints && (
+            <Box
+              sx={{
+                mt: 2,
+                p: 2,
+                borderRadius: 1.5,
+                bgcolor: 'background.neutral',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+              }}
+            >
+              <Iconify icon="solar:star-bold-duotone" width={28} sx={{ color: 'warning.main' }} />
+              <Box sx={{ flexGrow: 1 }}>
+                <Typography variant="subtitle2">{t('use_points')}</Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                  {t('points_balance').replace('{n}', String(loyalty?.points ?? 0))} ·{' '}
+                  {t('points_discount').replace('{v}', fCurrency(pointDiscount))}
+                </Typography>
+              </Box>
+              <Switch checked={usePoints} onChange={(e) => setUsePoints(e.target.checked)} />
+            </Box>
+          )}
+
           {method === 'balance' && !enough && (
             <Alert
               severity="warning"
@@ -170,7 +237,7 @@ export default function CheckoutPayment({
                 </Button>
               }
             >
-              {t('insufficient_balance')} ({fCurrency(total)}).
+              {t('insufficient_balance')} ({fCurrency(payable)}).
             </Alert>
           )}
 
@@ -189,9 +256,9 @@ export default function CheckoutPayment({
       <Grid item xs={12} md={4}>
         <CheckoutSummary
           enableEdit
-          total={total}
+          total={payable}
           subtotal={subtotal}
-          discount={discount}
+          discount={(discount || 0) + appliedPointDiscount}
           onEdit={() => onGotoStep(0)}
         />
         <LoadingButton

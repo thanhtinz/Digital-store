@@ -331,6 +331,9 @@ const vn = {
     sort_price_low: `Giá: Thấp → Cao`,
   },
   checkout_page: {
+    use_points: `Dùng điểm thưởng`,
+    points_balance: `Bạn đang có {n} điểm`,
+    points_discount: `Giảm {v} từ điểm`,
     method_balance: `Số dư tài khoản`,
     method_vietqr: `Chuyển khoản VietQR`,
     vietqr_desc: `Quét mã QR ngân hàng để thanh toán đơn`,

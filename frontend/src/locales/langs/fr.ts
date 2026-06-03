@@ -331,6 +331,9 @@ const fr = {
     sort_price_low: `Prix : Bas → Haut`,
   },
   checkout_page: {
+    use_points: `Utiliser les points`,
+    points_balance: `Vous avez {n} points`,
+    points_discount: `-{v} avec les points`,
     method_balance: `Solde du compte`,
     method_vietqr: `Virement VietQR`,
     vietqr_desc: `Scannez le QR bancaire pour payer`,
