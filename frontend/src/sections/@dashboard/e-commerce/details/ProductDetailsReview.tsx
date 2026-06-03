@@ -4,6 +4,8 @@ import sumBy from 'lodash/sumBy';
 import { Divider, Typography, Rating, Button, LinearProgress, Stack, Box } from '@mui/material';
 // utils
 import { fShortenNumber } from '../../../../utils/formatNumber';
+// locales
+import { useLocales } from '../../../../locales';
 // @types
 import { IProduct } from '../../../../@types/product';
 // components
@@ -19,6 +21,8 @@ type Props = {
 };
 
 export default function ProductDetailsReview({ product }: Props) {
+  const { translate } = useLocales();
+  const tp = (k: string) => `${translate(`product_page.${k}`)}`;
   const { totalRating, totalReview, ratings } = product;
 
   const [openReview, setOpenReview] = useState(false);
@@ -52,7 +56,7 @@ export default function ProductDetailsReview({ product }: Props) {
           }}
         >
           <Typography variant="subtitle1" sx={{ color: 'text.secondary' }}>
-            Average rating
+            {tp('avg_rating')}
           </Typography>
 
           <Typography variant="h2">{totalRating}/5</Typography>
@@ -60,7 +64,7 @@ export default function ProductDetailsReview({ product }: Props) {
           <Rating readOnly value={totalRating} precision={0.1} />
 
           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-            ({fShortenNumber(totalReview)} reviews)
+            ({fShortenNumber(totalReview)} {tp('reviews_paren')})
           </Typography>
         </Stack>
 
@@ -96,7 +100,7 @@ export default function ProductDetailsReview({ product }: Props) {
             variant="outlined"
             startIcon={<Iconify icon="eva:edit-fill" />}
           >
-            Write your review
+            {tp('write_review')}
           </Button>
         </Stack>
       </Box>

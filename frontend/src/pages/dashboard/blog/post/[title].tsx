@@ -85,7 +85,7 @@ export default function BlogPostPage() {
   return (
     <>
       <Head>
-        <title>{`Blog: ${post?.title || ''} | Minimal UI`}</title>
+        <title>{`${post?.title || 'Blog'} | Digital Store`}</title>
       </Head>
 
       <Container maxWidth={themeStretch ? false : 'lg'}>

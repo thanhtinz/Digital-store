@@ -17,16 +17,12 @@ import DashboardLayout from '../../../layouts/dashboard';
 import Iconify from '../../../components/iconify';
 import { SkeletonPostItem } from '../../../components/skeleton';
 import { useSettingsContext } from '../../../components/settings';
+// locales
+import { useLocales } from '../../../locales';
 // sections
 import { BlogPostCard, BlogPostsSort, BlogPostsSearch } from '../../../sections/@dashboard/blog';
 
 // ----------------------------------------------------------------------
-
-const SORT_OPTIONS = [
-  { value: 'latest', label: 'Latest' },
-  { value: 'popular', label: 'Popular' },
-  { value: 'oldest', label: 'Oldest' },
-];
 
 // ----------------------------------------------------------------------
 
@@ -36,6 +32,14 @@ BlogPostsPage.getLayout = (page: React.ReactElement) => <DashboardLayout disable
 
 export default function BlogPostsPage() {
   const { themeStretch } = useSettingsContext();
+  const { translate } = useLocales();
+  const tb = (k: string) => `${translate(`blog_page.${k}`)}`;
+
+  const SORT_OPTIONS = [
+    { value: 'latest', label: tb('sort_latest') },
+    { value: 'popular', label: tb('sort_popular') },
+    { value: 'oldest', label: tb('sort_oldest') },
+  ];
 
   const [posts, setPosts] = useState([]);
 
@@ -68,12 +72,12 @@ export default function BlogPostsPage() {
   return (
     <>
       <Head>
-        <title> Blog: Posts | Minimal UI</title>
+        <title> Blog | Digital Store</title>
       </Head>
 
       <Container maxWidth={themeStretch ? false : 'lg'} sx={{ pt: { xs: 3, md: 5 } }}>
         <Typography variant="h4" sx={{ mb: 4 }}>
-          Blog
+          {tb('title')}
         </Typography>
 
         <Stack mb={5} direction="row" alignItems="center" justifyContent="space-between">
@@ -96,7 +100,7 @@ export default function BlogPostsPage() {
         {loaded && !posts.length && (
           <Stack alignItems="center" sx={{ py: 10, color: 'text.secondary' }}>
             <Iconify icon="solar:document-text-bold-duotone" width={56} sx={{ mb: 1, opacity: 0.5 }} />
-            <Typography variant="body2">Chưa có bài viết nào.</Typography>
+            <Typography variant="body2">{tb('empty')}</Typography>
           </Stack>
         )}
       </Container>

@@ -4,6 +4,8 @@ import { Stack, Button, Rating, Avatar, Pagination, Typography } from '@mui/mate
 // utils
 import { fDate } from '../../../../utils/formatTime';
 import { fShortenNumber } from '../../../../utils/formatNumber';
+// locales
+import { useLocales } from '../../../../locales';
 // @types
 import { IProductReview } from '../../../../@types/product';
 // components
@@ -60,6 +62,8 @@ type ReviewItemProps = {
 };
 
 function ReviewItem({ review }: ReviewItemProps) {
+  const { translate } = useLocales();
+  const tp = (k: string) => `${translate(`product_page.${k}`)}`;
   const { name, rating, comment, helpful, postedAt, avatarUrl, isPurchased } = review;
 
   const [isHelpful, setIsHelpful] = useState(false);
@@ -116,7 +120,7 @@ function ReviewItem({ review }: ReviewItemProps) {
             }}
           >
             <Iconify icon="ic:round-verified" width={16} sx={{ mr: 0.5 }} />
-            Verified purchase
+            {tp('verified_purchase')}
           </Typography>
         )}
 
@@ -128,7 +132,7 @@ function ReviewItem({ review }: ReviewItemProps) {
           direction={{ xs: 'column', sm: 'row' }}
         >
           {!isHelpful && (
-            <Typography variant="subtitle2">Was this review helpful to you?</Typography>
+            <Typography variant="subtitle2">{tp('review_helpful_q')}</Typography>
           )}
 
           <Button
@@ -137,7 +141,8 @@ function ReviewItem({ review }: ReviewItemProps) {
             startIcon={<Iconify icon={!isHelpful ? 'ic:round-thumb-up' : 'eva:checkmark-fill'} />}
             onClick={() => setIsHelpful(!isHelpful)}
           >
-            {isHelpful ? 'Helpful' : 'Thank'}({fShortenNumber(!isHelpful ? helpful : helpful + 1)})
+            {isHelpful ? tp('helpful') : tp('thank')}(
+            {fShortenNumber(!isHelpful ? helpful : helpful + 1)})
           </Button>
         </Stack>
       </Stack>

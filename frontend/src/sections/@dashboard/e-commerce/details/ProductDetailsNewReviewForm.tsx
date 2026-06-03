@@ -16,6 +16,8 @@ import {
   FormHelperText,
 } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
+// locales
+import { useLocales } from '../../../../locales';
 // components
 import FormProvider, { RHFTextField } from '../../../../components/hook-form';
 
@@ -33,11 +35,14 @@ interface Props extends DialogProps {
 }
 
 export default function ProductDetailsNewReviewForm({ onClose, ...other }: Props) {
+  const { translate } = useLocales();
+  const tp = (k: string) => `${translate(`product_page.${k}`)}`;
+
   const ReviewSchema = Yup.object().shape({
-    rating: Yup.mixed().required('Rating is required'),
-    review: Yup.string().required('Review is required'),
-    name: Yup.string().required('Name is required'),
-    email: Yup.string().required('Email is required').email('Email must be a valid email address'),
+    rating: Yup.mixed().required(tp('rating_required')),
+    review: Yup.string().required(tp('review_required')),
+    name: Yup.string().required(tp('name_required')),
+    email: Yup.string().required(tp('email_required')).email(tp('email_invalid')),
   });
 
   const defaultValues = {
@@ -78,11 +83,11 @@ export default function ProductDetailsNewReviewForm({ onClose, ...other }: Props
   return (
     <Dialog onClose={onClose} {...other}>
       <FormProvider methods={methods} onSubmit={handleSubmit(onSubmit)}>
-        <DialogTitle> Add Review </DialogTitle>
+        <DialogTitle> {tp('add_review')} </DialogTitle>
 
         <DialogContent>
           <Stack direction="row" flexWrap="wrap" alignItems="center" spacing={1.5}>
-            <Typography variant="body2">Your review about this product:</Typography>
+            <Typography variant="body2">{tp('your_review_label')}</Typography>
 
             <Controller
               name="rating"
@@ -93,20 +98,20 @@ export default function ProductDetailsNewReviewForm({ onClose, ...other }: Props
 
           {!!errors.rating && <FormHelperText error> {errors.rating?.message}</FormHelperText>}
 
-          <RHFTextField name="review" label="Review *" multiline rows={3} sx={{ mt: 3 }} />
+          <RHFTextField name="review" label={tp('review_field')} multiline rows={3} sx={{ mt: 3 }} />
 
-          <RHFTextField name="name" label="Name *" sx={{ mt: 3 }} />
+          <RHFTextField name="name" label={tp('name_field')} sx={{ mt: 3 }} />
 
-          <RHFTextField name="email" label="Email *" sx={{ mt: 3 }} />
+          <RHFTextField name="email" label={tp('email_field')} sx={{ mt: 3 }} />
         </DialogContent>
 
         <DialogActions>
           <Button color="inherit" variant="outlined" onClick={onCancel}>
-            Cancel
+            {tp('cancel')}
           </Button>
 
           <LoadingButton type="submit" variant="contained" loading={isSubmitting}>
-            Post review
+            {tp('post_review')}
           </LoadingButton>
         </DialogActions>
       </FormProvider>

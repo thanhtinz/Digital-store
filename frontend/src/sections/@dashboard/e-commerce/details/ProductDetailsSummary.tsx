@@ -194,8 +194,7 @@ export default function ProductDetailsSummary({
             <Rating value={totalRating} precision={0.1} readOnly />
 
             <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              ({fShortenNumber(totalReview)}
-              reviews)
+              ({fShortenNumber(totalReview)} {tp('reviews')})
             </Typography>
           </Stack>
 
@@ -238,7 +237,7 @@ export default function ProductDetailsSummary({
           <>
             {colors.length > 0 && (
               <Stack direction="row" alignItems="center" justifyContent="space-between">
-                <Typography variant="subtitle2">Color</Typography>
+                <Typography variant="subtitle2">{tp('color')}</Typography>
 
                 <Controller
                   name="colors"
@@ -263,7 +262,7 @@ export default function ProductDetailsSummary({
             {sizes.length > 0 && (
               <Stack direction="row" justifyContent="space-between">
                 <Typography variant="subtitle2" sx={{ height: 40, lineHeight: '40px', flexGrow: 1 }}>
-                  Size
+                  {tp('size')}
                 </Typography>
 
                 <RHFSelect
@@ -271,7 +270,7 @@ export default function ProductDetailsSummary({
                   size="small"
                   helperText={
                     <Link underline="always" color="inherit">
-                      Size Chart
+                      {tp('size_chart')}
                     </Link>
                   }
                   sx={{
@@ -332,7 +331,7 @@ export default function ProductDetailsSummary({
 
         <Stack direction="row" justifyContent="space-between">
           <Typography variant="subtitle2" sx={{ height: 36, lineHeight: '36px' }}>
-            Quantity
+            {tp('quantity')}
           </Typography>
 
           <Stack spacing={1}>
@@ -350,7 +349,7 @@ export default function ProductDetailsSummary({
               component="div"
               sx={{ textAlign: 'right', color: 'text.secondary' }}
             >
-              Available: {available}
+              {tp('available')}: {available}
             </Typography>
           </Stack>
         </Stack>
