@@ -19,7 +19,6 @@ import cartRouter from './routes/cart';
 import adminRouter from './routes/admin';
 import miscRouter from './routes/misc';
 import smmRouter from './routes/smm';
-import notificationsRouter from './routes/notifications';
 import telegramRouter from './routes/telegram';
 import oauthRouter from './routes/oauth';
 import affiliateRouter from './routes/affiliate';
@@ -127,7 +126,6 @@ app.use('/api/cart', cartRouter);
 app.use('/api', adminRouter);   // categories, banners, settings, admin/*
 app.use('/api', miscRouter);    // search, blog, reviews, wishlist, tickets
 app.use('/api/smm', smmRouter); // SMM panel: catalog, orders, admin
-app.use('/api/admin', notificationsRouter); // email/SMTP config
 app.use('/api/telegram', telegramRouter); // telegram admin bot
 app.use('/api/admin/oauth', oauthRouter); // oauth provider config
 app.use('/api/affiliate', featureGate('affiliate'), affiliateRouter); // affiliate program (gate theo feature)

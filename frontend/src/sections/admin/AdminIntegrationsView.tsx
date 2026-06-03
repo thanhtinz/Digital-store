@@ -355,25 +355,46 @@ function TelegramTab() {
 }
 
 // ----------------------------------------------------------------------
-// EMAIL / SMTP
+// EMAIL (mail nâng cao: relay / SMTP / direct + DKIM/DNS)
+
+const MAIL_MODES = [
+  { value: 'relay', label: 'Relay (mặc định, không cần cấu hình)' },
+  { value: 'smtp', label: 'SMTP (máy chủ riêng)' },
+  { value: 'direct', label: 'Direct (gửi trực tiếp + DKIM)' },
+];
 
 function EmailTab() {
   const { ok, err } = useSnack();
-  const [cfg, setCfg] = useState<any>({ smtp_server: '', smtp_port: '587', smtp_user: '', smtp_pass: '', smtp_from: '' });
+  const [cfg, setCfg] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testTo, setTestTo] = useState('');
+  const [dkim, setDkim] = useState<{ name: string; value: string } | null>(null);
+  const [dns, setDns] = useState<any[]>([]);
 
-  useEffect(() => {
-    axiosInstance.get('/api/admin/bot-config/settings').then((r) => setCfg(r.data)).catch(err).finally(() => setLoading(false));
+  const load = useCallback(() => {
+    setLoading(true);
+    axiosInstance.get('/api/admin/mail/config').then((r) => setCfg(r.data)).catch(err).finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  useEffect(() => load(), [load]);
 
   const save = async () => {
     setSaving(true);
     try {
-      await axiosInstance.put('/api/admin/bot-config/settings', cfg);
-      ok('Đã lưu cấu hình email');
+      const payload: any = {
+        mail_mode: cfg.mail_mode,
+        mail_from_email: cfg.mail_from_email,
+        mail_from_name: cfg.mail_from_name,
+        mail_smtp_host: cfg.mail_smtp_host,
+        mail_smtp_port: cfg.mail_smtp_port,
+        mail_smtp_user: cfg.mail_smtp_user,
+        mail_dkim_domain: cfg.mail_dkim_domain,
+        mail_dkim_selector: cfg.mail_dkim_selector,
+      };
+      if (cfg.mail_smtp_pass && cfg.mail_smtp_pass !== '••••••••') payload.mail_smtp_pass = cfg.mail_smtp_pass;
+      await axiosInstance.put('/api/admin/mail/config', payload);
+      ok('Đã lưu cấu hình mail');
     } catch (e) {
       err(e);
     } finally {
@@ -386,36 +407,123 @@ function EmailTab() {
       return;
     }
     try {
-      const r = await axiosInstance.post('/api/admin/bot-config/test-mail', { to_email: testTo.trim() });
+      const r = await axiosInstance.post('/api/admin/mail/test', { to_email: testTo.trim() });
       ok(r.data?.message || 'Đã gửi');
     } catch (e) {
       err(e);
     }
   };
+  const genDkim = async () => {
+    if (!cfg.mail_dkim_domain) {
+      err({}, 'Nhập domain DKIM trước');
+      return;
+    }
+    try {
+      const r = await axiosInstance.post('/api/admin/mail/dkim', { domain: cfg.mail_dkim_domain, selector: cfg.mail_dkim_selector || 'default' });
+      setDkim({ name: r.data?.dns_record_name, value: r.data?.dns_record_value });
+      ok('Đã tạo khóa DKIM — thêm bản ghi DNS bên dưới');
+      load();
+    } catch (e) {
+      err(e);
+    }
+  };
+  const loadDns = async () => {
+    try {
+      const r = await axiosInstance.get('/api/admin/mail/dns-guide', { params: cfg.mail_dkim_domain ? { domain: cfg.mail_dkim_domain } : {} });
+      setDns(r.data?.records || []);
+    } catch (e) {
+      err(e);
+    }
+  };
 
-  if (loading) return <Loading />;
+  if (loading || !cfg) return <Loading />;
+  const mode = cfg.mail_mode || 'relay';
   return (
-    <Card sx={{ maxWidth: 560 }}>
-      <CardHeader title="Cấu hình SMTP" subheader="Máy chủ gửi email hệ thống" />
-      <CardContent>
-        <Stack spacing={2.5}>
-          <TextField label="SMTP server" value={cfg.smtp_server} onChange={(e) => setCfg({ ...cfg, smtp_server: e.target.value })} />
-          <TextField label="Port" value={cfg.smtp_port} onChange={(e) => setCfg({ ...cfg, smtp_port: e.target.value })} />
-          <TextField label="Username" value={cfg.smtp_user} onChange={(e) => setCfg({ ...cfg, smtp_user: e.target.value })} />
-          <TextField label="Password" type="password" placeholder={cfg.smtp_pass === '••••••••' ? '••••••••' : ''} onChange={(e) => setCfg({ ...cfg, smtp_pass: e.target.value })} />
-          <TextField label="From (email gửi)" value={cfg.smtp_from} onChange={(e) => setCfg({ ...cfg, smtp_from: e.target.value })} />
-          <Button variant="contained" onClick={save} disabled={saving}>
-            Lưu
-          </Button>
-          <Stack direction="row" spacing={1.5}>
-            <TextField fullWidth size="small" label="Gửi mail test tới" value={testTo} onChange={(e) => setTestTo(e.target.value)} />
-            <Button variant="outlined" onClick={test} startIcon={<Iconify icon="solar:plain-bold" />}>
-              Gửi test
+    <Stack spacing={3} sx={{ maxWidth: 640 }}>
+      <Card>
+        <CardHeader title="Cấu hình Email" subheader="Hệ thống gửi email (đơn hàng, đặt lại mật khẩu…)" />
+        <CardContent>
+          <Stack spacing={2.5}>
+            <TextField select label="Chế độ gửi" value={mode} onChange={(e) => setCfg({ ...cfg, mail_mode: e.target.value })}>
+              {MAIL_MODES.map((m) => (
+                <MenuItem key={m.value} value={m.value}>
+                  {m.label}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField label="Email gửi (From)" value={cfg.mail_from_email || ''} onChange={(e) => setCfg({ ...cfg, mail_from_email: e.target.value })} />
+            <TextField label="Tên hiển thị (From name)" value={cfg.mail_from_name || ''} onChange={(e) => setCfg({ ...cfg, mail_from_name: e.target.value })} />
+
+            {mode === 'smtp' && (
+              <>
+                <Divider>SMTP</Divider>
+                <TextField label="SMTP host" value={cfg.mail_smtp_host || ''} onChange={(e) => setCfg({ ...cfg, mail_smtp_host: e.target.value })} />
+                <TextField label="SMTP port" value={cfg.mail_smtp_port || ''} onChange={(e) => setCfg({ ...cfg, mail_smtp_port: e.target.value })} />
+                <TextField label="SMTP user" value={cfg.mail_smtp_user || ''} onChange={(e) => setCfg({ ...cfg, mail_smtp_user: e.target.value })} />
+                <TextField label="SMTP password" type="password" placeholder={cfg.mail_smtp_pass === '••••••••' ? '•••••••• (đã lưu)' : ''} onChange={(e) => setCfg({ ...cfg, mail_smtp_pass: e.target.value })} />
+              </>
+            )}
+
+            {mode === 'direct' && (
+              <>
+                <Divider>DKIM</Divider>
+                <Alert severity="info">Chế độ Direct gửi thẳng từ máy chủ — cần thêm bản ghi DNS (DKIM/SPF) để không vào spam.</Alert>
+                <TextField label="Domain DKIM" value={cfg.mail_dkim_domain || ''} onChange={(e) => setCfg({ ...cfg, mail_dkim_domain: e.target.value })} />
+                <TextField label="Selector" value={cfg.mail_dkim_selector || 'default'} onChange={(e) => setCfg({ ...cfg, mail_dkim_selector: e.target.value })} />
+                <Stack direction="row" spacing={1.5}>
+                  <Button variant="outlined" onClick={genDkim} startIcon={<Iconify icon="solar:key-bold" />}>
+                    {cfg.mail_dkim_private_key_set ? 'Tạo lại khóa DKIM' : 'Sinh khóa DKIM'}
+                  </Button>
+                  <Button variant="outlined" color="inherit" onClick={loadDns} startIcon={<Iconify icon="solar:server-bold" />}>
+                    Xem bản ghi DNS
+                  </Button>
+                </Stack>
+              </>
+            )}
+
+            <Button variant="contained" onClick={save} disabled={saving}>
+              Lưu
             </Button>
+            <Stack direction="row" spacing={1.5}>
+              <TextField fullWidth size="small" label="Gửi mail test tới" value={testTo} onChange={(e) => setTestTo(e.target.value)} />
+              <Button variant="outlined" onClick={test} startIcon={<Iconify icon="solar:plain-bold" />}>
+                Gửi test
+              </Button>
+            </Stack>
           </Stack>
-        </Stack>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      {dkim && (
+        <Card>
+          <CardHeader title="Bản ghi DKIM (thêm vào DNS)" />
+          <CardContent>
+            <Stack spacing={2}>
+              <CopyField label="Tên bản ghi (Name/Host) — loại TXT" value={dkim.name} />
+              <CopyField label="Giá trị (Value)" value={dkim.value} />
+            </Stack>
+          </CardContent>
+        </Card>
+      )}
+
+      {dns.length > 0 && (
+        <Card>
+          <CardHeader title="Bản ghi DNS khuyến nghị" />
+          <CardContent>
+            <Stack spacing={2}>
+              {dns.map((rec: any, i: number) => (
+                <Box key={i} sx={{ p: 1.5, borderRadius: 1, bgcolor: 'background.neutral' }}>
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    {rec.type} · {rec.name}
+                  </Typography>
+                  <CopyField label={`${rec.type} value`} value={rec.value} />
+                </Box>
+              ))}
+            </Stack>
+          </CardContent>
+        </Card>
+      )}
+    </Stack>
   );
 }
 
