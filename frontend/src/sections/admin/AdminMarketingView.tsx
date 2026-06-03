@@ -35,7 +35,7 @@ import Image from '../../components/image';
 import Iconify from '../../components/iconify';
 import ConfirmDialog from '../../components/confirm-dialog';
 import { useSnackbar } from '../../components/snackbar';
-import ImageUploadField from './ImageUploadField';
+import AdminBannerForm from './AdminBannerForm';
 
 // ----------------------------------------------------------------------
 
@@ -84,14 +84,12 @@ const Loading = () => (
 // ----------------------------------------------------------------------
 // BANNERS
 
-const BANNER_TYPES = ['hero', 'promo', 'popup', 'sidebar'];
-const BANNER_EMPTY = { id: 0, title: '', image_url: '', link: '', banner_type: 'hero', sort_order: 0, is_active: true };
-
 function BannersTab() {
   const { ok, err } = useSnack();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState<typeof BANNER_EMPTY | null>(null);
+  // editing: 'new' = tạo mới, object = đang sửa, null = danh sách
+  const [editing, setEditing] = useState<any | 'new' | null>(null);
   const [toDelete, setToDelete] = useState<any>(null);
 
   const load = useCallback(() => {
@@ -101,26 +99,6 @@ function BannersTab() {
   }, []);
   useEffect(() => load(), [load]);
 
-  const save = async () => {
-    if (!form) return;
-    const payload = {
-      title: form.title,
-      image_url: form.image_url,
-      link: form.link,
-      banner_type: form.banner_type,
-      sort_order: Number(form.sort_order) || 0,
-      is_active: form.is_active,
-    };
-    try {
-      if (form.id) await axiosInstance.patch(`/api/banners/${form.id}`, payload);
-      else await axiosInstance.post('/api/banners', payload);
-      ok('Đã lưu banner');
-      setForm(null);
-      load();
-    } catch (e) {
-      err(e);
-    }
-  };
   const remove = async () => {
     try {
       await axiosInstance.delete(`/api/banners/${toDelete.id}`);
@@ -133,11 +111,25 @@ function BannersTab() {
     }
   };
 
+  // Trang form đầy đủ (tạo/sửa) — thay popup cũ.
+  if (editing !== null) {
+    return (
+      <AdminBannerForm
+        current={editing === 'new' ? null : editing}
+        onBack={() => setEditing(null)}
+        onSaved={() => {
+          setEditing(null);
+          load();
+        }}
+      />
+    );
+  }
+
   if (loading) return <Loading />;
   return (
     <Card>
       <Stack direction="row" justifyContent="flex-end" sx={{ p: 2 }}>
-        <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => setForm({ ...BANNER_EMPTY })}>
+        <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => setEditing('new')}>
           Thêm banner
         </Button>
       </Stack>
@@ -168,7 +160,7 @@ function BannersTab() {
                   <Label color={b.isActive ? 'success' : 'default'}>{b.isActive ? 'Hiện' : 'Ẩn'}</Label>
                 </TableCell>
                 <TableCell align="right">
-                  <IconButton onClick={() => setForm({ id: b.id, title: b.title, image_url: b.imageUrl, link: b.link || '', banner_type: b.bannerType, sort_order: b.sortOrder, is_active: b.isActive })}>
+                  <IconButton onClick={() => setEditing(b)}>
                     <Iconify icon="solar:pen-bold" />
                   </IconButton>
                   <IconButton color="error" onClick={() => setToDelete(b)}>
@@ -187,36 +179,6 @@ function BannersTab() {
           </TableBody>
         </Table>
       </TableContainer>
-
-      <Dialog open={!!form} onClose={() => setForm(null)} fullWidth maxWidth="sm">
-        <DialogTitle>{form?.id ? 'Sửa banner' : 'Thêm banner'}</DialogTitle>
-        <DialogContent>
-          {form && (
-            <Stack spacing={2.5} sx={{ mt: 1 }}>
-              <TextField label="Tiêu đề" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-              <ImageUploadField label="Ảnh banner" value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })} />
-              <TextField label="Link khi bấm" value={form.link} onChange={(e) => setForm({ ...form, link: e.target.value })} />
-              <TextField select label="Loại" value={form.banner_type} onChange={(e) => setForm({ ...form, banner_type: e.target.value })}>
-                {BANNER_TYPES.map((x) => (
-                  <MenuItem key={x} value={x}>
-                    {x}
-                  </MenuItem>
-                ))}
-              </TextField>
-              <TextField label="Thứ tự" type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })} />
-              <FormControlLabel control={<Checkbox checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />} label="Hiển thị" />
-            </Stack>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button color="inherit" onClick={() => setForm(null)}>
-            Huỷ
-          </Button>
-          <Button variant="contained" onClick={save}>
-            Lưu
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       <ConfirmDialog
         open={!!toDelete}

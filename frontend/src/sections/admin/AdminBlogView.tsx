@@ -34,6 +34,7 @@ import Image from '../../components/image';
 import Iconify from '../../components/iconify';
 import ConfirmDialog from '../../components/confirm-dialog';
 import ImageUploadField from './ImageUploadField';
+import AdminBlogPostForm from './AdminBlogPostForm';
 import { useSnackbar } from '../../components/snackbar';
 
 // ----------------------------------------------------------------------
@@ -73,25 +74,13 @@ export default function AdminBlogView() {
 // ----------------------------------------------------------------------
 // POSTS
 
-const POST_EMPTY = {
-  id: 0,
-  title: '',
-  excerpt: '',
-  content: '',
-  category_id: '' as string | number,
-  thumbnail_url: '',
-  meta_title: '',
-  meta_description: '',
-  is_published: false,
-};
-
 function PostsTab() {
   const { ok, err } = useSnack();
   const [rows, setRows] = useState<any[]>([]);
   const [cats, setCats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState<typeof POST_EMPTY | null>(null);
-  const [saving, setSaving] = useState(false);
+  // editing: 'new' = viết mới, number = id bài đang sửa, null = danh sách
+  const [editing, setEditing] = useState<'new' | number | null>(null);
   const [toDelete, setToDelete] = useState<any>(null);
 
   const load = useCallback(() => {
@@ -107,55 +96,6 @@ function PostsTab() {
   }, []);
   useEffect(() => load(), [load]);
 
-  const openEdit = async (id: number) => {
-    try {
-      const r = await axiosInstance.get(`/api/admin/blog/posts/id/${id}`);
-      const p = r.data;
-      setForm({
-        id: p.id,
-        title: p.title || '',
-        excerpt: p.excerpt || '',
-        content: p.content || '',
-        category_id: p.categoryId || '',
-        thumbnail_url: p.thumbnailUrl || '',
-        meta_title: p.metaTitle || '',
-        meta_description: p.metaDescription || '',
-        is_published: p.isPublished,
-      });
-    } catch (e) {
-      err(e);
-    }
-  };
-
-  const save = async () => {
-    if (!form) return;
-    if (!form.title.trim()) {
-      err({}, 'Nhập tiêu đề');
-      return;
-    }
-    setSaving(true);
-    const payload = {
-      title: form.title,
-      excerpt: form.excerpt,
-      content: form.content,
-      category_id: form.category_id ? Number(form.category_id) : null,
-      thumbnail_url: form.thumbnail_url,
-      meta_title: form.meta_title,
-      meta_description: form.meta_description,
-      is_published: form.is_published,
-    };
-    try {
-      if (form.id) await axiosInstance.patch(`/api/admin/blog/posts/${form.id}`, payload);
-      else await axiosInstance.post('/api/admin/blog/posts', payload);
-      ok('Đã lưu bài viết');
-      setForm(null);
-      load();
-    } catch (e) {
-      err(e);
-    } finally {
-      setSaving(false);
-    }
-  };
   const remove = async () => {
     try {
       await axiosInstance.delete(`/api/admin/blog/posts/${toDelete.id}`);
@@ -168,11 +108,26 @@ function PostsTab() {
     }
   };
 
+  // Trang form đầy đủ (viết/sửa bài) — thay popup cũ.
+  if (editing !== null) {
+    return (
+      <AdminBlogPostForm
+        postId={editing === 'new' ? null : editing}
+        categories={cats}
+        onBack={() => setEditing(null)}
+        onSaved={() => {
+          setEditing(null);
+          load();
+        }}
+      />
+    );
+  }
+
   if (loading) return <Loading />;
   return (
     <Card>
       <Stack direction="row" justifyContent="flex-end" sx={{ p: 2 }}>
-        <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => setForm({ ...POST_EMPTY })}>
+        <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => setEditing('new')}>
           Viết bài
         </Button>
       </Stack>
@@ -205,7 +160,7 @@ function PostsTab() {
                   <Label color={p.isPublished ? 'success' : 'default'}>{p.isPublished ? 'Đã đăng' : 'Nháp'}</Label>
                 </TableCell>
                 <TableCell align="right">
-                  <IconButton onClick={() => openEdit(p.id)}>
+                  <IconButton onClick={() => setEditing(p.id)}>
                     <Iconify icon="solar:pen-bold" />
                   </IconButton>
                   <IconButton color="error" onClick={() => setToDelete(p)}>
@@ -224,39 +179,6 @@ function PostsTab() {
           </TableBody>
         </Table>
       </TableContainer>
-
-      <Dialog open={!!form} onClose={() => setForm(null)} fullWidth maxWidth="sm">
-        <DialogTitle>{form?.id ? 'Sửa bài viết' : 'Viết bài'}</DialogTitle>
-        <DialogContent>
-          {form && (
-            <Stack spacing={2.5} sx={{ mt: 1 }}>
-              <TextField label="Tiêu đề" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-              <TextField select label="Chuyên mục" value={form.category_id} onChange={(e) => setForm({ ...form, category_id: e.target.value })}>
-                <MenuItem value="">— Không —</MenuItem>
-                {cats.map((c) => (
-                  <MenuItem key={c.id} value={c.id}>
-                    {c.name}
-                  </MenuItem>
-                ))}
-              </TextField>
-              <ImageUploadField label="Ảnh đại diện" value={form.thumbnail_url} onChange={(url) => setForm({ ...form, thumbnail_url: url })} height={140} />
-              <TextField label="Tóm tắt" multiline rows={2} value={form.excerpt} onChange={(e) => setForm({ ...form, excerpt: e.target.value })} />
-              <TextField label="Nội dung" multiline rows={8} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} />
-              <TextField label="Meta title (SEO)" value={form.meta_title} onChange={(e) => setForm({ ...form, meta_title: e.target.value })} />
-              <TextField label="Meta description (SEO)" multiline rows={2} value={form.meta_description} onChange={(e) => setForm({ ...form, meta_description: e.target.value })} />
-              <FormControlLabel control={<Switch checked={form.is_published} onChange={(e) => setForm({ ...form, is_published: e.target.checked })} />} label="Đăng công khai" />
-            </Stack>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button color="inherit" onClick={() => setForm(null)}>
-            Huỷ
-          </Button>
-          <Button variant="contained" onClick={save} disabled={saving}>
-            Lưu
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       <ConfirmDialog
         open={!!toDelete}

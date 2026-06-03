@@ -5,16 +5,9 @@ import {
   Box,
   Button,
   Card,
-  Checkbox,
   CircularProgress,
   Container,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  FormControlLabel,
   IconButton,
-  MenuItem,
   Stack,
   Table,
   TableBody,
@@ -22,7 +15,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TextField,
   Typography,
 } from '@mui/material';
 // utils
@@ -31,6 +23,7 @@ import axiosInstance from '../../utils/axios';
 import Label from '../../components/label';
 import Iconify from '../../components/iconify';
 import ConfirmDialog from '../../components/confirm-dialog';
+import AdminCategoryForm from './AdminCategoryForm';
 import { useSnackbar } from '../../components/snackbar';
 
 // ----------------------------------------------------------------------
@@ -56,22 +49,13 @@ const typeLabel = (t?: string) => PRODUCT_TYPES.find((x) => x.value === t)?.labe
 const typeColor = (t?: string): any =>
   ({ premium: 'info', game: 'warning', giftcard: 'success' }[t || 'premium'] || 'default');
 
-const EMPTY = {
-  id: 0,
-  name: '',
-  icon_url: '',
-  sort_order: 0,
-  is_active: true,
-  product_type: 'premium',
-  parent_id: '' as string | number,
-};
+type EditState = { current: Category | null; presetParentId?: number; presetProductType?: string };
 
 export default function AdminCategoriesView() {
   const { enqueueSnackbar } = useSnackbar();
   const [cats, setCats] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState<typeof EMPTY | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState<EditState | null>(null);
   const [toDelete, setToDelete] = useState<Category | null>(null);
 
   const load = () => {
@@ -93,45 +77,8 @@ export default function AdminCategoriesView() {
   const childrenOf = (id: number) => cats.filter((c) => c.parentId === id);
 
   const openCreate = (parentId?: number, productType?: string) =>
-    setForm({ ...EMPTY, parent_id: parentId || '', product_type: productType || 'premium' });
-  const openEdit = (c: Category) =>
-    setForm({
-      id: c.id,
-      name: c.name,
-      icon_url: c.iconUrl || '',
-      sort_order: c.sortOrder || 0,
-      is_active: c.isActive,
-      product_type: c.productType || 'premium',
-      parent_id: c.parentId || '',
-    });
-
-  const save = async () => {
-    if (!form) return;
-    if (!form.name.trim()) {
-      enqueueSnackbar('Vui lòng nhập tên danh mục', { variant: 'warning' });
-      return;
-    }
-    setSaving(true);
-    const payload = {
-      name: form.name,
-      icon_url: form.icon_url,
-      sort_order: Number(form.sort_order) || 0,
-      is_active: form.is_active,
-      product_type: form.product_type,
-      parent_id: form.parent_id ? Number(form.parent_id) : null,
-    };
-    try {
-      if (form.id) await axiosInstance.patch(`/api/categories/${form.id}`, payload);
-      else await axiosInstance.post('/api/categories', payload);
-      enqueueSnackbar(form.id ? 'Đã cập nhật danh mục' : 'Đã tạo danh mục');
-      setForm(null);
-      load();
-    } catch (e: any) {
-      enqueueSnackbar(e?.detail || e?.message || 'Lưu thất bại', { variant: 'error' });
-    } finally {
-      setSaving(false);
-    }
-  };
+    setEditing({ current: null, presetParentId: parentId, presetProductType: productType });
+  const openEdit = (c: Category) => setEditing({ current: c });
 
   const remove = async () => {
     if (!toDelete) return;
@@ -189,6 +136,25 @@ export default function AdminCategoriesView() {
     </TableRow>
   );
 
+  // Trang form đầy đủ (tạo/sửa) — thay popup cũ.
+  if (editing) {
+    return (
+      <Container sx={{ pb: 6 }} maxWidth="lg">
+        <AdminCategoryForm
+          current={editing.current}
+          roots={roots}
+          presetParentId={editing.presetParentId}
+          presetProductType={editing.presetProductType}
+          onBack={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null);
+            load();
+          }}
+        />
+      </Container>
+    );
+  }
+
   return (
     <Container sx={{ pb: 6 }} maxWidth="lg">
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ my: 3 }}>
@@ -229,77 +195,6 @@ export default function AdminCategoriesView() {
           </TableContainer>
         )}
       </Card>
-
-      <Dialog open={!!form} onClose={() => setForm(null)} fullWidth maxWidth="sm">
-        <DialogTitle>{form?.id ? 'Sửa danh mục' : 'Thêm danh mục'}</DialogTitle>
-        <DialogContent>
-          {form && (
-            <Stack spacing={2.5} sx={{ mt: 1 }}>
-              <TextField
-                label="Tên danh mục"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                autoFocus
-              />
-              <TextField
-                select
-                label="Loại"
-                value={form.product_type}
-                onChange={(e) => setForm({ ...form, product_type: e.target.value })}
-              >
-                {PRODUCT_TYPES.map((t) => (
-                  <MenuItem key={t.value} value={t.value}>
-                    {t.label}
-                  </MenuItem>
-                ))}
-              </TextField>
-              <TextField
-                select
-                label="Danh mục cha (để trống = danh mục gốc)"
-                value={form.parent_id}
-                onChange={(e) => setForm({ ...form, parent_id: e.target.value })}
-              >
-                <MenuItem value="">— Danh mục gốc —</MenuItem>
-                {roots
-                  .filter((r) => r.id !== form.id)
-                  .map((r) => (
-                    <MenuItem key={r.id} value={r.id}>
-                      {r.name}
-                    </MenuItem>
-                  ))}
-              </TextField>
-              <TextField
-                label="Icon (URL)"
-                value={form.icon_url}
-                onChange={(e) => setForm({ ...form, icon_url: e.target.value })}
-              />
-              <TextField
-                label="Thứ tự"
-                type="number"
-                value={form.sort_order}
-                onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })}
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={form.is_active}
-                    onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
-                  />
-                }
-                label="Hiển thị"
-              />
-            </Stack>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button color="inherit" onClick={() => setForm(null)}>
-            Huỷ
-          </Button>
-          <Button variant="contained" onClick={save} disabled={saving}>
-            Lưu
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       <ConfirmDialog
         open={!!toDelete}
