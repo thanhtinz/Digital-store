@@ -19,6 +19,7 @@ const initialState: IProductState = {
     subtotal: 0,
     total: 0,
     discount: 0,
+    couponCode: '',
     shipping: 0,
     billing: null,
     totalItems: 0,
@@ -105,6 +106,7 @@ const slice = createSlice({
       state.checkout.total = 0;
       state.checkout.subtotal = 0;
       state.checkout.discount = 0;
+      state.checkout.couponCode = '';
       state.checkout.shipping = 0;
       state.checkout.totalItems = 0;
     },
@@ -158,8 +160,12 @@ const slice = createSlice({
     },
 
     applyDiscount(state, action) {
-      const discount = action.payload;
+      // payload: number (back-compat) hoặc { discount, code }
+      const payload = action.payload;
+      const discount = typeof payload === 'number' ? payload : payload?.discount || 0;
+      const code = typeof payload === 'number' ? '' : payload?.code || '';
       state.checkout.discount = discount;
+      state.checkout.couponCode = discount > 0 ? code : '';
       state.checkout.total = state.checkout.subtotal - discount;
     },
 

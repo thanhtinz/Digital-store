@@ -79,9 +79,9 @@ export default function EcommerceCheckoutPage() {
     dispatch(gotoStep(step));
   };
 
-  const handleApplyDiscount = (value: number) => {
+  const handleApplyDiscount = (value: number, code?: string) => {
     if (cart.length) {
-      dispatch(applyDiscount(value));
+      dispatch(applyDiscount({ discount: value, code: code || '' }));
     }
   };
 

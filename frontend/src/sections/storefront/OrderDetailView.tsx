@@ -264,17 +264,53 @@ export default function OrderDetailView() {
               {t('products_in_order')}
             </Typography>
             <Stack spacing={2}>
-              {(order.items || []).map((it) => (
-                <Stack key={it.id} direction="row" justifyContent="space-between" spacing={2}>
-                  <Box>
-                    <Typography variant="subtitle2">{it.productName}</Typography>
-                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                      {it.packageName} · {t('quantity_short')}: {it.quantity}
-                    </Typography>
+              {(order.items || []).map((it) => {
+                const itemDelivery = deliveryToText(it.deliveryData);
+                return (
+                  <Box key={it.id}>
+                    <Stack direction="row" justifyContent="space-between" spacing={2}>
+                      <Box>
+                        <Typography variant="subtitle2">{it.productName}</Typography>
+                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                          {it.packageName} · {t('quantity_short')}: {it.quantity}
+                        </Typography>
+                      </Box>
+                      <Typography variant="subtitle2">{fCurrency(it.lineTotal || 0)}</Typography>
+                    </Stack>
+
+                    {itemDelivery && (
+                      <Box sx={{ mt: 1, p: 1.5, borderRadius: 1, bgcolor: 'success.lighter' }}>
+                        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }}>
+                          <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'success.darker' }}>
+                            {t('delivered_info')}
+                          </Typography>
+                          <Button
+                            size="small"
+                            onClick={() => handleCopy(itemDelivery)}
+                            startIcon={<Iconify icon="eva:copy-fill" />}
+                          >
+                            {t('copy')}
+                          </Button>
+                        </Stack>
+                        <Box
+                          component="pre"
+                          sx={{
+                            m: 0,
+                            p: 1,
+                            borderRadius: 1,
+                            bgcolor: 'background.paper',
+                            fontSize: 13,
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-all',
+                          }}
+                        >
+                          {itemDelivery}
+                        </Box>
+                      </Box>
+                    )}
                   </Box>
-                  <Typography variant="subtitle2">{fCurrency(it.lineTotal || 0)}</Typography>
-                </Stack>
-              ))}
+                );
+              })}
             </Stack>
 
             <Divider sx={{ borderStyle: 'dashed', my: 2 }} />

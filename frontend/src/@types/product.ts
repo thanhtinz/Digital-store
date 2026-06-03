@@ -124,6 +124,7 @@ export type IProductCheckoutState = {
   subtotal: number;
   total: number;
   discount: number;
+  couponCode?: string;
   shipping: number;
   billing: ICheckoutBillingAddress | null;
   totalItems: number;

@@ -30,7 +30,7 @@ type Props = {
   shipping?: number;
   onEdit?: VoidFunction;
   enableEdit?: boolean;
-  onApplyDiscount?: (discount: number) => void;
+  onApplyDiscount?: (discount: number, code?: string) => void;
   enableDiscount?: boolean;
 };
 
@@ -58,20 +58,21 @@ export default function CheckoutSummary({
     if (!onApplyDiscount) return;
     if (applied) {
       // Bỏ mã đang áp dụng
-      onApplyDiscount(0);
+      onApplyDiscount(0, '');
       setCode('');
       return;
     }
     if (!code.trim()) return;
     setApplying(true);
+    const normalized = code.trim().toUpperCase();
     try {
       const r = await axiosInstance.post('/api/gift-codes/quote', {
-        code: code.trim().toUpperCase(),
+        code: normalized,
         subtotal,
       });
       const value = Number(r.data?.discount) || 0;
       if (r.data?.valid && value > 0) {
-        onApplyDiscount(value);
+        onApplyDiscount(value, normalized);
         enqueueSnackbar(`${t('coupon_applied')}: -${fCurrency(value)}`);
       } else {
         enqueueSnackbar(t('coupon_invalid'), { variant: 'error' });
