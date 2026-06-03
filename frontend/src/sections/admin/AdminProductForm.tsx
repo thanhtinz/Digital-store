@@ -130,9 +130,17 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
       is_active: data.is_active,
     };
     try {
-      if (isEdit) await axiosInstance.patch(`/api/products/admin/${current.id}`, payload);
-      else await axiosInstance.post('/api/products/admin', payload);
-      enqueueSnackbar(isEdit ? 'Đã cập nhật sản phẩm' : 'Đã tạo sản phẩm');
+      const res = isEdit
+        ? await axiosInstance.patch(`/api/products/admin/${current.id}`, payload)
+        : await axiosInstance.post('/api/products/admin', payload);
+      // Xác nhận danh mục đã lưu thật sự (đọc lại từ server).
+      const savedCat = res?.data?.category?.name;
+      enqueueSnackbar(
+        `${isEdit ? 'Đã cập nhật sản phẩm' : 'Đã tạo sản phẩm'}${
+          payload.category_id ? ` — Danh mục: ${savedCat || '⚠ không lưu được'}` : ''
+        }`,
+        { variant: payload.category_id && !savedCat ? 'warning' : 'success' }
+      );
       onSaved();
     } catch (e: any) {
       enqueueSnackbar(e?.detail || e?.message || 'Lưu thất bại', { variant: 'error' });

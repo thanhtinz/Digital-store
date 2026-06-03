@@ -228,6 +228,7 @@ router.post(['/admin', '/'], requireStaffOrAdmin, async (req: Request, res: Resp
         isActive: is_active !== false,
         sortOrder: sort_order || 0,
       },
+      include: { category: true },
     });
     res.status(201).json(serializeProduct(product));
   } catch (e: any) {
@@ -259,7 +260,7 @@ router.patch(['/admin/:id', '/:id'], requireStaffOrAdmin, async (req: Request, r
     if (req.body.images !== undefined) {
       data.images = Array.isArray(req.body.images) ? req.body.images : null;
     }
-    const product = await prisma.product.update({ where: { id }, data });
+    const product = await prisma.product.update({ where: { id }, data, include: { category: true } });
     res.json(serializeProduct(product));
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
