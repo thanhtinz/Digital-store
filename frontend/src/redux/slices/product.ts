@@ -192,11 +192,13 @@ export const {
 
 // ----------------------------------------------------------------------
 
-export function getProducts() {
+export function getProducts(params?: { category?: string; type?: string; limit?: number }) {
   return async (dispatch: Dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-      const response = await axios.get('/api/products');
+      const response = await axios.get('/api/products', {
+        params: { limit: 100, ...(params || {}) },
+      });
       dispatch(slice.actions.getProductsSuccess(response.data.products));
     } catch (error) {
       dispatch(slice.actions.hasError(error));

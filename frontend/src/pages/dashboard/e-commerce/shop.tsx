@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+// next
+import { useRouter } from 'next/router';
 import orderBy from 'lodash/orderBy';
 // form
 import { useForm } from 'react-hook-form';
@@ -42,6 +44,8 @@ export default function EcommerceShopPage() {
 
   const dispatch = useDispatch();
 
+  const { query } = useRouter();
+
   const { products, checkout } = useSelector((state) => state.product);
 
   const [openFilter, setOpenFilter] = useState(false);
@@ -77,9 +81,13 @@ export default function EcommerceShopPage() {
 
   const dataFiltered = applyFilter(products, values);
 
+  // Lọc theo danh mục/loại từ URL (sidebar storefront trỏ ?category=slug / ?type=).
+  const categorySlug = (query.category as string) || undefined;
+  const typeFilter = (query.type as string) || undefined;
+
   useEffect(() => {
-    dispatch(getProducts());
-  }, [dispatch]);
+    dispatch(getProducts({ category: categorySlug, type: typeFilter }));
+  }, [dispatch, categorySlug, typeFilter]);
 
   const handleResetFilter = () => {
     reset();
