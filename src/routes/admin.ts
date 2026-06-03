@@ -52,9 +52,9 @@ router.post('/categories', requireStaffOrAdmin, async (req: Request, res: Respon
         name, slug,
         iconUrl: icon_url || null,
         imageUrl: image_url || null,
-        parentId: parent_id || null,
+        parentId: parent_id ? Number(parent_id) : null,
         productType: product_type || 'premium',
-        sortOrder: sort_order || 0,
+        sortOrder: Number(sort_order) || 0,
         isActive: is_active !== false,
       },
     });
@@ -74,10 +74,10 @@ router.patch('/categories/:id', requireStaffOrAdmin, async (req: Request, res: R
         ...(name && { name }),
         ...(icon_url !== undefined && { iconUrl: icon_url }),
         ...(image_url !== undefined && { imageUrl: image_url }),
-        ...(parent_id !== undefined && { parentId: parent_id }),
+        ...(parent_id !== undefined && { parentId: parent_id ? Number(parent_id) : null }),
         ...(product_type && { productType: product_type }),
-        ...(sort_order !== undefined && { sortOrder: sort_order }),
-        ...(is_active !== undefined && { isActive: is_active }),
+        ...(sort_order !== undefined && { sortOrder: Number(sort_order) || 0 }),
+        ...(is_active !== undefined && { isActive: !!is_active }),
       },
     });
     res.json(cat);

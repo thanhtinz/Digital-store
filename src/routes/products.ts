@@ -219,7 +219,7 @@ router.post(['/admin', '/'], requireStaffOrAdmin, async (req: Request, res: Resp
     const slug = slugify(name, { lower: true, strict: true });
     const product = await prisma.product.create({
       data: {
-        name, slug, categoryId: category_id || null,
+        name, slug, categoryId: category_id ? Number(category_id) : null,
         description: description || null,
         notes: notes || null,
         imageUrl: image_url || null,
@@ -248,7 +248,12 @@ router.patch(['/admin/:id', '/:id'], requireStaffOrAdmin, async (req: Request, r
     for (const f of fields) {
       if (req.body[f] !== undefined) {
         const key = f.replace(/_([a-z])/g, (_, l) => l.toUpperCase());
-        data[key] = req.body[f];
+        let val: any = req.body[f];
+        // Ép kiểu cho khớp Prisma (form gửi chuỗi).
+        if (f === 'category_id') val = val ? Number(val) : null;
+        else if (f === 'sort_order') val = Number(val) || 0;
+        else if (f === 'is_featured' || f === 'is_active') val = !!val;
+        data[key] = val;
       }
     }
     if (req.body.images !== undefined) {
