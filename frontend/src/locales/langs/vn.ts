@@ -56,6 +56,20 @@ const vn = {
   other_cases: `Trường hợp khác`,
   item_by_roles: `mục theo vai trò`,
   only_admin_can_see_this_item: `Chỉ có quản trị viên mới có thể nhìn thấy mục này`,
+  account_page: {
+    my_account: `Tài khoản của tôi`,
+    account_info: `Thông tin tài khoản`,
+    available_balance: `Số dư khả dụng`,
+    topup: `Nạp tiền`,
+    member_since: `Thành viên từ`,
+    role: `Vai trò`,
+    security: `Bảo mật`,
+    recent_orders: `Đơn hàng gần đây`,
+    view_all: `Xem tất cả`,
+    no_orders: `Chưa có đơn hàng`,
+    transactions: `Lịch sử giao dịch`,
+    no_transactions: `Chưa có giao dịch`,
+  },
 };
 
 export default vn;

@@ -56,6 +56,20 @@ const cn = {
   other_cases: `其他情况`,
   item_by_roles: `按角色逐项`,
   only_admin_can_see_this_item: `只有管理员可以看到这个项目`,
+  account_page: {
+    my_account: `我的账户`,
+    account_info: `账户信息`,
+    available_balance: `可用余额`,
+    topup: `充值`,
+    member_since: `注册于`,
+    role: `角色`,
+    security: `安全`,
+    recent_orders: `最近订单`,
+    view_all: `查看全部`,
+    no_orders: `暂无订单`,
+    transactions: `交易记录`,
+    no_transactions: `暂无交易`,
+  },
 };
 
 export default cn;

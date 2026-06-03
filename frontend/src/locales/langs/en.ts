@@ -56,6 +56,20 @@ const en = {
   other_cases: `other cases`,
   item_by_roles: `item by roles`,
   only_admin_can_see_this_item: `Only admin can see this item`,
+  account_page: {
+    my_account: `My account`,
+    account_info: `Account information`,
+    available_balance: `Available balance`,
+    topup: `Top up`,
+    member_since: `Member since`,
+    role: `Role`,
+    security: `Security`,
+    recent_orders: `Recent orders`,
+    view_all: `View all`,
+    no_orders: `No orders yet`,
+    transactions: `Transaction history`,
+    no_transactions: `No transactions yet`,
+  },
 };
 
 export default en;

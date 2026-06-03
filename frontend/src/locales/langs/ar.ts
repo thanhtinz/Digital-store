@@ -56,6 +56,20 @@ const ar = {
   other_cases: `حالات اخرى`,
   item_by_roles: `عنصر حسب الأدوار`,
   only_admin_can_see_this_item: `يمكن للمسؤول فقط رؤية هذا العنصر`,
+  account_page: {
+    my_account: `حسابي`,
+    account_info: `معلومات الحساب`,
+    available_balance: `الرصيد المتاح`,
+    topup: `شحن`,
+    member_since: `عضو منذ`,
+    role: `الدور`,
+    security: `الأمان`,
+    recent_orders: `الطلبات الأخيرة`,
+    view_all: `عرض الكل`,
+    no_orders: `لا توجد طلبات`,
+    transactions: `سجل المعاملات`,
+    no_transactions: `لا توجد معاملات`,
+  },
 };
 
 export default ar;

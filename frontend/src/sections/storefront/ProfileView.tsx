@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 // next
 import NextLink from 'next/link';
 // @mui
@@ -10,21 +10,24 @@ import {
   Container,
   Divider,
   Grid,
+  Skeleton,
   Stack,
   Typography,
 } from '@mui/material';
 // auth
 import { useAuthContext } from '../../auth/useAuthContext';
+// locales
+import { useLocales } from '../../locales';
 // utils
 import axiosInstance from '../../utils/axios';
 import { fCurrency } from '../../utils/formatNumber';
-import { fDateTime } from '../../utils/formatTime';
+import { fDate, fDateTime } from '../../utils/formatTime';
 // routes
 import { PATH_DASHBOARD } from '../../routes/paths';
 // components
 import Label from '../../components/label';
 import Iconify from '../../components/iconify';
-// sections (tái dùng form đổi mật khẩu của Minimal)
+// sections (form đổi mật khẩu của Minimal)
 import AccountChangePassword from '../@dashboard/user/account/AccountChangePassword';
 //
 import { orderStatusColor, orderStatusLabel } from './orderStatus';
@@ -40,15 +43,7 @@ const TX_LABEL: Record<string, string> = {
   card_charge: 'Nạp thẻ',
 };
 
-type Tx = {
-  id: number;
-  amount: number;
-  type: string;
-  status: string;
-  description?: string;
-  createdAt: string;
-};
-
+type Tx = { id: number; amount: number; type: string; description?: string; createdAt: string };
 type OrderLite = {
   id: number;
   orderCode: string;
@@ -61,197 +56,268 @@ type OrderLite = {
 
 export default function ProfileView() {
   const { user } = useAuthContext();
+  const { translate } = useLocales();
 
-  const [balance, setBalance] = useState<number | null>(null);
+  // Số dư hiển thị NGAY từ thông tin user (tránh nhấp nháy "load rồi mất").
+  const [balance, setBalance] = useState<number | null>(
+    typeof (user as any)?.balance === 'number' ? (user as any).balance : null
+  );
   const [txs, setTxs] = useState<Tx[]>([]);
   const [orders, setOrders] = useState<OrderLite[]>([]);
+  const [loaded, setLoaded] = useState(false);
 
+  const mounted = useRef(true);
   useEffect(() => {
-    let alive = true;
-    Promise.allSettled([
-      axiosInstance.get('/api/balance/me'),
-      axiosInstance.get('/api/balance/history', { params: { limit: 10 } }),
-      axiosInstance.get('/api/orders/my', { params: { limit: 5 } }),
-    ]).then(([bRes, tRes, oRes]) => {
-      if (!alive) return;
-      if (bRes.status === 'fulfilled') setBalance(bRes.value.data?.balance ?? 0);
-      if (tRes.status === 'fulfilled') setTxs(tRes.value.data?.items || []);
-      if (oRes.status === 'fulfilled') setOrders(oRes.value.data?.items || []);
-    });
+    mounted.current = true;
     return () => {
-      alive = false;
+      mounted.current = false;
     };
   }, []);
 
+  useEffect(() => {
+    if (!user) return;
+    // Cập nhật số dư nền (không xoá giá trị cũ nếu lỗi).
+    axiosInstance
+      .get('/api/balance/me')
+      .then((r) => mounted.current && setBalance(r.data?.balance ?? balance))
+      .catch(() => {});
+    axiosInstance
+      .get('/api/orders/my', { params: { limit: 5 } })
+      .then((r) => mounted.current && setOrders(r.data?.items || []))
+      .catch(() => {});
+    axiosInstance
+      .get('/api/balance/history', { params: { limit: 8 } })
+      .then((r) => mounted.current && setTxs(r.data?.items || []))
+      .catch(() => {})
+      .finally(() => mounted.current && setLoaded(true));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [(user as any)?.id]);
+
   const name =
-    (user as any)?.displayName || (user as any)?.display_name || (user as any)?.email || 'Tài khoản';
+    (user as any)?.displayName ||
+    (user as any)?.display_name ||
+    (user as any)?.email ||
+    'Tài khoản';
   const email = (user as any)?.email || '';
-  const avatar = (user as any)?.photoURL || (user as any)?.avatar_url || '';
-  const provider = (user as any)?.provider || (user as any)?.auth_provider;
+  const role = (user as any)?.role || 'user';
+  const createdAt = (user as any)?.created_at || (user as any)?.createdAt;
 
   return (
-    <Container sx={{ pb: 6 }}>
-      {/* COVER HEADER */}
-      <Card
-        sx={{
-          mt: 3,
-          mb: 3,
-          p: { xs: 3, md: 4 },
-          color: 'common.white',
-          position: 'relative',
-          overflow: 'hidden',
-          background: (t) =>
-            `linear-gradient(135deg, ${t.palette.primary.dark} 0%, ${t.palette.primary.main} 100%)`,
-        }}
-      >
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          alignItems={{ xs: 'flex-start', sm: 'center' }}
-          justifyContent="space-between"
-          spacing={3}
-        >
-          <Stack direction="row" spacing={2.5} alignItems="center">
-            <Avatar
-              src={avatar}
-              alt={name}
-              sx={{ width: 80, height: 80, border: '3px solid', borderColor: 'common.white' }}
-            >
-              {name?.[0]?.toUpperCase()}
-            </Avatar>
-            <Box sx={{ minWidth: 0 }}>
-              <Typography variant="h5" noWrap>
-                {name}
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.85 }} noWrap>
-                {email}
-              </Typography>
-              {provider && (
-                <Label variant="filled" color="default" sx={{ mt: 0.75, color: 'text.primary' }}>
-                  {provider}
-                </Label>
-              )}
-            </Box>
-          </Stack>
+    <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
+      <Typography variant="h4" sx={{ mb: 3 }}>
+        {`${translate('account_page.my_account')}`}
+      </Typography>
 
-          <Box
+      <Grid container spacing={3}>
+        {/* CỘT TRÁI */}
+        <Grid item xs={12} md={4}>
+          {/* Thẻ thông tin tài khoản */}
+          <Card sx={{ p: 3, textAlign: 'center', mb: 3 }}>
+            <Avatar
+              sx={{
+                width: 96,
+                height: 96,
+                mx: 'auto',
+                mb: 2,
+                bgcolor: 'primary.lighter',
+                color: 'primary.main',
+              }}
+            >
+              <Iconify icon="solar:user-rounded-bold-duotone" width={56} />
+            </Avatar>
+
+            <Typography variant="h6" noWrap sx={{ px: 1 }}>
+              {name}
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1.5 }} noWrap>
+              {email}
+            </Typography>
+
+            <Label color="primary" variant="soft" sx={{ textTransform: 'capitalize' }}>
+              {role}
+            </Label>
+
+            {createdAt && (
+              <>
+                <Divider sx={{ borderStyle: 'dashed', my: 2.5 }} />
+                <Stack direction="row" justifyContent="space-between">
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                    {`${translate('account_page.member_since')}`}
+                  </Typography>
+                  <Typography variant="subtitle2">{fDate(createdAt)}</Typography>
+                </Stack>
+              </>
+            )}
+          </Card>
+
+          {/* Thẻ số dư */}
+          <Card
             sx={{
-              p: 2,
-              borderRadius: 2,
-              minWidth: 220,
-              bgcolor: 'rgba(255,255,255,0.16)',
-              backdropFilter: 'blur(6px)',
+              p: 3,
+              color: 'common.white',
+              background: (t) =>
+                `linear-gradient(135deg, ${t.palette.primary.main} 0%, ${t.palette.primary.dark} 100%)`,
             }}
           >
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <Iconify icon="solar:wallet-bold-duotone" width={24} />
-              <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                Số dư khả dụng
-              </Typography>
+            <Stack direction="row" alignItems="center" spacing={1} sx={{ opacity: 0.9 }}>
+              <Iconify icon="solar:wallet-money-bold-duotone" width={22} />
+              <Typography variant="body2">{`${translate('account_page.available_balance')}`}</Typography>
             </Stack>
-            <Typography variant="h4" sx={{ mt: 0.5 }}>
-              {balance == null ? '…' : fCurrency(balance)}
+            <Typography variant="h3" sx={{ mt: 1 }}>
+              {balance == null ? <Skeleton width={140} sx={{ bgcolor: 'rgba(255,255,255,.3)' }} /> : fCurrency(balance)}
             </Typography>
             <Button
               fullWidth
-              size="small"
               variant="contained"
               color="inherit"
+              startIcon={<Iconify icon="solar:add-circle-bold" />}
               component={NextLink}
               href={PATH_DASHBOARD.chat.root}
-              sx={{ mt: 1, color: 'primary.main' }}
+              sx={{ mt: 2, color: 'primary.main' }}
             >
-              Nạp tiền
+              {`${translate('account_page.topup')}`}
             </Button>
-          </Box>
-        </Stack>
-      </Card>
-
-      <Grid container spacing={3}>
-        {/* CỘT TRÁI: Bảo mật */}
-        <Grid item xs={12} md={5}>
-          <AccountChangePassword />
+          </Card>
         </Grid>
 
-        {/* CỘT PHẢI: Đơn + Giao dịch */}
-        <Grid item xs={12} md={7}>
-          <Card sx={{ p: 3, mb: 3 }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-              <Typography variant="subtitle1">Đơn hàng gần đây</Typography>
-              <Button
-                component={NextLink}
-                href={PATH_DASHBOARD.orders.root}
-                size="small"
-                endIcon={<Iconify icon="eva:arrow-ios-forward-fill" />}
-              >
-                Tất cả
-              </Button>
-            </Stack>
-            {orders.length === 0 ? (
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                Chưa có đơn hàng.
+        {/* CỘT PHẢI */}
+        <Grid item xs={12} md={8}>
+          <Stack spacing={3}>
+            {/* Bảo mật */}
+            <Box>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {`${translate('account_page.security')}`}
               </Typography>
-            ) : (
-              <Stack divider={<Divider sx={{ borderStyle: 'dashed' }} />} spacing={1.5}>
-                {orders.map((o) => (
-                  <Stack
-                    key={o.id}
-                    direction="row"
-                    alignItems="center"
-                    justifyContent="space-between"
-                    component={NextLink}
-                    href={PATH_DASHBOARD.orders.view(o.orderCode)}
-                    sx={{ textDecoration: 'none', color: 'inherit' }}
-                  >
-                    <Box>
-                      <Typography variant="subtitle2">#{o.orderCode}</Typography>
-                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                        {fDateTime(o.createdAt)}
-                      </Typography>
-                    </Box>
-                    <Stack direction="row" spacing={1.5} alignItems="center">
-                      <Label variant="soft" color={orderStatusColor(o.status)}>
-                        {orderStatusLabel(o.status)}
-                      </Label>
-                      <Typography variant="subtitle2">{fCurrency(o.totalAmount)}</Typography>
-                    </Stack>
-                  </Stack>
-                ))}
-              </Stack>
-            )}
-          </Card>
+              <AccountChangePassword />
+            </Box>
 
-          <Card sx={{ p: 3 }}>
-            <Typography variant="subtitle1" sx={{ mb: 2 }}>
-              Lịch sử giao dịch
-            </Typography>
-            {txs.length === 0 ? (
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                Chưa có giao dịch.
-              </Typography>
-            ) : (
-              <Stack divider={<Divider sx={{ borderStyle: 'dashed' }} />} spacing={1.5}>
-                {txs.map((t) => (
-                  <Stack key={t.id} direction="row" alignItems="center" justifyContent="space-between">
-                    <Box>
-                      <Typography variant="subtitle2">{TX_LABEL[t.type] || t.type}</Typography>
-                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                        {t.description || fDateTime(t.createdAt)}
-                      </Typography>
-                    </Box>
-                    <Typography
-                      variant="subtitle2"
-                      color={t.amount >= 0 ? 'success.main' : 'error.main'}
-                    >
-                      {t.amount >= 0 ? '+' : ''}
-                      {fCurrency(t.amount)}
-                    </Typography>
-                  </Stack>
-                ))}
+            {/* Đơn hàng gần đây */}
+            <Card sx={{ p: 3 }}>
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+                sx={{ mb: 2 }}
+              >
+                <Typography variant="h6">{`${translate('account_page.recent_orders')}`}</Typography>
+                <Button
+                  component={NextLink}
+                  href={PATH_DASHBOARD.orders.root}
+                  size="small"
+                  endIcon={<Iconify icon="eva:arrow-ios-forward-fill" />}
+                >
+                  {`${translate('account_page.view_all')}`}
+                </Button>
               </Stack>
-            )}
-          </Card>
+
+              {!loaded ? (
+                <RowSkeleton />
+              ) : orders.length === 0 ? (
+                <Empty text={`${translate('account_page.no_orders')}`} />
+              ) : (
+                <Stack divider={<Divider sx={{ borderStyle: 'dashed' }} />} spacing={2}>
+                  {orders.map((o) => (
+                    <Stack
+                      key={o.id}
+                      direction="row"
+                      alignItems="center"
+                      justifyContent="space-between"
+                      component={NextLink}
+                      href={PATH_DASHBOARD.orders.view(o.orderCode)}
+                      sx={{
+                        textDecoration: 'none',
+                        color: 'inherit',
+                        transition: (t) => t.transitions.create('opacity'),
+                        '&:hover': { opacity: 0.72 },
+                      }}
+                    >
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="subtitle2" noWrap>
+                          #{o.orderCode}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                          {fDateTime(o.createdAt)}
+                        </Typography>
+                      </Box>
+                      <Stack direction="row" spacing={1.5} alignItems="center">
+                        <Label variant="soft" color={orderStatusColor(o.status)}>
+                          {orderStatusLabel(o.status)}
+                        </Label>
+                        <Typography variant="subtitle2">{fCurrency(o.totalAmount)}</Typography>
+                      </Stack>
+                    </Stack>
+                  ))}
+                </Stack>
+              )}
+            </Card>
+
+            {/* Lịch sử giao dịch */}
+            <Card sx={{ p: 3 }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {`${translate('account_page.transactions')}`}
+              </Typography>
+
+              {!loaded ? (
+                <RowSkeleton />
+              ) : txs.length === 0 ? (
+                <Empty text={`${translate('account_page.no_transactions')}`} />
+              ) : (
+                <Stack divider={<Divider sx={{ borderStyle: 'dashed' }} />} spacing={2}>
+                  {txs.map((t) => (
+                    <Stack
+                      key={t.id}
+                      direction="row"
+                      alignItems="center"
+                      justifyContent="space-between"
+                    >
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="subtitle2">{TX_LABEL[t.type] || t.type}</Typography>
+                        <Typography variant="caption" sx={{ color: 'text.secondary' }} noWrap>
+                          {t.description || fDateTime(t.createdAt)}
+                        </Typography>
+                      </Box>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{ color: t.amount >= 0 ? 'success.main' : 'error.main', flexShrink: 0 }}
+                      >
+                        {t.amount >= 0 ? '+' : ''}
+                        {fCurrency(t.amount)}
+                      </Typography>
+                    </Stack>
+                  ))}
+                </Stack>
+              )}
+            </Card>
+          </Stack>
         </Grid>
       </Grid>
     </Container>
+  );
+}
+
+// ----------------------------------------------------------------------
+
+function Empty({ text }: { text: string }) {
+  return (
+    <Stack alignItems="center" sx={{ py: 4, color: 'text.disabled' }} spacing={1}>
+      <Iconify icon="solar:inbox-line-duotone" width={40} />
+      <Typography variant="body2">{text}</Typography>
+    </Stack>
+  );
+}
+
+function RowSkeleton() {
+  return (
+    <Stack spacing={2}>
+      {[...Array(3)].map((_, i) => (
+        <Stack key={i} direction="row" justifyContent="space-between" alignItems="center">
+          <Box sx={{ width: '60%' }}>
+            <Skeleton width="50%" />
+            <Skeleton width="30%" />
+          </Box>
+          <Skeleton width={80} />
+        </Stack>
+      ))}
+    </Stack>
   );
 }
