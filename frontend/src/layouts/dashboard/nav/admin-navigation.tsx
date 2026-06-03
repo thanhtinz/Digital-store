@@ -52,7 +52,10 @@ export function useAdminNavConfig() {
     },
     {
       subheader: 'Cấu hình',
-      items: [{ title: 'Cài đặt cửa hàng', path: PATH_DASHBOARD.admin.settings, icon: ICONS.banking }],
+      items: [
+        { title: 'Cài đặt cửa hàng', path: PATH_DASHBOARD.admin.settings, icon: ICONS.banking },
+        { title: 'Tích hợp', path: PATH_DASHBOARD.admin.integrations, icon: ICONS.external },
+      ],
     },
     {
       subheader: 'Khác',
