@@ -60,8 +60,11 @@ export default function AdminBlogView() {
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
         <Tab value="posts" label="Bài viết" icon={<Iconify icon="solar:document-text-bold" />} iconPosition="start" />
         <Tab value="cats" label="Chuyên mục" icon={<Iconify icon="solar:folder-bold" />} iconPosition="start" />
+        <Tab value="pages" label="Trang nội dung" icon={<Iconify icon="solar:file-text-bold" />} iconPosition="start" />
       </Tabs>
-      {tab === 'posts' ? <PostsTab /> : <CatsTab />}
+      {tab === 'posts' && <PostsTab />}
+      {tab === 'cats' && <CatsTab />}
+      {tab === 'pages' && <PagesTab />}
     </Container>
   );
 }
@@ -259,6 +262,160 @@ function PostsTab() {
         open={!!toDelete}
         onClose={() => setToDelete(null)}
         title="Xoá bài viết"
+        content={`Xoá "${toDelete?.title}"?`}
+        action={
+          <Button variant="contained" color="error" onClick={remove}>
+            Xoá
+          </Button>
+        }
+      />
+    </Card>
+  );
+}
+
+// ----------------------------------------------------------------------
+// SUPPORT PAGES (Điều khoản / Chính sách / FAQ…)
+
+const PAGE_TYPES = ['terms', 'privacy', 'faq', 'about', 'refund', 'shipping', 'guide'];
+const PAGE_EMPTY = { id: 0, title: '', page_type: 'terms', content: '', sort_order: 0, is_published: true };
+
+function PagesTab() {
+  const { ok, err } = useSnack();
+  const [rows, setRows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState<typeof PAGE_EMPTY | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [toDelete, setToDelete] = useState<any>(null);
+
+  const load = useCallback(() => {
+    setLoading(true);
+    axiosInstance.get('/api/support/pages').then((r) => setRows(r.data || [])).catch(err).finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => load(), [load]);
+
+  const save = async () => {
+    if (!form) return;
+    if (!form.title.trim()) {
+      err({}, 'Nhập tiêu đề');
+      return;
+    }
+    setSaving(true);
+    const payload = {
+      title: form.title,
+      content: form.content,
+      page_type: form.page_type,
+      sort_order: Number(form.sort_order) || 0,
+      is_published: form.is_published,
+    };
+    try {
+      if (form.id) await axiosInstance.put(`/api/support/pages/${form.id}`, payload);
+      else await axiosInstance.post('/api/support/pages', payload);
+      ok('Đã lưu trang');
+      setForm(null);
+      load();
+    } catch (e) {
+      err(e);
+    } finally {
+      setSaving(false);
+    }
+  };
+  const remove = async () => {
+    try {
+      await axiosInstance.delete(`/api/support/pages/${toDelete.id}`);
+      ok('Đã xoá');
+      load();
+    } catch (e) {
+      err(e);
+    } finally {
+      setToDelete(null);
+    }
+  };
+
+  if (loading) return <Loading />;
+  return (
+    <Card>
+      <Stack direction="row" justifyContent="flex-end" sx={{ p: 2 }}>
+        <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => setForm({ ...PAGE_EMPTY })}>
+          Thêm trang
+        </Button>
+      </Stack>
+      <TableContainer>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Tiêu đề</TableCell>
+              <TableCell>Loại</TableCell>
+              <TableCell>Slug</TableCell>
+              <TableCell align="center">Trạng thái</TableCell>
+              <TableCell align="right">Thao tác</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {rows.map((p) => (
+              <TableRow key={p.id} hover>
+                <TableCell>{p.title}</TableCell>
+                <TableCell>
+                  <Label variant="soft">{p.pageType || '—'}</Label>
+                </TableCell>
+                <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{p.slug}</TableCell>
+                <TableCell align="center">
+                  <Label color={p.isPublished ? 'success' : 'default'}>{p.isPublished ? 'Hiện' : 'Ẩn'}</Label>
+                </TableCell>
+                <TableCell align="right">
+                  <IconButton onClick={() => setForm({ id: p.id, title: p.title, page_type: p.pageType || 'terms', content: p.content || '', sort_order: p.sortOrder || 0, is_published: p.isPublished })}>
+                    <Iconify icon="solar:pen-bold" />
+                  </IconButton>
+                  <IconButton color="error" onClick={() => setToDelete(p)}>
+                    <Iconify icon="solar:trash-bin-trash-bold" />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+            {!rows.length && (
+              <TableRow>
+                <TableCell colSpan={5} align="center" sx={{ py: 6, color: 'text.secondary' }}>
+                  Chưa có trang nội dung
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Dialog open={!!form} onClose={() => setForm(null)} fullWidth maxWidth="sm">
+        <DialogTitle>{form?.id ? 'Sửa trang' : 'Thêm trang'}</DialogTitle>
+        <DialogContent>
+          {form && (
+            <Stack spacing={2.5} sx={{ mt: 1 }}>
+              <TextField label="Tiêu đề" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+              <TextField select label="Loại trang" value={form.page_type} onChange={(e) => setForm({ ...form, page_type: e.target.value })}>
+                {PAGE_TYPES.map((t) => (
+                  <MenuItem key={t} value={t}>
+                    {t}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField label="Nội dung (HTML/Markdown)" multiline rows={10} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} />
+              <TextField label="Thứ tự" type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })} />
+              <FormControlLabel control={<Switch checked={form.is_published} onChange={(e) => setForm({ ...form, is_published: e.target.checked })} />} label="Hiển thị" />
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button color="inherit" onClick={() => setForm(null)}>
+            Huỷ
+          </Button>
+          <Button variant="contained" onClick={save} disabled={saving}>
+            Lưu
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <ConfirmDialog
+        open={!!toDelete}
+        onClose={() => setToDelete(null)}
+        title="Xoá trang"
         content={`Xoá "${toDelete?.title}"?`}
         action={
           <Button variant="contained" color="error" onClick={remove}>
