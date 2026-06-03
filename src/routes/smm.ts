@@ -799,4 +799,151 @@ async function refundSmmOrder(orderId: number, userId: number, amount: number, r
   });
 }
 
+// ════════════════════════════════════════════════════
+// ADMIN — bổ sung (port từ bản Python)
+// ════════════════════════════════════════════════════
+
+/** Sửa provider; nếu đổi price_markup thì tính lại rate bán theo cost_rate. */
+router.put('/providers/:pid', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const pid = parseInt(req.params.pid);
+    const prov: any = await prisma.apiProvider.findFirst({
+      where: { id: pid, providerType: 'smm_panel' },
+    });
+    if (!prov) { res.status(404).json({ detail: 'Provider not found' }); return; }
+
+    const { name, base_url, api_key, is_active, settings } = req.body;
+    const data: any = {};
+    if (name !== undefined) data.name = name;
+    if (base_url !== undefined) data.baseUrl = base_url;
+    if (api_key) data.apiKey = api_key;
+    if (is_active !== undefined) data.isActive = is_active;
+
+    let recomputed = 0;
+    if (settings !== undefined) {
+      const oldMarkup = parseFloat((prov.settings || {}).price_markup || 0) || 0;
+      const newMarkup = parseFloat((settings || {}).price_markup || 0) || 0;
+      data.settings = settings || {};
+      if (Math.abs(newMarkup - oldMarkup) > 1e-9) {
+        const factor = newMarkup > 0 ? 1 + newMarkup / 100 : 1;
+        const svcs = await prisma.smmService.findMany({ where: { apiProviderId: pid } });
+        for (const sv of svcs) {
+          if (!sv.costRate) continue;
+          await prisma.smmService.update({
+            where: { id: sv.id },
+            data: { rate: Math.round(sv.costRate * factor * 100) / 100 },
+          });
+          recomputed += 1;
+        }
+      }
+    }
+    await prisma.apiProvider.update({ where: { id: pid }, data });
+    res.json({ ok: true, recomputed });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+router.delete('/providers/:pid', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const pid = parseInt(req.params.pid);
+    const prov = await prisma.apiProvider.findFirst({ where: { id: pid, providerType: 'smm_panel' } });
+    if (!prov) { res.status(404).json({ detail: 'Provider not found' }); return; }
+    await prisma.apiProvider.delete({ where: { id: pid } });
+    res.json({ ok: true });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+/** Xoá nhiều dịch vụ. */
+router.post('/services/bulk-delete', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const ids = (req.body.ids || []).map((x: any) => parseInt(x)).filter((n: number) => Number.isFinite(n));
+    if (!ids.length) { res.status(400).json({ detail: 'ids required' }); return; }
+    const r = await prisma.smmService.deleteMany({ where: { id: { in: ids } } });
+    res.json({ ok: true, deleted: r.count });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+/** Làm tròn giá bán theo bội số `unit` (mặc định 1000), quy tắc HALF_UP. */
+router.post('/services/round-prices', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const ids = (req.body.ids || []).map((x: any) => parseInt(x)).filter((n: number) => Number.isFinite(n));
+    const unit = Math.max(1, parseInt(req.body.unit) || 1000);
+    if (!ids.length) { res.status(400).json({ detail: 'ids required' }); return; }
+    const rows = await prisma.smmService.findMany({ where: { id: { in: ids } } });
+    let changed = 0;
+    for (const s of rows) {
+      if (s.rate == null) continue;
+      const newVal = Math.round(s.rate / unit) * unit; // HALF_UP
+      if (s.rate !== newVal) {
+        await prisma.smmService.update({ where: { id: s.id }, data: { rate: newVal } });
+        changed += 1;
+      }
+    }
+    res.json({ ok: true, updated: changed, total: rows.length, unit });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+/** Xoá 1 đơn SMM (admin). */
+router.delete('/admin/orders/:oid', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const oid = parseInt(req.params.oid);
+    const order = await prisma.smmOrder.findUnique({ where: { id: oid } });
+    if (!order) { res.status(404).json({ detail: 'Không tìm thấy đơn' }); return; }
+    await prisma.smmOrder.delete({ where: { id: oid } });
+    res.json({ ok: true });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+/** Đồng bộ trạng thái TẤT CẢ đơn API đang chạy từ provider. */
+router.post('/admin/orders/check-all', requireAdmin, async (_req: Request, res: Response) => {
+  try {
+    const FINAL = ['completed', 'failed', 'canceled', 'cancelled', 'partial', 'refunded'];
+    const orders = await prisma.smmOrder.findMany({
+      where: {
+        deliveryType: 'api',
+        externalOrderId: { not: null },
+        status: { notIn: FINAL },
+      },
+      include: { apiProvider: true },
+      take: 200,
+    });
+    let checked = 0;
+    let updated = 0;
+    for (const order of orders) {
+      if (!order.apiProvider || !order.externalOrderId) continue;
+      try {
+        const adapter = getProvider(order.apiProvider);
+        const result = await adapter.getOrderStatus(order.externalOrderId);
+        checked += 1;
+        if (result.status && result.status !== order.status) {
+          const data = result.deliveryData ? JSON.parse(result.deliveryData) : {};
+          await prisma.smmOrder.update({
+            where: { id: order.id },
+            data: {
+              status: result.status,
+              startCount: data.start_count ? parseInt(data.start_count) : order.startCount,
+              remains: data.remains !== undefined ? parseInt(data.remains) : order.remains,
+            },
+          });
+          updated += 1;
+        }
+      } catch {
+        /* bỏ qua đơn lỗi, tiếp tục */
+      }
+    }
+    res.json({ ok: true, checked, updated, total: orders.length });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
 export default router;
