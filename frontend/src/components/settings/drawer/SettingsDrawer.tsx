@@ -16,10 +16,12 @@ import Block from './Block';
 import BadgeDot from './BadgeDot';
 import ToggleButton from './ToggleButton';
 import ModeOptions from './ModeOptions';
+import FontOptions from './FontOptions';
 import LayoutOptions from './LayoutOptions';
 import StretchOptions from './StretchOptions';
 import ContrastOptions from './ContrastOptions';
 import DirectionOptions from './DirectionOptions';
+import FontSizeOptions from './FontSizeOptions';
 import FullScreenOptions from './FullScreenOptions';
 import ColorPresetsOptions from './ColorPresetsOptions';
 
@@ -35,6 +37,8 @@ export default function SettingsDrawer() {
     themeContrast,
     themeDirection,
     themeColorPresets,
+    themeFontFamily,
+    themeFontSize,
     onResetSetting,
   } = useSettingsContext();
 
@@ -56,7 +60,9 @@ export default function SettingsDrawer() {
     themeStretch !== defaultSettings.themeStretch ||
     themeContrast !== defaultSettings.themeContrast ||
     themeDirection !== defaultSettings.themeDirection ||
-    themeColorPresets !== defaultSettings.themeColorPresets;
+    themeColorPresets !== defaultSettings.themeColorPresets ||
+    themeFontFamily !== defaultSettings.themeFontFamily ||
+    themeFontSize !== defaultSettings.themeFontSize;
 
   return (
     <>
@@ -123,6 +129,14 @@ export default function SettingsDrawer() {
 
           <Block title="Stretch" tooltip="Only available at large resolutions > 1600px (xl)">
             <StretchOptions />
+          </Block>
+
+          <Block title="Font">
+            <FontOptions />
+          </Block>
+
+          <Block title="Size">
+            <FontSizeOptions />
           </Block>
 
           <Block title="Presets">

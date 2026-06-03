@@ -35,6 +35,9 @@ const initialState: SettingsContextProps = {
   onChangeColorPresets: () => {},
   presetsColor: defaultPreset,
   presetsOption: [],
+  // Font
+  onChangeFontFamily: () => {},
+  onChangeFontSize: () => {},
   // Stretch
   onToggleStretch: () => {},
   // Reset
@@ -66,6 +69,8 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
   const [themeContrast, setThemeContrast] = useState(defaultSettings.themeContrast);
   const [themeDirection, setThemeDirection] = useState(defaultSettings.themeDirection);
   const [themeColorPresets, setThemeColorPresets] = useState(defaultSettings.themeColorPresets);
+  const [themeFontFamily, setThemeFontFamily] = useState(defaultSettings.themeFontFamily);
+  const [themeFontSize, setThemeFontSize] = useState(defaultSettings.themeFontSize);
 
   const storageAvailable = localStorageAvailable();
 
@@ -88,6 +93,8 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
       const contrast = getCookie('themeContrast') || defaultSettings.themeContrast;
       const direction = getCookie('themeDirection') || defaultSettings.themeDirection;
       const colorPresets = getCookie('themeColorPresets') || defaultSettings.themeColorPresets;
+      const fontFamily = getCookie('themeFontFamily') || defaultSettings.themeFontFamily;
+      const fontSize = Number(getCookie('themeFontSize')) || defaultSettings.themeFontSize;
 
       setThemeMode(mode as ThemeModeValue);
       setThemeLayout(layout as ThemeLayoutValue);
@@ -95,6 +102,8 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
       setThemeContrast(contrast as ThemeContrastValue);
       setThemeDirection(direction as ThemeDirectionValue);
       setThemeColorPresets(colorPresets as ThemeColorPresetsValue);
+      setThemeFontFamily(fontFamily);
+      setThemeFontSize(fontSize);
     }
   }, [storageAvailable]);
 
@@ -163,6 +172,17 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     setCookie('themeColorPresets', value);
   }, []);
 
+  // Font
+  const onChangeFontFamily = useCallback((value: string) => {
+    setThemeFontFamily(value);
+    setCookie('themeFontFamily', value);
+  }, []);
+
+  const onChangeFontSize = useCallback((value: number) => {
+    setThemeFontSize(value);
+    setCookie('themeFontSize', String(value));
+  }, []);
+
   // Stretch
   const onToggleStretch = useCallback(() => {
     const value = !themeStretch;
@@ -178,12 +198,16 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     setThemeContrast(defaultSettings.themeContrast);
     setThemeDirection(defaultSettings.themeDirection);
     setThemeColorPresets(defaultSettings.themeColorPresets);
+    setThemeFontFamily(defaultSettings.themeFontFamily);
+    setThemeFontSize(defaultSettings.themeFontSize);
     removeCookie('themeMode');
     removeCookie('themeLayout');
     removeCookie('themeStretch');
     removeCookie('themeContrast');
     removeCookie('themeDirection');
     removeCookie('themeColorPresets');
+    removeCookie('themeFontFamily');
+    removeCookie('themeFontSize');
   }, []);
 
   const memoizedValue = useMemo(
@@ -213,6 +237,11 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
       onChangeColorPresets,
       presetsOption,
       presetsColor: getPresets(themeColorPresets),
+      // Font
+      themeFontFamily,
+      themeFontSize,
+      onChangeFontFamily,
+      onChangeFontSize,
       // Reset
       onResetSetting,
     }),
@@ -240,6 +269,11 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
       // Stretch
       themeStretch,
       onToggleStretch,
+      // Font
+      themeFontFamily,
+      themeFontSize,
+      onChangeFontFamily,
+      onChangeFontSize,
       // Reset
       onResetSetting,
     ]

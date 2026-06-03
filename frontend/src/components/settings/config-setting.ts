@@ -11,4 +11,6 @@ export const defaultSettings: SettingsValueProps = {
   themeLayout: 'vertical',
   themeColorPresets: 'default',
   themeStretch: false,
+  themeFontFamily: 'Public Sans',
+  themeFontSize: 16,
 };

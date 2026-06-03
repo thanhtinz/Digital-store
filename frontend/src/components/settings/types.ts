@@ -24,6 +24,8 @@ export type SettingsValueProps = {
   themeContrast: ThemeContrastValue;
   themeDirection: ThemeDirectionValue;
   themeColorPresets: ThemeColorPresetsValue;
+  themeFontFamily: string;
+  themeFontSize: number;
 };
 
 export type SettingsContextProps = SettingsValueProps & {
@@ -52,6 +54,10 @@ export type SettingsContextProps = SettingsValueProps & {
 
   // Color
   onChangeColorPresets: (event: React.ChangeEvent<HTMLInputElement>) => void;
+
+  // Font
+  onChangeFontFamily: (value: string) => void;
+  onChangeFontSize: (value: number) => void;
 
   // Stretch
   onToggleStretch: VoidFunction;

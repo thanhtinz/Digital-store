@@ -1,4 +1,4 @@
-import { Public_Sans, Barlow } from '@next/font/google';
+import { Public_Sans, Barlow, Inter, DM_Sans, Nunito_Sans } from '@next/font/google';
 
 // ----------------------------------------------------------------------
 
@@ -37,6 +37,23 @@ export const secondaryFont = Barlow({
   display: 'swap',
   fallback: ['Helvetica', 'Arial', 'sans-serif'],
 });
+
+// Phông chữ thay thế cho người dùng chọn trong Cài đặt giao diện.
+const interFont = Inter({ weight: ['400', '500', '600', '700', '800'], subsets: ['latin'], display: 'swap', fallback: ['Helvetica', 'Arial', 'sans-serif'] });
+const dmSansFont = DM_Sans({ weight: ['400', '500', '700'], subsets: ['latin'], display: 'swap', fallback: ['Helvetica', 'Arial', 'sans-serif'] });
+const nunitoFont = Nunito_Sans({ weight: ['400', '600', '700', '800'], subsets: ['latin'], display: 'swap', fallback: ['Helvetica', 'Arial', 'sans-serif'] });
+
+// Danh sách phông cho UI + map sang fontFamily thực.
+export const FONT_OPTIONS = ['Public Sans', 'Inter', 'DM Sans', 'Nunito'];
+export const FONT_FAMILY_MAP: Record<string, string> = {
+  'Public Sans': primaryFont.style.fontFamily,
+  Inter: interFont.style.fontFamily,
+  'DM Sans': dmSansFont.style.fontFamily,
+  Nunito: nunitoFont.style.fontFamily,
+};
+export function getFontFamily(name?: string): string {
+  return (name && FONT_FAMILY_MAP[name]) || primaryFont.style.fontFamily;
+}
 
 // ----------------------------------------------------------------------
 
