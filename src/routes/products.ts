@@ -215,6 +215,7 @@ router.get('/:slug', optionalUser, async (req: Request, res: Response) => {
 router.post(['/admin', '/'], requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const { name, category_id, description, notes, image_url, images, is_featured, is_active, sort_order } = req.body;
+    console.log('[SAVE-PRODUCT][create] category_id nhận =', JSON.stringify(category_id), 'kiểu:', typeof category_id, '-> categoryId =', category_id ? Number(category_id) : null);
     if (!name) { res.status(422).json({ detail: 'Tên sản phẩm không được để trống' }); return; }
     const slug = slugify(name, { lower: true, strict: true });
     const product = await prisma.product.create({
@@ -230,8 +231,10 @@ router.post(['/admin', '/'], requireStaffOrAdmin, async (req: Request, res: Resp
       },
       include: { category: true },
     });
+    console.log('[SAVE-PRODUCT][create] ĐÃ LƯU id =', product.id, 'categoryId =', product.categoryId, 'category =', product.category?.name ?? null);
     res.status(201).json(serializeProduct(product));
   } catch (e: any) {
+    console.error('[SAVE-PRODUCT][create] LỖI:', e?.code || '', e?.message);
     if (e.code === 'P2002') {
       res.status(400).json({ detail: 'Slug đã tồn tại' });
     } else {
@@ -260,9 +263,12 @@ router.patch(['/admin/:id', '/:id'], requireStaffOrAdmin, async (req: Request, r
     if (req.body.images !== undefined) {
       data.images = Array.isArray(req.body.images) ? req.body.images : null;
     }
+    console.log('[SAVE-PRODUCT][update] id =', id, '| category_id body =', JSON.stringify(req.body.category_id), 'kiểu:', typeof req.body.category_id, '| data.categoryId =', JSON.stringify(data.categoryId), '| có key categoryId?', 'categoryId' in data);
     const product = await prisma.product.update({ where: { id }, data, include: { category: true } });
+    console.log('[SAVE-PRODUCT][update] ĐÃ LƯU id =', product.id, 'categoryId =', product.categoryId, 'category =', product.category?.name ?? null);
     res.json(serializeProduct(product));
   } catch (e: any) {
+    console.error('[SAVE-PRODUCT][update] LỖI:', e?.code || '', e?.message);
     res.status(500).json({ detail: e.message });
   }
 });
