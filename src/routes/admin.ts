@@ -660,7 +660,7 @@ router.get('/admin/settings/public', async (_req: Request, res: Response) => {
 // Các nhóm cài đặt được lưu dưới dạng 1 row JSON mỗi nhóm (key = tên nhóm)
 const SETTINGS_GROUPS = [
   'settings_general', 'settings_appearance', 'settings_scripts', 'settings_images',
-  'settings_security', 'settings_captcha', 'settings_features', 'settings_loyalty',
+  'settings_security', 'settings_captcha', 'settings_features', 'settings_loyalty', 'settings_checkin',
 ];
 
 // Mirror sang key phẳng để phần còn lại của app (SEO, tiền tệ, thuế, ảnh, loyalty) đọc được
@@ -668,6 +668,7 @@ function flatMirror(payload: Record<string, any>): Record<string, string> {
   const g = payload.settings_general || {};
   const im = payload.settings_images || {};
   const lo = payload.settings_loyalty || {};
+  const ck = payload.settings_checkin || {};
   const out: Record<string, string> = {};
   const set = (k: string, v: any) => { if (v !== undefined && v !== null && v !== '') out[k] = String(v); };
   // General -> SEO/tiền/thuế
@@ -694,6 +695,9 @@ function flatMirror(payload: Record<string, any>): Record<string, string> {
   set('loyalty_redeem_value', lo.redeem_value);
   set('loyalty_min_redeem', lo.min_redeem);
   set('loyalty_max_percent', lo.max_percent);
+  // Điểm danh -> checkin_*
+  if (ck.enabled !== undefined) out['checkin_enabled'] = ck.enabled ? '1' : '0';
+  if (ck.rewards !== undefined) out['checkin_rewards'] = typeof ck.rewards === 'string' ? ck.rewards : JSON.stringify(ck.rewards);
   return out;
 }
 

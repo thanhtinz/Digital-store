@@ -168,6 +168,7 @@ export function useNavConfig() {
     subheader: t('support'),
     items: [
       { title: t('offers'), path: PATH_DASHBOARD.offers, icon: ICONS.label },
+      { title: t('rewards'), path: PATH_DASHBOARD.rewards, icon: ICONS.banking },
       { title: t('blog'), path: PATH_DASHBOARD.blog.posts, icon: ICONS.blog },
       { title: t('support'), path: PATH_DASHBOARD.support, icon: ICONS.chat },
     ],

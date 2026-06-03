@@ -236,6 +236,58 @@ model StockAlert {
   @@map("stock_alerts")
 }
 
+// Điểm danh hằng ngày nhận điểm thưởng.
+model Checkin {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  date      String   @db.VarChar(10) // YYYY-MM-DD (theo giờ VN)
+  points    Int      @default(0)
+  streak    Int      @default(1)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@map("checkins")
+}
+
+// Phần thưởng đổi điểm (sự kiện đổi thưởng).
+model RewardItem {
+  id            Int       @id @default(autoincrement())
+  name          String    @db.VarChar(255)
+  description   String?
+  imageUrl      String?   @map("image_url")
+  packageId     Int?      @map("package_id") // gói được giao khi đổi (tùy chọn)
+  pointsCost    Int       @map("points_cost")
+  stock         Int       @default(-1) // -1 = không giới hạn
+  redeemedCount Int       @default(0) @map("redeemed_count")
+  perUserLimit  Int       @default(0) @map("per_user_limit") // 0 = không giới hạn
+  startsAt      DateTime? @map("starts_at")
+  endsAt        DateTime? @map("ends_at")
+  isActive      Boolean   @default(true) @map("is_active")
+  sortOrder     Int       @default(0) @map("sort_order")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  redemptions RewardRedemption[]
+
+  @@map("reward_items")
+}
+
+model RewardRedemption {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @map("user_id")
+  rewardItemId Int      @map("reward_item_id")
+  pointsSpent  Int      @map("points_spent")
+  status       String   @default("completed") @db.VarChar(20)
+  deliveryData String?  @map("delivery_data")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  rewardItem RewardItem @relation(fields: [rewardItemId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([rewardItemId])
+  @@map("reward_redemptions")
+}
+
 model SiteSetting {
   key       String   @id @db.VarChar(255)
   value     String?

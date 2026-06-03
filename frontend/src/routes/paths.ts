@@ -82,6 +82,7 @@ export const PATH_DASHBOARD = {
     blog: path(ROOTS_DASHBOARD, '/admin/blog'),
     support: path(ROOTS_DASHBOARD, '/admin/support'),
     affiliate: path(ROOTS_DASHBOARD, '/admin/affiliate'),
+    rewards: path(ROOTS_DASHBOARD, '/admin/rewards'),
     integrations: path(ROOTS_DASHBOARD, '/admin/integrations'),
   },
   smm: {
@@ -93,6 +94,7 @@ export const PATH_DASHBOARD = {
   },
   support: path(ROOTS_DASHBOARD, '/support'),
   offers: path(ROOTS_DASHBOARD, '/offers'),
+  rewards: path(ROOTS_DASHBOARD, '/rewards'),
   user: {
     root: path(ROOTS_DASHBOARD, '/user'),
     new: path(ROOTS_DASHBOARD, '/user/new'),
