@@ -946,4 +946,165 @@ router.post('/admin/orders/check-all', requireAdmin, async (_req: Request, res: 
   }
 });
 
+// ════════════════════════════════════════════════════
+// ADMIN — IMPORT / SYNC từ provider (port từ Python)
+// ════════════════════════════════════════════════════
+
+/** Xem trước các chuyên mục provider cung cấp + đánh dấu đã tồn tại trên platform. */
+router.get('/providers/:pid/remote-categories', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const pid = parseInt(req.params.pid);
+    const platformId = parseInt(req.query.platform_id as string) || 0;
+    const provider = await prisma.apiProvider.findFirst({
+      where: { id: pid, providerType: 'smm_panel', isActive: true },
+    });
+    if (!provider) { res.status(404).json({ detail: 'Provider not found' }); return; }
+
+    let raw: any[];
+    try {
+      raw = await getProvider(provider).getServices();
+    } catch (e: any) {
+      res.status(502).json({ detail: `Lỗi gọi nguồn: ${e.message}` });
+      return;
+    }
+    const counts: Record<string, number> = {};
+    for (const s of raw) {
+      const cat = (s.category || 'Other').trim();
+      if (cat) counts[cat] = (counts[cat] || 0) + 1;
+    }
+    const existing = new Set<string>();
+    if (platformId) {
+      const rows = await prisma.smmCategory.findMany({
+        where: { platformId },
+        select: { slug: true },
+      });
+      rows.forEach((r) => existing.add(r.slug));
+    }
+    const categories = Object.entries(counts)
+      .map(([name, count]) => {
+        const slug = slugify(name, { lower: true, strict: true });
+        return { name, count, slug, exists: existing.has(slug) };
+      })
+      .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+    res.json({ provider_id: pid, platform_id: platformId, categories });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+/** Tạo các chuyên mục local từ provider (không kéo dịch vụ). */
+router.post('/categories/sync', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { provider_id, platform_id, category_names } = req.body;
+    const provider = await prisma.apiProvider.findFirst({
+      where: { id: provider_id, providerType: 'smm_panel', isActive: true },
+    });
+    if (!provider) { res.status(404).json({ detail: 'SMM provider not found or inactive' }); return; }
+    const platform = await prisma.smmPlatform.findUnique({ where: { id: platform_id } });
+    if (!platform) { res.status(404).json({ detail: 'Platform not found' }); return; }
+
+    let raw: any[];
+    try {
+      raw = await getProvider(provider).getServices();
+    } catch (e: any) {
+      res.status(502).json({ detail: `Lỗi gọi nguồn: ${e.message}` });
+      return;
+    }
+    const counts: Record<string, number> = {};
+    for (const s of raw) {
+      const cat = (s.category || 'Other').trim();
+      if (cat) counts[cat] = (counts[cat] || 0) + 1;
+    }
+    const selection = new Set<string>(category_names || []);
+    let created = 0;
+    let existed = 0;
+    for (const name of Object.keys(counts)) {
+      if (selection.size && !selection.has(name)) continue;
+      const slug = slugify(name, { lower: true, strict: true });
+      const exists = await prisma.smmCategory.findFirst({ where: { platformId: platform_id, slug } });
+      if (exists) { existed += 1; continue; }
+      await prisma.smmCategory.create({ data: { platformId: platform_id, name, slug } });
+      created += 1;
+    }
+    res.json({ ok: true, created, existed });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+/** Import các dịch vụ được chọn vào 1 chuyên mục local (áp tỷ giá + markup từ settings). */
+router.post('/services/sync-selected', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { provider_id, target_category_id, external_service_ids } = req.body;
+    const provider: any = await prisma.apiProvider.findFirst({
+      where: { id: provider_id, providerType: 'smm_panel', isActive: true },
+    });
+    if (!provider) { res.status(404).json({ detail: 'SMM provider not found or inactive' }); return; }
+    const target = await prisma.smmCategory.findUnique({ where: { id: target_category_id } });
+    if (!target) { res.status(404).json({ detail: 'Danh mục đích không tồn tại' }); return; }
+    if (!external_service_ids || !external_service_ids.length) {
+      res.status(400).json({ detail: 'Chưa chọn dịch vụ nào' });
+      return;
+    }
+
+    let raw: any[];
+    try {
+      raw = await getProvider(provider).getServices();
+    } catch (e: any) {
+      res.status(502).json({ detail: `Lỗi gọi nguồn: ${e.message}` });
+      return;
+    }
+
+    const settings = provider.settings || {};
+    const exchangeRate = parseFloat(settings.exchange_rate) || 1;
+    const priceMarkup = parseFloat(settings.price_markup) || 0;
+    const filterHtml = settings.filter_html !== false;
+    const stripHtml = (t: string) => (filterHtml && t ? t.replace(/<[^>]+>/g, '').trim() : t);
+    const cost = (r: any) => Math.round((parseFloat(r) || 0) * exchangeRate * 100) / 100;
+    const markup = (c: number) =>
+      priceMarkup > 0 ? Math.round(c * (1 + priceMarkup / 100) * 100) / 100 : Math.round(c * 100) / 100;
+
+    const wanted = new Set((external_service_ids || []).map((x: any) => parseInt(x)));
+    const selected = raw.filter((s) => wanted.has(parseInt(s.service)));
+
+    let created = 0;
+    let updated = 0;
+    for (const svc of selected) {
+      const extId = String(parseInt(svc.service));
+      const name = stripHtml(svc.name || `Service ${extId}`);
+      const desc = stripHtml(svc.description || svc.desc || '');
+      const costRate = cost(svc.rate);
+      const rate = markup(costRate);
+      const data = {
+        categoryId: target.id,
+        name,
+        description: desc,
+        rate,
+        costRate,
+        minQuantity: parseInt(svc.min) || 1,
+        maxQuantity: parseInt(svc.max) || 10000,
+        deliveryType: 'api',
+        apiProviderId: provider.id,
+        externalServiceId: extId,
+        canRefill: !!svc.refill,
+        canCancel: !!svc.cancel,
+        serviceType: svc.type || 'Default',
+      };
+      const existing = await prisma.smmService.findFirst({
+        where: { apiProviderId: provider.id, externalServiceId: extId },
+      });
+      if (existing) {
+        await prisma.smmService.update({ where: { id: existing.id }, data });
+        updated += 1;
+      } else {
+        await prisma.smmService.create({ data });
+        created += 1;
+      }
+    }
+    res.json({ ok: true, created, updated, selected: selected.length });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
 export default router;

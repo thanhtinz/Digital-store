@@ -39,6 +39,7 @@ export function useAdminNavConfig() {
       items: [
         { title: 'Sản phẩm', path: PATH_DASHBOARD.admin.products, icon: ICONS.ecommerce },
         { title: 'Danh mục', path: PATH_DASHBOARD.admin.categories, icon: ICONS.label },
+        { title: 'SMM Panel', path: PATH_DASHBOARD.admin.smm, icon: ICONS.cart },
       ],
     },
     {
