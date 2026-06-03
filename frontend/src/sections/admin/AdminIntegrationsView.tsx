@@ -1057,48 +1057,59 @@ function OAuthTab() {
         Tạo ứng dụng OAuth trên trang nhà cung cấp (Google Cloud Console, Facebook Developers, GitHub Developer
         Settings…), rồi dán <b>Redirect URI</b> tương ứng (ô bên dưới mỗi nhà cung cấp) vào phần Authorized redirect URIs.
       </Alert>
-      <Grid container spacing={3}>
+      <Box
+        sx={{
+          display: 'grid',
+          gap: 3,
+          gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' },
+        }}
+      >
         {providers.map((prov) => {
           const p = cfg[prov] || {};
           const redirect = `${base}/api/auth/${prov}/callback`;
+          const testLogin = () => {
+            const url = `${base || window.location.origin}/api/auth/${prov}`;
+            window.open(url, '_blank', 'noopener,width=520,height=640');
+          };
           return (
-            <Grid item xs={12} md={6} key={prov}>
-              <Card sx={{ height: 1, display: 'flex', flexDirection: 'column' }}>
-                <CardHeader
-                  title={prov.charAt(0).toUpperCase() + prov.slice(1)}
-                  action={
-                    <Switch
-                      checked={!!p.enabled}
-                      onChange={(e) => setCfg({ ...cfg, [prov]: { ...p, enabled: e.target.checked } })}
-                    />
-                  }
-                />
-                <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                  <Stack spacing={2} sx={{ flexGrow: 1 }}>
-                    <TextField label="Client ID" size="small" value={p.clientId || ''} onChange={(e) => setCfg({ ...cfg, [prov]: { ...p, clientId: e.target.value } })} />
-                    <TextField label="Client Secret" size="small" placeholder={p.hasSecret ? '•••• (đã lưu)' : ''} onChange={(e) => setCfg({ ...cfg, [prov]: { ...p, clientSecret: e.target.value } })} />
-                    <Divider />
-                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                      Dán URI này vào "Authorized redirect URIs" của nhà cung cấp
-                    </Typography>
-                    <CopyField label="Redirect URI" value={redirect} />
-                  </Stack>
-                  <Button variant="contained" size="small" onClick={() => saveProvider(prov)} disabled={saving === prov} sx={{ mt: 2, alignSelf: 'flex-start' }}>
+            <Card key={prov} sx={{ height: 1, display: 'flex', flexDirection: 'column' }}>
+              <CardHeader
+                title={prov.charAt(0).toUpperCase() + prov.slice(1)}
+                action={
+                  <Switch
+                    checked={!!p.enabled}
+                    onChange={(e) => setCfg({ ...cfg, [prov]: { ...p, enabled: e.target.checked } })}
+                  />
+                }
+              />
+              <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                <Stack spacing={2} sx={{ flexGrow: 1 }}>
+                  <TextField label="Client ID" size="small" value={p.clientId || ''} onChange={(e) => setCfg({ ...cfg, [prov]: { ...p, clientId: e.target.value } })} />
+                  <TextField label="Client Secret" size="small" placeholder={p.hasSecret ? '•••• (đã lưu)' : ''} onChange={(e) => setCfg({ ...cfg, [prov]: { ...p, clientSecret: e.target.value } })} />
+                  <Divider />
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    Dán URI này vào "Authorized redirect URIs" của nhà cung cấp
+                  </Typography>
+                  <CopyField label="Redirect URI" value={redirect} />
+                </Stack>
+                <Stack direction="row" spacing={1.5} sx={{ mt: 2 }}>
+                  <Button variant="contained" size="small" onClick={() => saveProvider(prov)} disabled={saving === prov}>
                     Lưu
                   </Button>
-                </CardContent>
-              </Card>
-            </Grid>
+                  <Button variant="outlined" size="small" color="inherit" onClick={testLogin} startIcon={<Iconify icon="solar:login-3-bold" />}>
+                    Test
+                  </Button>
+                </Stack>
+              </CardContent>
+            </Card>
           );
         })}
         {!providers.length && (
-          <Grid item xs={12}>
-            <Typography align="center" sx={{ color: 'text.secondary', py: 4 }}>
-              Không có provider OAuth
-            </Typography>
-          </Grid>
+          <Typography align="center" sx={{ color: 'text.secondary', py: 4, gridColumn: '1 / -1' }}>
+            Không có provider OAuth
+          </Typography>
         )}
-      </Grid>
+      </Box>
     </Stack>
   );
 }
