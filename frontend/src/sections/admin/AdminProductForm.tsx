@@ -96,6 +96,17 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
     reset(defaultValues);
   }, [defaultValues, reset]);
 
+  // Chẩn đoán: khi categories đổi (tải xong) hoặc mở form, in trạng thái thật.
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log('[CAT-FORM]', {
+      categoriesCount: categories.length,
+      currentCategoryId: current?.categoryId ?? null,
+      formValue: values.category_id,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categories.length, current]);
+
   const aiGenerate = async () => {
     if (!values.name?.trim()) {
       enqueueSnackbar('Nhập tên sản phẩm trước', { variant: 'warning' });
@@ -213,7 +224,7 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
           <Stack spacing={3}>
             <Card sx={{ p: 3 }}>
               <Stack spacing={3}>
-                <RHFSelect name="category_id" label="Danh mục">
+                <RHFSelect key={`cat-${categories.length}`} name="category_id" label="Danh mục">
                   <MenuItem value="">— Không —</MenuItem>
                   {categories.map((c) => (
                     <MenuItem key={c.id} value={String(c.id)}>

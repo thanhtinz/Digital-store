@@ -39,6 +39,8 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { store } from '../redux/store';
 // utils
 import createEmotionCache from '../utils/createEmotionCache';
+// build marker + baseURL (chẩn đoán phiên bản frontend đang chạy)
+import { HOST_API_KEY } from '../config-global';
 // theme
 import ThemeProvider from '../theme';
 // locales
@@ -81,6 +83,9 @@ export default function MyApp(props: MyAppProps) {
   // (lý do các thay đổi frontend "không hiện" dù backend đã cập nhật).
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    // Marker: lộ rõ frontend đang chạy là build nào + backend thật đang gọi.
+    // eslint-disable-next-line no-console
+    console.log('[BUILD]', process.env.NEXT_PUBLIC_BUILD_ID || 'dev', '| [API baseURL]', HOST_API_KEY || '(same-origin)');
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
         .getRegistrations()

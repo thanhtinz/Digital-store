@@ -30,6 +30,12 @@ COPY frontend/ ./
 ENV NEXT_TELEMETRY_DISABLED=1
 # Rỗng -> axios dùng đường dẫn tương đối (same-origin). /api proxy nội bộ.
 ENV NEXT_PUBLIC_HOST_API=
+# Dấu mốc build + ÉP rebuild frontend mỗi commit: Railway tự cấp RAILWAY_GIT_COMMIT_SHA
+# lúc build; layer build phụ thuộc biến này nên mỗi commit là cache-miss (frontend
+# chắc chắn build lại). /build-info.json giúp kiểm tra phiên bản frontend đang chạy.
+ARG RAILWAY_GIT_COMMIT_SHA=dev
+ENV NEXT_PUBLIC_BUILD_ID=$RAILWAY_GIT_COMMIT_SHA
+RUN echo "{\"buildId\":\"$RAILWAY_GIT_COMMIT_SHA\",\"builtAt\":\"$(date -u +%FT%TZ)\"}" > public/build-info.json
 RUN npm run build
 
 # ---------- 3) Runtime ----------
