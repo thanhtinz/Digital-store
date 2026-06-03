@@ -160,23 +160,9 @@ export default function SmmOrderView() {
 
   return (
     <Container sx={{ pb: 6 }}>
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        flexWrap="wrap"
-        sx={{ my: 3, gap: 1 }}
-      >
-        <Typography variant="h4">Đặt đơn dịch vụ</Typography>
-        {isAuthenticated && (
-          <Chip
-            color="primary"
-            variant="soft"
-            icon={<Iconify icon="solar:wallet-money-bold-duotone" />}
-            label={`Số dư: ${balance == null ? '…' : fCurrency(balance)}`}
-          />
-        )}
-      </Stack>
+      <Typography variant="h4" sx={{ my: 3 }}>
+        Đặt đơn dịch vụ
+      </Typography>
 
       <Card sx={{ p: 3, maxWidth: 640 }}>
         <Stack spacing={2.5}>
@@ -328,7 +314,7 @@ export default function SmmOrderView() {
 
               {insufficient && (
                 <Alert severity="warning">
-                  Số dư không đủ. Cần {fCurrency(estimate)}, hiện có {fCurrency(balance || 0)}. Vui lòng nạp thêm.
+                  Số dư không đủ (cần {fCurrency(estimate)}). Vui lòng nạp thêm.
                 </Alert>
               )}
 

@@ -14,7 +14,6 @@ import Iconify from '../../../components/iconify';
 import { useSettingsContext } from '../../../components/settings';
 //
 import ProductSearchbar from './ProductSearchbar';
-import BalanceButton from './BalanceButton';
 import AccountPopover from './AccountPopover';
 import LanguagePopover from './LanguagePopover';
 import NotificationsPopover from './NotificationsPopover';
@@ -58,8 +57,6 @@ export default function Header({ onOpenNav }: Props) {
         flexShrink={0}
         spacing={{ xs: 0.25, sm: 1 }}
       >
-        <BalanceButton />
-
         <LanguagePopover />
 
         <NotificationsPopover />

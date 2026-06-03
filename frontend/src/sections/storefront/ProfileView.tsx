@@ -58,10 +58,10 @@ export default function ProfileView() {
   const { user } = useAuthContext();
   const { translate } = useLocales();
 
-  // Số dư hiển thị NGAY từ thông tin user (tránh nhấp nháy "load rồi mất").
+  // Số dư hiển thị NGAY từ thông tin user; nếu chưa có thì mặc định 0 (luôn hiện).
   const initialBalance = Number((user as any)?.balance);
-  const [balance, setBalance] = useState<number | null>(
-    Number.isFinite(initialBalance) ? initialBalance : null
+  const [balance, setBalance] = useState<number>(
+    Number.isFinite(initialBalance) ? initialBalance : 0
   );
   const [txs, setTxs] = useState<Tx[]>([]);
   const [orders, setOrders] = useState<OrderLite[]>([]);
@@ -168,7 +168,8 @@ export default function ProfileView() {
               <Typography variant="body2">{`${translate('account_page.available_balance')}`}</Typography>
             </Stack>
             <Typography variant="h3" sx={{ mt: 1 }}>
-              {balance == null ? <Skeleton width={140} sx={{ bgcolor: 'rgba(255,255,255,.3)' }} /> : fCurrency(balance)}
+              {/* fCurrency(0) trả rỗng -> fallback hiển thị 0 cho khớp định dạng */}
+              {balance > 0 ? fCurrency(balance) : '$0.00'}
             </Typography>
             <Button
               fullWidth
