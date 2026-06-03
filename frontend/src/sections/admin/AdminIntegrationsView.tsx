@@ -1063,7 +1063,7 @@ function OAuthTab() {
           const redirect = `${base}/api/auth/${prov}/callback`;
           return (
             <Grid item xs={12} md={6} key={prov}>
-              <Card>
+              <Card sx={{ height: 1, display: 'flex', flexDirection: 'column' }}>
                 <CardHeader
                   title={prov.charAt(0).toUpperCase() + prov.slice(1)}
                   action={
@@ -1073,8 +1073,8 @@ function OAuthTab() {
                     />
                   }
                 />
-                <CardContent>
-                  <Stack spacing={2}>
+                <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                  <Stack spacing={2} sx={{ flexGrow: 1 }}>
                     <TextField label="Client ID" size="small" value={p.clientId || ''} onChange={(e) => setCfg({ ...cfg, [prov]: { ...p, clientId: e.target.value } })} />
                     <TextField label="Client Secret" size="small" placeholder={p.hasSecret ? '•••• (đã lưu)' : ''} onChange={(e) => setCfg({ ...cfg, [prov]: { ...p, clientSecret: e.target.value } })} />
                     <Divider />
@@ -1082,10 +1082,10 @@ function OAuthTab() {
                       Redirect URI (dán vào nhà cung cấp):
                     </Typography>
                     <CopyField label="Redirect URI" value={redirect} />
-                    <Button variant="contained" size="small" onClick={() => saveProvider(prov)} disabled={saving === prov}>
-                      Lưu
-                    </Button>
                   </Stack>
+                  <Button variant="contained" size="small" onClick={() => saveProvider(prov)} disabled={saving === prov} sx={{ mt: 2, alignSelf: 'flex-start' }}>
+                    Lưu
+                  </Button>
                 </CardContent>
               </Card>
             </Grid>

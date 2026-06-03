@@ -402,6 +402,12 @@ router.post('/admin/:order_code/deliver', requireStaffOrAdmin, async (req: Reque
       data: { status: 'completed', deliveryData: delivery_data || order.deliveryData },
     });
     await prisma.orderItem.updateMany({ where: { orderId: order.id }, data: { status: 'completed' } });
+    createNotification(order.userId, {
+      type: 'order',
+      title: `Đơn ${order.orderCode} đã được giao`,
+      body: 'Xem thông tin đã giao trong chi tiết đơn hàng',
+      link: `/orders/${order.orderCode}`,
+    }).catch(() => {});
     res.json({ message: 'Đã giao hàng', status: updated.status });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });

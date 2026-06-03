@@ -607,6 +607,25 @@ function AnnounceTab() {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<typeof ANNOUNCE_EMPTY | null>(null);
   const [toDelete, setToDelete] = useState<any>(null);
+  const [bc, setBc] = useState<{ title: string; body: string } | null>(null);
+  const [sending, setSending] = useState(false);
+
+  const broadcast = async () => {
+    if (!bc?.title.trim()) {
+      err({}, 'Nhập tiêu đề');
+      return;
+    }
+    setSending(true);
+    try {
+      const r = await axiosInstance.post('/api/admin/notifications/broadcast', { title: bc.title, body: bc.body, type: 'system' });
+      ok(`Đã gửi tới ${r.data?.sent ?? 0} người dùng`);
+      setBc(null);
+    } catch (e) {
+      err(e);
+    } finally {
+      setSending(false);
+    }
+  };
 
   const load = useCallback(() => {
     setLoading(true);
@@ -647,7 +666,10 @@ function AnnounceTab() {
   if (loading) return <Loading />;
   return (
     <Card>
-      <Stack direction="row" justifyContent="flex-end" sx={{ p: 2 }}>
+      <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ p: 2 }}>
+        <Button color="inherit" startIcon={<Iconify icon="solar:bell-bing-bold" />} onClick={() => setBc({ title: '', body: '' })}>
+          Gửi chuông tới tất cả
+        </Button>
         <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => setForm({ ...ANNOUNCE_EMPTY })}>
           Thêm thông báo
         </Button>
@@ -726,6 +748,26 @@ function AnnounceTab() {
           </Button>
           <Button variant="contained" onClick={save}>
             Lưu
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={!!bc} onClose={() => setBc(null)} fullWidth maxWidth="sm">
+        <DialogTitle>Gửi thông báo chuông tới tất cả người dùng</DialogTitle>
+        <DialogContent>
+          {bc && (
+            <Stack spacing={2.5} sx={{ mt: 1 }}>
+              <TextField label="Tiêu đề" value={bc.title} onChange={(e) => setBc({ ...bc, title: e.target.value })} autoFocus />
+              <TextField label="Nội dung" multiline rows={3} value={bc.body} onChange={(e) => setBc({ ...bc, body: e.target.value })} />
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button color="inherit" onClick={() => setBc(null)}>
+            Huỷ
+          </Button>
+          <Button variant="contained" onClick={broadcast} disabled={sending} startIcon={<Iconify icon="solar:plain-bold" />}>
+            Gửi
           </Button>
         </DialogActions>
       </Dialog>

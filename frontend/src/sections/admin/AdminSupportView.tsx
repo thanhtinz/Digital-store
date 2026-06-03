@@ -29,7 +29,6 @@ import {
 } from '@mui/material';
 // utils
 import axiosInstance from '../../utils/axios';
-import { fCurrency } from '../../utils/formatNumber';
 // components
 import Label from '../../components/label';
 import Iconify from '../../components/iconify';
@@ -56,16 +55,14 @@ export default function AdminSupportView() {
   return (
     <Container maxWidth="lg" sx={{ pb: 8 }}>
       <Typography variant="h4" sx={{ my: 3 }}>
-        Hỗ trợ & Tài chính
+        Hỗ trợ & Đánh giá
       </Typography>
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
         <Tab value="tickets" label="Ticket hỗ trợ" icon={<Iconify icon="solar:chat-round-dots-bold" />} iconPosition="start" />
         <Tab value="reviews" label="Đánh giá" icon={<Iconify icon="solar:star-bold" />} iconPosition="start" />
-        <Tab value="withdrawals" label="Duyệt rút tiền" icon={<Iconify icon="solar:wallet-money-bold" />} iconPosition="start" />
       </Tabs>
       {tab === 'tickets' && <TicketsTab />}
       {tab === 'reviews' && <ReviewsTab />}
-      {tab === 'withdrawals' && <WithdrawalsTab />}
     </Container>
   );
 }
@@ -357,97 +354,3 @@ function ReviewsTab() {
   );
 }
 
-// ----------------------------------------------------------------------
-// WITHDRAWALS
-
-function WithdrawalsTab() {
-  const { ok, err } = useSnack();
-  const [rows, setRows] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState('pending');
-
-  const load = useCallback(() => {
-    setLoading(true);
-    axiosInstance
-      .get('/api/balance/admin/withdrawals', { params: { status } })
-      .then((r) => setRows(r.data?.items || []))
-      .catch(err)
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status]);
-  useEffect(() => load(), [load]);
-
-  const act = async (id: number, action: 'approve' | 'reject') => {
-    try {
-      await axiosInstance.post(`/api/balance/admin/withdrawals/${id}/${action}`);
-      ok(action === 'approve' ? 'Đã duyệt' : 'Đã từ chối');
-      load();
-    } catch (e) {
-      err(e);
-    }
-  };
-
-  return (
-    <Card>
-      <Stack direction="row" sx={{ p: 2 }}>
-        <TextField select size="small" label="Trạng thái" sx={{ minWidth: 180 }} value={status} onChange={(e) => setStatus(e.target.value)}>
-          <MenuItem value="pending">Chờ duyệt</MenuItem>
-          <MenuItem value="completed">Đã duyệt</MenuItem>
-          <MenuItem value="failed">Từ chối</MenuItem>
-        </TextField>
-      </Stack>
-      {loading ? (
-        <Loading />
-      ) : (
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Người dùng</TableCell>
-                <TableCell align="right">Số tiền</TableCell>
-                <TableCell>Thời gian</TableCell>
-                <TableCell align="center">Trạng thái</TableCell>
-                <TableCell align="right">Thao tác</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {rows.map((w) => (
-                <TableRow key={w.id} hover>
-                  <TableCell>{w.user_email}</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 600 }}>
-                    {fCurrency(w.amount)}
-                  </TableCell>
-                  <TableCell sx={{ fontSize: 13 }}>{w.created_at ? new Date(w.created_at).toLocaleString('vi-VN') : '-'}</TableCell>
-                  <TableCell align="center">
-                    <Label color={(w.status === 'completed' && 'success') || (w.status === 'failed' && 'error') || 'warning'}>{w.status}</Label>
-                  </TableCell>
-                  <TableCell align="right">
-                    {w.status === 'pending' ? (
-                      <Stack direction="row" spacing={1} justifyContent="flex-end">
-                        <IconButton color="success" title="Duyệt" onClick={() => act(w.id, 'approve')}>
-                          <Iconify icon="solar:check-circle-bold" />
-                        </IconButton>
-                        <IconButton color="error" title="Từ chối" onClick={() => act(w.id, 'reject')}>
-                          <Iconify icon="solar:close-circle-bold" />
-                        </IconButton>
-                      </Stack>
-                    ) : (
-                      '—'
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {!rows.length && (
-                <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 6, color: 'text.secondary' }}>
-                    Không có yêu cầu
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
-    </Card>
-  );
-}

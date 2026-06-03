@@ -47,7 +47,8 @@ export function useAdminNavConfig() {
     {
       subheader: 'Vận hành',
       items: [
-        { title: 'Hỗ trợ & Tài chính', path: PATH_DASHBOARD.admin.support, icon: ICONS.banking },
+        { title: 'Hỗ trợ & Đánh giá', path: PATH_DASHBOARD.admin.support, icon: ICONS.banking },
+        { title: 'Giới thiệu bạn bè', path: PATH_DASHBOARD.admin.affiliate, icon: ICONS.user },
       ],
     },
     {

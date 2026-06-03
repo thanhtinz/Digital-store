@@ -68,8 +68,15 @@ router.post('/register', requireUser, async (req: Request, res: Response) => {
     while (await prisma.affiliateUser.findUnique({ where: { refCode } })) {
       refCode = genRefCode();
     }
+    const cfg = await prisma.siteConfig.findUnique({ where: { key: 'affiliate_commission_rate' } });
+    const defaultRate = cfg?.value ? parseFloat(cfg.value) : undefined;
     const aff = await prisma.affiliateUser.create({
-      data: { userId: String(user.user_id), email: user.email, refCode },
+      data: {
+        userId: String(user.user_id),
+        email: user.email,
+        refCode,
+        ...(defaultRate != null && !Number.isNaN(defaultRate) ? { commissionRate: defaultRate } : {}),
+      },
     });
     res.json(affToDict(aff));
   } catch (e: any) {

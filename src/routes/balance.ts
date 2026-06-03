@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import prisma from '../db';
 import { notifyWithdrawal } from '../services/telegram';
+import { createNotification } from '../services/notify';
 import { requireUser, requireAdmin } from '../middleware/auth';
 import { money } from '../services/orders';
 
@@ -167,6 +168,12 @@ router.post('/card-charge/callback', async (req: Request, res: Response) => {
           data: { balanceTransactionId: balTx.id },
         });
       });
+      createNotification(tx.userId, {
+        type: 'payment',
+        title: `Nạp thẻ thành công +${creditAmount.toLocaleString()}đ`,
+        body: `Thẻ ${tx.telco} đã được cộng vào số dư`,
+        link: '/wallet/history',
+      }).catch(() => {});
     } else {
       await prisma.cardChargeTransaction.updateMany({
         where: { id: tx.id, status: 'pending' },

@@ -292,6 +292,28 @@ router.post(['/admin/users/:id/reset-password'], requireAdmin, async (req: Reque
   }
 });
 
+/** Admin: gửi thông báo hệ thống tới TẤT CẢ người dùng (chuông trong app). */
+router.post('/admin/notifications/broadcast', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { title, body, type, link } = req.body;
+    if (!title || !String(title).trim()) { res.status(422).json({ detail: 'Thiếu tiêu đề' }); return; }
+    const users = await prisma.user.findMany({ where: { isActive: true }, select: { id: true } });
+    if (!users.length) { res.json({ ok: true, sent: 0 }); return; }
+    await prisma.notification.createMany({
+      data: users.map((u: any) => ({
+        userId: u.id,
+        type: type || 'system',
+        title: String(title).slice(0, 255),
+        body: body ? String(body) : null,
+        link: link || null,
+      })),
+    });
+    res.json({ ok: true, sent: users.length });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
 // ════════════════════════════════════════════════════
 // DASHBOARD STATS
 // ════════════════════════════════════════════════════
