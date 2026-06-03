@@ -15,6 +15,9 @@ import {
 } from '@mui/material';
 // locales
 import { useLocales } from '../../locales';
+// redux
+import { useDispatch } from '../../redux/store';
+import { addToCart, resetCart, gotoStep } from '../../redux/slices/product';
 // utils
 import axiosInstance from '../../utils/axios';
 import { fCurrency } from '../../utils/formatNumber';
@@ -62,6 +65,61 @@ function deliveryToText(data: any): string {
 
 // ----------------------------------------------------------------------
 
+// Timeline trạng thái đơn (hàng số): Đặt hàng → Thanh toán → Hoàn tất.
+function OrderTimeline({ status }: { status: string }) {
+  const failed = ['cancelled', 'expired', 'failed'].includes(status);
+  const steps = ['Đặt hàng', 'Thanh toán', 'Hoàn tất'];
+  const activeIndex = status === 'completed' ? 2 : status === 'paid' ? 1 : 0;
+
+  if (failed) {
+    return (
+      <Card sx={{ p: 2.5, mb: 3, bgcolor: 'error.lighter' }}>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Iconify icon="solar:close-circle-bold" width={22} sx={{ color: 'error.main' }} />
+          <Typography variant="subtitle2" color="error.darker">
+            Đơn đã huỷ / thất bại
+          </Typography>
+        </Stack>
+      </Card>
+    );
+  }
+
+  return (
+    <Card sx={{ p: 2.5, mb: 3 }}>
+      <Stack direction="row" alignItems="center">
+        {steps.map((label, i) => {
+          const done = i <= activeIndex;
+          return (
+            <Stack key={label} direction="row" alignItems="center" sx={{ flex: i < steps.length - 1 ? 1 : 'unset' }}>
+              <Stack alignItems="center" spacing={0.5}>
+                <Box
+                  sx={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: '50%',
+                    display: 'grid',
+                    placeItems: 'center',
+                    color: done ? 'common.white' : 'text.disabled',
+                    bgcolor: done ? 'primary.main' : 'background.neutral',
+                  }}
+                >
+                  <Iconify icon={done ? 'eva:checkmark-fill' : 'eva:radio-button-off-fill'} width={16} />
+                </Box>
+                <Typography variant="caption" sx={{ color: done ? 'text.primary' : 'text.disabled', whiteSpace: 'nowrap' }}>
+                  {label}
+                </Typography>
+              </Stack>
+              {i < steps.length - 1 && (
+                <Box sx={{ flex: 1, height: 2, mx: 1, mb: 2.5, bgcolor: i < activeIndex ? 'primary.main' : 'divider' }} />
+              )}
+            </Stack>
+          );
+        })}
+      </Stack>
+    </Card>
+  );
+}
+
 export default function OrderDetailView() {
   const { query, push } = useRouter();
   const code = query.code as string;
@@ -75,6 +133,8 @@ export default function OrderDetailView() {
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [acting, setActing] = useState(false);
+  const dispatch = useDispatch();
 
   const fetchOrder = () => {
     if (!code) return;
@@ -93,6 +153,54 @@ export default function OrderDetailView() {
   const handleCopy = (text: string) => {
     navigator.clipboard?.writeText(text);
     enqueueSnackbar(t('copied'));
+  };
+
+  // Huỷ đơn đang chờ (hoàn tiền vào số dư nếu đã trừ).
+  const handleCancel = async () => {
+    if (!order) return;
+    // eslint-disable-next-line no-alert
+    if (!window.confirm(`Huỷ đơn ${order.orderCode}?`)) return;
+    setActing(true);
+    try {
+      await axiosInstance.post(`/api/orders/my/${order.orderCode}/cancel`);
+      enqueueSnackbar('Đã huỷ đơn');
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event('balance:refresh'));
+      fetchOrder();
+    } catch (e: any) {
+      enqueueSnackbar(e?.detail || 'Huỷ đơn thất bại', { variant: 'error' });
+    } finally {
+      setActing(false);
+    }
+  };
+
+  // Mua lại: nạp các gói của đơn vào giỏ rồi sang thanh toán.
+  const handleReorder = () => {
+    if (!order) return;
+    const src =
+      order.items && order.items.length
+        ? order.items
+        : [{ id: order.id, packageId: (order as any).packageId, productName: (order as any).productName, packageName: (order as any).packageName, unitPrice: order.totalAmount, quantity: (order as any).quantity || 1 } as any];
+    const cover = (order as any).productImg || '';
+    dispatch(resetCart());
+    src.forEach((it: any) => {
+      if (!it.packageId) return;
+      dispatch(
+        addToCart({
+          id: String(it.packageId),
+          name: it.productName || order.orderCode,
+          cover,
+          available: 999,
+          price: Number(it.unitPrice) || 0,
+          colors: [],
+          size: it.packageName || '',
+          quantity: it.quantity || 1,
+          packageId: String(it.packageId),
+          subtotal: (Number(it.unitPrice) || 0) * (it.quantity || 1),
+        } as any)
+      );
+    });
+    dispatch(gotoStep(0));
+    push(PATH_DASHBOARD.eCommerce.checkout);
   };
 
   if (loading) {
@@ -146,6 +254,8 @@ export default function OrderDetailView() {
               {fDateTime(order.createdAt)}
             </Typography>
           </Card>
+
+          <OrderTimeline status={order.status} />
 
           <Card sx={{ p: 3, mb: 3 }}>
             <Typography variant="subtitle1" sx={{ mb: 2 }}>
@@ -244,16 +354,27 @@ export default function OrderDetailView() {
                 <Button fullWidth variant="outlined" onClick={fetchOrder}>
                   {t('refresh_status')}
                 </Button>
+                <Button fullWidth color="error" variant="text" disabled={acting} onClick={handleCancel}>
+                  Huỷ đơn
+                </Button>
               </Stack>
             ) : (
-              <Stack spacing={1} alignItems="center" sx={{ py: 2 }}>
+              <Stack spacing={1.5} alignItems="center" sx={{ py: 2 }}>
                 <Iconify
                   icon={isCompleted ? 'eva:checkmark-circle-2-fill' : 'eva:info-fill'}
                   width={48}
                   color={isCompleted ? 'success.main' : 'text.disabled'}
                 />
                 <Typography variant="subtitle1">{statusLabel(order.status)}</Typography>
-                <Button onClick={() => push(PATH_DASHBOARD.orders.root)} size="small">
+                <Button
+                  fullWidth
+                  variant="contained"
+                  startIcon={<Iconify icon="solar:cart-plus-bold" />}
+                  onClick={handleReorder}
+                >
+                  Mua lại
+                </Button>
+                <Button onClick={() => push(PATH_DASHBOARD.orders.root)} size="small" color="inherit">
                   {t('back_to_orders')}
                 </Button>
               </Stack>
