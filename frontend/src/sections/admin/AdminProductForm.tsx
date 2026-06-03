@@ -10,6 +10,7 @@ import {
   Button,
   Card,
   Grid,
+  MenuItem,
   Stack,
   Typography,
   IconButton,
@@ -192,14 +193,19 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
           <Stack spacing={3}>
             <Card sx={{ p: 3 }}>
               <Stack spacing={3}>
-                <RHFSelect native name="category_id" label="Danh mục">
-                  <option value="">— Không —</option>
+                <RHFSelect name="category_id" label="Danh mục">
+                  <MenuItem value="">— Không —</MenuItem>
                   {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
+                    <MenuItem key={c.id} value={String(c.id)}>
                       {c.name}
-                    </option>
+                    </MenuItem>
                   ))}
                 </RHFSelect>
+                {categories.length === 0 && (
+                  <Typography variant="caption" sx={{ color: 'warning.main' }}>
+                    Chưa có danh mục nào. Hãy tạo danh mục ở mục “Danh mục” trước.
+                  </Typography>
+                )}
               </Stack>
             </Card>
 
