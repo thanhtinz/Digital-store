@@ -535,9 +535,11 @@ function PaymentTab() {
   const [cfg, setCfg] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [hist, setHist] = useState<any>(null);
 
   useEffect(() => {
     axiosInstance.get('/api/admin/payment/config').then((r) => setCfg(r.data)).catch(err).finally(() => setLoading(false));
+    axiosInstance.get('/api/admin/payment/history', { params: { limit: 50 } }).then((r) => setHist(r.data)).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -602,6 +604,68 @@ function PaymentTab() {
           </Stack>
         </CardContent>
       </Card>
+
+      {hist && (
+        <Card>
+          <CardHeader title="Lịch sử giao dịch SePay" />
+          <CardContent>
+            <Grid container spacing={2} sx={{ mb: 2 }}>
+              {[
+                { label: 'Doanh thu', value: `${(hist.stats?.total_revenue || 0).toLocaleString('vi-VN')}đ`, color: 'success.main' },
+                { label: 'Đã thanh toán', value: hist.stats?.paid || 0 },
+                { label: 'Hoàn tất', value: hist.stats?.completed || 0 },
+                { label: 'Chờ', value: hist.stats?.pending || 0 },
+              ].map((s) => (
+                <Grid item xs={6} sm={3} key={s.label}>
+                  <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: 'background.neutral', textAlign: 'center' }}>
+                    <Typography variant="h6" sx={{ color: (s as any).color }}>
+                      {s.value}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      {s.label}
+                    </Typography>
+                  </Box>
+                </Grid>
+              ))}
+            </Grid>
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Mã đơn</TableCell>
+                    <TableCell>Khách</TableCell>
+                    <TableCell align="right">Số tiền</TableCell>
+                    <TableCell align="center">Trạng thái</TableCell>
+                    <TableCell>Thời gian</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {(hist.items || []).map((it: any, i: number) => (
+                    <TableRow key={i} hover>
+                      <TableCell sx={{ fontSize: 13 }}>{it.order_code}</TableCell>
+                      <TableCell sx={{ fontSize: 13 }}>{it.user_email}</TableCell>
+                      <TableCell align="right">{(it.amount || 0).toLocaleString('vi-VN')}đ</TableCell>
+                      <TableCell align="center">
+                        <Label color={(it.status === 'paid' || it.status === 'completed') ? 'success' : it.status === 'pending' ? 'warning' : 'default'}>
+                          {it.status}
+                        </Label>
+                      </TableCell>
+                      <TableCell sx={{ fontSize: 13 }}>{it.created_at ? new Date(it.created_at).toLocaleString('vi-VN') : '-'}</TableCell>
+                    </TableRow>
+                  ))}
+                  {!(hist.items || []).length && (
+                    <TableRow>
+                      <TableCell colSpan={5} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                        Chưa có giao dịch
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
+      )}
     </Stack>
   );
 }
