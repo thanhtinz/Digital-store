@@ -63,6 +63,9 @@ export const PATH_DASHBOARD = {
     root: path(ROOTS_DASHBOARD, '/orders'),
     view: (code: string) => path(ROOTS_DASHBOARD, `/orders/${code}`),
   },
+  wallet: {
+    topup: path(ROOTS_DASHBOARD, '/wallet/topup'),
+  },
   smm: {
     root: path(ROOTS_DASHBOARD, '/smm'),
     order: path(ROOTS_DASHBOARD, '/smm/order'),

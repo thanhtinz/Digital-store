@@ -44,7 +44,7 @@ export default function BalanceButton() {
   return (
     <Button
       component={NextLink}
-      href={PATH_DASHBOARD.chat.root}
+      href={PATH_DASHBOARD.wallet.topup}
       size="small"
       color="primary"
       variant="soft"

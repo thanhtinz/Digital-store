@@ -9,9 +9,10 @@ export function fNumber(number: InputValue) {
 }
 
 export function fCurrency(number: InputValue) {
-  const format = number ? numeral(number).format('$0,0.00') : '';
-
-  return result(format, '.00');
+  // Mặc định tiền tệ VNĐ: '1.000.000 ₫'. Luôn hiển thị 0 thay vì rỗng.
+  const num = Number(number);
+  const safe = Number.isFinite(num) ? num : 0;
+  return `${numeral(safe).format('0,0').replace(/,/g, '.')} ₫`;
 }
 
 export function fPercent(number: InputValue) {

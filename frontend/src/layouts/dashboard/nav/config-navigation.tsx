@@ -24,6 +24,7 @@ const ICONS = {
   menu: icon('ic_menu_item'),
   label: icon('ic_label'),
   external: icon('ic_external'),
+  banking: icon('ic_banking'),
 };
 
 // ----------------------------------------------------------------------
@@ -166,6 +167,7 @@ export function useNavConfig() {
   const support = {
     subheader: t('support'),
     items: [
+      { title: t('topup'), path: PATH_DASHBOARD.wallet.topup, icon: ICONS.banking },
       { title: t('offers'), path: PATH_DASHBOARD.offers, icon: ICONS.label },
       { title: t('blog'), path: PATH_DASHBOARD.blog.posts, icon: ICONS.blog },
       { title: t('support'), path: PATH_DASHBOARD.support, icon: ICONS.chat },

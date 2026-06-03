@@ -168,8 +168,7 @@ export default function ProfileView() {
               <Typography variant="body2">{`${translate('account_page.available_balance')}`}</Typography>
             </Stack>
             <Typography variant="h3" sx={{ mt: 1 }}>
-              {/* fCurrency(0) trả rỗng -> fallback hiển thị 0 cho khớp định dạng */}
-              {balance > 0 ? fCurrency(balance) : '$0.00'}
+              {fCurrency(balance)}
             </Typography>
             <Button
               fullWidth
@@ -177,7 +176,7 @@ export default function ProfileView() {
               color="inherit"
               startIcon={<Iconify icon="solar:add-circle-bold" />}
               component={NextLink}
-              href={PATH_DASHBOARD.chat.root}
+              href={PATH_DASHBOARD.wallet.topup}
               sx={{ mt: 2, color: 'primary.main' }}
             >
               {`${translate('account_page.topup')}`}
