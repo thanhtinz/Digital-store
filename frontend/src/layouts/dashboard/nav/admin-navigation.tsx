@@ -41,6 +41,13 @@ export function useAdminNavConfig() {
         { title: 'Danh mục', path: PATH_DASHBOARD.admin.categories, icon: ICONS.label },
         { title: 'SMM Panel', path: PATH_DASHBOARD.admin.smm, icon: ICONS.cart },
         { title: 'Marketing', path: PATH_DASHBOARD.admin.marketing, icon: ICONS.blog },
+        { title: 'Blog', path: PATH_DASHBOARD.admin.blog, icon: ICONS.blog },
+      ],
+    },
+    {
+      subheader: 'Vận hành',
+      items: [
+        { title: 'Hỗ trợ & Tài chính', path: PATH_DASHBOARD.admin.support, icon: ICONS.banking },
       ],
     },
     {
