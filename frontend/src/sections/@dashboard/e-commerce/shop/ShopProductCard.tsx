@@ -8,6 +8,8 @@ import { Box, Card, Link, Stack, IconButton } from '@mui/material';
 import { PATH_DASHBOARD } from '../../../../routes/paths';
 // auth
 import { useAuthContext } from '../../../../auth/useAuthContext';
+// locales
+import { useLocales } from '../../../../locales';
 // utils
 import axiosInstance from '../../../../utils/axios';
 import { fCurrency } from '../../../../utils/formatNumber';
@@ -50,12 +52,14 @@ export default function ShopProductCard({ product }: Props) {
 
   const { isAuthenticated } = useAuthContext();
   const { enqueueSnackbar } = useSnackbar();
+  const { translate } = useLocales();
+  const ts = (k: string) => `${translate(`shop_page.${k}`)}`;
   const [wishlisted, setWishlisted] = useState(false);
   const [wishBusy, setWishBusy] = useState(false);
 
   const toggleWishlist = async () => {
     if (!isAuthenticated) {
-      enqueueSnackbar('Vui lòng đăng nhập để dùng Yêu thích', { variant: 'warning' });
+      enqueueSnackbar(ts('login_required_wishlist'), { variant: 'warning' });
       return;
     }
     setWishBusy(true);
@@ -63,9 +67,9 @@ export default function ShopProductCard({ product }: Props) {
       const r = await axiosInstance.post(`/api/wishlist/${id}`);
       const on = r.data?.wishlisted ?? !wishlisted;
       setWishlisted(on);
-      enqueueSnackbar(on ? 'Đã thêm vào Yêu thích' : 'Đã bỏ khỏi Yêu thích');
+      enqueueSnackbar(on ? ts('added_to_wishlist') : ts('removed_from_wishlist'));
     } catch (e: any) {
-      enqueueSnackbar(e?.detail || 'Thao tác thất bại', { variant: 'error' });
+      enqueueSnackbar(e?.detail || ts('action_failed'), { variant: 'error' });
     } finally {
       setWishBusy(false);
     }
@@ -82,7 +86,7 @@ export default function ShopProductCard({ product }: Props) {
             color={isAuto ? 'success' : 'warning'}
             sx={{ top: 16, left: 16, zIndex: 9, position: 'absolute' }}
           >
-            {isAuto ? 'Tự động' : 'Thủ công'}
+            {isAuto ? ts('auto_delivery') : ts('manual_delivery')}
           </Label>
         )}
         <IconButton
@@ -122,12 +126,12 @@ export default function ShopProductCard({ product }: Props) {
             <span />
           )}
 
-          {soldCount > 0 && <span>Đã bán {soldCount}</span>}
+          {soldCount > 0 && <span>{ts('sold_count')} {soldCount}</span>}
         </Stack>
 
         <Box component="span" sx={{ typography: 'subtitle1', color: packages.length ? 'text.primary' : 'info.main' }}>
           {packages.length === 0
-            ? 'Liên hệ'
+            ? ts('contact_us')
             : minP === maxP
             ? fCurrency(minP)
             : `${fCurrency(minP)} – ${fCurrency(maxP)}`}

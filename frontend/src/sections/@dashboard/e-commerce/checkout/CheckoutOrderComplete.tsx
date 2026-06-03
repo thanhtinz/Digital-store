@@ -4,6 +4,8 @@ import NextLink from 'next/link';
 import { Box, Button, Divider, Typography, Stack, DialogProps } from '@mui/material';
 // routes
 import { PATH_DASHBOARD } from '../../../../routes/paths';
+// locales
+import { useLocales } from '../../../../locales';
 // components
 import Iconify from '../../../../components/iconify';
 import { DialogAnimate } from '../../../../components/animate';
@@ -19,6 +21,8 @@ interface Props extends DialogProps {
 }
 
 export default function CheckoutOrderComplete({ open, orderCode, onReset }: Props) {
+  const { translate } = useLocales();
+  const t = (k: string) => `${translate(`checkout_page.${k}`)}`;
   return (
     <DialogAnimate
       fullScreen
@@ -31,16 +35,16 @@ export default function CheckoutOrderComplete({ open, orderCode, onReset }: Prop
       }}
     >
       <Stack spacing={4} sx={{ m: 'auto', maxWidth: 480, textAlign: 'center', px: { xs: 2, sm: 0 } }}>
-        <Typography variant="h4">Đặt hàng thành công! 🎉</Typography>
+        <Typography variant="h4">{t('success_title')}</Typography>
 
         <OrderCompleteIllustration sx={{ height: 240 }} />
 
         <Typography sx={{ color: 'text.secondary' }}>
-          Cảm ơn bạn đã đặt hàng.
+          {t('thanks')}
           {orderCode && (
             <>
               <br />
-              Mã đơn của bạn là{' '}
+              {t('your_order_code')}{' '}
               <Box component="span" sx={{ color: 'text.primary', fontWeight: 'fontWeightBold' }}>
                 {orderCode}
               </Box>
@@ -48,7 +52,7 @@ export default function CheckoutOrderComplete({ open, orderCode, onReset }: Prop
           )}
           <br />
           <br />
-          Sản phẩm giao tự động sẽ có ngay trong chi tiết đơn hàng. Bạn cũng sẽ nhận thông báo khi đơn được xử lý.
+          {t('success_message')}
         </Typography>
 
         <Divider sx={{ borderStyle: 'dashed' }} />
@@ -61,7 +65,7 @@ export default function CheckoutOrderComplete({ open, orderCode, onReset }: Prop
             onClick={onReset}
             startIcon={<Iconify icon="eva:arrow-ios-back-fill" />}
           >
-            Tiếp tục mua sắm
+            {t('continue_shopping')}
           </Button>
 
           {orderCode && (
@@ -72,7 +76,7 @@ export default function CheckoutOrderComplete({ open, orderCode, onReset }: Prop
               href={PATH_DASHBOARD.orders.view(orderCode)}
               startIcon={<Iconify icon="solar:bag-check-bold" />}
             >
-              Xem đơn hàng
+              {t('view_order')}
             </Button>
           )}
         </Stack>

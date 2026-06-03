@@ -3,32 +3,27 @@ import { useState } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 // @mui
 import { Button, MenuItem, Box } from '@mui/material';
+// locales
+import { useLocales } from '../../../../locales';
 // components
 import Iconify from '../../../../components/iconify';
 import MenuPopover from '../../../../components/menu-popover';
 
 // ----------------------------------------------------------------------
 
-const OPTIONS = [
-  { value: 'featured', label: 'Featured' },
-  { value: 'newest', label: 'Newest' },
-  { value: 'priceDesc', label: 'Price: High - Low' },
-  { value: 'priceAsc', label: 'Price: Low - High' },
-];
-
-function renderLabel(label: string) {
-  return {
-    featured: 'Featured',
-    newest: 'Newest',
-    priceDesc: 'Price: High - Low',
-    priceAsc: 'Price: Low - High',
-  }[label];
-}
+const SORT_KEYS: Record<string, string> = {
+  featured: 'sort_featured',
+  newest: 'sort_newest',
+  priceDesc: 'sort_price_high',
+  priceAsc: 'sort_price_low',
+};
 
 // ----------------------------------------------------------------------
 
 export default function ShopProductSort() {
   const { control } = useFormContext();
+  const { translate } = useLocales();
+  const t = (k: string) => `${translate(`shop_page.${k}`)}`;
 
   const [openPopover, setOpenPopover] = useState<HTMLElement | null>(null);
 
@@ -39,6 +34,9 @@ export default function ShopProductSort() {
   const handleClosePopover = () => {
     setOpenPopover(null);
   };
+
+  const options = Object.keys(SORT_KEYS).map((value) => ({ value, label: t(SORT_KEYS[value]) }));
+  const renderLabel = (value: string) => t(SORT_KEYS[value] || 'sort_featured');
 
   return (
     <Controller
@@ -55,14 +53,14 @@ export default function ShopProductSort() {
             }
             sx={{ fontWeight: 'fontWeightMedium' }}
           >
-            Sort By:
+            {t('sort_by')}
             <Box component="span" sx={{ color: 'text.secondary', ml: 0.5 }}>
               {renderLabel(field.value)}
             </Box>
           </Button>
 
           <MenuPopover open={openPopover} onClose={handleClosePopover}>
-            {OPTIONS.map((option) => (
+            {options.map((option) => (
               <MenuItem
                 key={option.value}
                 selected={option.value === field.value}

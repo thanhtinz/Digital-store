@@ -6,6 +6,8 @@ import { useState } from 'react';
 import NextLink from 'next/link';
 // auth
 import { useAuthContext } from '../../../../../auth/useAuthContext';
+// locales
+import { useLocales } from '../../../../../locales';
 // routes
 import { PATH_DASHBOARD } from '../../../../../routes/paths';
 // @types
@@ -42,6 +44,8 @@ export default function CheckoutPayment({
   const { total, discount, subtotal } = checkout;
   const { user } = useAuthContext();
   const { enqueueSnackbar } = useSnackbar();
+  const { translate } = useLocales();
+  const t = (k: string) => `${translate(`checkout_page.${k}`)}`;
   const [submitting, setSubmitting] = useState(false);
 
   const balance = Number((user as any)?.balance || 0);
@@ -58,7 +62,7 @@ export default function CheckoutPayment({
       .filter((it: any) => Number.isFinite(it.package_id) && it.package_id > 0);
 
     if (!items.length) {
-      enqueueSnackbar('Giỏ hàng trống hoặc gói không hợp lệ', { variant: 'error' });
+      enqueueSnackbar(t('invalid_cart'), { variant: 'error' });
       return;
     }
     setSubmitting(true);
@@ -74,7 +78,7 @@ export default function CheckoutPayment({
       onNextStep();
       onReset();
     } catch (error: any) {
-      enqueueSnackbar(error?.detail || error?.message || 'Đặt hàng thất bại', { variant: 'error' });
+      enqueueSnackbar(error?.detail || error?.message || t('place_order_failed'), { variant: 'error' });
     } finally {
       setSubmitting(false);
     }
@@ -85,7 +89,7 @@ export default function CheckoutPayment({
       <Grid item xs={12} md={8}>
         <Card sx={{ p: 3, mb: 3 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>
-            Phương thức thanh toán
+            {t('payment_method')}
           </Typography>
 
           <Box
@@ -100,9 +104,9 @@ export default function CheckoutPayment({
           >
             <Iconify icon="solar:wallet-money-bold" width={32} sx={{ color: 'primary.main' }} />
             <Box sx={{ flexGrow: 1 }}>
-              <Typography variant="subtitle1">Số dư tài khoản</Typography>
+              <Typography variant="subtitle1">{t('account_balance')}</Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                Số dư hiện có: <b>{fCurrency(balance)}</b>
+                {t('current_balance')}: <b>{fCurrency(balance)}</b>
               </Typography>
             </Box>
           </Box>
@@ -113,11 +117,11 @@ export default function CheckoutPayment({
               sx={{ mt: 2 }}
               action={
                 <Button component={NextLink} href={PATH_DASHBOARD.wallet.topup} color="inherit" size="small">
-                  Nạp tiền
+                  {t('topup_btn')}
                 </Button>
               }
             >
-              Số dư không đủ để thanh toán đơn này ({fCurrency(total)}). Vui lòng nạp thêm tiền.
+              {t('insufficient_balance')} ({fCurrency(total)}).
             </Alert>
           )}
 
@@ -128,7 +132,7 @@ export default function CheckoutPayment({
             startIcon={<Iconify icon="eva:arrow-ios-back-fill" />}
             sx={{ mt: 3 }}
           >
-            Quay lại
+            {t('back_btn')}
           </Button>
         </Card>
       </Grid>
@@ -150,7 +154,7 @@ export default function CheckoutPayment({
           onClick={placeOrder}
           startIcon={<Iconify icon="solar:bag-check-bold" />}
         >
-          Đặt mua
+          {t('place_order_btn')}
         </LoadingButton>
       </Grid>
     </Grid>

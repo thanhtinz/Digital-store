@@ -67,8 +67,10 @@ function deliveryToText(data: any): string {
 
 // Timeline trạng thái đơn (hàng số): Đặt hàng → Thanh toán → Hoàn tất.
 function OrderTimeline({ status }: { status: string }) {
+  const { translate } = useLocales();
+  const t = (k: string) => `${translate(`order_detail.${k}`)}`;
   const failed = ['cancelled', 'expired', 'failed'].includes(status);
-  const steps = ['Đặt hàng', 'Thanh toán', 'Hoàn tất'];
+  const steps = [t('step_placed'), t('step_payment'), t('step_completed')];
   const activeIndex = status === 'completed' ? 2 : status === 'paid' ? 1 : 0;
 
   if (failed) {
@@ -77,7 +79,7 @@ function OrderTimeline({ status }: { status: string }) {
         <Stack direction="row" alignItems="center" spacing={1}>
           <Iconify icon="solar:close-circle-bold" width={22} sx={{ color: 'error.main' }} />
           <Typography variant="subtitle2" color="error.darker">
-            Đơn đã huỷ / thất bại
+            {t('order_cancelled')}
           </Typography>
         </Stack>
       </Card>
@@ -159,15 +161,15 @@ export default function OrderDetailView() {
   const handleCancel = async () => {
     if (!order) return;
     // eslint-disable-next-line no-alert
-    if (!window.confirm(`Huỷ đơn ${order.orderCode}?`)) return;
+    if (!window.confirm(t('cancel_confirm'))) return;
     setActing(true);
     try {
       await axiosInstance.post(`/api/orders/my/${order.orderCode}/cancel`);
-      enqueueSnackbar('Đã huỷ đơn');
+      enqueueSnackbar(t('cancelled_success'));
       if (typeof window !== 'undefined') window.dispatchEvent(new Event('balance:refresh'));
       fetchOrder();
     } catch (e: any) {
-      enqueueSnackbar(e?.detail || 'Huỷ đơn thất bại', { variant: 'error' });
+      enqueueSnackbar(e?.detail || t('cancel_failed'), { variant: 'error' });
     } finally {
       setActing(false);
     }
@@ -355,7 +357,7 @@ export default function OrderDetailView() {
                   {t('refresh_status')}
                 </Button>
                 <Button fullWidth color="error" variant="text" disabled={acting} onClick={handleCancel}>
-                  Huỷ đơn
+                  {t('cancel_btn')}
                 </Button>
               </Stack>
             ) : (
@@ -372,7 +374,7 @@ export default function OrderDetailView() {
                   startIcon={<Iconify icon="solar:cart-plus-bold" />}
                   onClick={handleReorder}
                 >
-                  Mua lại
+                  {t('reorder_btn')}
                 </Button>
                 <Button onClick={() => push(PATH_DASHBOARD.orders.root)} size="small" color="inherit">
                   {t('back_to_orders')}

@@ -22,6 +22,7 @@ import flattenArray from '../../../utils/flattenArray';
 import Iconify from '../../../components/iconify';
 import { NavListProps } from '../../../components/nav-section';
 import { IconButtonAnimate } from '../../../components/animate';
+import { useLocales } from '../../../locales';
 import SearchNotFound from '../../../components/search-not-found';
 //
 import NavConfig from '../nav/config-navigation';
@@ -96,6 +97,7 @@ interface Option extends NavListProps {
 
 function Searchbar() {
   const { push, pathname } = useRouter();
+  const { translate } = useLocales();
 
   const [open, setOpen] = useState(false);
 
@@ -175,7 +177,7 @@ function Searchbar() {
                   inputProps={params.inputProps}
                   fullWidth
                   autoFocus
-                  placeholder="Search..."
+                  placeholder={`${translate('nav.search_placeholder')}`}
                   onKeyUp={handleKeyUp}
                   startAdornment={
                     <InputAdornment position="start">

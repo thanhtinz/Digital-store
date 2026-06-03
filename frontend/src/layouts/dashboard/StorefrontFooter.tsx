@@ -96,7 +96,7 @@ export default function StorefrontFooter() {
   const siteName = settings.site_name || 'Digital Store';
   const siteDesc = settings.footer_about || settings.site_description || tf('default_desc');
   const copyright =
-    settings.copyright_text || `© ${new Date().getFullYear()} ${siteName}. All rights reserved.`;
+    settings.copyright_text || `© ${new Date().getFullYear()} ${siteName}. ${tf('all_rights_reserved')}`;
   const socials = SOCIALS.filter((s) => settings[s.key]);
 
   return (
