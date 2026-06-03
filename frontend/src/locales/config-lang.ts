@@ -18,8 +18,9 @@ export const allLangs = [
     icon: '/assets/icons/flags/ic_flag_fr.svg',
   },
   {
-    label: 'Vietnamese',
-    value: 'vi',
+    label: 'Tiếng Việt',
+    // Khớp với key resource 'vn' trong i18n.ts (trước đây để 'vi' nên không đổi được).
+    value: 'vn',
     systemValue: viVN,
     icon: '/assets/icons/flags/ic_flag_vn.svg',
   },
@@ -37,4 +38,4 @@ export const allLangs = [
   },
 ];
 
-export const defaultLang = allLangs[0]; // English
+export const defaultLang = allLangs[2]; // Tiếng Việt

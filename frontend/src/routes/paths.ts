@@ -63,6 +63,15 @@ export const PATH_DASHBOARD = {
     root: path(ROOTS_DASHBOARD, '/orders'),
     view: (code: string) => path(ROOTS_DASHBOARD, `/orders/${code}`),
   },
+  smm: {
+    root: path(ROOTS_DASHBOARD, '/smm'),
+    order: path(ROOTS_DASHBOARD, '/smm/order'),
+    services: path(ROOTS_DASHBOARD, '/smm/services'),
+    orders: path(ROOTS_DASHBOARD, '/smm/orders'),
+    warranty: path(ROOTS_DASHBOARD, '/smm/warranty'),
+  },
+  support: path(ROOTS_DASHBOARD, '/support'),
+  offers: path(ROOTS_DASHBOARD, '/offers'),
   user: {
     root: path(ROOTS_DASHBOARD, '/user'),
     new: path(ROOTS_DASHBOARD, '/user/new'),

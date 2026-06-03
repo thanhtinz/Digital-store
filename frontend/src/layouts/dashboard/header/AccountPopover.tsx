@@ -38,6 +38,14 @@ export default function AccountPopover() {
 
   const { user, logout } = useAuthContext();
 
+  const name =
+    (user as any)?.displayName ||
+    (user as any)?.display_name ||
+    (user as any)?.fullName ||
+    (user as any)?.email ||
+    'Tài khoản';
+  const avatar = (user as any)?.photoURL || (user as any)?.avatar_url || '';
+
   const { enqueueSnackbar } = useSnackbar();
 
   const [openPopover, setOpenPopover] = useState<HTMLElement | null>(null);
@@ -85,17 +93,17 @@ export default function AccountPopover() {
           }),
         }}
       >
-        <CustomAvatar src={user?.photoURL} alt={user?.displayName} name={user?.displayName} />
+        <CustomAvatar src={avatar} alt={name} name={name} />
       </IconButtonAnimate>
 
       <MenuPopover open={openPopover} onClose={handleClosePopover} sx={{ width: 200, p: 0 }}>
         <Box sx={{ my: 1.5, px: 2.5 }}>
           <Typography variant="subtitle2" noWrap>
-            {user?.displayName}
+            {name}
           </Typography>
 
           <Typography variant="body2" sx={{ color: 'text.secondary' }} noWrap>
-            {user?.email}
+            {(user as any)?.email}
           </Typography>
         </Box>
 

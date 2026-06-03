@@ -1,5 +1,5 @@
 import { noCase } from 'change-case';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 // @mui
 import {
   Box,
@@ -19,8 +19,9 @@ import {
 } from '@mui/material';
 // utils
 import { fToNow } from '../../../utils/formatTime';
-// _mock_
-import { _notifications } from '../../../_mock/arrays';
+import axiosInstance from '../../../utils/axios';
+// auth
+import { useAuthContext } from '../../../auth/useAuthContext';
 // components
 import Iconify from '../../../components/iconify';
 import Scrollbar from '../../../components/scrollbar';
@@ -29,12 +30,43 @@ import { IconButtonAnimate } from '../../../components/animate';
 
 // ----------------------------------------------------------------------
 
+// Map thông báo backend -> shape component cần.
+function adaptNotification(n: any) {
+  return {
+    id: String(n.id),
+    title: n.title || '',
+    description: n.body || '',
+    type: n.type || 'order',
+    avatar: null,
+    createdAt: n.created_at || n.createdAt || new Date().toISOString(),
+    isUnRead: !(n.is_read ?? n.isRead),
+  };
+}
+
 export default function NotificationsPopover() {
-  const [notifications, setNotifications] = useState(_notifications);
+  const { isAuthenticated } = useAuthContext();
+
+  const [notifications, setNotifications] = useState<any[]>([]);
 
   const [openPopover, setOpenPopover] = useState<HTMLElement | null>(null);
 
   const totalUnRead = notifications.filter((item) => item.isUnRead === true).length;
+
+  const fetchNotifications = () => {
+    if (!isAuthenticated) {
+      setNotifications([]);
+      return;
+    }
+    axiosInstance
+      .get('/api/notifications', { params: { limit: 20 } })
+      .then((res) => setNotifications((res.data?.items || []).map(adaptNotification)))
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
 
   const handleOpenPopover = (event: React.MouseEvent<HTMLElement>) => {
     setOpenPopover(event.currentTarget);
@@ -45,12 +77,8 @@ export default function NotificationsPopover() {
   };
 
   const handleMarkAllAsRead = () => {
-    setNotifications(
-      notifications.map((notification) => ({
-        ...notification,
-        isUnRead: false,
-      }))
-    );
+    setNotifications(notifications.map((notification) => ({ ...notification, isUnRead: false })));
+    axiosInstance.post('/api/notifications/read-all').catch(() => {});
   };
 
   return (

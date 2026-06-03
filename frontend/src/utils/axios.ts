@@ -10,7 +10,7 @@ import { HOST_API_KEY } from '../config-global';
 //     (field khác tên: image_url->cover, price_from->price, ...).
 // ----------------------------------------------------------------------
 
-const axiosInstance = axios.create({ baseURL: HOST_API_KEY });
+const axiosInstance = axios.create({ baseURL: HOST_API_KEY, timeout: 20000 });
 
 // ── Request: gắn token ─────────────────────────────────
 axiosInstance.interceptors.request.use((config) => {

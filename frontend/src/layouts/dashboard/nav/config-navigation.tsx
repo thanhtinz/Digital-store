@@ -20,29 +20,28 @@ const ICONS = {
   ecommerce: icon('ic_ecommerce'),
   dashboard: icon('ic_dashboard'),
   menu: icon('ic_menu_item'),
+  label: icon('ic_label'),
+  external: icon('ic_external'),
 };
 
 // ----------------------------------------------------------------------
-// MENU STOREFRONT (cửa hàng cho khách). Phần admin nằm ở /admin (app riêng).
-// Cấu trúc theo store cũ: Mua sắm + Danh mục (động) + Tài khoản + Khác.
+// MENU STOREFRONT (cửa hàng cho khách). Admin nằm ở /admin (app riêng).
+// Cấu trúc: Mua sắm (Trang chủ + danh mục premium) + Topup + Giftcard +
+// Dịch vụ MXH + Hỗ trợ. Dữ liệu danh mục/sản phẩm đổ động từ backend.
 // ----------------------------------------------------------------------
 
-// Phần TĨNH (luôn có). Dùng làm base + cho Searchbar.
+// Phần TĨNH (cho Searchbar + fallback).
 const navConfig = [
   {
     subheader: 'mua sắm',
-    items: [
-      { title: 'trang chủ', path: '/', icon: ICONS.dashboard },
-      { title: 'gian hàng', path: PATH_DASHBOARD.eCommerce.shop, icon: ICONS.ecommerce },
-    ],
+    items: [{ title: 'trang chủ', path: '/', icon: ICONS.dashboard }],
   },
   {
-    subheader: 'tài khoản',
+    subheader: 'hỗ trợ',
     items: [
-      { title: 'đơn hàng', path: PATH_DASHBOARD.orders.root, icon: ICONS.cart },
-      { title: 'tài khoản', path: PATH_DASHBOARD.myAccount, icon: ICONS.user },
+      { title: 'ưu đãi', path: PATH_DASHBOARD.offers, icon: ICONS.label },
       { title: 'blog', path: PATH_DASHBOARD.blog.posts, icon: ICONS.blog },
-      { title: 'hỗ trợ', path: PATH_DASHBOARD.chat.root, icon: ICONS.chat },
+      { title: 'hỗ trợ', path: PATH_DASHBOARD.support, icon: ICONS.chat },
     ],
   },
 ];
@@ -50,20 +49,35 @@ const navConfig = [
 export default navConfig;
 
 // ----------------------------------------------------------------------
-// Hook trả về menu kèm phần DANH MỤC đổ động từ /api/categories.
-// ----------------------------------------------------------------------
 
 type AnyCat = {
+  id?: number;
   slug?: string;
   name?: string;
   productType?: string;
   product_type?: string;
+  parentId?: number | null;
+  parent_id?: number | null;
   isActive?: boolean;
   is_active?: boolean;
 };
 
+type AnyProduct = {
+  id?: number;
+  slug?: string;
+  code?: string;
+  name?: string;
+};
+
+const typeOf = (c: AnyCat) => c.productType || c.product_type || 'premium';
+const parentOf = (c: AnyCat) => c.parentId ?? c.parent_id ?? null;
+const activeOf = (c: AnyCat) => c.isActive ?? c.is_active ?? true;
+
+// ----------------------------------------------------------------------
+
 export function useNavConfig() {
   const [categories, setCategories] = useState<AnyCat[]>([]);
+  const [giftcards, setGiftcards] = useState<AnyProduct[]>([]);
 
   useEffect(() => {
     let alive = true;
@@ -74,34 +88,84 @@ export function useNavConfig() {
         if (alive) setCategories(list);
       })
       .catch(() => {});
+    axiosInstance
+      .get('/api/products', { params: { type: 'giftcard', limit: 50 } })
+      .then((res) => {
+        const list = res.data?.products || res.data?.items || [];
+        if (alive) setGiftcards(list);
+      })
+      .catch(() => {});
     return () => {
       alive = false;
     };
   }, []);
 
-  const catItems = categories
-    .filter((c) => c.slug && (c.isActive ?? c.is_active ?? true))
-    .map((c) => ({
-      title: c.name || c.slug || '',
-      path: `${PATH_DASHBOARD.eCommerce.shop}?category=${c.slug}`,
+  const shopByCat = (slug?: string) => `${PATH_DASHBOARD.eCommerce.shop}?category=${slug || ''}`;
+
+  // Danh mục lớn premium (cấp 1) -> mục phẳng trong "Mua sắm".
+  const premiumCats = categories
+    .filter((c) => c.slug && activeOf(c) && typeOf(c) === 'premium' && parentOf(c) == null)
+    .map((c) => ({ title: c.name || c.slug || '', path: shopByCat(c.slug), icon: ICONS.menu }));
+
+  // Danh mục game -> dropdown Topup.
+  const gameCats = categories
+    .filter((c) => c.slug && activeOf(c) && typeOf(c) === 'game')
+    .map((c) => ({ title: c.name || c.slug || '', path: shopByCat(c.slug) }));
+
+  // Sản phẩm giftcard -> dropdown Giftcard.
+  const giftcardItems = giftcards
+    .filter((p) => p.slug || p.code)
+    .map((p) => ({
+      title: p.name || p.slug || '',
+      path: PATH_DASHBOARD.eCommerce.view((p.slug || p.code) as string),
     }));
 
-  const data = [...navConfig];
+  // ── Lắp ráp menu ──
+  const shopping = {
+    subheader: 'mua sắm',
+    items: [
+      { title: 'trang chủ', path: '/', icon: ICONS.dashboard },
+      ...premiumCats,
+    ],
+  };
 
-  if (catItems.length) {
-    // Chèn nhóm "Danh mục" (collapsible) ngay sau phần "Mua sắm".
-    data.splice(1, 0, {
-      subheader: 'danh mục',
-      items: [
-        {
-          title: 'danh mục',
-          path: PATH_DASHBOARD.eCommerce.shop,
-          icon: ICONS.menu,
-          children: catItems,
-        } as any,
-      ],
+  const serviceItems: any[] = [];
+  if (gameCats.length) {
+    serviceItems.push({
+      title: 'topup game',
+      path: shopByCat(''),
+      icon: ICONS.cart,
+      children: gameCats,
     });
   }
+  if (giftcardItems.length) {
+    serviceItems.push({
+      title: 'giftcard',
+      path: PATH_DASHBOARD.eCommerce.shop,
+      icon: ICONS.label,
+      children: giftcardItems,
+    });
+  }
+  serviceItems.push({
+    title: 'dịch vụ mxh',
+    path: PATH_DASHBOARD.smm.root,
+    icon: ICONS.external,
+    children: [
+      { title: 'đặt đơn', path: PATH_DASHBOARD.smm.order },
+      { title: 'danh sách', path: PATH_DASHBOARD.smm.services },
+      { title: 'đơn hàng', path: PATH_DASHBOARD.smm.orders },
+      { title: 'bảo hành', path: PATH_DASHBOARD.smm.warranty },
+    ],
+  });
 
-  return data;
+  const support = {
+    subheader: 'hỗ trợ',
+    items: [
+      { title: 'ưu đãi', path: PATH_DASHBOARD.offers, icon: ICONS.label },
+      { title: 'blog', path: PATH_DASHBOARD.blog.posts, icon: ICONS.blog },
+      { title: 'hỗ trợ', path: PATH_DASHBOARD.support, icon: ICONS.chat },
+    ],
+  };
+
+  return [shopping, { subheader: 'dịch vụ', items: serviceItems }, support];
 }

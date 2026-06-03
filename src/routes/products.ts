@@ -9,10 +9,12 @@ const router = Router();
 // ── Public: danh sách sản phẩm ────────────────────────
 router.get('/', optionalUser, async (req: Request, res: Response) => {
   try {
-    const { category, featured, active = 'true', page = '1', limit = '20', search, sort } = req.query;
+    const { category, featured, active = 'true', page = '1', limit = '20', search, sort, type } = req.query;
     const where: any = {};
     if (active !== 'all') where.isActive = active !== 'false';
     if (category) where.category = { slug: category };
+    // Lọc theo loại danh mục (premium | game | giftcard) cho sidebar storefront.
+    if (type) where.category = { ...(where.category || {}), productType: type as string };
     if (featured === 'true') where.isFeatured = true;
     if (search) where.name = { contains: search as string, mode: 'insensitive' };
 
