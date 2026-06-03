@@ -148,6 +148,7 @@ router.get('/me', requireUser, async (req: Request, res: Response) => {
       language: (user as any).language || 'vn',
       balance: user.balance,
       is_active: user.isActive,
+      two_factor_enabled: !!user.twoFactorSecret,
       role: adminUser?.role || 'user',
       created_at: user.createdAt,
     });

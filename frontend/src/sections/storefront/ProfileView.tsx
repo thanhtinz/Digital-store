@@ -30,6 +30,8 @@ import Iconify from '../../components/iconify';
 // sections (form đổi mật khẩu của Minimal)
 import AccountChangePassword from '../@dashboard/user/account/AccountChangePassword';
 //
+import LoyaltyCard from './LoyaltyCard';
+import TwoFactorCard from './TwoFactorCard';
 import { orderStatusColor, orderStatusKey } from './orderStatus';
 
 // ----------------------------------------------------------------------
@@ -213,6 +215,9 @@ export default function ProfileView() {
               {`${translate('account_page.topup')}`}
             </Button>
           </Card>
+
+          {/* Thẻ điểm thưởng (ẩn nếu tắt) */}
+          <LoyaltyCard />
         </Grid>
 
         {/* CỘT PHẢI */}
@@ -223,7 +228,10 @@ export default function ProfileView() {
               <Typography variant="h6" sx={{ mb: 2 }}>
                 {`${translate('account_page.security')}`}
               </Typography>
-              <AccountChangePassword />
+              <Stack spacing={3}>
+                <TwoFactorCard />
+                <AccountChangePassword />
+              </Stack>
             </Box>
 
             {/* Đơn hàng gần đây */}
