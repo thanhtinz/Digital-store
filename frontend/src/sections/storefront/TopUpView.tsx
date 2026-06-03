@@ -12,6 +12,8 @@ import {
   IconButton,
   Stack,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from '@mui/material';
 // auth
@@ -24,6 +26,8 @@ import { fCurrency } from '../../utils/formatNumber';
 // components
 import Iconify from '../../components/iconify';
 import { useSnackbar } from '../../components/snackbar';
+//
+import { CardChargePanel } from './CardChargeView';
 
 // ----------------------------------------------------------------------
 
@@ -46,6 +50,7 @@ export default function TopUpView() {
   const { translate } = useLocales();
   const t = (k: string) => `${translate(`topup_page.${k}`)}`;
 
+  const [method, setMethod] = useState<'bank' | 'card'>('bank');
   const [amount, setAmount] = useState(100000);
   const [creating, setCreating] = useState(false);
   const [topup, setTopup] = useState<TopUp | null>(null);
@@ -114,7 +119,26 @@ export default function TopUpView() {
         {t('title')}
       </Typography>
 
-      <Grid container spacing={3}>
+      {/* Chọn phương thức nạp */}
+      <ToggleButtonGroup
+        exclusive
+        color="primary"
+        value={method}
+        onChange={(_, v) => v && setMethod(v)}
+        sx={{ mb: 3, flexWrap: 'wrap' }}
+      >
+        <ToggleButton value="bank" sx={{ px: 2.5, gap: 1 }}>
+          <Iconify icon="solar:card-transfer-bold" /> {t('method_bank')}
+        </ToggleButton>
+        <ToggleButton value="card" sx={{ px: 2.5, gap: 1 }}>
+          <Iconify icon="solar:smartphone-bold" /> {t('method_card')}
+        </ToggleButton>
+      </ToggleButtonGroup>
+
+      {method === 'card' ? (
+        <CardChargePanel />
+      ) : (
+        <Grid container spacing={3}>
         {/* Nhập số tiền */}
         <Grid item xs={12} md={topup ? 6 : 12}>
           <Card sx={{ p: 3 }}>
@@ -233,7 +257,8 @@ export default function TopUpView() {
             </Card>
           </Grid>
         )}
-      </Grid>
+        </Grid>
+      )}
     </Container>
   );
 }

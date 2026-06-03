@@ -107,6 +107,8 @@ const ar = {
     txstatus_failed: `فشل`,
   },
   topup_page: {
+    method_bank: `تحويل بنكي / QR`,
+    method_card: `بطاقة هاتف`,
     title: `اشحن رصيد حسابك`,
     choose_amount: `اختر المبلغ`,
     other_amount: `مبلغ مخصص (₫)`,

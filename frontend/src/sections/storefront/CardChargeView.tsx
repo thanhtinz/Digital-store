@@ -42,6 +42,26 @@ const statusColor = (s: string): any => {
 };
 
 export default function CardChargeView() {
+  const { translate } = useLocales();
+  const t = (k: string) => `${translate(`card_charge_page.${k}`)}`;
+  return (
+    <Container sx={{ pt: { xs: 3, md: 5 }, pb: 8 }}>
+      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1 }}>
+        <Iconify icon="solar:smartphone-bold" width={28} sx={{ color: 'primary.main' }} />
+        <Typography variant="h4">{t('title')}</Typography>
+      </Stack>
+      <Typography variant="body2" sx={{ color: 'text.secondary', mb: 4 }}>
+        {t('subtitle')}
+      </Typography>
+      <CardChargePanel />
+    </Container>
+  );
+}
+
+// ----------------------------------------------------------------------
+// Panel tái dùng (nhúng trong trang Nạp tiền) — không có Container/tiêu đề lớn.
+
+export function CardChargePanel() {
   const { isAuthenticated } = useAuthContext();
   const { enqueueSnackbar } = useSnackbar();
   const { translate } = useLocales();
@@ -106,15 +126,7 @@ export default function CardChargeView() {
   const enabled = rates?.available && rates?.exchange_enabled;
 
   return (
-    <Container sx={{ pt: { xs: 3, md: 5 }, pb: 8 }}>
-      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1 }}>
-        <Iconify icon="solar:smartphone-bold" width={28} sx={{ color: 'primary.main' }} />
-        <Typography variant="h4">{t('title')}</Typography>
-      </Stack>
-      <Typography variant="body2" sx={{ color: 'text.secondary', mb: 4 }}>
-        {t('subtitle')}
-      </Typography>
-
+    <>
       {!isAuthenticated ? (
         <EmptyContent title={t('login_required')} img="/assets/illustrations/illustration_empty_cart.svg" />
       ) : loading ? (
@@ -213,6 +225,6 @@ export default function CardChargeView() {
           </Grid>
         </Grid>
       )}
-    </Container>
+    </>
   );
 }

@@ -107,6 +107,8 @@ const cn = {
     txstatus_failed: `失败`,
   },
   topup_page: {
+    method_bank: `银行转账 / 二维码`,
+    method_card: `话费卡`,
     title: `为账户充值`,
     choose_amount: `选择金额`,
     other_amount: `自定义金额 (₫)`,

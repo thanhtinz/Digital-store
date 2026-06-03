@@ -107,6 +107,8 @@ const fr = {
     txstatus_failed: `Échoué`,
   },
   topup_page: {
+    method_bank: `Virement / QR`,
+    method_card: `Carte téléphonique`,
     title: `Recharger votre compte`,
     choose_amount: `Choisir le montant`,
     other_amount: `Montant personnalisé (₫)`,

@@ -107,6 +107,8 @@ const en = {
     txstatus_failed: `Failed`,
   },
   topup_page: {
+    method_bank: `Bank transfer / QR`,
+    method_card: `Phone card`,
     title: `Top up your account`,
     choose_amount: `Choose amount`,
     other_amount: `Custom amount (₫)`,

@@ -38,7 +38,6 @@ export default function AccountPopover() {
     { label: t('wishlist'), linkTo: PATH_DASHBOARD.wishlist },
     { label: t('affiliate'), linkTo: PATH_DASHBOARD.affiliate },
     { label: t('topup'), linkTo: PATH_DASHBOARD.wallet.topup },
-    { label: t('card_charge'), linkTo: PATH_DASHBOARD.wallet.cardCharge },
     { label: t('wallet_history'), linkTo: PATH_DASHBOARD.wallet.history },
   ];
 
