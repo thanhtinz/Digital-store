@@ -27,7 +27,7 @@ type Props = {
   onBackStep: VoidFunction;
   onReset: VoidFunction;
   onGotoStep: (step: number) => void;
-  onApplyShipping: (value: number) => void;
+  onApplyShipping?: (value: number) => void;
   onComplete?: (orderCode: string) => void;
 };
 

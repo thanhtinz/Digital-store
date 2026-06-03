@@ -17,14 +17,10 @@ import {
   backStep,
   gotoStep,
   deleteCart,
-  createBilling,
-  applyShipping,
   applyDiscount,
   increaseQuantity,
   decreaseQuantity,
 } from '../../../redux/slices/product';
-// @types
-import { ICheckoutBillingAddress } from '../../../@types/product';
 // locales
 import { useLocales } from '../../../locales';
 // components
@@ -35,7 +31,6 @@ import {
   CheckoutSteps,
   CheckoutPayment,
   CheckoutOrderComplete,
-  CheckoutBillingAddress,
 } from '../../../sections/@dashboard/e-commerce/checkout';
 
 // ----------------------------------------------------------------------
@@ -53,7 +48,6 @@ export default function EcommerceCheckoutPage() {
 
   const STEPS = [
     `${translate('checkout_page.step_cart')}`,
-    `${translate('checkout_page.step_billing')}`,
     `${translate('checkout_page.step_payment')}`,
   ];
 
@@ -63,7 +57,7 @@ export default function EcommerceCheckoutPage() {
 
   const { checkout } = useSelector((state) => state.product);
 
-  const { cart, billing, activeStep } = checkout;
+  const { cart, activeStep } = checkout;
 
   const [orderCode, setOrderCode] = useState('');
 
@@ -72,12 +66,6 @@ export default function EcommerceCheckoutPage() {
   useEffect(() => {
     dispatch(getCart(cart));
   }, [dispatch, cart]);
-
-  useEffect(() => {
-    if (activeStep === 1) {
-      dispatch(createBilling(null));
-    }
-  }, [dispatch, activeStep]);
 
   const handleNextStep = () => {
     dispatch(nextStep());
@@ -107,15 +95,6 @@ export default function EcommerceCheckoutPage() {
 
   const handleDecreaseQuantity = (productId: string) => {
     dispatch(decreaseQuantity(productId));
-  };
-
-  const handleCreateBilling = (address: ICheckoutBillingAddress) => {
-    dispatch(createBilling(address));
-    dispatch(nextStep());
-  };
-
-  const handleApplyShipping = (value: number) => {
-    dispatch(applyShipping(value));
   };
 
   const handleReset = () => {
@@ -153,19 +132,11 @@ export default function EcommerceCheckoutPage() {
               />
             )}
             {activeStep === 1 && (
-              <CheckoutBillingAddress
-                checkout={checkout}
-                onBackStep={handleBackStep}
-                onCreateBilling={handleCreateBilling}
-              />
-            )}
-            {activeStep === 2 && billing && (
               <CheckoutPayment
                 checkout={checkout}
                 onNextStep={handleNextStep}
                 onBackStep={handleBackStep}
                 onGotoStep={handleGotoStep}
-                onApplyShipping={handleApplyShipping}
                 onReset={handleReset}
                 onComplete={setOrderCode}
               />
