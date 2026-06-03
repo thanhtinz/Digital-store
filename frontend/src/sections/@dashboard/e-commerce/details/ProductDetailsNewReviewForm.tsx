@@ -16,9 +16,15 @@ import {
   FormHelperText,
 } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
+// redux
+import { useDispatch } from '../../../../redux/store';
+import { getProduct } from '../../../../redux/slices/product';
+// utils
+import axios from '../../../../utils/axios';
 // locales
 import { useLocales } from '../../../../locales';
 // components
+import { useSnackbar } from '../../../../components/snackbar';
 import FormProvider, { RHFTextField } from '../../../../components/hook-form';
 
 // ----------------------------------------------------------------------
@@ -26,30 +32,33 @@ import FormProvider, { RHFTextField } from '../../../../components/hook-form';
 type FormValuesProps = {
   rating: number | string | null;
   review: string;
-  name: string;
-  email: string;
 };
 
 interface Props extends DialogProps {
   onClose: VoidFunction;
+  productId?: number | string;
+  productSlug?: string;
 }
 
-export default function ProductDetailsNewReviewForm({ onClose, ...other }: Props) {
+export default function ProductDetailsNewReviewForm({
+  onClose,
+  productId,
+  productSlug,
+  ...other
+}: Props) {
   const { translate } = useLocales();
   const tp = (k: string) => `${translate(`product_page.${k}`)}`;
+  const dispatch = useDispatch();
+  const { enqueueSnackbar } = useSnackbar();
 
   const ReviewSchema = Yup.object().shape({
     rating: Yup.mixed().required(tp('rating_required')),
     review: Yup.string().required(tp('review_required')),
-    name: Yup.string().required(tp('name_required')),
-    email: Yup.string().required(tp('email_required')).email(tp('email_invalid')),
   });
 
   const defaultValues = {
     rating: null,
     review: '',
-    name: '',
-    email: '',
   };
 
   const methods = useForm<FormValuesProps>({
@@ -66,12 +75,18 @@ export default function ProductDetailsNewReviewForm({ onClose, ...other }: Props
 
   const onSubmit = async (data: FormValuesProps) => {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await axios.post('/api/reviews', {
+        product_id: productId,
+        rating: Number(data.rating),
+        comment: data.review,
+      });
       reset();
       onClose();
-      console.log('DATA', data);
-    } catch (error) {
-      console.error(error);
+      enqueueSnackbar(tp('review_posted'));
+      if (productSlug) dispatch(getProduct(productSlug));
+    } catch (error: any) {
+      const detail = error?.detail || error?.response?.data?.detail || tp('review_failed');
+      enqueueSnackbar(detail, { variant: 'error' });
     }
   };
 
@@ -99,10 +114,6 @@ export default function ProductDetailsNewReviewForm({ onClose, ...other }: Props
           {!!errors.rating && <FormHelperText error> {errors.rating?.message}</FormHelperText>}
 
           <RHFTextField name="review" label={tp('review_field')} multiline rows={3} sx={{ mt: 3 }} />
-
-          <RHFTextField name="name" label={tp('name_field')} sx={{ mt: 3 }} />
-
-          <RHFTextField name="email" label={tp('email_field')} sx={{ mt: 3 }} />
         </DialogContent>
 
         <DialogActions>

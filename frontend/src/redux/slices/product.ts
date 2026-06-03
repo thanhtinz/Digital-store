@@ -210,12 +210,45 @@ export function getProducts(params?: { category?: string; type?: string; limit?:
 
 // ----------------------------------------------------------------------
 
+// Chuẩn hoá đánh giá từ backend (raw Review records) sang shape mà component cần.
+function normalizeProduct(raw: any) {
+  if (!raw) return raw;
+  const rawReviews: any[] = Array.isArray(raw.reviews) ? raw.reviews : [];
+  const reviews = rawReviews.map((r: any) => ({
+    id: String(r.id),
+    name: r.userName || r.user_name || 'Khách',
+    avatarUrl: r.avatarUrl || '',
+    comment: r.comment || '',
+    rating: r.rating || 0,
+    isPurchased: true,
+    helpful: 0,
+    postedAt: r.createdAt || r.created_at || new Date().toISOString(),
+  }));
+  // Phân bố sao 1..5 cho biểu đồ đánh giá.
+  const ratings = [1, 2, 3, 4, 5].map((star) => {
+    const count = rawReviews.filter((r: any) => Math.round(r.rating || 0) === star).length;
+    return { name: `${star} Star`, starCount: count, reviewCount: count };
+  });
+  return {
+    ...raw,
+    reviews,
+    ratings,
+    totalRating: raw.rating ?? 0,
+    totalReview: raw.ratingCount ?? reviews.length,
+    // Các field template cần để không crash.
+    colors: raw.colors || [],
+    sizes: raw.sizes || [],
+    tags: raw.tags || [],
+  };
+}
+
 export function getProduct(name: string) {
   return async (dispatch: Dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.get(`/api/products/${name}`);
-      dispatch(slice.actions.getProductSuccess(response.data.product));
+      const raw = response.data.product || response.data;
+      dispatch(slice.actions.getProductSuccess(normalizeProduct(raw)));
     } catch (error) {
       console.error(error);
       dispatch(slice.actions.hasError(error));

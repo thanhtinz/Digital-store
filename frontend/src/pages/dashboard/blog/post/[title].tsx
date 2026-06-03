@@ -94,14 +94,14 @@ export default function BlogPostPage() {
 
       <Container maxWidth={themeStretch ? false : 'lg'}>
         <CustomBreadcrumbs
-          heading="Post Details"
+          heading={tb('post_details')}
           links={[
             {
-              name: 'Dashboard',
+              name: tb('bc_home'),
               href: PATH_DASHBOARD.root,
             },
             {
-              name: 'Blog',
+              name: tb('title'),
               href: PATH_DASHBOARD.blog.root,
             },
             {

@@ -68,7 +68,7 @@ export default function AccountPopover() {
       handleClosePopover();
     } catch (error) {
       console.error(error);
-      enqueueSnackbar('Unable to logout!', { variant: 'error' });
+      enqueueSnackbar(`${translate('nav.logout_failed')}`, { variant: 'error' });
     }
   };
 

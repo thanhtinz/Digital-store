@@ -4,6 +4,8 @@ import { Box, Stack, TableRow, TableCell, Typography, IconButton } from '@mui/ma
 import { fCurrency } from '../../../../../utils/formatNumber';
 // @types
 import { ICheckoutCartItem } from '../../../../../@types/product';
+// locales
+import { useLocales } from '../../../../../locales';
 // components
 import Image from '../../../../../components/image';
 import Label from '../../../../../components/label';
@@ -25,6 +27,7 @@ export default function CheckoutCartProduct({
   onDecrease,
   onIncrease,
 }: CheckoutProductListRowProps) {
+  const { translate } = useLocales();
   const { name, size, price, cover, quantity, available } = row;
   const pkgLabel = (row as any).packageName || size;
 
@@ -44,7 +47,7 @@ export default function CheckoutCartProduct({
 
           {pkgLabel && (
             <Stack direction="row" alignItems="center" sx={{ typography: 'body2', color: 'text.secondary' }}>
-              Gói:
+              {`${translate('product_page.package')}`}:
               <Label color="info" sx={{ ml: 0.5 }}>
                 {pkgLabel}
               </Label>
@@ -66,7 +69,7 @@ export default function CheckoutCartProduct({
           />
 
           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-            available: {available}
+            {`${translate('product_page.available')}`}: {available}
           </Typography>
         </Box>
       </TableCell>

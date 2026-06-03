@@ -109,7 +109,12 @@ export default function ProductDetailsReview({ product }: Props) {
 
       <ProductDetailsReviewList reviews={product.reviews} />
 
-      <ProductDetailsReviewNewDialog open={openReview} onClose={handleCloseReview} />
+      <ProductDetailsReviewNewDialog
+        open={openReview}
+        onClose={handleCloseReview}
+        productId={(product as any).id}
+        productSlug={(product as any).slug}
+      />
     </>
   );
 }
