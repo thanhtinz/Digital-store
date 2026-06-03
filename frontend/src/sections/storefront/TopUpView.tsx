@@ -10,12 +10,12 @@ import {
   Divider,
   Grid,
   IconButton,
+  Paper,
   Stack,
   TextField,
-  ToggleButton,
-  ToggleButtonGroup,
   Typography,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 // auth
 import { useAuthContext } from '../../auth/useAuthContext';
 // locales
@@ -120,20 +120,22 @@ export default function TopUpView() {
       </Typography>
 
       {/* Chọn phương thức nạp */}
-      <ToggleButtonGroup
-        exclusive
-        color="primary"
-        value={method}
-        onChange={(_, v) => v && setMethod(v)}
-        sx={{ mb: 3, flexWrap: 'wrap' }}
-      >
-        <ToggleButton value="bank" sx={{ px: 2.5, gap: 1 }}>
-          <Iconify icon="solar:card-transfer-bold" /> {t('method_bank')}
-        </ToggleButton>
-        <ToggleButton value="card" sx={{ px: 2.5, gap: 1 }}>
-          <Iconify icon="solar:smartphone-bold" /> {t('method_card')}
-        </ToggleButton>
-      </ToggleButtonGroup>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }}>
+        <MethodCard
+          active={method === 'bank'}
+          onClick={() => setMethod('bank')}
+          icon="solar:card-transfer-bold"
+          title={t('method_bank')}
+          desc={t('method_bank_desc')}
+        />
+        <MethodCard
+          active={method === 'card'}
+          onClick={() => setMethod('card')}
+          icon="solar:smartphone-bold"
+          title={t('method_card')}
+          desc={t('method_card_desc')}
+        />
+      </Stack>
 
       {method === 'card' ? (
         <CardChargePanel />
@@ -260,6 +262,70 @@ export default function TopUpView() {
         </Grid>
       )}
     </Container>
+  );
+}
+
+// ----------------------------------------------------------------------
+
+function MethodCard({
+  active,
+  onClick,
+  icon,
+  title,
+  desc,
+}: {
+  active: boolean;
+  onClick: VoidFunction;
+  icon: string;
+  title: string;
+  desc: string;
+}) {
+  return (
+    <Paper
+      variant="outlined"
+      onClick={onClick}
+      sx={{
+        p: 2,
+        flex: 1,
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 2,
+        borderRadius: 2,
+        position: 'relative',
+        transition: (theme) => theme.transitions.create(['border-color', 'background-color']),
+        ...(active
+          ? {
+              borderColor: 'primary.main',
+              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+            }
+          : {
+              '&:hover': { borderColor: 'text.disabled' },
+            }),
+      }}
+    >
+      <Box
+        sx={{
+          width: 48,
+          height: 48,
+          flexShrink: 0,
+          borderRadius: 1.5,
+          display: 'grid',
+          placeItems: 'center',
+          color: active ? 'primary.main' : 'text.secondary',
+          bgcolor: (theme) => alpha(theme.palette.primary.main, active ? 0.16 : 0.08),
+        }}
+      >
+        <Iconify icon={icon} width={26} />
+      </Box>
+      <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+        <Typography variant="subtitle2">{title}</Typography>
+        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+          {desc}
+        </Typography>
+      </Box>
+      {active && <Iconify icon="solar:check-circle-bold" width={22} sx={{ color: 'primary.main' }} />}
+    </Paper>
   );
 }
 

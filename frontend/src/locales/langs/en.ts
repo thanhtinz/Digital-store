@@ -107,6 +107,8 @@ const en = {
     txstatus_failed: `Failed`,
   },
   topup_page: {
+    method_bank_desc: `Scan QR / bank transfer`,
+    method_card_desc: `Exchange phone card to balance`,
     method_bank: `Bank transfer / QR`,
     method_card: `Phone card`,
     title: `Top up your account`,

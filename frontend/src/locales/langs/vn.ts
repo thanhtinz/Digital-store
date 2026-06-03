@@ -107,6 +107,8 @@ const vn = {
     txstatus_failed: `Thất bại`,
   },
   topup_page: {
+    method_bank_desc: `Quét QR / chuyển khoản ngân hàng`,
+    method_card_desc: `Đổi thẻ điện thoại sang số dư`,
     method_bank: `Chuyển khoản / QR`,
     method_card: `Nạp thẻ cào`,
     title: `Nạp tiền vào tài khoản`,

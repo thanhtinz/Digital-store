@@ -107,6 +107,8 @@ const fr = {
     txstatus_failed: `Échoué`,
   },
   topup_page: {
+    method_bank_desc: `QR / virement bancaire`,
+    method_card_desc: `Carte téléphonique en solde`,
     method_bank: `Virement / QR`,
     method_card: `Carte téléphonique`,
     title: `Recharger votre compte`,

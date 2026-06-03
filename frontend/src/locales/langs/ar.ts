@@ -107,6 +107,8 @@ const ar = {
     txstatus_failed: `فشل`,
   },
   topup_page: {
+    method_bank_desc: `مسح QR / تحويل بنكي`,
+    method_card_desc: `تحويل بطاقة الهاتف إلى رصيد`,
     method_bank: `تحويل بنكي / QR`,
     method_card: `بطاقة هاتف`,
     title: `اشحن رصيد حسابك`,

@@ -107,6 +107,8 @@ const cn = {
     txstatus_failed: `失败`,
   },
   topup_page: {
+    method_bank_desc: `扫码 / 银行转账`,
+    method_card_desc: `话费卡兑换余额`,
     method_bank: `银行转账 / 二维码`,
     method_card: `话费卡`,
     title: `为账户充值`,
