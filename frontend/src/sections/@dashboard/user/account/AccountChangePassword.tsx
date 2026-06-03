@@ -47,10 +47,12 @@ export default function AccountChangePassword() {
 
   const onSubmit = async (data: FormValuesProps) => {
     try {
-      await axios.post('/api/auth/change-password', { old_password: data.oldPassword, new_password: data.newPassword });
+      await axios.post('/api/auth/change-password', {
+        current_password: data.oldPassword,
+        new_password: data.newPassword,
+      });
       reset();
-      enqueueSnackbar('Update success!');
-      console.log('DATA', data);
+      enqueueSnackbar('Đổi mật khẩu thành công!');
     } catch (error) {
       console.error(error);
     }

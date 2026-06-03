@@ -70,6 +70,11 @@ const en = {
     warranty: `Warranty`,
     offers: `Offers`,
     blog: `Blog`,
+    guest: `Guest`,
+    login_register: `Sign in / Sign up`,
+    account: `Account`,
+    admin: `Admin panel`,
+    logout: `Logout`,
   },
   account_page: {
     my_account: `My account`,

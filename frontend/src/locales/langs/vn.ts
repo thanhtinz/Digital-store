@@ -70,6 +70,11 @@ const vn = {
     warranty: `bảo hành`,
     offers: `ưu đãi`,
     blog: `blog`,
+    guest: `Khách`,
+    login_register: `Đăng nhập / Đăng ký`,
+    account: `Tài khoản`,
+    admin: `Trang quản trị`,
+    logout: `Đăng xuất`,
   },
   account_page: {
     my_account: `Tài khoản của tôi`,

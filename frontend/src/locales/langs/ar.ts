@@ -70,6 +70,11 @@ const ar = {
     warranty: `الضمان`,
     offers: `العروض`,
     blog: `مدونة`,
+    guest: `زائر`,
+    login_register: `تسجيل الدخول / التسجيل`,
+    account: `الحساب`,
+    admin: `لوحة الإدارة`,
+    logout: `تسجيل الخروج`,
   },
   account_page: {
     my_account: `حسابي`,

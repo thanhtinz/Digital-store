@@ -4,6 +4,8 @@ import NextLink from 'next/link';
 // @mui
 import { useTheme } from '@mui/material/styles';
 import { Box, Link, BoxProps } from '@mui/material';
+// hooks
+import useSiteSettings from '../../hooks/useSiteSettings';
 
 // ----------------------------------------------------------------------
 
@@ -14,6 +16,9 @@ export interface LogoProps extends BoxProps {
 const Logo = forwardRef<HTMLDivElement, LogoProps>(
   ({ disabledLink = false, sx, ...other }, ref) => {
     const theme = useTheme();
+
+    const settings = useSiteSettings();
+    const siteLogo = settings?.site_logo;
 
     const PRIMARY_LIGHT = theme.palette.primary.light;
 
@@ -31,7 +36,17 @@ const Logo = forwardRef<HTMLDivElement, LogoProps>(
     //   />
     // );
 
-    const logo = (
+    // Nếu backend có cấu hình logo -> dùng ảnh logo; ngược lại fallback SVG mặc định.
+    const logo = siteLogo ? (
+      <Box
+        ref={ref}
+        component="img"
+        src={siteLogo}
+        alt={settings?.site_name || 'logo'}
+        sx={{ width: 40, height: 40, objectFit: 'contain', cursor: 'pointer', ...sx }}
+        {...other}
+      />
+    ) : (
       <Box
         ref={ref}
         component="div"

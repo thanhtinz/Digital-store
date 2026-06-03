@@ -70,6 +70,11 @@ const cn = {
     warranty: `保修`,
     offers: `优惠`,
     blog: `博客`,
+    guest: `访客`,
+    login_register: `登录 / 注册`,
+    account: `账户`,
+    admin: `管理后台`,
+    logout: `退出登录`,
   },
   account_page: {
     my_account: `我的账户`,

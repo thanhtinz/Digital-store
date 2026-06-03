@@ -8,6 +8,8 @@ import { Avatar, Box, Divider, Typography, Stack, MenuItem } from '@mui/material
 import { PATH_DASHBOARD, PATH_AUTH } from '../../../routes/paths';
 // auth
 import { useAuthContext } from '../../../auth/useAuthContext';
+// locales
+import { useLocales } from '../../../locales';
 // components
 import Iconify from '../../../components/iconify';
 import { useSnackbar } from '../../../components/snackbar';
@@ -16,27 +18,23 @@ import { IconButtonAnimate } from '../../../components/animate';
 
 // ----------------------------------------------------------------------
 
-const OPTIONS = [
-  {
-    label: 'Trang chủ',
-    linkTo: '/',
-  },
-  {
-    label: 'Tài khoản',
-    linkTo: PATH_DASHBOARD.myAccount,
-  },
-  {
-    label: 'Đơn hàng',
-    linkTo: PATH_DASHBOARD.orders.root,
-  },
-];
-
 // ----------------------------------------------------------------------
 
 export default function AccountPopover() {
   const { replace, push } = useRouter();
 
   const { user, logout } = useAuthContext();
+
+  const { translate } = useLocales();
+  const t = (k: string) => `${translate(`nav.${k}`)}`;
+
+  const isAdmin = (user as any)?.role === 'admin';
+
+  const OPTIONS = [
+    { label: t('home'), linkTo: '/' },
+    { label: t('account'), linkTo: PATH_DASHBOARD.myAccount },
+    { label: t('orders'), linkTo: PATH_DASHBOARD.orders.root },
+  ];
 
   const name =
     (user as any)?.displayName ||
@@ -121,12 +119,25 @@ export default function AccountPopover() {
               {option.label}
             </MenuItem>
           ))}
+
+          {isAdmin && (
+            <MenuItem
+              onClick={() => {
+                handleClosePopover();
+                window.location.href = '/admin';
+              }}
+              sx={{ color: 'primary.main', fontWeight: 'fontWeightMedium' }}
+            >
+              <Iconify icon="solar:shield-user-bold" sx={{ mr: 1 }} />
+              {t('admin')}
+            </MenuItem>
+          )}
         </Stack>
 
         <Divider sx={{ borderStyle: 'dashed' }} />
 
         <MenuItem onClick={handleLogout} sx={{ m: 1 }}>
-          Logout
+          {t('logout')}
         </MenuItem>
       </MenuPopover>
     </>

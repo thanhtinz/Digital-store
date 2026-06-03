@@ -2,13 +2,28 @@
 import NextLink from 'next/link';
 // @mui
 import { styled, alpha } from '@mui/material/styles';
-import { Box, Link, Typography } from '@mui/material';
+import { Avatar, Box, Link, Typography } from '@mui/material';
 // auth
 import { useAuthContext } from '../../../auth/useAuthContext';
+// locales
+import { useLocales } from '../../../locales';
 // routes
 import { PATH_DASHBOARD, PATH_AUTH } from '../../../routes/paths';
 // components
-import { CustomAvatar } from '../../../components/custom-avatar';
+import Iconify from '../../../components/iconify';
+
+// ----------------------------------------------------------------------
+// Avatar dùng icon user (đồng bộ với header).
+function UserAvatar({ src }: { src?: string }) {
+  return (
+    <Avatar
+      src={src || undefined}
+      sx={{ width: 40, height: 40, bgcolor: 'primary.lighter', color: 'primary.main' }}
+    >
+      <Iconify icon="solar:user-rounded-bold" width={24} />
+    </Avatar>
+  );
+}
 
 // ----------------------------------------------------------------------
 
@@ -27,6 +42,8 @@ const StyledRoot = styled('div')(({ theme }) => ({
 
 export default function NavAccount() {
   const { user, isAuthenticated } = useAuthContext();
+  const { translate } = useLocales();
+  const t = (k: string) => `${translate(`nav.${k}`)}`;
 
   const name =
     (user as any)?.displayName ||
@@ -42,13 +59,13 @@ export default function NavAccount() {
     return (
       <Link component={NextLink} href={PATH_AUTH.login} underline="none" color="inherit">
         <StyledRoot>
-          <CustomAvatar name="K" />
+          <UserAvatar />
           <Box sx={{ ml: 2, minWidth: 0 }}>
             <Typography variant="subtitle2" noWrap>
-              Khách
+              {t('guest')}
             </Typography>
             <Typography variant="body2" noWrap sx={{ color: 'text.secondary' }}>
-              Đăng nhập / Đăng ký
+              {t('login_register')}
             </Typography>
           </Box>
         </StyledRoot>
@@ -59,7 +76,7 @@ export default function NavAccount() {
   return (
     <Link component={NextLink} href={PATH_DASHBOARD.myAccount} underline="none" color="inherit">
       <StyledRoot>
-        <CustomAvatar src={avatar} alt={name} name={name} />
+        <UserAvatar src={avatar} />
 
         <Box sx={{ ml: 2, minWidth: 0 }}>
           <Typography variant="subtitle2" noWrap>
