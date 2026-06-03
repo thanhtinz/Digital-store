@@ -43,7 +43,14 @@ const TX_LABEL: Record<string, string> = {
   card_charge: 'Nạp thẻ',
 };
 
-type Tx = { id: number; amount: number; type: string; description?: string; createdAt: string };
+type Tx = {
+  id: number;
+  amount: number;
+  type: string;
+  status?: string;
+  description?: string;
+  createdAt: string;
+};
 type OrderLite = {
   id: number;
   orderCode: string;
@@ -57,6 +64,18 @@ type OrderLite = {
 export default function ProfileView() {
   const { user } = useAuthContext();
   const { translate } = useLocales();
+
+  // Nhãn loại/trạng thái giao dịch theo ngôn ngữ (fallback nếu thiếu key).
+  const txLabel = (type: string) => {
+    const k = `account_page.tx_${type}`;
+    const v = `${translate(k)}`;
+    return v === k ? TX_LABEL[type] || type : v;
+  };
+  const txStatusLabel = (s: string) => {
+    const k = `account_page.txstatus_${s}`;
+    const v = `${translate(k)}`;
+    return v === k ? s : v;
+  };
 
   // Số dư hiển thị NGAY từ thông tin user; nếu chưa có thì mặc định 0 (luôn hiện).
   const initialBalance = Number((user as any)?.balance);
@@ -275,18 +294,33 @@ export default function ProfileView() {
                       justifyContent="space-between"
                     >
                       <Box sx={{ minWidth: 0 }}>
-                        <Typography variant="subtitle2">{TX_LABEL[t.type] || t.type}</Typography>
+                        <Typography variant="subtitle2">{txLabel(t.type)}</Typography>
                         <Typography variant="caption" sx={{ color: 'text.secondary' }} noWrap>
                           {t.description || fDateTime(t.createdAt)}
                         </Typography>
                       </Box>
-                      <Typography
-                        variant="subtitle2"
-                        sx={{ color: t.amount >= 0 ? 'success.main' : 'error.main', flexShrink: 0 }}
-                      >
-                        {t.amount >= 0 ? '+' : ''}
-                        {fCurrency(t.amount)}
-                      </Typography>
+                      <Stack direction="row" alignItems="center" spacing={1} sx={{ flexShrink: 0 }}>
+                        {t.status && t.status !== 'completed' && (
+                          <Label variant="soft" color={t.status === 'failed' ? 'error' : 'warning'}>
+                            {txStatusLabel(t.status)}
+                          </Label>
+                        )}
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            // Giao dịch chưa hoàn tất (vd nạp tiền chưa thanh toán) -> mờ, không hiện dấu +
+                            color:
+                              t.status && t.status !== 'completed'
+                                ? 'text.disabled'
+                                : t.amount >= 0
+                                ? 'success.main'
+                                : 'error.main',
+                          }}
+                        >
+                          {(!t.status || t.status === 'completed') && t.amount >= 0 ? '+' : ''}
+                          {fCurrency(t.amount)}
+                        </Typography>
+                      </Stack>
                     </Stack>
                   ))}
                 </Stack>

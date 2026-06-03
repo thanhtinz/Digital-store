@@ -5,6 +5,8 @@ import { useRouter } from 'next/router';
 import { Link, Typography, Autocomplete, InputAdornment } from '@mui/material';
 // utils
 import axios from '../../../utils/axios';
+// locales
+import { useLocales } from '../../../locales';
 // routes
 import { PATH_DASHBOARD } from '../../../routes/paths';
 // components
@@ -26,6 +28,7 @@ type ResultItem = {
 
 export default function ProductSearchbar() {
   const { push } = useRouter();
+  const { translate } = useLocales();
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<ResultItem[]>([]);
@@ -71,7 +74,7 @@ export default function ProductSearchbar() {
         <CustomTextField
           {...params}
           fullWidth
-          placeholder="Tìm sản phẩm..."
+          placeholder={`${translate('search.placeholder')}`}
           onKeyUp={(e: React.KeyboardEvent) => {
             if (e.key === 'Enter') gotoProduct();
           }}

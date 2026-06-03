@@ -91,6 +91,15 @@ const fr = {
     no_orders: `Aucune commande`,
     transactions: `Historique des transactions`,
     no_transactions: `Aucune transaction`,
+    tx_topup: `Recharge`,
+    tx_purchase: `Achat`,
+    tx_refund: `Remboursement`,
+    tx_affiliate_withdraw: `Retrait de commission`,
+    tx_admin_adjust: `Ajustement`,
+    tx_card_charge: `Recharge par carte`,
+    txstatus_pending: `En attente`,
+    txstatus_completed: `Terminé`,
+    txstatus_failed: `Échoué`,
   },
   topup_page: {
     title: `Recharger votre compte`,
@@ -112,6 +121,19 @@ const fr = {
     min_warning: `Recharge minimale 10 000d`,
     create_failed: `Échec de la création de la recharge`,
     copied: `Copié`,
+  },
+  footer: {
+    explore: `Explorer`,
+    support_col: `Support client`,
+    shop: `Boutique`,
+    blog: `Blog`,
+    contact: `Contact & support`,
+    my_orders: `Mes commandes`,
+    my_account: `Mon compte`,
+    default_desc: `Boutique de produits numériques — livraison automatique, paiement rapide.`,
+  },
+  search: {
+    placeholder: `Rechercher des produits...`,
   },
 };
 

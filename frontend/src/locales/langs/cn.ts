@@ -91,6 +91,15 @@ const cn = {
     no_orders: `暂无订单`,
     transactions: `交易记录`,
     no_transactions: `暂无交易`,
+    tx_topup: `充值`,
+    tx_purchase: `购买`,
+    tx_refund: `退款`,
+    tx_affiliate_withdraw: `佣金提现`,
+    tx_admin_adjust: `调整`,
+    tx_card_charge: `卡充值`,
+    txstatus_pending: `待支付`,
+    txstatus_completed: `已完成`,
+    txstatus_failed: `失败`,
   },
   topup_page: {
     title: `为账户充值`,
@@ -112,6 +121,19 @@ const cn = {
     min_warning: `最低充值 10.000d`,
     create_failed: `创建充值失败`,
     copied: `已复制`,
+  },
+  footer: {
+    explore: `探索`,
+    support_col: `客户支持`,
+    shop: `商店`,
+    blog: `博客`,
+    contact: `联系与支持`,
+    my_orders: `我的订单`,
+    my_account: `我的账户`,
+    default_desc: `数字商品商店 — 自动发货，快速结账。`,
+  },
+  search: {
+    placeholder: `搜索商品...`,
   },
 };
 

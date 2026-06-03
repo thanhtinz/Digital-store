@@ -5,23 +5,14 @@ import NextLink from 'next/link';
 import { Box, Container, Divider, Link, Stack, Typography } from '@mui/material';
 // utils
 import axiosInstance from '../../utils/axios';
+// locales
+import { useLocales } from '../../locales';
 // routes
 import { PATH_DASHBOARD } from '../../routes/paths';
 
 // ----------------------------------------------------------------------
 // Footer storefront (tái dựng theo store cũ): 3 cột + copyright.
 // ----------------------------------------------------------------------
-
-const EXPLORE_LINKS = [
-  { label: 'Gian hàng', href: PATH_DASHBOARD.eCommerce.shop },
-  { label: 'Góc chia sẻ (Blog)', href: PATH_DASHBOARD.blog.posts },
-];
-
-const SUPPORT_LINKS = [
-  { label: 'Liên hệ & Hỗ trợ', href: PATH_DASHBOARD.chat.root },
-  { label: 'Đơn hàng của tôi', href: PATH_DASHBOARD.orders.root },
-  { label: 'Tài khoản của tôi', href: PATH_DASHBOARD.myAccount },
-];
 
 type Settings = {
   site_name?: string;
@@ -53,7 +44,19 @@ function FooterCol({ title, links }: { title: string; links: { label: string; hr
 }
 
 export default function StorefrontFooter() {
+  const { translate } = useLocales();
+  const tf = (k: string) => `${translate(`footer.${k}`)}`;
   const [settings, setSettings] = useState<Settings>({});
+
+  const EXPLORE_LINKS = [
+    { label: tf('shop'), href: PATH_DASHBOARD.eCommerce.shop },
+    { label: tf('blog'), href: PATH_DASHBOARD.blog.posts },
+  ];
+  const SUPPORT_LINKS = [
+    { label: tf('contact'), href: PATH_DASHBOARD.chat.root },
+    { label: tf('my_orders'), href: PATH_DASHBOARD.orders.root },
+    { label: tf('my_account'), href: PATH_DASHBOARD.myAccount },
+  ];
 
   useEffect(() => {
     let alive = true;
@@ -69,8 +72,7 @@ export default function StorefrontFooter() {
   }, []);
 
   const siteName = settings.site_name || 'Digital Store';
-  const siteDesc =
-    settings.site_description || 'Cửa hàng sản phẩm số — giao hàng tự động, thanh toán nhanh.';
+  const siteDesc = settings.site_description || tf('default_desc');
   const copyright =
     settings.copyright_text || `© ${new Date().getFullYear()} ${siteName}. All rights reserved.`;
 
@@ -91,8 +93,8 @@ export default function StorefrontFooter() {
           </Stack>
 
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={5}>
-            <FooterCol title="Khám phá" links={EXPLORE_LINKS} />
-            <FooterCol title="Hỗ trợ khách hàng" links={SUPPORT_LINKS} />
+            <FooterCol title={tf('explore')} links={EXPLORE_LINKS} />
+            <FooterCol title={tf('support_col')} links={SUPPORT_LINKS} />
           </Stack>
         </Stack>
       </Container>

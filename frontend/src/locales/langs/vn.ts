@@ -91,6 +91,15 @@ const vn = {
     no_orders: `Chưa có đơn hàng`,
     transactions: `Lịch sử giao dịch`,
     no_transactions: `Chưa có giao dịch`,
+    tx_topup: `Nạp tiền`,
+    tx_purchase: `Mua hàng`,
+    tx_refund: `Hoàn tiền`,
+    tx_affiliate_withdraw: `Rút hoa hồng`,
+    tx_admin_adjust: `Điều chỉnh`,
+    tx_card_charge: `Nạp thẻ`,
+    txstatus_pending: `Chờ thanh toán`,
+    txstatus_completed: `Hoàn tất`,
+    txstatus_failed: `Thất bại`,
   },
   topup_page: {
     title: `Nạp tiền vào tài khoản`,
@@ -112,6 +121,19 @@ const vn = {
     min_warning: `Số tiền nạp tối thiểu 10.000đ`,
     create_failed: `Tạo lệnh nạp thất bại`,
     copied: `Đã sao chép`,
+  },
+  footer: {
+    explore: `Khám phá`,
+    support_col: `Hỗ trợ khách hàng`,
+    shop: `Gian hàng`,
+    blog: `Góc chia sẻ (Blog)`,
+    contact: `Liên hệ & Hỗ trợ`,
+    my_orders: `Đơn hàng của tôi`,
+    my_account: `Tài khoản của tôi`,
+    default_desc: `Cửa hàng sản phẩm số — giao hàng tự động, thanh toán nhanh.`,
+  },
+  search: {
+    placeholder: `Tìm sản phẩm...`,
   },
 };
 

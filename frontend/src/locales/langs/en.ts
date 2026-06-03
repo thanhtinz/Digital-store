@@ -91,6 +91,15 @@ const en = {
     no_orders: `No orders yet`,
     transactions: `Transaction history`,
     no_transactions: `No transactions yet`,
+    tx_topup: `Top up`,
+    tx_purchase: `Purchase`,
+    tx_refund: `Refund`,
+    tx_affiliate_withdraw: `Commission withdrawal`,
+    tx_admin_adjust: `Adjustment`,
+    tx_card_charge: `Card charge`,
+    txstatus_pending: `Pending`,
+    txstatus_completed: `Completed`,
+    txstatus_failed: `Failed`,
   },
   topup_page: {
     title: `Top up your account`,
@@ -112,6 +121,19 @@ const en = {
     min_warning: `Minimum top-up is 10,000d`,
     create_failed: `Failed to create top-up`,
     copied: `Copied`,
+  },
+  footer: {
+    explore: `Explore`,
+    support_col: `Customer support`,
+    shop: `Shop`,
+    blog: `Blog`,
+    contact: `Contact & Support`,
+    my_orders: `My orders`,
+    my_account: `My account`,
+    default_desc: `Digital goods store — automatic delivery, fast checkout.`,
+  },
+  search: {
+    placeholder: `Search products...`,
   },
 };
 

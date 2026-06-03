@@ -91,6 +91,15 @@ const ar = {
     no_orders: `لا توجد طلبات`,
     transactions: `سجل المعاملات`,
     no_transactions: `لا توجد معاملات`,
+    tx_topup: `شحن`,
+    tx_purchase: `شراء`,
+    tx_refund: `استرداد`,
+    tx_affiliate_withdraw: `سحب العمولة`,
+    tx_admin_adjust: `تعديل`,
+    tx_card_charge: `شحن بالبطاقة`,
+    txstatus_pending: `قيد الانتظار`,
+    txstatus_completed: `مكتمل`,
+    txstatus_failed: `فشل`,
   },
   topup_page: {
     title: `اشحن رصيد حسابك`,
@@ -112,6 +121,19 @@ const ar = {
     min_warning: `الحد الأدنى للشحن 10000`,
     create_failed: `فشل إنشاء عملية الشحن`,
     copied: `تم النسخ`,
+  },
+  footer: {
+    explore: `استكشف`,
+    support_col: `دعم العملاء`,
+    shop: `المتجر`,
+    blog: `المدونة`,
+    contact: `اتصل بنا والدعم`,
+    my_orders: `طلباتي`,
+    my_account: `حسابي`,
+    default_desc: `متجر منتجات رقمية — تسليم تلقائي ودفع سريع.`,
+  },
+  search: {
+    placeholder: `ابحث عن المنتجات...`,
   },
 };
 
