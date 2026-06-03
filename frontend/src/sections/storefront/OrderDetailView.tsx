@@ -54,6 +54,10 @@ type Order = {
   paymentMethod?: string;
   createdAt: string;
   deliveryData?: any;
+  isGift?: boolean;
+  giftRecipientEmail?: string | null;
+  giftMessage?: string | null;
+  giftSentAt?: string | null;
   items?: OrderItem[];
 };
 
@@ -316,6 +320,30 @@ export default function OrderDetailView() {
           </Card>
 
           <OrderTimeline status={order.status} />
+
+          {order.isGift && (
+            <Card sx={{ p: 2.5, mb: 3, bgcolor: 'error.lighter' }}>
+              <Stack direction="row" spacing={1.5}>
+                <Iconify icon="solar:gift-bold-duotone" width={28} sx={{ color: 'error.main', flexShrink: 0 }} />
+                <Box>
+                  <Typography variant="subtitle2" sx={{ color: 'error.darker' }}>
+                    {t('gift_order')}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                    {t('gift_recipient')}: <b>{order.giftRecipientEmail}</b>
+                  </Typography>
+                  {order.giftMessage && (
+                    <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                      “{order.giftMessage}”
+                    </Typography>
+                  )}
+                  <Typography variant="caption" sx={{ color: order.giftSentAt ? 'success.main' : 'text.disabled' }}>
+                    {order.giftSentAt ? t('gift_sent') : t('gift_pending')}
+                  </Typography>
+                </Box>
+              </Stack>
+            </Card>
+          )}
 
           <Card sx={{ p: 3, mb: 3 }}>
             <Typography variant="subtitle1" sx={{ mb: 2 }}>

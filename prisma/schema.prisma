@@ -179,6 +179,10 @@ model Order {
   customFieldsData Json?   @map("custom_fields_data")
   deliveryData    String?  @map("delivery_data")
   notes           String?
+  isGift              Boolean  @default(false) @map("is_gift")
+  giftRecipientEmail  String?  @db.VarChar(255) @map("gift_recipient_email")
+  giftMessage         String?  @map("gift_message")
+  giftSentAt          DateTime? @map("gift_sent_at")
   apiProviderId   Int?     @map("api_provider_id")
   externalOrderId String?  @db.VarChar(255) @map("external_order_id")
   createdAt       DateTime @default(now()) @map("created_at")

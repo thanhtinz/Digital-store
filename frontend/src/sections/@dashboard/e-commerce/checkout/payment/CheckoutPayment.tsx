@@ -1,5 +1,5 @@
 // @mui
-import { Box, Card, Grid, Stack, Alert, Button, Switch, Typography } from '@mui/material';
+import { Box, Card, Grid, Stack, Alert, Button, Switch, TextField, Typography } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import { useEffect, useMemo, useState } from 'react';
 // next
@@ -61,6 +61,12 @@ export default function CheckoutPayment({
   } | null>(null);
   const [usePoints, setUsePoints] = useState(false);
 
+  // Mua tặng — gửi sản phẩm tới email người nhận khác.
+  const [isGift, setIsGift] = useState(false);
+  const [giftEmail, setGiftEmail] = useState('');
+  const [giftMessage, setGiftMessage] = useState('');
+  const giftEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(giftEmail.trim());
+
   useEffect(() => {
     axios
       .get('/api/loyalty/me')
@@ -109,6 +115,10 @@ export default function CheckoutPayment({
       enqueueSnackbar(t('invalid_cart'), { variant: 'error' });
       return;
     }
+    if (isGift && !giftEmailValid) {
+      enqueueSnackbar(t('gift_email_invalid'), { variant: 'error' });
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await axios.post('/api/orders', {
@@ -117,6 +127,9 @@ export default function CheckoutPayment({
         payment_method: method === 'balance' ? 'balance' : 'sepay',
         coupon_code: (checkout as any).couponCode || undefined,
         redeem_points: usePoints && canUsePoints ? redeemPoints : undefined,
+        is_gift: isGift || undefined,
+        gift_recipient_email: isGift ? giftEmail.trim() : undefined,
+        gift_message: isGift && giftMessage.trim() ? giftMessage.trim() : undefined,
       });
       const code = res.data?.order_code || res.data?.orderCode || '';
       if (typeof window !== 'undefined') window.dispatchEvent(new Event('balance:refresh'));
@@ -227,6 +240,53 @@ export default function CheckoutPayment({
             </Box>
           )}
 
+          {/* Mua tặng */}
+          <Box
+            sx={{
+              mt: 2,
+              p: 2,
+              borderRadius: 1.5,
+              border: (th) => `solid 1px ${th.palette.divider}`,
+            }}
+          >
+            <Stack direction="row" alignItems="center" gap={1.5}>
+              <Iconify icon="solar:gift-bold-duotone" width={28} sx={{ color: 'error.main' }} />
+              <Box sx={{ flexGrow: 1 }}>
+                <Typography variant="subtitle2">{t('gift_title')}</Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                  {t('gift_desc')}
+                </Typography>
+              </Box>
+              <Switch checked={isGift} onChange={(e) => setIsGift(e.target.checked)} />
+            </Stack>
+
+            {isGift && (
+              <Stack spacing={1.5} sx={{ mt: 2 }}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  type="email"
+                  label={t('gift_email_label')}
+                  placeholder="email@example.com"
+                  value={giftEmail}
+                  onChange={(e) => setGiftEmail(e.target.value)}
+                  error={!!giftEmail && !giftEmailValid}
+                  helperText={!!giftEmail && !giftEmailValid ? t('gift_email_invalid') : t('gift_email_help')}
+                />
+                <TextField
+                  fullWidth
+                  size="small"
+                  multiline
+                  rows={2}
+                  label={t('gift_message_label')}
+                  placeholder={t('gift_message_ph')}
+                  value={giftMessage}
+                  onChange={(e) => setGiftMessage(e.target.value.slice(0, 500))}
+                />
+              </Stack>
+            )}
+          </Box>
+
           {method === 'balance' && !enough && (
             <Alert
               severity="warning"
@@ -266,7 +326,7 @@ export default function CheckoutPayment({
           size="large"
           variant="contained"
           loading={submitting}
-          disabled={method === 'balance' && !enough}
+          disabled={(method === 'balance' && !enough) || (isGift && !giftEmailValid)}
           onClick={placeOrder}
           startIcon={<Iconify icon="solar:bag-check-bold" />}
         >

@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../db';
 import { requireUser, requireAdmin, requireStaffOrAdmin } from '../middleware/auth';
-import { orderToDict, genOrderCode, applyCoupon, autoDeliver, money, refundOrderBalance } from '../services/orders';
+import { orderToDict, genOrderCode, applyCoupon, autoDeliver, money, refundOrderBalance, maybeSendGiftEmail } from '../services/orders';
 import { notifyNewOrder } from '../services/telegram';
 import { createNotification } from '../services/notify';
 import { sendMail } from '../services/mail';
@@ -86,6 +86,15 @@ router.post(['/', '/create'], requireUser, async (req: Request, res: Response) =
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       res.status(422).json({ detail: 'Cần ít nhất 1 sản phẩm' });
+      return;
+    }
+
+    // Mua tặng: gửi sản phẩm tới email người nhận khác.
+    const isGift = req.body.is_gift === true || req.body.is_gift === 'true';
+    const giftRecipientEmail = isGift ? String(req.body.gift_recipient_email || '').trim() : '';
+    const giftMessage = isGift ? String(req.body.gift_message || '').trim().slice(0, 500) : '';
+    if (isGift && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(giftRecipientEmail)) {
+      res.status(422).json({ detail: 'Email người nhận quà không hợp lệ' });
       return;
     }
 
@@ -188,6 +197,9 @@ router.post(['/', '/create'], requireUser, async (req: Request, res: Response) =
           paymentMethod: payment_method,
           customFieldsData: isSingleItem ? orderItemsData[0].customFieldsData : custom_fields_data || null,
           notes: pointsUsed > 0 ? `${notes ? notes + ' | ' : ''}Đã đổi ${pointsUsed} điểm (-${pointDiscount.toLocaleString()}đ)` : (notes || null),
+          isGift,
+          giftRecipientEmail: isGift ? giftRecipientEmail : null,
+          giftMessage: isGift && giftMessage ? giftMessage : null,
         },
       });
 
@@ -383,6 +395,7 @@ router.patch('/admin/:order_code/status', requireStaffOrAdmin, async (req: Reque
       sendOrderStatusEmail(order.userEmail, order.orderCode, status);
       if (status === 'completed') {
         awardPointsForOrder(order.userId, money(order.totalAmount), order.orderCode).catch(() => {});
+        maybeSendGiftEmail(order.id).catch(() => {});
       }
       // Hoàn điểm đã đổi khi đơn bị hủy / hoàn tiền / thất bại
       if (['cancelled', 'refunded', 'failed'].includes(status)) {
@@ -427,6 +440,7 @@ router.post('/admin/:order_code/deliver', requireStaffOrAdmin, async (req: Reque
       link: `/orders/${order.orderCode}`,
     }).catch(() => {});
     sendOrderStatusEmail(order.userEmail, order.orderCode, 'completed');
+    maybeSendGiftEmail(order.id).catch(() => {});
     res.json({ message: 'Đã giao hàng', status: updated.status });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });

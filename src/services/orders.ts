@@ -1,4 +1,5 @@
 import prisma from '../db';
+import { sendMail } from './mail';
 
 // Decimal | number | string | null — Prisma Decimal serializes via toString()
 type Numeric = { toString(): string } | number | string | null | undefined;
@@ -100,6 +101,7 @@ export async function autoDeliver(orderId: number): Promise<void> {
       if (done.count > 0) {
         const { awardPointsForOrder } = await import('./loyalty');
         awardPointsForOrder(order.userId, money(order.totalAmount), order.orderCode).catch(() => {});
+        maybeSendGiftEmail(orderId).catch(() => {});
       }
     }
     return;
@@ -136,6 +138,7 @@ export async function autoDeliver(orderId: number): Promise<void> {
 
     const { awardPointsForOrder } = await import('./loyalty');
     awardPointsForOrder(order.userId, money(order.totalAmount), order.orderCode).catch(() => {});
+    maybeSendGiftEmail(orderId).catch(() => {});
 
     // Cảnh báo hết hàng nếu tồn kho thấp (≤5)
     const remaining = await prisma.stockItem.count({ where: { packageId, isSold: false } });
@@ -144,6 +147,85 @@ export async function autoDeliver(orderId: number): Promise<void> {
       const { notifyLowStock } = await import('./telegram');
       notifyLowStock(pkg?.product?.name || '', pkg?.name || '', remaining).catch(() => {});
     }
+  }
+}
+
+/**
+ * Gửi email giao hàng cho người được tặng (đơn "Mua tặng").
+ *
+ * Chỉ gửi khi đơn đã hoàn tất giao (status='completed') và chưa gửi lần nào.
+ * Idempotent: dùng updateMany có điều kiện trên `giftSentAt` làm khóa, nếu gửi
+ * thất bại sẽ trả `giftSentAt` về null để lần giao sau thử lại. Không ném lỗi.
+ */
+export async function maybeSendGiftEmail(orderId: number): Promise<void> {
+  try {
+    // Khóa quyền gửi: chỉ một luồng "giành" được (giftSentAt: null -> now)
+    const claim = await prisma.order.updateMany({
+      where: { id: orderId, isGift: true, status: 'completed', giftSentAt: null, giftRecipientEmail: { not: null } },
+      data: { giftSentAt: new Date() },
+    });
+    if (claim.count === 0) return; // không đủ điều kiện hoặc đã gửi
+
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { package: { include: { product: true } }, items: { include: { package: { include: { product: true } } } } },
+    });
+    if (!order || !order.giftRecipientEmail) return;
+
+    // Gom nội dung đã giao theo từng sản phẩm
+    const blocks: { name: string; data: string }[] = [];
+    if (order.items.length > 0) {
+      for (const it of order.items) {
+        if (it.deliveryData) {
+          const label = `${it.productNameSnapshot || it.package?.product?.name || ''}${it.packageNameSnapshot ? ` - ${it.packageNameSnapshot}` : ''}`;
+          blocks.push({ name: label.trim() || 'Sản phẩm', data: it.deliveryData });
+        }
+      }
+    } else if (order.deliveryData) {
+      const label = `${order.package?.product?.name || ''}${order.package?.name ? ` - ${order.package.name}` : ''}`;
+      blocks.push({ name: label.trim() || 'Sản phẩm', data: order.deliveryData });
+    }
+
+    const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const itemsHtml = blocks.length
+      ? blocks
+          .map(
+            (b) => `
+        <div style="margin:0 0 12px;padding:12px 14px;background:#f6f8fb;border-radius:10px">
+          <div style="font-weight:600;margin-bottom:6px">${esc(b.name)}</div>
+          <pre style="margin:0;white-space:pre-wrap;word-break:break-word;font-family:Consolas,monospace;font-size:13px;color:#222">${esc(b.data.replace(/\n---\n/g, '\n──────────\n'))}</pre>
+        </div>`
+          )
+          .join('')
+      : '<p>Người tặng sẽ gửi nội dung sản phẩm cho bạn trong thời gian sớm nhất.</p>';
+
+    const messageHtml = order.giftMessage
+      ? `<div style="margin:0 0 16px;padding:12px 14px;background:#fff6e5;border-left:4px solid #ffab00;border-radius:6px">
+           <div style="font-size:12px;color:#b76e00;margin-bottom:4px">Lời nhắn từ người tặng</div>
+           <div style="color:#333">${esc(order.giftMessage)}</div>
+         </div>`
+      : '';
+
+    const subject = `🎁 Bạn nhận được một món quà — đơn ${order.orderCode}`;
+    const html = `
+      <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#212B36">
+        <h2 style="margin:0 0 6px">🎁 Bạn vừa được tặng một sản phẩm!</h2>
+        <p style="color:#637381;margin:0 0 16px">Một người bạn đã mua tặng bạn sản phẩm số dưới đây. Chúc bạn sử dụng vui vẻ!</p>
+        ${messageHtml}
+        <h3 style="margin:16px 0 8px">Nội dung sản phẩm</h3>
+        ${itemsHtml}
+        <p style="color:#919EAB;font-size:12px;margin-top:18px">Mã đơn: ${order.orderCode}. Email này được gửi tự động, vui lòng không trả lời.</p>
+      </div>`;
+    const text = `Bạn được tặng một sản phẩm (đơn ${order.orderCode}).${order.giftMessage ? `\nLời nhắn: ${order.giftMessage}` : ''}\n\n${blocks.map((b) => `${b.name}:\n${b.data}`).join('\n\n')}`;
+
+    const result = await sendMail({ to: order.giftRecipientEmail, subject, html, text });
+    if (!result.ok) {
+      // Gửi hỏng -> mở khóa để thử lại lần giao sau
+      await prisma.order.updateMany({ where: { id: orderId, giftSentAt: { not: null } }, data: { giftSentAt: null } });
+    }
+  } catch {
+    // nuốt: gửi quà không được làm hỏng luồng giao hàng
+    await prisma.order.updateMany({ where: { id: orderId, isGift: true, status: 'completed' }, data: { giftSentAt: null } }).catch(() => {});
   }
 }
 
@@ -289,6 +371,10 @@ export function orderToDict(order: any): Record<string, any> {
     paymentLinkId: order.paymentLinkId,
     deliveryData: order.deliveryData,
     notes: order.notes,
+    isGift: order.isGift || false,
+    giftRecipientEmail: order.giftRecipientEmail || null,
+    giftMessage: order.giftMessage || null,
+    giftSentAt: order.giftSentAt?.toISOString() || null,
     createdAt: order.createdAt?.toISOString(),
     updatedAt: order.updatedAt?.toISOString(),
     items,
