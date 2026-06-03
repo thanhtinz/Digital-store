@@ -3,14 +3,23 @@ import { useEffect, useMemo, useState } from 'react';
 import NextLink from 'next/link';
 // @mui
 import {
-  Box,
+  Avatar,
   Button,
   Card,
   Container,
-  Divider,
+  IconButton,
+  InputAdornment,
   Stack,
   Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   Tabs,
+  TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 // locales
@@ -25,6 +34,9 @@ import { PATH_DASHBOARD } from '../../routes/paths';
 import Label from '../../components/label';
 import Image from '../../components/image';
 import Iconify from '../../components/iconify';
+import Scrollbar from '../../components/scrollbar';
+import EmptyContent from '../../components/empty-content';
+import CustomBreadcrumbs from '../../components/custom-breadcrumbs';
 import { useSnackbar } from '../../components/snackbar';
 //
 import {
@@ -47,6 +59,7 @@ type Order = {
   orderCode: string;
   status: string;
   totalAmount: number;
+  quantity?: number;
   productName?: string;
   productImg?: string;
   createdAt: string;
@@ -70,9 +83,15 @@ export default function OrdersView() {
     return o.productName || t('order');
   };
 
+  const totalQty = (o: Order): number =>
+    o.items && o.items.length
+      ? o.items.reduce((s, it) => s + (it.quantity || 1), 0)
+      : o.quantity || 1;
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('all');
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     let alive = true;
@@ -98,98 +117,140 @@ export default function OrdersView() {
     return map;
   }, [orders]);
 
-  const filtered = orders.filter((o) => matchOrderFilter(o.status, tab));
+  const filtered = orders
+    .filter((o) => matchOrderFilter(o.status, tab))
+    .filter((o) => {
+      const q = search.trim().toLowerCase();
+      if (!q) return true;
+      return (
+        o.orderCode.toLowerCase().includes(q) ||
+        summaryLabel(o).toLowerCase().includes(q)
+      );
+    });
 
   return (
     <Container sx={{ pb: 6 }}>
-      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1, mt: 2 }}>
-        <Iconify icon="solar:bill-list-bold-duotone" width={32} />
-        <Typography variant="h4">{t('title')}</Typography>
-      </Stack>
-      <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
-        {t('total_prefix')} {orders.length} {t('total_suffix')}
-      </Typography>
+      <CustomBreadcrumbs
+        heading={t('title')}
+        links={[{ name: t('bc_home'), href: '/' }, { name: t('title') }]}
+        sx={{ mt: 2 }}
+      />
 
-      <Tabs
-        value={tab}
-        onChange={(_, v) => setTab(v)}
-        variant="scrollable"
-        scrollButtons="auto"
-        sx={{ mb: 3 }}
-      >
-        {ORDER_FILTER_TABS.map((tabItem) => (
-          <Tab
-            key={tabItem.value}
-            value={tabItem.value}
-            label={`${t(tabItem.labelKey)} (${counts[tabItem.value] || 0})`}
-          />
-        ))}
-      </Tabs>
-
-      {loading ? (
-        <Typography sx={{ color: 'text.secondary' }}>{t('loading')}</Typography>
-      ) : filtered.length === 0 ? (
-        <Card sx={{ p: 5, textAlign: 'center' }}>
-          <Typography sx={{ color: 'text.secondary' }}>{t('empty')}</Typography>
-          <Button
-            component={NextLink}
-            href={PATH_DASHBOARD.eCommerce.shop}
-            variant="contained"
-            sx={{ mt: 2 }}
-          >
-            {t('shop_now')}
-          </Button>
-        </Card>
-      ) : (
-        <Stack spacing={2}>
-          {filtered.map((o) => (
-            <Card key={o.id} sx={{ p: 2.5 }}>
-              <Stack direction="row" alignItems="center" justifyContent="space-between">
-                <Typography variant="subtitle1">#{o.orderCode}</Typography>
-                <Label variant="soft" color={orderStatusColor(o.status)}>
-                  {orderStatusKey(o.status) ? t(orderStatusKey(o.status)) : o.status || '—'}
-                </Label>
-              </Stack>
-
-              <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
-                {summaryLabel(o)}
-              </Typography>
-
-              <Divider sx={{ borderStyle: 'dashed', my: 1.5 }} />
-
-              <Stack direction="row" alignItems="center" justifyContent="space-between">
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                  {fDateTime(o.createdAt)}
-                </Typography>
-                <Typography variant="subtitle2">
-                  {t('total_label')}: {fCurrency(o.totalAmount)}
-                </Typography>
-              </Stack>
-
-              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 2 }}>
-                {o.productImg ? (
-                  <Image
-                    src={o.productImg}
-                    alt={o.orderCode}
-                    sx={{ width: 56, height: 56, borderRadius: 1 }}
-                  />
-                ) : (
-                  <Box />
-                )}
-                <Button
-                  component={NextLink}
-                  href={PATH_DASHBOARD.orders.view(o.orderCode)}
-                  size="small"
-                  variant="outlined"
-                  endIcon={<Iconify icon="eva:arrow-ios-forward-fill" />}
-                >
-                  {t('view_detail')}
-                </Button>
-              </Stack>
-            </Card>
+      <Card>
+        <Tabs
+          value={tab}
+          onChange={(_, v) => setTab(v)}
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{ px: 2, bgcolor: 'background.neutral' }}
+        >
+          {ORDER_FILTER_TABS.map((tabItem) => (
+            <Tab
+              key={tabItem.value}
+              value={tabItem.value}
+              label={`${t(tabItem.labelKey)} (${counts[tabItem.value] || 0})`}
+            />
           ))}
+        </Tabs>
+
+        <Stack sx={{ p: 2.5 }}>
+          <TextField
+            size="small"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t('search_ph')}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ maxWidth: 360 }}
+          />
         </Stack>
-      )}
+
+        {loading ? (
+          <Typography sx={{ color: 'text.secondary', p: 3 }}>{t('loading')}</Typography>
+        ) : filtered.length === 0 ? (
+          <Stack alignItems="center" sx={{ py: 2 }}>
+            <EmptyContent title={t('empty')} sx={{ py: 4 }} />
+            <Button
+              component={NextLink}
+              href={PATH_DASHBOARD.eCommerce.shop}
+              variant="contained"
+              sx={{ mb: 4 }}
+            >
+              {t('shop_now')}
+            </Button>
+          </Stack>
+        ) : (
+          <TableContainer sx={{ overflow: 'unset' }}>
+            <Scrollbar>
+              <Table sx={{ minWidth: 720 }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>{t('col_product')}</TableCell>
+                    <TableCell>{t('col_date')}</TableCell>
+                    <TableCell align="center">{t('col_qty')}</TableCell>
+                    <TableCell align="right">{t('col_total')}</TableCell>
+                    <TableCell align="center">{t('col_status')}</TableCell>
+                    <TableCell align="right" />
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filtered.map((o) => (
+                    <TableRow key={o.id} hover>
+                      <TableCell>
+                        <Stack direction="row" alignItems="center" spacing={2}>
+                          {o.productImg ? (
+                            <Image
+                              src={o.productImg}
+                              alt={o.orderCode}
+                              sx={{ width: 48, height: 48, borderRadius: 1, flexShrink: 0 }}
+                            />
+                          ) : (
+                            <Avatar variant="rounded" sx={{ width: 48, height: 48, bgcolor: 'background.neutral' }}>
+                              <Iconify icon="solar:box-bold-duotone" />
+                            </Avatar>
+                          )}
+                          <Stack sx={{ minWidth: 0 }}>
+                            <Typography variant="subtitle2" noWrap>
+                              #{o.orderCode}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: 'text.secondary' }} noWrap>
+                              {summaryLabel(o)}
+                            </Typography>
+                          </Stack>
+                        </Stack>
+                      </TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap', color: 'text.secondary', typography: 'caption' }}>
+                        {fDateTime(o.createdAt)}
+                      </TableCell>
+                      <TableCell align="center">{totalQty(o)}</TableCell>
+                      <TableCell align="right">
+                        <Typography variant="subtitle2">{fCurrency(o.totalAmount)}</Typography>
+                      </TableCell>
+                      <TableCell align="center">
+                        <Label variant="soft" color={orderStatusColor(o.status)}>
+                          {orderStatusKey(o.status) ? t(orderStatusKey(o.status)) : o.status || '—'}
+                        </Label>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Tooltip title={t('view_detail')}>
+                          <IconButton component={NextLink} href={PATH_DASHBOARD.orders.view(o.orderCode)}>
+                            <Iconify icon="eva:arrow-ios-forward-fill" />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Scrollbar>
+          </TableContainer>
+        )}
+      </Card>
     </Container>
   );
 }

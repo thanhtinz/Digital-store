@@ -27,6 +27,7 @@ import { PATH_DASHBOARD } from '../../routes/paths';
 // components
 import Label from '../../components/label';
 import Iconify from '../../components/iconify';
+import CustomBreadcrumbs from '../../components/custom-breadcrumbs';
 import { useSnackbar } from '../../components/snackbar';
 //
 import { orderStatusColor, orderStatusKey } from './orderStatus';
@@ -278,11 +279,20 @@ export default function OrderDetailView() {
 
   return (
     <Container sx={{ pb: 6 }}>
+      <CustomBreadcrumbs
+        heading={`${t('order_title')} #${order.orderCode}`}
+        links={[
+          { name: t('back_to_list'), href: PATH_DASHBOARD.orders.root },
+          { name: `#${order.orderCode}` },
+        ]}
+        sx={{ mt: 2 }}
+      />
+
       <Button
         component={NextLink}
         href={PATH_DASHBOARD.orders.root}
         startIcon={<Iconify icon="eva:arrow-ios-back-fill" />}
-        sx={{ my: 2 }}
+        sx={{ mb: 2 }}
         color="inherit"
       >
         {t('back_to_list')}
