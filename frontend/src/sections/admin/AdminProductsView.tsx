@@ -12,9 +12,11 @@ import {
   DialogContent,
   DialogTitle,
   FormControlLabel,
+  Divider,
   IconButton,
   MenuItem,
   Stack,
+  Switch,
   Table,
   TableBody,
   TableCell,
@@ -22,6 +24,7 @@ import {
   TableHead,
   TableRow,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 // utils
@@ -73,6 +76,7 @@ export default function AdminProductsView() {
   const [saving, setSaving] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
   const [toDelete, setToDelete] = useState<Product | null>(null);
+  const [pkgFor, setPkgFor] = useState<Product | null>(null);
 
   // Sinh mô tả sản phẩm bằng AI (cần cấu hình AI ở Tích hợp/Cài đặt).
   const aiGenerate = async () => {
@@ -215,6 +219,11 @@ export default function AdminProductsView() {
                       </Label>
                     </TableCell>
                     <TableCell align="right">
+                      <Tooltip title="Quản lý gói & giá">
+                        <IconButton color="primary" onClick={() => setPkgFor(p)}>
+                          <Iconify icon="solar:box-minimalistic-bold" />
+                        </IconButton>
+                      </Tooltip>
                       <IconButton onClick={() => openEdit(p)}>
                         <Iconify icon="solar:pen-bold" />
                       </IconButton>
@@ -309,7 +318,7 @@ export default function AdminProductsView() {
                 />
               </Stack>
               <Typography variant="caption" color="text.secondary">
-                Giá & gói sản phẩm quản lý ở phần Gói (sẽ bổ sung sau).
+                Sau khi lưu, bấm nút <b>Gói &amp; giá</b> (biểu tượng hộp) ở danh sách để thêm gói/giá và trường nhập.
               </Typography>
             </Stack>
           )}
@@ -335,6 +344,341 @@ export default function AdminProductsView() {
           </Button>
         }
       />
+
+      <PackagesDialog product={pkgFor} onClose={() => setPkgFor(null)} onChanged={load} />
     </Container>
+  );
+}
+
+// ----------------------------------------------------------------------
+// QUẢN LÝ GÓI + GIÁ của 1 sản phẩm
+
+const DELIVERY_TYPES = [
+  { value: 'manual', label: 'Thủ công (admin giao)' },
+  { value: 'stock', label: 'Kho có sẵn (tự giao)' },
+  { value: 'api', label: 'API nhà cung cấp' },
+];
+const PKG_EMPTY = { id: 0, name: '', price: 0, original_price: 0, delivery_type: 'manual', sort_order: 0, is_active: true };
+
+function PackagesDialog({ product, onClose, onChanged }: { product: any; onClose: VoidFunction; onChanged: VoidFunction }) {
+  const { enqueueSnackbar } = useSnackbar();
+  const [pkgs, setPkgs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState<typeof PKG_EMPTY | null>(null);
+  const [fieldsFor, setFieldsFor] = useState<any>(null);
+
+  const load = () => {
+    if (!product) return;
+    setLoading(true);
+    axiosInstance
+      .get(`/api/products/admin/${product.id}/packages`)
+      .then((r) => setPkgs(r.data?.items || []))
+      .catch((e) => enqueueSnackbar(e?.detail || 'Lỗi tải gói', { variant: 'error' }))
+      .finally(() => setLoading(false));
+  };
+  useEffect(() => {
+    if (product) {
+      load();
+      setForm(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product]);
+
+  const save = async () => {
+    if (!form) return;
+    if (!form.name.trim()) {
+      enqueueSnackbar('Nhập tên gói', { variant: 'warning' });
+      return;
+    }
+    const payload = {
+      name: form.name,
+      price: Number(form.price) || 0,
+      original_price: Number(form.original_price) || null,
+      delivery_type: form.delivery_type,
+      sort_order: Number(form.sort_order) || 0,
+      is_active: form.is_active,
+    };
+    try {
+      if (form.id) await axiosInstance.patch(`/api/products/admin/packages/${form.id}`, payload);
+      else await axiosInstance.post(`/api/products/admin/${product.id}/packages`, payload);
+      enqueueSnackbar('Đã lưu gói');
+      setForm(null);
+      load();
+      onChanged();
+    } catch (e: any) {
+      enqueueSnackbar(e?.detail || 'Lưu thất bại', { variant: 'error' });
+    }
+  };
+  const del = async (id: number) => {
+    // eslint-disable-next-line no-alert
+    if (!window.confirm('Xoá gói này?')) return;
+    try {
+      await axiosInstance.delete(`/api/products/admin/packages/${id}`);
+      enqueueSnackbar('Đã xoá gói');
+      load();
+      onChanged();
+    } catch (e: any) {
+      enqueueSnackbar(e?.detail || 'Xoá thất bại', { variant: 'error' });
+    }
+  };
+
+  return (
+    <Dialog open={!!product} onClose={onClose} fullWidth maxWidth="md">
+      <DialogTitle>Gói & giá — {product?.name}</DialogTitle>
+      <DialogContent>
+        <Stack direction="row" justifyContent="flex-end" sx={{ mb: 1 }}>
+          <Button size="small" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => setForm({ ...PKG_EMPTY })}>
+            Thêm gói
+          </Button>
+        </Stack>
+
+        {loading ? (
+          <Stack alignItems="center" sx={{ py: 4 }}>
+            <CircularProgress />
+          </Stack>
+        ) : (
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Gói</TableCell>
+                <TableCell align="right">Giá</TableCell>
+                <TableCell align="right">Giá gốc</TableCell>
+                <TableCell>Giao hàng</TableCell>
+                <TableCell align="center">Trạng thái</TableCell>
+                <TableCell align="right">Thao tác</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {pkgs.map((pk) => (
+                <TableRow key={pk.id} hover>
+                  <TableCell>{pk.name}</TableCell>
+                  <TableCell align="right">{fCurrency(pk.price)}</TableCell>
+                  <TableCell align="right" sx={{ color: 'text.disabled' }}>
+                    {pk.originalPrice ? fCurrency(pk.originalPrice) : '—'}
+                  </TableCell>
+                  <TableCell sx={{ fontSize: 13 }}>{pk.deliveryType}</TableCell>
+                  <TableCell align="center">
+                    <Label color={pk.isActive ? 'success' : 'default'}>{pk.isActive ? 'Bật' : 'Tắt'}</Label>
+                  </TableCell>
+                  <TableCell align="right">
+                    <Tooltip title="Trường nhập thông tin">
+                      <IconButton size="small" onClick={() => setFieldsFor(pk)}>
+                        <Iconify icon="solar:list-check-bold" />
+                      </IconButton>
+                    </Tooltip>
+                    <IconButton
+                      size="small"
+                      onClick={() =>
+                        setForm({
+                          id: pk.id,
+                          name: pk.name,
+                          price: pk.price,
+                          original_price: pk.originalPrice || 0,
+                          delivery_type: pk.deliveryType || 'manual',
+                          sort_order: pk.sortOrder || 0,
+                          is_active: pk.isActive,
+                        })
+                      }
+                    >
+                      <Iconify icon="solar:pen-bold" />
+                    </IconButton>
+                    <IconButton size="small" color="error" onClick={() => del(pk.id)}>
+                      <Iconify icon="solar:trash-bin-trash-bold" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {!pkgs.length && (
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                    Chưa có gói — thêm gói để sản phẩm có giá bán.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        )}
+
+        {form && (
+          <>
+            <Divider sx={{ my: 2 }} />
+            <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
+              {form.id ? 'Sửa gói' : 'Thêm gói'}
+            </Typography>
+            <Stack spacing={2}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <TextField fullWidth label="Tên gói" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                <TextField select label="Giao hàng" sx={{ minWidth: 200 }} value={form.delivery_type} onChange={(e) => setForm({ ...form, delivery_type: e.target.value })}>
+                  {DELIVERY_TYPES.map((d) => (
+                    <MenuItem key={d.value} value={d.value}>
+                      {d.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Stack>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <TextField fullWidth type="number" label="Giá bán (VNĐ)" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} />
+                <TextField fullWidth type="number" label="Giá gốc (gạch ngang, tuỳ chọn)" value={form.original_price} onChange={(e) => setForm({ ...form, original_price: Number(e.target.value) })} />
+                <TextField type="number" label="Thứ tự" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })} />
+              </Stack>
+              <FormControlLabel
+                control={<Switch checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />}
+                label="Đang bán"
+              />
+              <Stack direction="row" spacing={1.5}>
+                <Button variant="contained" onClick={save}>
+                  Lưu gói
+                </Button>
+                <Button color="inherit" onClick={() => setForm(null)}>
+                  Huỷ
+                </Button>
+              </Stack>
+            </Stack>
+          </>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Đóng</Button>
+      </DialogActions>
+
+      <FieldsDialog pkg={fieldsFor} onClose={() => setFieldsFor(null)} />
+    </Dialog>
+  );
+}
+
+// ----------------------------------------------------------------------
+// TRƯỜNG NHẬP THÔNG TIN (PackageField) của 1 gói
+
+const FIELD_TYPES = ['text', 'email', 'textarea', 'select', 'number'];
+const FIELD_EMPTY = { id: 0, field_name: '', field_type: 'text', is_required: true, options: '', sort_order: 0 };
+
+function FieldsDialog({ pkg, onClose }: { pkg: any; onClose: VoidFunction }) {
+  const { enqueueSnackbar } = useSnackbar();
+  const [fields, setFields] = useState<any[]>([]);
+  const [form, setForm] = useState<typeof FIELD_EMPTY | null>(null);
+
+  const load = () => {
+    if (!pkg) return;
+    axiosInstance
+      .get(`/api/products/admin/packages/${pkg.id}/fields`)
+      .then((r) => setFields(r.data || []))
+      .catch(() => {});
+  };
+  useEffect(() => {
+    if (pkg) {
+      load();
+      setForm(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pkg]);
+
+  const save = async () => {
+    if (!form) return;
+    if (!form.field_name.trim()) {
+      enqueueSnackbar('Nhập tên trường', { variant: 'warning' });
+      return;
+    }
+    const payload = {
+      field_name: form.field_name,
+      field_type: form.field_type,
+      is_required: form.is_required,
+      options: form.options,
+      sort_order: Number(form.sort_order) || 0,
+    };
+    try {
+      if (form.id) await axiosInstance.patch(`/api/products/admin/fields/${form.id}`, payload);
+      else await axiosInstance.post(`/api/products/admin/packages/${pkg.id}/fields`, payload);
+      enqueueSnackbar('Đã lưu trường');
+      setForm(null);
+      load();
+    } catch (e: any) {
+      enqueueSnackbar(e?.detail || 'Lưu thất bại', { variant: 'error' });
+    }
+  };
+  const del = async (id: number) => {
+    try {
+      await axiosInstance.delete(`/api/products/admin/fields/${id}`);
+      load();
+    } catch (e: any) {
+      enqueueSnackbar(e?.detail || 'Xoá thất bại', { variant: 'error' });
+    }
+  };
+
+  return (
+    <Dialog open={!!pkg} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle>Trường nhập — {pkg?.name}</DialogTitle>
+      <DialogContent>
+        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+          Khách sẽ phải nhập các trường này khi mua (vd: email tài khoản, ID game…).
+        </Typography>
+        <Stack direction="row" justifyContent="flex-end" sx={{ my: 1 }}>
+          <Button size="small" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => setForm({ ...FIELD_EMPTY })}>
+            Thêm trường
+          </Button>
+        </Stack>
+        <Table size="small">
+          <TableBody>
+            {fields.map((f) => (
+              <TableRow key={f.id} hover>
+                <TableCell>{f.field_name}</TableCell>
+                <TableCell sx={{ fontSize: 13 }}>{f.field_type}</TableCell>
+                <TableCell sx={{ fontSize: 13 }}>{f.is_required ? 'Bắt buộc' : 'Tuỳ chọn'}</TableCell>
+                <TableCell align="right">
+                  <IconButton size="small" onClick={() => setForm({ id: f.id, field_name: f.field_name, field_type: f.field_type, is_required: f.is_required, options: f.options || '', sort_order: f.sort_order || 0 })}>
+                    <Iconify icon="solar:pen-bold" />
+                  </IconButton>
+                  <IconButton size="small" color="error" onClick={() => del(f.id)}>
+                    <Iconify icon="solar:trash-bin-trash-bold" />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+            {!fields.length && (
+              <TableRow>
+                <TableCell align="center" sx={{ py: 3, color: 'text.secondary' }}>
+                  Chưa có trường nhập
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+
+        {form && (
+          <>
+            <Divider sx={{ my: 2 }} />
+            <Stack spacing={2}>
+              <TextField label="Tên trường (nhãn)" value={form.field_name} onChange={(e) => setForm({ ...form, field_name: e.target.value })} />
+              <Stack direction="row" spacing={2}>
+                <TextField select fullWidth label="Loại" value={form.field_type} onChange={(e) => setForm({ ...form, field_type: e.target.value })}>
+                  {FIELD_TYPES.map((t) => (
+                    <MenuItem key={t} value={t}>
+                      {t}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <FormControlLabel
+                  control={<Switch checked={form.is_required} onChange={(e) => setForm({ ...form, is_required: e.target.checked })} />}
+                  label="Bắt buộc"
+                />
+              </Stack>
+              {form.field_type === 'select' && (
+                <TextField label="Tuỳ chọn (cách nhau bởi dấu phẩy)" value={form.options} onChange={(e) => setForm({ ...form, options: e.target.value })} />
+              )}
+              <Stack direction="row" spacing={1.5}>
+                <Button variant="contained" onClick={save}>
+                  Lưu trường
+                </Button>
+                <Button color="inherit" onClick={() => setForm(null)}>
+                  Huỷ
+                </Button>
+              </Stack>
+            </Stack>
+          </>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Đóng</Button>
+      </DialogActions>
+    </Dialog>
   );
 }
