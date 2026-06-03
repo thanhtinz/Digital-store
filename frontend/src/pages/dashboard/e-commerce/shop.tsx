@@ -11,25 +11,24 @@ import { Container, Typography, Stack } from '@mui/material';
 // redux
 import { useDispatch, useSelector } from '../../../redux/store';
 import { getProducts } from '../../../redux/slices/product';
-// routes
-import { PATH_DASHBOARD } from '../../../routes/paths';
+// utils
+import axiosInstance from '../../../utils/axios';
 // @types
 import { IProduct, IProductFilter } from '../../../@types/product';
 // layouts
 import DashboardLayout from '../../../layouts/dashboard';
+// locales
+import { useLocales } from '../../../locales';
 // components
 import FormProvider from '../../../components/hook-form';
-import CustomBreadcrumbs from '../../../components/custom-breadcrumbs';
 import { useSettingsContext } from '../../../components/settings';
 // sections
 import {
-  ShopTagFiltered,
   ShopProductSort,
   ShopProductList,
   ShopFilterDrawer,
   ShopProductSearch,
 } from '../../../sections/@dashboard/e-commerce/shop';
-import CartWidget from '../../../sections/@dashboard/e-commerce/CartWidget';
 
 // ----------------------------------------------------------------------
 
@@ -42,13 +41,27 @@ EcommerceShopPage.getLayout = (page: React.ReactElement) => (
 export default function EcommerceShopPage() {
   const { themeStretch } = useSettingsContext();
 
+  const { translate } = useLocales();
+
   const dispatch = useDispatch();
 
   const { query } = useRouter();
 
-  const { products, checkout, isLoading } = useSelector((state) => state.product);
+  const { products, isLoading } = useSelector((state) => state.product);
 
   const [openFilter, setOpenFilter] = useState(false);
+
+  // Danh mục thật cho bộ lọc (thay cho các filter quần áo của template).
+  const [categories, setCategories] = useState<{ label: string; value: string }[]>([]);
+  useEffect(() => {
+    axiosInstance
+      .get('/api/categories')
+      .then((r) => {
+        const list = Array.isArray(r.data) ? r.data : [];
+        setCategories(list.map((c: any) => ({ label: c.name, value: c.slug })));
+      })
+      .catch(() => {});
+  }, []);
 
   const defaultValues = {
     gender: [],
@@ -69,13 +82,7 @@ export default function EcommerceShopPage() {
     formState: { dirtyFields },
   } = methods;
 
-  const isDefault =
-    (!dirtyFields.gender &&
-      !dirtyFields.category &&
-      !dirtyFields.colors &&
-      !dirtyFields.priceRange &&
-      !dirtyFields.rating) ||
-    false;
+  const isDefault = !dirtyFields.category;
 
   const values = watch();
 
@@ -104,22 +111,14 @@ export default function EcommerceShopPage() {
   return (
     <>
       <Head>
-        <title> Ecommerce: Shop | Minimal UI</title>
+        <title> {`${translate('shop_page.all_products')}`} | Digital Store</title>
       </Head>
 
       <FormProvider methods={methods}>
         <Container maxWidth={themeStretch ? false : 'lg'}>
-          <CustomBreadcrumbs
-            heading="Shop"
-            links={[
-              { name: 'Dashboard', href: PATH_DASHBOARD.root },
-              {
-                name: 'E-Commerce',
-                href: PATH_DASHBOARD.eCommerce.root,
-              },
-              { name: 'Shop' },
-            ]}
-          />
+          <Typography variant="h4" sx={{ my: 3 }}>
+            {`${translate('shop_page.all_products')}`}
+          </Typography>
 
           <Stack
             spacing={2}
@@ -132,6 +131,7 @@ export default function EcommerceShopPage() {
 
             <Stack direction="row" spacing={1} flexShrink={0} sx={{ my: 1 }}>
               <ShopFilterDrawer
+                categories={categories}
                 isDefault={isDefault}
                 open={openFilter}
                 onOpen={handleOpenFilter}
@@ -145,20 +145,14 @@ export default function EcommerceShopPage() {
 
           <Stack sx={{ mb: 3 }}>
             {!isDefault && (
-              <>
-                <Typography variant="body2" gutterBottom>
-                  <strong>{dataFiltered.length}</strong>
-                  &nbsp;Products found
-                </Typography>
-
-                <ShopTagFiltered isFiltered={!isDefault} onResetFilter={handleResetFilter} />
-              </>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }} gutterBottom>
+                <strong>{dataFiltered.length}</strong>
+                &nbsp;{`${translate('shop_page.products_found')}`}
+              </Typography>
             )}
           </Stack>
 
           <ShopProductList products={dataFiltered} loading={isLoading} />
-
-          <CartWidget totalItems={checkout.totalItems} />
         </Container>
       </FormProvider>
     </>
@@ -167,57 +161,32 @@ export default function EcommerceShopPage() {
 
 // ----------------------------------------------------------------------
 
+// Giá hiệu lực của sản phẩm = giá thấp nhất trong các gói.
+function effPrice(product: any): number {
+  const prices = (product.packages || []).map((p: any) => p.price).filter((n: number) => n > 0);
+  return prices.length ? Math.min(...prices) : 0;
+}
+
 function applyFilter(products: IProduct[], filters: IProductFilter) {
-  const { gender, category, colors, priceRange, rating, sortBy } = filters;
-
-  const min = priceRange[0];
-
-  const max = priceRange[1];
+  const { category, sortBy } = filters;
 
   // SORT BY
   if (sortBy === 'featured') {
-    products = orderBy(products, ['sold'], ['desc']);
+    products = orderBy(products, [(p: any) => p.isFeatured], ['desc']);
   }
-
   if (sortBy === 'newest') {
     products = orderBy(products, ['createdAt'], ['desc']);
   }
-
   if (sortBy === 'priceDesc') {
-    products = orderBy(products, ['price'], ['desc']);
+    products = orderBy(products, [(p: any) => effPrice(p)], ['desc']);
   }
-
   if (sortBy === 'priceAsc') {
-    products = orderBy(products, ['price'], ['asc']);
+    products = orderBy(products, [(p: any) => effPrice(p)], ['asc']);
   }
 
-  // FILTER PRODUCTS
-  if (gender.length) {
-    products = products.filter((product) => gender.includes(product.gender));
-  }
-
-  if (category !== 'All') {
-    products = products.filter((product) => product.category === category);
-  }
-
-  if (colors.length) {
-    products = products.filter((product) => product.colors.some((color) => colors.includes(color)));
-  }
-
-  if (min !== 0 || max !== 200) {
-    products = products.filter((product) => product.price >= min && product.price <= max);
-  }
-
-  if (rating) {
-    products = products.filter((product) => {
-      const convertRating = (value: string) => {
-        if (value === 'up4Star') return 4;
-        if (value === 'up3Star') return 3;
-        if (value === 'up2Star') return 2;
-        return 1;
-      };
-      return product.totalRating > convertRating(rating);
-    });
+  // FILTER theo danh mục (so theo slug của danh mục thật)
+  if (category && category !== 'All') {
+    products = products.filter((product: any) => product.category?.slug === category);
   }
 
   return products;

@@ -57,6 +57,7 @@ const cn = {
   item_by_roles: `按角色逐项`,
   only_admin_can_see_this_item: `只有管理员可以看到这个项目`,
   nav: {
+    topup: `充值`,
     shopping: `购物`,
     services: `服务`,
     support: `支持`,
@@ -250,6 +251,14 @@ const cn = {
     loading: `加载中…`,
     empty: `暂无服务订单。`,
     quantity_short: `数量`,
+  },
+  shop_page: {
+    all_products: `全部商品`,
+    filters: `筛选`,
+    category: `分类`,
+    all: `全部`,
+    clear: `清除`,
+    products_found: `件商品`,
   },
 };
 

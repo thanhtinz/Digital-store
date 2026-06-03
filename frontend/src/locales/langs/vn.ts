@@ -57,6 +57,7 @@ const vn = {
   item_by_roles: `mục theo vai trò`,
   only_admin_can_see_this_item: `Chỉ có quản trị viên mới có thể nhìn thấy mục này`,
   nav: {
+    topup: `Nạp tiền`,
     shopping: `mua sắm`,
     services: `dịch vụ`,
     support: `hỗ trợ`,
@@ -250,6 +251,14 @@ const vn = {
     loading: `Đang tải…`,
     empty: `Chưa có đơn dịch vụ.`,
     quantity_short: `SL`,
+  },
+  shop_page: {
+    all_products: `Tất cả sản phẩm`,
+    filters: `Bộ lọc`,
+    category: `Danh mục`,
+    all: `Tất cả`,
+    clear: `Xoá lọc`,
+    products_found: `sản phẩm`,
   },
 };
 

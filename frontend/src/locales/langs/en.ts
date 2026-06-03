@@ -57,6 +57,7 @@ const en = {
   item_by_roles: `item by roles`,
   only_admin_can_see_this_item: `Only admin can see this item`,
   nav: {
+    topup: `Top up`,
     shopping: `Shopping`,
     services: `Services`,
     support: `Support`,
@@ -250,6 +251,14 @@ const en = {
     loading: `Loading…`,
     empty: `No service orders yet.`,
     quantity_short: `Qty`,
+  },
+  shop_page: {
+    all_products: `All products`,
+    filters: `Filters`,
+    category: `Category`,
+    all: `All`,
+    clear: `Clear`,
+    products_found: `products found`,
   },
 };
 

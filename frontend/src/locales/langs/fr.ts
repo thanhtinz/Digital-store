@@ -57,6 +57,7 @@ const fr = {
   item_by_roles: `élément par rôles`,
   only_admin_can_see_this_item: `seul l'administrateur peut voir cet élément`,
   nav: {
+    topup: `Recharger`,
     shopping: `Achats`,
     services: `Services`,
     support: `Assistance`,
@@ -250,6 +251,14 @@ const fr = {
     loading: `Chargement…`,
     empty: `Aucune commande de service pour le moment.`,
     quantity_short: `Qté`,
+  },
+  shop_page: {
+    all_products: `Tous les produits`,
+    filters: `Filtres`,
+    category: `Catégorie`,
+    all: `Tous`,
+    clear: `Effacer`,
+    products_found: `produits trouvés`,
   },
 };
 

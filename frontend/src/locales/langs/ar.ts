@@ -57,6 +57,7 @@ const ar = {
   item_by_roles: `عنصر حسب الأدوار`,
   only_admin_can_see_this_item: `يمكن للمسؤول فقط رؤية هذا العنصر`,
   nav: {
+    topup: `شحن`,
     shopping: `التسوق`,
     services: `الخدمات`,
     support: `الدعم`,
@@ -250,6 +251,14 @@ const ar = {
     loading: `جارٍ التحميل…`,
     empty: `لا توجد طلبات خدمة بعد.`,
     quantity_short: `الكمية`,
+  },
+  shop_page: {
+    all_products: `كل المنتجات`,
+    filters: `تصفية`,
+    category: `الفئة`,
+    all: `الكل`,
+    clear: `مسح`,
+    products_found: `منتج`,
   },
 };
 
