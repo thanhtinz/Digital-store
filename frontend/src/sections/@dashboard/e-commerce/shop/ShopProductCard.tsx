@@ -3,7 +3,7 @@ import { paramCase } from 'change-case';
 // next
 import NextLink from 'next/link';
 // @mui
-import { Box, Card, Link, Stack, Fab, IconButton } from '@mui/material';
+import { Box, Card, Link, Stack, Fab, IconButton, Rating } from '@mui/material';
 // routes
 import { PATH_DASHBOARD } from '../../../../routes/paths';
 // auth
@@ -39,6 +39,8 @@ export default function ShopProductCard({ product }: Props) {
     .filter((pk) => pk.price > 0)
     .sort((a, b) => a.price - b.price)[0] || packages[0];
   const cover = p.imageUrl || p.cover || '';
+  const ratingValue = Number(p.rating) || 0;
+  const ratingCount = Number(p.ratingCount) || 0;
   const price = cheapest?.price ?? p.price ?? 0;
   const priceSale = cheapest?.originalPrice && cheapest.originalPrice > price ? cheapest.originalPrice : 0;
   const colors: string[] = p.colors || [];
@@ -155,10 +157,17 @@ export default function ShopProductCard({ product }: Props) {
         <Image alt={name} src={cover} ratio="1/1" sx={{ borderRadius: 1.5 }} />
       </Box>
 
-      <Stack spacing={2.5} sx={{ p: 3 }}>
+      <Stack spacing={2} sx={{ p: 3 }}>
         <Link component={NextLink} href={linkTo} color="inherit" variant="subtitle2" noWrap>
           {name}
         </Link>
+
+        <Stack direction="row" alignItems="center" spacing={0.5}>
+          <Rating value={ratingValue} precision={0.1} readOnly size="small" />
+          <Box component="span" sx={{ typography: 'caption', color: 'text.secondary' }}>
+            {ratingCount > 0 ? `(${ratingCount})` : 'Chưa có đánh giá'}
+          </Box>
+        </Stack>
 
         <Stack direction="row" alignItems="center" justifyContent="space-between">
           <ColorPreview colors={colors} />

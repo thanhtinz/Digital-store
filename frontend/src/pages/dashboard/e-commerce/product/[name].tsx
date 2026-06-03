@@ -8,8 +8,6 @@ import { Box, Tab, Tabs, Card, Grid, Divider, Container, Typography, Stack } fro
 // redux
 import { useDispatch, useSelector } from '../../../../redux/store';
 import { getProduct, addToCart, gotoStep } from '../../../../redux/slices/product';
-// routes
-import { PATH_DASHBOARD } from '../../../../routes/paths';
 // @types
 import { ICheckoutCartItem } from '../../../../@types/product';
 // layouts
@@ -17,7 +15,6 @@ import DashboardLayout from '../../../../layouts/dashboard';
 // components
 import Iconify from '../../../../components/iconify';
 import Markdown from '../../../../components/markdown';
-import CustomBreadcrumbs from '../../../../components/custom-breadcrumbs';
 import { useSettingsContext } from '../../../../components/settings';
 import { SkeletonProductDetails } from '../../../../components/skeleton';
 // sections
@@ -32,19 +29,19 @@ import CartWidget from '../../../../sections/@dashboard/e-commerce/CartWidget';
 
 const SUMMARY = [
   {
-    title: '100% Original',
-    description: 'Chocolate bar candy canes ice cream toffee cookie halvah.',
-    icon: 'ic:round-verified',
+    title: 'Giao tự động',
+    description: 'Sản phẩm số được giao ngay sau khi thanh toán thành công.',
+    icon: 'solar:bolt-bold',
   },
   {
-    title: '10 Day Replacement',
-    description: 'Marshmallow biscuit donut dragée fruitcake wafer.',
-    icon: 'eva:clock-fill',
+    title: 'Bảo hành đổi mới',
+    description: 'Hỗ trợ đổi/bảo hành theo chính sách của từng sản phẩm.',
+    icon: 'solar:shield-check-bold',
   },
   {
-    title: 'Year Warranty',
-    description: 'Cotton candy gingerbread cake I love sugar sweet.',
-    icon: 'ic:round-verified-user',
+    title: 'Hỗ trợ nhanh',
+    description: 'Đội ngũ hỗ trợ phản hồi nhanh qua chat & ticket.',
+    icon: 'solar:chat-round-dots-bold',
   },
 ];
 
@@ -86,12 +83,12 @@ export default function EcommerceProductDetailsPage() {
   const TABS = [
     {
       value: 'description',
-      label: 'description',
+      label: 'Mô tả',
       component: product ? <Markdown children={product?.description} /> : null,
     },
     {
       value: 'reviews',
-      label: `Reviews (${product ? product.reviews.length : ''})`,
+      label: `Đánh giá (${product ? product.reviews.length : 0})`,
       component: product ? <ProductDetailsReview product={product} /> : null,
     },
   ];
@@ -99,26 +96,10 @@ export default function EcommerceProductDetailsPage() {
   return (
     <>
       <Head>
-        <title>{`Ecommerce: ${product?.name || ''} | Minimal UI`}</title>
+        <title>{`${product?.name || 'Sản phẩm'} | Digital Store`}</title>
       </Head>
 
-      <Container maxWidth={themeStretch ? false : 'lg'}>
-        <CustomBreadcrumbs
-          heading="Product Details"
-          links={[
-            { name: 'Dashboard', href: PATH_DASHBOARD.root },
-            {
-              name: 'E-Commerce',
-              href: PATH_DASHBOARD.eCommerce.root,
-            },
-            {
-              name: 'Shop',
-              href: PATH_DASHBOARD.eCommerce.shop,
-            },
-            { name: product?.name },
-          ]}
-        />
-
+      <Container maxWidth={themeStretch ? false : 'lg'} sx={{ pt: { xs: 2, md: 3 } }}>
         <CartWidget totalItems={checkout.totalItems} />
 
         {product && (
