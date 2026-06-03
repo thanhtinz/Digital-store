@@ -1,5 +1,9 @@
+// next
+import NextLink from 'next/link';
 // @mui
-import { Link, Button, Divider, Typography, Stack, DialogProps } from '@mui/material';
+import { Box, Button, Divider, Typography, Stack, DialogProps } from '@mui/material';
+// routes
+import { PATH_DASHBOARD } from '../../../../routes/paths';
 // components
 import Iconify from '../../../../components/iconify';
 import { DialogAnimate } from '../../../../components/animate';
@@ -9,11 +13,12 @@ import { OrderCompleteIllustration } from '../../../../assets/illustrations';
 // ----------------------------------------------------------------------
 
 interface Props extends DialogProps {
+  orderCode?: string;
   onReset: VoidFunction;
   onDownloadPDF: VoidFunction;
 }
 
-export default function CheckoutOrderComplete({ open, onReset, onDownloadPDF }: Props) {
+export default function CheckoutOrderComplete({ open, orderCode, onReset }: Props) {
   return (
     <DialogAnimate
       fullScreen
@@ -25,58 +30,51 @@ export default function CheckoutOrderComplete({ open, onReset, onDownloadPDF }: 
         },
       }}
     >
-      <Stack
-        spacing={5}
-        sx={{
-          m: 'auto',
-          maxWidth: 480,
-          textAlign: 'center',
-          px: { xs: 2, sm: 0 },
-        }}
-      >
-        <Typography variant="h4">Thank you for your purchase!</Typography>
+      <Stack spacing={4} sx={{ m: 'auto', maxWidth: 480, textAlign: 'center', px: { xs: 2, sm: 0 } }}>
+        <Typography variant="h4">Đặt hàng thành công! 🎉</Typography>
 
-        <OrderCompleteIllustration sx={{ height: 260 }} />
+        <OrderCompleteIllustration sx={{ height: 240 }} />
 
-        <Typography>
-          Thanks for placing order
+        <Typography sx={{ color: 'text.secondary' }}>
+          Cảm ơn bạn đã đặt hàng.
+          {orderCode && (
+            <>
+              <br />
+              Mã đơn của bạn là{' '}
+              <Box component="span" sx={{ color: 'text.primary', fontWeight: 'fontWeightBold' }}>
+                {orderCode}
+              </Box>
+            </>
+          )}
           <br />
           <br />
-          <Link>01dc1370-3df6-11eb-b378-0242ac130002</Link>
-          <br />
-          <br />
-          We will send you a notification within 5 days when it ships.
-          <br /> If you have any question or queries then fell to get in contact us. <br /> <br />
-          All the best,
+          Sản phẩm giao tự động sẽ có ngay trong chi tiết đơn hàng. Bạn cũng sẽ nhận thông báo khi đơn được xử lý.
         </Typography>
 
         <Divider sx={{ borderStyle: 'dashed' }} />
 
-        <Stack
-          spacing={2}
-          justifyContent="space-between"
-          direction={{ xs: 'column-reverse', sm: 'row' }}
-        >
+        <Stack spacing={2} direction={{ xs: 'column-reverse', sm: 'row' }} justifyContent="center">
           <Button
-            fullWidth
             size="large"
             color="inherit"
             variant="outlined"
             onClick={onReset}
             startIcon={<Iconify icon="eva:arrow-ios-back-fill" />}
           >
-            Continue Shopping
+            Tiếp tục mua sắm
           </Button>
 
-          <Button
-            fullWidth
-            size="large"
-            variant="contained"
-            startIcon={<Iconify icon="ant-design:file-pdf-filled" />}
-            onClick={onDownloadPDF}
-          >
-            Download as PDF
-          </Button>
+          {orderCode && (
+            <Button
+              size="large"
+              variant="contained"
+              component={NextLink}
+              href={PATH_DASHBOARD.orders.view(orderCode)}
+              startIcon={<Iconify icon="solar:bag-check-bold" />}
+            >
+              Xem đơn hàng
+            </Button>
+          )}
         </Stack>
       </Stack>
     </DialogAnimate>

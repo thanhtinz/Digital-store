@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 // next
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -64,6 +64,8 @@ export default function EcommerceCheckoutPage() {
   const { checkout } = useSelector((state) => state.product);
 
   const { cart, billing, activeStep } = checkout;
+
+  const [orderCode, setOrderCode] = useState('');
 
   const completed = activeStep === STEPS.length;
 
@@ -137,7 +139,7 @@ export default function EcommerceCheckoutPage() {
         </Grid>
 
         {completed ? (
-          <CheckoutOrderComplete open={completed} onReset={handleReset} onDownloadPDF={() => {}} />
+          <CheckoutOrderComplete open={completed} orderCode={orderCode} onReset={handleReset} onDownloadPDF={() => {}} />
         ) : (
           <>
             {activeStep === 0 && (
@@ -165,6 +167,7 @@ export default function EcommerceCheckoutPage() {
                 onGotoStep={handleGotoStep}
                 onApplyShipping={handleApplyShipping}
                 onReset={handleReset}
+                onComplete={setOrderCode}
               />
             )}
           </>

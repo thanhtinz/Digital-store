@@ -1,68 +1,25 @@
-import * as Yup from 'yup';
-// form
-import { useForm } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
 // @mui
-import { Grid, Button } from '@mui/material';
+import { Box, Card, Grid, Stack, Alert, Button, Typography } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
+import { useState } from 'react';
+// next
+import NextLink from 'next/link';
+// auth
+import { useAuthContext } from '../../../../../auth/useAuthContext';
+// routes
+import { PATH_DASHBOARD } from '../../../../../routes/paths';
 // @types
-import {
-  ICheckoutCardOption,
-  ICheckoutPaymentOption,
-  ICheckoutDeliveryOption,
-  IProductCheckoutState,
-} from '../../../../../@types/product';
+import { IProductCheckoutState } from '../../../../../@types/product';
+// utils
+import axios from '../../../../../utils/axios';
+import { fCurrency } from '../../../../../utils/formatNumber';
 // components
 import Iconify from '../../../../../components/iconify';
-import axios from '../../../../../utils/axios';
-import FormProvider from '../../../../../components/hook-form';
+import { useSnackbar } from '../../../../../components/snackbar';
 //
 import CheckoutSummary from '../CheckoutSummary';
-import CheckoutDelivery from './CheckoutDelivery';
-import CheckoutBillingInfo from './CheckoutBillingInfo';
-import CheckoutPaymentMethods from './CheckoutPaymentMethods';
 
 // ----------------------------------------------------------------------
-
-const DELIVERY_OPTIONS: ICheckoutDeliveryOption[] = [
-  {
-    value: 0,
-    title: 'Standard delivery (Free)',
-    description: 'Delivered on Monday, August 12',
-  },
-  {
-    value: 2,
-    title: 'Fast delivery ($2,00)',
-    description: 'Delivered on Monday, August 5',
-  },
-];
-
-const PAYMENT_OPTIONS: ICheckoutPaymentOption[] = [
-  {
-    value: 'paypal',
-    title: 'Pay with Paypal',
-    description: 'You will be redirected to PayPal website to complete your purchase securely.',
-    icons: ['/assets/icons/payments/ic_paypal.svg'],
-  },
-  {
-    value: 'credit_card',
-    title: 'Credit / Debit Card',
-    description: 'We support Mastercard, Visa, Discover and Stripe.',
-    icons: ['/assets/icons/payments/ic_mastercard.svg', '/assets/icons/payments/ic_visa.svg'],
-  },
-  {
-    value: 'cash',
-    title: 'Cash on CheckoutDelivery',
-    description: 'Pay with cash when your order is delivered.',
-    icons: [],
-  },
-];
-
-const CARDS_OPTIONS: ICheckoutCardOption[] = [
-  { value: 'ViSa1', label: '**** **** **** 1212 - Jimmy Holland' },
-  { value: 'ViSa2', label: '**** **** **** 2424 - Shawn Stokes' },
-  { value: 'MasterCard', label: '**** **** **** 4545 - Cole Armstrong' },
-];
 
 type Props = {
   checkout: IProductCheckoutState;
@@ -71,11 +28,7 @@ type Props = {
   onReset: VoidFunction;
   onGotoStep: (step: number) => void;
   onApplyShipping: (value: number) => void;
-};
-
-type FormValuesProps = {
-  delivery: number;
-  payment: string;
+  onComplete?: (orderCode: string) => void;
 };
 
 export default function CheckoutPayment({
@@ -84,100 +37,121 @@ export default function CheckoutPayment({
   onNextStep,
   onBackStep,
   onGotoStep,
-  onApplyShipping,
+  onComplete,
 }: Props) {
-  const { total, discount, subtotal, shipping, billing } = checkout;
+  const { total, discount, subtotal } = checkout;
+  const { user } = useAuthContext();
+  const { enqueueSnackbar } = useSnackbar();
+  const [submitting, setSubmitting] = useState(false);
 
-  const PaymentSchema = Yup.object().shape({
-    payment: Yup.string().required('Payment is required!'),
-  });
+  const balance = Number((user as any)?.balance || 0);
+  const enough = balance >= total;
 
-  const defaultValues = {
-    delivery: shipping,
-    payment: '',
-  };
+  const placeOrder = async () => {
+    const items = (checkout.cart || [])
+      .map((item: any) => ({
+        product_id: item.id,
+        package_id: Number(item.packageId),
+        quantity: item.quantity || 1,
+        custom_fields: item.customFields || undefined,
+      }))
+      .filter((it: any) => Number.isFinite(it.package_id) && it.package_id > 0);
 
-  const methods = useForm<FormValuesProps>({
-    resolver: yupResolver(PaymentSchema),
-    defaultValues,
-  });
-
-  const {
-    handleSubmit,
-    formState: { isSubmitting },
-  } = methods;
-
-  const onSubmit = async () => {
+    if (!items.length) {
+      enqueueSnackbar('Giỏ hàng trống hoặc gói không hợp lệ', { variant: 'error' });
+      return;
+    }
+    setSubmitting(true);
     try {
-      // Tạo đơn hàng thật trên backend Digital Store
-      const items = (checkout.cart || [])
-        .map((item: any) => ({
-          product_id: item.id,
-          package_id: Number(item.packageId),
-          quantity: item.quantity || 1,
-          custom_fields: item.customFields || undefined,
-        }))
-        .filter((it: any) => Number.isFinite(it.package_id) && it.package_id > 0);
-      await axios.post('/api/orders', {
+      const res = await axios.post('/api/orders', {
         items,
         payment_method: 'balance',
         coupon_code: (checkout as any).couponCode || undefined,
       });
+      const code = res.data?.order_code || res.data?.orderCode || '';
+      onComplete?.(code);
       onNextStep();
       onReset();
-    } catch (error) {
-      // Backend chưa sẵn sàng vẫn cho qua bước hoàn tất (demo)
-      console.error('Tạo đơn hàng:', error);
-      onNextStep();
-      onReset();
+    } catch (error: any) {
+      enqueueSnackbar(error?.detail || error?.message || 'Đặt hàng thất bại', { variant: 'error' });
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <FormProvider methods={methods} onSubmit={handleSubmit(onSubmit)}>
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
-          <CheckoutDelivery onApplyShipping={onApplyShipping} deliveryOptions={DELIVERY_OPTIONS} />
+    <Grid container spacing={3}>
+      <Grid item xs={12} md={8}>
+        <Card sx={{ p: 3, mb: 3 }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            Phương thức thanh toán
+          </Typography>
 
-          <CheckoutPaymentMethods
-            cardOptions={CARDS_OPTIONS}
-            paymentOptions={PAYMENT_OPTIONS}
-            sx={{ my: 3 }}
-          />
+          <Box
+            sx={{
+              p: 2.5,
+              borderRadius: 1.5,
+              border: (t) => `solid 2px ${t.palette.primary.main}`,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+            }}
+          >
+            <Iconify icon="solar:wallet-money-bold" width={32} sx={{ color: 'primary.main' }} />
+            <Box sx={{ flexGrow: 1 }}>
+              <Typography variant="subtitle1">Số dư tài khoản</Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                Số dư hiện có: <b>{fCurrency(balance)}</b>
+              </Typography>
+            </Box>
+          </Box>
+
+          {!enough && (
+            <Alert
+              severity="warning"
+              sx={{ mt: 2 }}
+              action={
+                <Button component={NextLink} href={PATH_DASHBOARD.wallet.topup} color="inherit" size="small">
+                  Nạp tiền
+                </Button>
+              }
+            >
+              Số dư không đủ để thanh toán đơn này ({fCurrency(total)}). Vui lòng nạp thêm tiền.
+            </Alert>
+          )}
 
           <Button
             size="small"
             color="inherit"
             onClick={onBackStep}
             startIcon={<Iconify icon="eva:arrow-ios-back-fill" />}
+            sx={{ mt: 3 }}
           >
-            Back
+            Quay lại
           </Button>
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <CheckoutBillingInfo onBackStep={onBackStep} billing={billing} />
-
-          <CheckoutSummary
-            enableEdit
-            total={total}
-            subtotal={subtotal}
-            discount={discount}
-            shipping={shipping}
-            onEdit={() => onGotoStep(0)}
-          />
-
-          <LoadingButton
-            fullWidth
-            size="large"
-            type="submit"
-            variant="contained"
-            loading={isSubmitting}
-          >
-            Complete Order
-          </LoadingButton>
-        </Grid>
+        </Card>
       </Grid>
-    </FormProvider>
+
+      <Grid item xs={12} md={4}>
+        <CheckoutSummary
+          enableEdit
+          total={total}
+          subtotal={subtotal}
+          discount={discount}
+          onEdit={() => onGotoStep(0)}
+        />
+        <LoadingButton
+          fullWidth
+          size="large"
+          variant="contained"
+          loading={submitting}
+          disabled={!enough}
+          onClick={placeOrder}
+          startIcon={<Iconify icon="solar:bag-check-bold" />}
+        >
+          Đặt mua
+        </LoadingButton>
+      </Grid>
+    </Grid>
   );
 }

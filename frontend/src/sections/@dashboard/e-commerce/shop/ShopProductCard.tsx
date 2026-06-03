@@ -1,11 +1,15 @@
+import { useState } from 'react';
 import { paramCase } from 'change-case';
 // next
 import NextLink from 'next/link';
 // @mui
-import { Box, Card, Link, Stack, Fab } from '@mui/material';
+import { Box, Card, Link, Stack, Fab, IconButton } from '@mui/material';
 // routes
 import { PATH_DASHBOARD } from '../../../../routes/paths';
+// auth
+import { useAuthContext } from '../../../../auth/useAuthContext';
 // utils
+import axiosInstance from '../../../../utils/axios';
 import { fCurrency } from '../../../../utils/formatNumber';
 // redux
 import { useDispatch } from '../../../../redux/store';
@@ -16,6 +20,7 @@ import { IProduct } from '../../../../@types/product';
 import Iconify from '../../../../components/iconify';
 import Label from '../../../../components/label';
 import Image from '../../../../components/image';
+import { useSnackbar } from '../../../../components/snackbar';
 import { ColorPreview } from '../../../../components/color-utils';
 
 // ----------------------------------------------------------------------
@@ -39,6 +44,28 @@ export default function ShopProductCard({ product }: Props) {
   const colors: string[] = p.colors || [];
 
   const dispatch = useDispatch();
+  const { isAuthenticated } = useAuthContext();
+  const { enqueueSnackbar } = useSnackbar();
+  const [wishlisted, setWishlisted] = useState(false);
+  const [wishBusy, setWishBusy] = useState(false);
+
+  const toggleWishlist = async () => {
+    if (!isAuthenticated) {
+      enqueueSnackbar('Vui lòng đăng nhập để dùng Yêu thích', { variant: 'warning' });
+      return;
+    }
+    setWishBusy(true);
+    try {
+      const r = await axiosInstance.post(`/api/wishlist/${id}`);
+      const on = r.data?.wishlisted ?? !wishlisted;
+      setWishlisted(on);
+      enqueueSnackbar(on ? 'Đã thêm vào Yêu thích' : 'Đã bỏ khỏi Yêu thích');
+    } catch (e: any) {
+      enqueueSnackbar(e?.detail || 'Thao tác thất bại', { variant: 'error' });
+    } finally {
+      setWishBusy(false);
+    }
+  };
 
   const linkTo = PATH_DASHBOARD.eCommerce.view(paramCase(name));
 
@@ -73,6 +100,21 @@ export default function ShopProductCard({ product }: Props) {
       }}
     >
       <Box sx={{ position: 'relative', p: 1 }}>
+        <IconButton
+          onClick={toggleWishlist}
+          disabled={wishBusy}
+          sx={{
+            top: 16,
+            left: 16,
+            zIndex: 9,
+            position: 'absolute',
+            bgcolor: 'background.paper',
+            boxShadow: (theme) => theme.customShadows?.z8,
+            '&:hover': { bgcolor: 'background.paper' },
+          }}
+        >
+          <Iconify icon={wishlisted ? 'solar:heart-bold' : 'solar:heart-linear'} sx={{ color: wishlisted ? 'error.main' : 'text.secondary' }} />
+        </IconButton>
         {status && (
           <Label
             variant="filled"
