@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 // @mui
 import {
   Avatar,
+  Box,
   Button,
   Card,
   Checkbox,
@@ -13,6 +14,7 @@ import {
   DialogTitle,
   FormControlLabel,
   IconButton,
+  MenuItem,
   Stack,
   Table,
   TableBody,
@@ -40,9 +42,29 @@ type Category = {
   iconUrl?: string;
   isActive: boolean;
   sortOrder: number;
+  parentId?: number | null;
+  productType?: string;
 };
 
-const EMPTY = { id: 0, name: '', icon_url: '', sort_order: 0, is_active: true };
+// Loại danh mục (khớp storefront): tài khoản premium, nạp game, giftcard.
+const PRODUCT_TYPES = [
+  { value: 'premium', label: 'Tài khoản Premium' },
+  { value: 'game', label: 'Nạp game (Topup)' },
+  { value: 'giftcard', label: 'Giftcard' },
+];
+const typeLabel = (t?: string) => PRODUCT_TYPES.find((x) => x.value === t)?.label || t || 'premium';
+const typeColor = (t?: string): any =>
+  ({ premium: 'info', game: 'warning', giftcard: 'success' }[t || 'premium'] || 'default');
+
+const EMPTY = {
+  id: 0,
+  name: '',
+  icon_url: '',
+  sort_order: 0,
+  is_active: true,
+  product_type: 'premium',
+  parent_id: '' as string | number,
+};
 
 export default function AdminCategoriesView() {
   const { enqueueSnackbar } = useSnackbar();
@@ -66,6 +88,23 @@ export default function AdminCategoriesView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Danh mục gốc (cấp 1) + map con theo parentId.
+  const roots = cats.filter((c) => !c.parentId);
+  const childrenOf = (id: number) => cats.filter((c) => c.parentId === id);
+
+  const openCreate = (parentId?: number, productType?: string) =>
+    setForm({ ...EMPTY, parent_id: parentId || '', product_type: productType || 'premium' });
+  const openEdit = (c: Category) =>
+    setForm({
+      id: c.id,
+      name: c.name,
+      icon_url: c.iconUrl || '',
+      sort_order: c.sortOrder || 0,
+      is_active: c.isActive,
+      product_type: c.productType || 'premium',
+      parent_id: c.parentId || '',
+    });
+
   const save = async () => {
     if (!form) return;
     if (!form.name.trim()) {
@@ -78,6 +117,8 @@ export default function AdminCategoriesView() {
       icon_url: form.icon_url,
       sort_order: Number(form.sort_order) || 0,
       is_active: form.is_active,
+      product_type: form.product_type,
+      parent_id: form.parent_id ? Number(form.parent_id) : null,
     };
     try {
       if (form.id) await axiosInstance.patch(`/api/categories/${form.id}`, payload);
@@ -97,7 +138,7 @@ export default function AdminCategoriesView() {
     try {
       await axiosInstance.delete(`/api/categories/${toDelete.id}`);
       enqueueSnackbar('Đã xoá danh mục');
-      setCats((list) => list.filter((x) => x.id !== toDelete.id));
+      load();
     } catch (e: any) {
       enqueueSnackbar(e?.detail || 'Xoá thất bại', { variant: 'error' });
     } finally {
@@ -105,15 +146,54 @@ export default function AdminCategoriesView() {
     }
   };
 
+  const renderRow = (c: Category, child = false) => (
+    <TableRow key={c.id} hover>
+      <TableCell>
+        <Stack direction="row" alignItems="center" spacing={1.5} sx={{ pl: child ? 4 : 0 }}>
+          {child && <Iconify icon="solar:arrow-right-down-bold" sx={{ color: 'text.disabled' }} />}
+          <Avatar variant="rounded" src={c.iconUrl || undefined} sx={{ bgcolor: 'background.neutral' }}>
+            <Iconify icon={child ? 'solar:folder-2-bold-duotone' : 'solar:folder-bold-duotone'} />
+          </Avatar>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="subtitle2">{c.name}</Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              {c.slug}
+            </Typography>
+          </Box>
+        </Stack>
+      </TableCell>
+      <TableCell>
+        <Label color={typeColor(c.productType)} variant="soft">
+          {typeLabel(c.productType)}
+        </Label>
+      </TableCell>
+      <TableCell>{c.sortOrder}</TableCell>
+      <TableCell>
+        <Label color={c.isActive ? 'success' : 'default'} variant="soft">
+          {c.isActive ? 'Hiện' : 'Ẩn'}
+        </Label>
+      </TableCell>
+      <TableCell align="right">
+        {!child && (
+          <IconButton title="Thêm danh mục con" onClick={() => openCreate(c.id, c.productType)}>
+            <Iconify icon="solar:add-folder-bold" />
+          </IconButton>
+        )}
+        <IconButton onClick={() => openEdit(c)}>
+          <Iconify icon="solar:pen-bold" />
+        </IconButton>
+        <IconButton color="error" onClick={() => setToDelete(c)}>
+          <Iconify icon="solar:trash-bin-trash-bold" />
+        </IconButton>
+      </TableCell>
+    </TableRow>
+  );
+
   return (
     <Container sx={{ pb: 6 }} maxWidth="lg">
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ my: 3 }}>
         <Typography variant="h4">Danh mục</Typography>
-        <Button
-          variant="contained"
-          startIcon={<Iconify icon="eva:plus-fill" />}
-          onClick={() => setForm({ ...EMPTY })}
-        >
+        <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => openCreate()}>
           Thêm danh mục
         </Button>
       </Stack>
@@ -129,50 +209,14 @@ export default function AdminCategoriesView() {
               <TableHead>
                 <TableRow>
                   <TableCell>Danh mục</TableCell>
-                  <TableCell>Slug</TableCell>
+                  <TableCell>Loại</TableCell>
                   <TableCell>Thứ tự</TableCell>
                   <TableCell>Trạng thái</TableCell>
                   <TableCell align="right">Thao tác</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {cats.map((c) => (
-                  <TableRow key={c.id} hover>
-                    <TableCell>
-                      <Stack direction="row" alignItems="center" spacing={1.5}>
-                        <Avatar variant="rounded" src={c.iconUrl || undefined} sx={{ bgcolor: 'background.neutral' }}>
-                          <Iconify icon="solar:folder-bold-duotone" />
-                        </Avatar>
-                        <Typography variant="subtitle2">{c.name}</Typography>
-                      </Stack>
-                    </TableCell>
-                    <TableCell sx={{ color: 'text.secondary' }}>{c.slug}</TableCell>
-                    <TableCell>{c.sortOrder}</TableCell>
-                    <TableCell>
-                      <Label color={c.isActive ? 'success' : 'default'} variant="soft">
-                        {c.isActive ? 'Hiện' : 'Ẩn'}
-                      </Label>
-                    </TableCell>
-                    <TableCell align="right">
-                      <IconButton
-                        onClick={() =>
-                          setForm({
-                            id: c.id,
-                            name: c.name,
-                            icon_url: c.iconUrl || '',
-                            sort_order: c.sortOrder || 0,
-                            is_active: c.isActive,
-                          })
-                        }
-                      >
-                        <Iconify icon="solar:pen-bold" />
-                      </IconButton>
-                      <IconButton color="error" onClick={() => setToDelete(c)}>
-                        <Iconify icon="solar:trash-bin-trash-bold" />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {roots.map((c) => [renderRow(c), ...childrenOf(c.id).map((ch) => renderRow(ch, true))])}
                 {!cats.length && (
                   <TableRow>
                     <TableCell colSpan={5} align="center" sx={{ py: 6, color: 'text.secondary' }}>
@@ -197,6 +241,33 @@ export default function AdminCategoriesView() {
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 autoFocus
               />
+              <TextField
+                select
+                label="Loại"
+                value={form.product_type}
+                onChange={(e) => setForm({ ...form, product_type: e.target.value })}
+              >
+                {PRODUCT_TYPES.map((t) => (
+                  <MenuItem key={t.value} value={t.value}>
+                    {t.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                select
+                label="Danh mục cha (để trống = danh mục gốc)"
+                value={form.parent_id}
+                onChange={(e) => setForm({ ...form, parent_id: e.target.value })}
+              >
+                <MenuItem value="">— Danh mục gốc —</MenuItem>
+                {roots
+                  .filter((r) => r.id !== form.id)
+                  .map((r) => (
+                    <MenuItem key={r.id} value={r.id}>
+                      {r.name}
+                    </MenuItem>
+                  ))}
+              </TextField>
               <TextField
                 label="Icon (URL)"
                 value={form.icon_url}
@@ -234,7 +305,7 @@ export default function AdminCategoriesView() {
         open={!!toDelete}
         onClose={() => setToDelete(null)}
         title="Xoá danh mục"
-        content={`Xoá "${toDelete?.name}"?`}
+        content={`Xoá "${toDelete?.name}"? Danh mục con (nếu có) sẽ trở thành danh mục gốc.`}
         action={
           <Button variant="contained" color="error" onClick={remove}>
             Xoá
