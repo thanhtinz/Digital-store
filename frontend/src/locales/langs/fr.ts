@@ -326,6 +326,7 @@ const fr = {
     min_order: `Commande min`,
     max_discount: `Remise max`,
     expires: `Exp`,
+    empty: `Aucun code promo disponible`,
   },
   wallet_history_page: {
     title: `Historique du portefeuille`,

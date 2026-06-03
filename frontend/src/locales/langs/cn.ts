@@ -326,6 +326,7 @@ const cn = {
     min_order: `最低订单`,
     max_discount: `最高优惠`,
     expires: `有效期`,
+    empty: `暂无优惠码`,
   },
   wallet_history_page: {
     title: `钱包记录`,

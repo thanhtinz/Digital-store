@@ -326,6 +326,7 @@ const ar = {
     min_order: `حد أدنى للطلب`,
     max_discount: `أقصى خصم`,
     expires: `ينتهي`,
+    empty: `لا توجد أكواد خصم حالياً`,
   },
   wallet_history_page: {
     title: `سجل المحفظة`,

@@ -326,6 +326,7 @@ const en = {
     min_order: `Min order`,
     max_discount: `Max discount`,
     expires: `Exp`,
+    empty: `No coupons available right now`,
   },
   wallet_history_page: {
     title: `Wallet history`,

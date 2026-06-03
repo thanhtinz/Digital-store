@@ -326,6 +326,7 @@ const vn = {
     min_order: `Đơn tối thiểu`,
     max_discount: `Giảm tối đa`,
     expires: `HSD`,
+    empty: `Hiện chưa có mã giảm giá nào`,
   },
   wallet_history_page: {
     title: `Lịch sử ví`,

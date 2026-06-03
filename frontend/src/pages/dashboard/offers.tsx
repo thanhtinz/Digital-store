@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 // next
 import Head from 'next/head';
 // @mui
-import { Box, Button, Container, Divider, Stack, Typography } from '@mui/material';
+import { Box, Button, Container, Stack, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 // layouts
 import DashboardLayout from '../../layouts/dashboard';
@@ -11,13 +11,10 @@ import { useLocales } from '../../locales';
 // utils
 import axiosInstance from '../../utils/axios';
 import { fCurrency } from '../../utils/formatNumber';
-// @types
-import { IProduct } from '../../@types/product';
 // components
 import Iconify from '../../components/iconify';
+import EmptyContent from '../../components/empty-content';
 import { useSnackbar } from '../../components/snackbar';
-// sections
-import { ShopProductList } from '../../sections/@dashboard/e-commerce/shop';
 
 // ----------------------------------------------------------------------
 
@@ -41,20 +38,15 @@ export default function OffersPage() {
   const { enqueueSnackbar } = useSnackbar();
   const { translate } = useLocales();
   const t = (k: string) => `${translate(`offers_page.${k}`)}`;
-  const [products, setProducts] = useState<IProduct[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
-    Promise.all([
-      axiosInstance.get('/api/products', { params: { featured: true, limit: 24 } }),
-      axiosInstance.get('/api/gift-codes/public').catch(() => ({ data: [] })),
-    ])
-      .then(([p, c]) => {
-        if (!alive) return;
-        setProducts(p.data?.products || p.data?.items || []);
-        setCoupons(Array.isArray(c.data) ? c.data : []);
+    axiosInstance
+      .get('/api/gift-codes/public')
+      .then((c) => {
+        if (alive) setCoupons(Array.isArray(c.data) ? c.data : []);
       })
       .catch(() => {})
       .finally(() => alive && setLoading(false));
@@ -79,31 +71,21 @@ export default function OffersPage() {
           {t('title')}
         </Typography>
 
-        {coupons.length > 0 && (
-          <>
-            <Typography variant="h6" sx={{ mb: 2 }}>
-              {t('coupons')}
-            </Typography>
-            <Box
-              sx={{
-                display: 'grid',
-                gap: 2,
-                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2,1fr)', md: 'repeat(3,1fr)' },
-                mb: 5,
-              }}
-            >
-              {coupons.map((c) => (
-                <CouponCard key={c.code} coupon={c} onCopy={copy} />
-              ))}
-            </Box>
-            <Divider sx={{ mb: 4 }} />
-          </>
+        {!loading && coupons.length === 0 ? (
+          <EmptyContent title={t('empty')} img="/assets/illustrations/illustration_empty_content.svg" />
+        ) : (
+          <Box
+            sx={{
+              display: 'grid',
+              gap: 2,
+              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2,1fr)', md: 'repeat(3,1fr)' },
+            }}
+          >
+            {coupons.map((c) => (
+              <CouponCard key={c.code} coupon={c} onCopy={copy} />
+            ))}
+          </Box>
         )}
-
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          {t('featured')}
-        </Typography>
-        <ShopProductList products={products} loading={loading} />
       </Container>
     </>
   );

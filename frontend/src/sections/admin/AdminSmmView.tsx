@@ -108,6 +108,7 @@ const PROVIDER_EMPTY = {
   sync_services: true,
   sync_prices: true,
   sync_descriptions: true,
+  sync_advanced: false,
 };
 
 function ProvidersTab() {
@@ -151,6 +152,7 @@ function ProvidersTab() {
       sync_services: s.sync_services !== false,
       sync_prices: s.sync_prices !== false,
       sync_descriptions: s.sync_descriptions !== false,
+      sync_advanced: !!s.sync_advanced,
     });
   };
 
@@ -170,6 +172,7 @@ function ProvidersTab() {
       sync_services: form.sync_services,
       sync_prices: form.sync_prices,
       sync_descriptions: form.sync_descriptions,
+      sync_advanced: form.sync_advanced,
     };
     const payload = {
       name: form.name,
@@ -333,6 +336,10 @@ function ProvidersTab() {
                   <FormControlLabel
                     control={<Checkbox checked={form.sync_descriptions} onChange={(e) => setForm({ ...form, sync_descriptions: e.target.checked })} />}
                     label="Đồng bộ Mô tả khi cập nhật"
+                  />
+                  <FormControlLabel
+                    control={<Checkbox checked={form.sync_advanced} onChange={(e) => setForm({ ...form, sync_advanced: e.target.checked })} />}
+                    label="Đồng bộ nâng cao (refill/hủy/loại dịch vụ)"
                   />
                   <FormControlLabel
                     control={<Checkbox checked={form.filter_html} onChange={(e) => setForm({ ...form, filter_html: e.target.checked })} />}
