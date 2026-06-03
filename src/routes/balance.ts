@@ -180,6 +180,37 @@ router.post('/card-charge/callback', async (req: Request, res: Response) => {
 });
 
 // ── Admin: lịch sử giao dịch toàn hệ thống ─────────────
+/** Admin: danh sách người dùng theo số dư (cao → thấp). */
+router.get('/admin/users', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
+    const search = (req.query.search as string) || '';
+    const where: any = { isActive: true };
+    if (search) where.OR = [
+      { email: { contains: search, mode: 'insensitive' } },
+      { displayName: { contains: search, mode: 'insensitive' } },
+    ];
+    const [total, users] = await Promise.all([
+      prisma.user.count({ where }),
+      prisma.user.findMany({ where, orderBy: { balance: 'desc' }, skip: (page - 1) * limit, take: limit }),
+    ]);
+    res.json({
+      total,
+      page,
+      items: users.map((u: any) => ({
+        id: u.id,
+        email: u.email,
+        display_name: u.displayName,
+        balance: money(u.balance),
+        created_at: u.createdAt?.toISOString(),
+      })),
+    });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
 router.get('/admin/transactions', requireAdmin, async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;

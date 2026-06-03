@@ -306,6 +306,85 @@ router.get('/admin/:productId/packages', requireStaffOrAdmin, async (req: Reques
   }
 });
 
+// ── Admin: custom fields của gói (form nhập thông tin khi mua) ──
+function fieldToDict(f: any) {
+  return { id: f.id, field_name: f.fieldName, field_type: f.fieldType, is_required: f.isRequired, options: f.options, sort_order: f.sortOrder };
+}
+
+router.get('/admin/packages/:pkgId/fields', requireStaffOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const fields = await prisma.packageField.findMany({
+      where: { packageId: parseInt(req.params.pkgId) },
+      orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+    });
+    res.json(fields.map(fieldToDict));
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+router.post('/admin/packages/:pkgId/fields', requireStaffOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const pkgId = parseInt(req.params.pkgId);
+    const pkg = await prisma.productPackage.findUnique({ where: { id: pkgId } });
+    if (!pkg) { res.status(404).json({ detail: 'Không tìm thấy gói' }); return; }
+    const { field_name, field_type, is_required, options, sort_order } = req.body;
+    const field = await prisma.packageField.create({
+      data: {
+        packageId: pkgId,
+        fieldName: field_name,
+        fieldType: field_type || 'text',
+        isRequired: is_required !== false,
+        options: options || null,
+        sortOrder: sort_order || 0,
+      },
+    });
+    res.status(201).json(fieldToDict(field));
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+router.patch('/admin/fields/:id', requireStaffOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const { field_name, field_type, is_required, options, sort_order } = req.body;
+    const field = await prisma.packageField.update({
+      where: { id: parseInt(req.params.id) },
+      data: {
+        ...(field_name !== undefined && { fieldName: field_name }),
+        ...(field_type !== undefined && { fieldType: field_type }),
+        ...(is_required !== undefined && { isRequired: is_required }),
+        ...(options !== undefined && { options }),
+        ...(sort_order !== undefined && { sortOrder: sort_order }),
+      },
+    });
+    res.json(fieldToDict(field));
+  } catch (e: any) {
+    res.status(e.code === 'P2025' ? 404 : 500).json({ detail: e.message });
+  }
+});
+
+router.delete('/admin/fields/:id', requireStaffOrAdmin, async (req: Request, res: Response) => {
+  try {
+    await prisma.packageField.delete({ where: { id: parseInt(req.params.id) } });
+    res.json({ ok: true });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+// ── Admin: xoá nhiều sản phẩm ──────────────────────────
+router.post('/admin/bulk-delete', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const ids = (req.body.ids || []).map((x: any) => parseInt(x)).filter((n: number) => Number.isFinite(n));
+    if (!ids.length) { res.status(400).json({ detail: 'ids required' }); return; }
+    const r = await prisma.product.deleteMany({ where: { id: { in: ids } } });
+    res.json({ ok: true, deleted: r.count });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
 // ── Helper ─────────────────────────────────────────────
 function serializeProduct(p: any, detailed = false): Record<string, any> {
   const revs = p.reviews || [];

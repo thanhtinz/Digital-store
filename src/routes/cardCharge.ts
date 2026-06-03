@@ -12,7 +12,7 @@
 import { Router, Request, Response } from 'express';
 import { randomUUID } from 'crypto';
 import prisma from '../db';
-import { requireUser } from '../middleware/auth';
+import { requireUser, requireAdmin } from '../middleware/auth';
 import { money } from '../services/orders';
 import { notifyCardCharge } from '../services/telegram';
 
@@ -148,6 +148,45 @@ router.get('/:txnId/status', requireUser, async (req: Request, res: Response) =>
       id: txn.id,
       status: txn.status,
       credited_amount: txn.creditedAmount ? money(txn.creditedAmount) : null,
+    });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+/** Admin: toàn bộ giao dịch nạp thẻ (xem đầy đủ mã/serial). */
+router.get('/admin/history', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
+    const status = req.query.status as string;
+    const where: any = {};
+    if (status) where.status = status;
+    const [total, txns] = await Promise.all([
+      prisma.cardChargeTransaction.count({ where }),
+      prisma.cardChargeTransaction.findMany({ where, orderBy: { id: 'desc' }, skip: (page - 1) * limit, take: limit }),
+    ]);
+    const userIds = Array.from(new Set(txns.map((t: any) => t.userId)));
+    const users = userIds.length
+      ? await prisma.user.findMany({ where: { id: { in: userIds } }, select: { id: true, email: true } })
+      : [];
+    const emailOf: Record<string, string> = Object.fromEntries(users.map((u: any) => [u.id, u.email]));
+    res.json({
+      total,
+      page,
+      items: txns.map((t: any) => ({
+        id: t.id,
+        user_email: emailOf[t.userId] || '',
+        telco: t.telco,
+        code: t.code,
+        serial: t.serial,
+        declared_amount: money(t.declaredAmount),
+        real_value: t.realValue ? money(t.realValue) : null,
+        credited_amount: t.creditedAmount ? money(t.creditedAmount) : null,
+        discount_rate: money(t.discountRate),
+        status: t.status,
+        created_at: t.createdAt?.toISOString(),
+      })),
     });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
