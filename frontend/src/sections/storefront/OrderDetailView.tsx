@@ -56,6 +56,39 @@ type Order = {
   items?: OrderItem[];
 };
 
+// Dòng thông tin chuyển khoản có nút copy.
+function Row({
+  label,
+  value,
+  onCopy,
+  highlight,
+}: {
+  label: string;
+  value?: string | number;
+  onCopy: (v: string) => void;
+  highlight?: boolean;
+}) {
+  if (value === undefined || value === null || value === '') return null;
+  return (
+    <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+        {label}
+      </Typography>
+      <Stack direction="row" alignItems="center" spacing={0.5}>
+        <Typography variant="subtitle2" sx={{ color: highlight ? 'error.main' : 'text.primary' }}>
+          {value}
+        </Typography>
+        <Iconify
+          icon="eva:copy-fill"
+          width={16}
+          sx={{ cursor: 'pointer', color: 'text.disabled' }}
+          onClick={() => onCopy(String(value))}
+        />
+      </Stack>
+    </Stack>
+  );
+}
+
 function deliveryToText(data: any): string {
   if (!data) return '';
   if (typeof data === 'string') return data;
@@ -136,6 +169,7 @@ export default function OrderDetailView() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
+  const [sepay, setSepay] = useState<any>(null);
   const dispatch = useDispatch();
 
   const fetchOrder = () => {
@@ -151,6 +185,20 @@ export default function OrderDetailView() {
     fetchOrder();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
+
+  // Đơn chờ thanh toán bằng chuyển khoản → lấy mã VietQR.
+  useEffect(() => {
+    const pending = order?.status === 'pending' || order?.status === 'pending_payment';
+    if (order && pending && order.paymentMethod && order.paymentMethod !== 'balance') {
+      axiosInstance
+        .get(`/api/payment/checkout-data/${order.orderCode}`)
+        .then((r) => setSepay(r.data?.sepay || null))
+        .catch(() => {});
+    } else {
+      setSepay(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order?.status, order?.paymentMethod, order?.orderCode]);
 
   const handleCopy = (text: string) => {
     navigator.clipboard?.writeText(text);
@@ -375,22 +423,38 @@ export default function OrderDetailView() {
 
             {isPending ? (
               <Stack spacing={2}>
-                <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'warning.lighter' }}>
-                  <Typography variant="body2" color="warning.darker">
-                    {t('pending_note')}
-                  </Typography>
-                </Box>
-                <Button
-                  fullWidth
-                  size="large"
-                  variant="contained"
-                  component={NextLink}
-                  href={PATH_DASHBOARD.eCommerce.checkout}
-                >
-                  {t('pay_now')}
-                </Button>
-                <Button fullWidth variant="outlined" onClick={fetchOrder}>
-                  {t('refresh_status')}
+                {sepay ? (
+                  <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'background.neutral' }}>
+                    <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
+                      {t('vietqr_title')}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      {t('vietqr_scan')}
+                    </Typography>
+                    {sepay.qrCodeUrl && (
+                      <Box
+                        component="img"
+                        src={sepay.qrCodeUrl}
+                        alt="VietQR"
+                        sx={{ display: 'block', width: 200, height: 200, mx: 'auto', my: 1.5, borderRadius: 1, bgcolor: 'common.white' }}
+                      />
+                    )}
+                    <Stack spacing={0.5} sx={{ typography: 'body2' }}>
+                      <Row label={t('bank_label')} value={sepay.bankCode} onCopy={handleCopy} />
+                      <Row label={t('account_no')} value={sepay.accountNumber} onCopy={handleCopy} />
+                      <Row label={t('amount_label')} value={fCurrency(sepay.amount)} onCopy={handleCopy} />
+                      <Row label={t('transfer_content')} value={sepay.transferContent} onCopy={handleCopy} highlight />
+                    </Stack>
+                  </Box>
+                ) : (
+                  <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'warning.lighter' }}>
+                    <Typography variant="body2" color="warning.darker">
+                      {t('pending_note')}
+                    </Typography>
+                  </Box>
+                )}
+                <Button fullWidth size="large" variant="contained" onClick={fetchOrder}>
+                  {sepay ? t('paid_check') : t('refresh_status')}
                 </Button>
                 <Button fullWidth color="error" variant="text" disabled={acting} onClick={handleCancel}>
                   {t('cancel_btn')}

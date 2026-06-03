@@ -4,6 +4,7 @@ import { LoadingButton } from '@mui/lab';
 import { useState } from 'react';
 // next
 import NextLink from 'next/link';
+import { useRouter } from 'next/router';
 // auth
 import { useAuthContext } from '../../../../../auth/useAuthContext';
 // locales
@@ -45,8 +46,10 @@ export default function CheckoutPayment({
   const { user } = useAuthContext();
   const { enqueueSnackbar } = useSnackbar();
   const { translate } = useLocales();
+  const { push } = useRouter();
   const t = (k: string) => `${translate(`checkout_page.${k}`)}`;
   const [submitting, setSubmitting] = useState(false);
+  const [method, setMethod] = useState<'balance' | 'vietqr'>('balance');
 
   const balance = Number((user as any)?.balance || 0);
   const enough = balance >= total;
@@ -69,11 +72,19 @@ export default function CheckoutPayment({
     try {
       const res = await axios.post('/api/orders', {
         items,
-        payment_method: 'balance',
+        // 'sepay' = chuyển khoản VietQR (đơn tạo ở trạng thái chờ thanh toán)
+        payment_method: method === 'balance' ? 'balance' : 'sepay',
         coupon_code: (checkout as any).couponCode || undefined,
       });
       const code = res.data?.order_code || res.data?.orderCode || '';
       if (typeof window !== 'undefined') window.dispatchEvent(new Event('balance:refresh'));
+
+      if (method === 'vietqr') {
+        // Đơn chờ thanh toán → sang trang đơn hàng để quét QR chuyển khoản.
+        onReset();
+        push(PATH_DASHBOARD.orders.view(code));
+        return;
+      }
       onComplete?.(code);
       onNextStep();
       onReset();
@@ -84,6 +95,48 @@ export default function CheckoutPayment({
     }
   };
 
+  const MethodCard = ({
+    value,
+    icon,
+    title,
+    desc,
+  }: {
+    value: 'balance' | 'vietqr';
+    icon: string;
+    title: string;
+    desc: string;
+  }) => {
+    const selected = method === value;
+    return (
+      <Box
+        onClick={() => setMethod(value)}
+        sx={{
+          p: 2.5,
+          borderRadius: 1.5,
+          cursor: 'pointer',
+          border: (th) => `solid 2px ${selected ? th.palette.primary.main : th.palette.divider}`,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          transition: (th) => th.transitions.create('border-color'),
+        }}
+      >
+        <Iconify icon={icon} width={32} sx={{ color: selected ? 'primary.main' : 'text.secondary' }} />
+        <Box sx={{ flexGrow: 1 }}>
+          <Typography variant="subtitle1">{title}</Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            {desc}
+          </Typography>
+        </Box>
+        <Iconify
+          icon={selected ? 'eva:radio-button-on-fill' : 'eva:radio-button-off-fill'}
+          width={22}
+          sx={{ color: selected ? 'primary.main' : 'text.disabled' }}
+        />
+      </Box>
+    );
+  };
+
   return (
     <Grid container spacing={3}>
       <Grid item xs={12} md={8}>
@@ -92,26 +145,22 @@ export default function CheckoutPayment({
             {t('payment_method')}
           </Typography>
 
-          <Box
-            sx={{
-              p: 2.5,
-              borderRadius: 1.5,
-              border: (t) => `solid 2px ${t.palette.primary.main}`,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 2,
-            }}
-          >
-            <Iconify icon="solar:wallet-money-bold" width={32} sx={{ color: 'primary.main' }} />
-            <Box sx={{ flexGrow: 1 }}>
-              <Typography variant="subtitle1">{t('account_balance')}</Typography>
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                {t('current_balance')}: <b>{fCurrency(balance)}</b>
-              </Typography>
-            </Box>
-          </Box>
+          <Stack spacing={1.5}>
+            <MethodCard
+              value="balance"
+              icon="solar:wallet-money-bold"
+              title={t('method_balance')}
+              desc={`${t('current_balance')}: ${fCurrency(balance)}`}
+            />
+            <MethodCard
+              value="vietqr"
+              icon="solar:qr-code-bold"
+              title={t('method_vietqr')}
+              desc={t('vietqr_desc')}
+            />
+          </Stack>
 
-          {!enough && (
+          {method === 'balance' && !enough && (
             <Alert
               severity="warning"
               sx={{ mt: 2 }}
@@ -150,11 +199,11 @@ export default function CheckoutPayment({
           size="large"
           variant="contained"
           loading={submitting}
-          disabled={!enough}
+          disabled={method === 'balance' && !enough}
           onClick={placeOrder}
           startIcon={<Iconify icon="solar:bag-check-bold" />}
         >
-          {t('place_order_btn')}
+          {method === 'vietqr' ? t('create_qr_btn') : t('place_order_btn')}
         </LoadingButton>
       </Grid>
     </Grid>
