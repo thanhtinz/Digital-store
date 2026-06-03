@@ -90,7 +90,7 @@ export default function ShopProductCard({ product }: Props) {
       available: cheapest?.stockQuantity ?? 999,
       price,
       colors: colors.length ? [colors[0]] : [],
-      size: '',
+      size: cheapest?.name || '',
       quantity: 1,
       // BẮT BUỘC để đồng bộ giỏ lên backend (/api/cart/sync cần package_id).
       packageId: String(cheapest.id),

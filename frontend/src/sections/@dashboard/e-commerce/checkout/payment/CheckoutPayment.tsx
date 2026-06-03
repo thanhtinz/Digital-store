@@ -69,6 +69,7 @@ export default function CheckoutPayment({
         coupon_code: (checkout as any).couponCode || undefined,
       });
       const code = res.data?.order_code || res.data?.orderCode || '';
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event('balance:refresh'));
       onComplete?.(code);
       onNextStep();
       onReset();

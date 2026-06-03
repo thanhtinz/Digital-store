@@ -97,8 +97,10 @@ export default function TopUpView() {
         setStatus(st);
         if (st && st !== 'pending') {
           if (pollRef.current) clearInterval(pollRef.current);
-          if (st === 'completed') enqueueSnackbar(t('success'));
-          else enqueueSnackbar(t('create_failed'), { variant: 'error' });
+          if (st === 'completed') {
+            enqueueSnackbar(t('success'));
+            if (typeof window !== 'undefined') window.dispatchEvent(new Event('balance:refresh'));
+          } else enqueueSnackbar(t('create_failed'), { variant: 'error' });
         }
       } catch {
         /* bỏ qua lỗi mạng tạm thời */

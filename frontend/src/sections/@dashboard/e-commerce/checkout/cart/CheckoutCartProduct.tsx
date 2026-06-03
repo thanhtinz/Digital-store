@@ -1,5 +1,5 @@
 // @mui
-import { Box, Stack, Divider, TableRow, TableCell, Typography, IconButton } from '@mui/material';
+import { Box, Stack, TableRow, TableCell, Typography, IconButton } from '@mui/material';
 // utils
 import { fCurrency } from '../../../../../utils/formatNumber';
 // @types
@@ -8,7 +8,6 @@ import { ICheckoutCartItem } from '../../../../../@types/product';
 import Image from '../../../../../components/image';
 import Label from '../../../../../components/label';
 import Iconify from '../../../../../components/iconify';
-import { ColorPreview } from '../../../../../components/color-utils';
 import { IncrementerButton } from '../../../../../components/custom-input';
 
 // ----------------------------------------------------------------------
@@ -26,7 +25,8 @@ export default function CheckoutCartProduct({
   onDecrease,
   onIncrease,
 }: CheckoutProductListRowProps) {
-  const { name, size, price, colors, cover, quantity, available } = row;
+  const { name, size, price, cover, quantity, available } = row;
+  const pkgLabel = (row as any).packageName || size;
 
   return (
     <TableRow>
@@ -42,15 +42,14 @@ export default function CheckoutCartProduct({
             {name}
           </Typography>
 
-          <Stack
-            direction="row"
-            alignItems="center"
-            sx={{ typography: 'body2', color: 'text.secondary' }}
-          >
-            size: <Label sx={{ ml: 0.5 }}> {size} </Label>
-            <Divider orientation="vertical" sx={{ mx: 1, height: 16 }} />
-            <ColorPreview colors={colors} />
-          </Stack>
+          {pkgLabel && (
+            <Stack direction="row" alignItems="center" sx={{ typography: 'body2', color: 'text.secondary' }}>
+              Gói:
+              <Label color="info" sx={{ ml: 0.5 }}>
+                {pkgLabel}
+              </Label>
+            </Stack>
+          )}
         </Stack>
       </TableCell>
 

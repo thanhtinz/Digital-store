@@ -25,17 +25,23 @@ export default function BalanceButton() {
   );
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) return undefined;
     let alive = true;
-    axiosInstance
-      .get('/api/balance/me')
-      .then((r) => {
-        const v = Number(r.data?.balance);
-        if (alive && Number.isFinite(v)) setBalance(v);
-      })
-      .catch(() => {});
+    const refresh = () => {
+      axiosInstance
+        .get('/api/balance/me')
+        .then((r) => {
+          const v = Number(r.data?.balance);
+          if (alive && Number.isFinite(v)) setBalance(v);
+        })
+        .catch(() => {});
+    };
+    refresh();
+    // Cập nhật số dư khi có sự kiện (nạp tiền / đặt đơn) — không cần tải lại trang.
+    window.addEventListener('balance:refresh', refresh);
     return () => {
       alive = false;
+      window.removeEventListener('balance:refresh', refresh);
     };
   }, [isAuthenticated]);
 
