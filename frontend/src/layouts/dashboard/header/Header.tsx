@@ -1,6 +1,6 @@
 // @mui
 import { useTheme } from '@mui/material/styles';
-import { Stack, AppBar, Toolbar, IconButton } from '@mui/material';
+import { Box, Stack, AppBar, Toolbar, IconButton } from '@mui/material';
 // utils
 import { bgBlur } from '../../../utils/cssStyles';
 // hooks
@@ -48,14 +48,15 @@ export default function Header({ onOpenNav }: Props) {
         </IconButton>
       )}
 
-      <ProductSearchbar />
+      <Box sx={{ flexGrow: 1, minWidth: 0, maxWidth: 420, mr: { xs: 1, sm: 2 } }}>
+        <ProductSearchbar />
+      </Box>
 
       <Stack
-        flexGrow={1}
         direction="row"
         alignItems="center"
-        justifyContent="flex-end"
-        spacing={{ xs: 0.5, sm: 1.5 }}
+        flexShrink={0}
+        spacing={{ xs: 0.25, sm: 1 }}
       >
         <BalanceButton />
 

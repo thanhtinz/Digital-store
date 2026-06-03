@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { PATH_DASHBOARD } from '../../../routes/paths';
 // utils
 import axiosInstance from '../../../utils/axios';
+// locales
+import { useLocales } from '../../../locales';
 // components
 import SvgColor from '../../../components/svg-color';
 
@@ -76,6 +78,9 @@ const activeOf = (c: AnyCat) => c.isActive ?? c.is_active ?? true;
 // ----------------------------------------------------------------------
 
 export function useNavConfig() {
+  const { translate } = useLocales();
+  const t = (key: string) => `${translate(`nav.${key}`)}`;
+
   const [categories, setCategories] = useState<AnyCat[]>([]);
   const [giftcards, setGiftcards] = useState<AnyProduct[]>([]);
 
@@ -122,9 +127,9 @@ export function useNavConfig() {
 
   // ── Lắp ráp menu ──
   const shopping = {
-    subheader: 'mua sắm',
+    subheader: t('shopping'),
     items: [
-      { title: 'trang chủ', path: '/', icon: ICONS.dashboard },
+      { title: t('home'), path: '/', icon: ICONS.dashboard },
       ...premiumCats,
     ],
   };
@@ -132,7 +137,7 @@ export function useNavConfig() {
   const serviceItems: any[] = [];
   if (gameCats.length) {
     serviceItems.push({
-      title: 'topup game',
+      title: t('topup_game'),
       path: shopByCat(''),
       icon: ICONS.cart,
       children: gameCats,
@@ -140,32 +145,32 @@ export function useNavConfig() {
   }
   if (giftcardItems.length) {
     serviceItems.push({
-      title: 'giftcard',
+      title: t('giftcard'),
       path: PATH_DASHBOARD.eCommerce.shop,
       icon: ICONS.label,
       children: giftcardItems,
     });
   }
   serviceItems.push({
-    title: 'dịch vụ mxh',
+    title: t('social'),
     path: PATH_DASHBOARD.smm.root,
     icon: ICONS.external,
     children: [
-      { title: 'đặt đơn', path: PATH_DASHBOARD.smm.order },
-      { title: 'danh sách', path: PATH_DASHBOARD.smm.services },
-      { title: 'đơn hàng', path: PATH_DASHBOARD.smm.orders },
-      { title: 'bảo hành', path: PATH_DASHBOARD.smm.warranty },
+      { title: t('order'), path: PATH_DASHBOARD.smm.order },
+      { title: t('service_list'), path: PATH_DASHBOARD.smm.services },
+      { title: t('orders'), path: PATH_DASHBOARD.smm.orders },
+      { title: t('warranty'), path: PATH_DASHBOARD.smm.warranty },
     ],
   });
 
   const support = {
-    subheader: 'hỗ trợ',
+    subheader: t('support'),
     items: [
-      { title: 'ưu đãi', path: PATH_DASHBOARD.offers, icon: ICONS.label },
-      { title: 'blog', path: PATH_DASHBOARD.blog.posts, icon: ICONS.blog },
-      { title: 'hỗ trợ', path: PATH_DASHBOARD.support, icon: ICONS.chat },
+      { title: t('offers'), path: PATH_DASHBOARD.offers, icon: ICONS.label },
+      { title: t('blog'), path: PATH_DASHBOARD.blog.posts, icon: ICONS.blog },
+      { title: t('support'), path: PATH_DASHBOARD.support, icon: ICONS.chat },
     ],
   };
 
-  return [shopping, { subheader: 'dịch vụ', items: serviceItems }, support];
+  return [shopping, { subheader: t('services'), items: serviceItems }, support];
 }

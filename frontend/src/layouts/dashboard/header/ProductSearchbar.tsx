@@ -66,11 +66,11 @@ export default function ProductSearchbar() {
       getOptionLabel={(o: any) => (typeof o === 'string' ? o : o.name)}
       noOptionsText={<SearchNotFound query={query} />}
       isOptionEqualToValue={(o: any, v: any) => o.id === v.id}
-      sx={{ width: { xs: 1, sm: 260 } }}
+      sx={{ width: 1 }}
       renderInput={(params) => (
         <CustomTextField
           {...params}
-          width={240}
+          fullWidth
           placeholder="Tìm sản phẩm..."
           onKeyUp={(e: React.KeyboardEvent) => {
             if (e.key === 'Enter') gotoProduct();
