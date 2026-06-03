@@ -65,7 +65,7 @@ export default function AdminSettingsView() {
   };
 
   return (
-    <RoleBasedGuard hasContent roles={['admin']}>
+    <RoleBasedGuard hasContent roles={['admin', 'superadmin']}>
       <Container sx={{ pb: 6 }}>
         <Typography variant="h4" sx={{ my: 3 }}>
           Cài đặt cửa hàng

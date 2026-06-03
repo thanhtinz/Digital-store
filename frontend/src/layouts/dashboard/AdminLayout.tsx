@@ -22,7 +22,7 @@ export default function AdminLayout({ children }: Props) {
 
   return (
     <AuthGuard>
-      <RoleBasedGuard hasContent roles={['admin', 'staff']}>
+      <RoleBasedGuard hasContent roles={['admin', 'superadmin', 'staff']}>
         <Header onOpenNav={() => setOpen(true)} />
 
         <Box sx={{ display: { lg: 'flex' }, minHeight: { lg: 1 } }}>

@@ -84,7 +84,7 @@ export default function AdminOverviewView() {
   }, []);
 
   return (
-    <RoleBasedGuard hasContent roles={['admin', 'staff']}>
+    <RoleBasedGuard hasContent roles={['admin', 'superadmin', 'staff']}>
       <Container sx={{ pb: 6 }}>
         <Typography variant="h4" sx={{ my: 3 }}>
           Tổng quan quản trị

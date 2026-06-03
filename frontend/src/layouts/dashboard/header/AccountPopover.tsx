@@ -30,7 +30,7 @@ export default function AccountPopover() {
   const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
   const t = (k: string) => cap(`${translate(`nav.${k}`)}`);
 
-  const isAdmin = (user as any)?.role === 'admin';
+  const isAdmin = ['admin', 'superadmin', 'staff'].includes((user as any)?.role);
 
   const OPTIONS = [
     { label: t('account'), linkTo: PATH_DASHBOARD.myAccount },
