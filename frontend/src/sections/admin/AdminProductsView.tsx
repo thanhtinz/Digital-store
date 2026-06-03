@@ -35,7 +35,7 @@ import Label from '../../components/label';
 import Iconify from '../../components/iconify';
 import ConfirmDialog from '../../components/confirm-dialog';
 import { useSnackbar } from '../../components/snackbar';
-import ImageUploadField from './ImageUploadField';
+import ImageUploadField, { GalleryField } from './ImageUploadField';
 
 // ----------------------------------------------------------------------
 
@@ -44,6 +44,7 @@ type Product = {
   id: number;
   name: string;
   imageUrl?: string;
+  images?: string[];
   description?: string;
   isActive: boolean;
   isFeatured: boolean;
@@ -58,6 +59,7 @@ const EMPTY = {
   name: '',
   description: '',
   image_url: '',
+  images: [] as string[],
   category_id: '' as string | number,
   is_featured: false,
   is_active: true,
@@ -128,6 +130,7 @@ export default function AdminProductsView() {
       name: p.name,
       description: p.description || '',
       image_url: p.imageUrl || '',
+      images: Array.isArray(p.images) ? p.images : [],
       category_id: p.categoryId || '',
       is_featured: p.isFeatured,
       is_active: p.isActive,
@@ -144,6 +147,7 @@ export default function AdminProductsView() {
       name: form.name,
       description: form.description,
       image_url: form.image_url,
+      images: form.images,
       category_id: form.category_id || null,
       is_featured: form.is_featured,
       is_active: form.is_active,
@@ -273,6 +277,7 @@ export default function AdminProductsView() {
                 ))}
               </TextField>
               <ImageUploadField label="Ảnh sản phẩm" value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })} />
+              <GalleryField label="Album ảnh (tài khoản premium)" value={form.images} onChange={(urls) => setForm({ ...form, images: urls })} />
               <Stack spacing={1}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Typography variant="caption" sx={{ color: 'text.secondary' }}>

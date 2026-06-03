@@ -3,7 +3,7 @@ import { paramCase } from 'change-case';
 // next
 import NextLink from 'next/link';
 // @mui
-import { Box, Card, Link, Stack, Fab, IconButton, Rating } from '@mui/material';
+import { Box, Card, Link, Stack, Fab, IconButton } from '@mui/material';
 // routes
 import { PATH_DASHBOARD } from '../../../../routes/paths';
 // auth
@@ -21,7 +21,6 @@ import Iconify from '../../../../components/iconify';
 import Label from '../../../../components/label';
 import Image from '../../../../components/image';
 import { useSnackbar } from '../../../../components/snackbar';
-import { ColorPreview } from '../../../../components/color-utils';
 
 // ----------------------------------------------------------------------
 
@@ -32,7 +31,7 @@ type Props = {
 export default function ShopProductCard({ product }: Props) {
   const { id, name, status } = product;
 
-  // Sản phẩm số: ảnh = imageUrl, giá = gói rẻ nhất, gói mặc định để thêm vào giỏ.
+  // Sản phẩm số: ảnh = imageUrl, giá = khoảng giá các gói, gói rẻ nhất để thêm vào giỏ.
   const p: any = product;
   const packages: any[] = p.packages || [];
   const cheapest = packages
@@ -41,8 +40,19 @@ export default function ShopProductCard({ product }: Props) {
   const cover = p.imageUrl || p.cover || '';
   const ratingValue = Number(p.rating) || 0;
   const ratingCount = Number(p.ratingCount) || 0;
+
+  // Giá hiệu lực mỗi gói (ưu tiên giá flash sale)
+  const effPrices = packages
+    .map((pk: any) => Number(pk.flashSale?.salePrice ?? pk.price) || 0)
+    .filter((n: number) => n > 0);
+  const minP = effPrices.length ? Math.min(...effPrices) : 0;
+  const maxP = effPrices.length ? Math.max(...effPrices) : 0;
   const price = cheapest?.price ?? p.price ?? 0;
-  const priceSale = cheapest?.originalPrice && cheapest.originalPrice > price ? cheapest.originalPrice : 0;
+
+  // Tag giao hàng: tự động (kho/api) hay thủ công
+  const isAuto = packages.some(
+    (pk: any) => pk.isStockManaged || ['stock', 'api'].includes(String(pk.deliveryType))
+  );
   const colors: string[] = p.colors || [];
 
   const dispatch = useDispatch();
@@ -157,31 +167,33 @@ export default function ShopProductCard({ product }: Props) {
         <Image alt={name} src={cover} ratio="1/1" sx={{ borderRadius: 1.5 }} />
       </Box>
 
-      <Stack spacing={2} sx={{ p: 3 }}>
+      <Stack spacing={1} sx={{ p: 2 }}>
         <Link component={NextLink} href={linkTo} color="inherit" variant="subtitle2" noWrap>
           {name}
         </Link>
 
-        <Stack direction="row" alignItems="center" spacing={0.5}>
-          <Rating value={ratingValue} precision={0.1} readOnly size="small" />
-          <Box component="span" sx={{ typography: 'caption', color: 'text.secondary' }}>
-            {ratingCount > 0 ? `(${ratingCount})` : 'Chưa có đánh giá'}
-          </Box>
-        </Stack>
-
         <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <ColorPreview colors={colors} />
-
-          <Stack direction="row" spacing={0.5} sx={{ typography: 'subtitle1' }}>
-            {priceSale && (
-              <Box component="span" sx={{ color: 'text.disabled', textDecoration: 'line-through' }}>
-                {fCurrency(priceSale)}
-              </Box>
-            )}
-
-            <Box component="span">{fCurrency(price)}</Box>
+          <Stack direction="row" alignItems="center" spacing={0.25}>
+            <Iconify icon="solar:star-bold" width={14} sx={{ color: ratingCount > 0 ? 'warning.main' : 'text.disabled' }} />
+            <Box component="span" sx={{ typography: 'caption', color: 'text.secondary' }}>
+              {ratingCount > 0 ? `${ratingValue} (${ratingCount})` : 'Mới'}
+            </Box>
           </Stack>
+
+          {packages.length > 0 && (
+            <Label color={isAuto ? 'success' : 'warning'} variant="soft" sx={{ height: 20, fontSize: 11 }}>
+              {isAuto ? 'Tự động' : 'Thủ công'}
+            </Label>
+          )}
         </Stack>
+
+        <Box component="span" sx={{ typography: 'subtitle1', color: packages.length ? 'text.primary' : 'info.main' }}>
+          {packages.length === 0
+            ? 'Liên hệ'
+            : minP === maxP
+            ? fCurrency(minP)
+            : `${fCurrency(minP)} – ${fCurrency(maxP)}`}
+        </Box>
       </Stack>
     </Card>
   );

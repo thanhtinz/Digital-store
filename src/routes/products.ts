@@ -173,7 +173,7 @@ router.get('/:slug', optionalUser, async (req: Request, res: Response) => {
 // ── Admin: tạo sản phẩm ───────────────────────────────
 router.post(['/admin', '/'], requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
-    const { name, category_id, description, notes, image_url, is_featured, is_active, sort_order } = req.body;
+    const { name, category_id, description, notes, image_url, images, is_featured, is_active, sort_order } = req.body;
     if (!name) { res.status(422).json({ detail: 'Tên sản phẩm không được để trống' }); return; }
     const slug = slugify(name, { lower: true, strict: true });
     const product = await prisma.product.create({
@@ -182,6 +182,7 @@ router.post(['/admin', '/'], requireStaffOrAdmin, async (req: Request, res: Resp
         description: description || null,
         notes: notes || null,
         imageUrl: image_url || null,
+        images: Array.isArray(images) ? images : undefined,
         isFeatured: is_featured || false,
         isActive: is_active !== false,
         sortOrder: sort_order || 0,
@@ -208,6 +209,9 @@ router.patch(['/admin/:id', '/:id'], requireStaffOrAdmin, async (req: Request, r
         const key = f.replace(/_([a-z])/g, (_, l) => l.toUpperCase());
         data[key] = req.body[f];
       }
+    }
+    if (req.body.images !== undefined) {
+      data.images = Array.isArray(req.body.images) ? req.body.images : null;
     }
     const product = await prisma.product.update({ where: { id }, data });
     res.json(serializeProduct(product));
@@ -440,6 +444,7 @@ function serializeProduct(p: any, detailed = false): Record<string, any> {
     description: p.description,
     notes: p.notes,
     imageUrl: p.imageUrl,
+    images: Array.isArray(p.images) ? p.images : [],
     isFeatured: p.isFeatured,
     isActive: p.isActive,
     sortOrder: p.sortOrder,
