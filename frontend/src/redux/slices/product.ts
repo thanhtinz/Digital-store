@@ -226,8 +226,9 @@ function normalizeProduct(raw: any) {
     avatarUrl: r.avatarUrl || '',
     comment: r.comment || '',
     rating: r.rating || 0,
-    isPurchased: true,
-    helpful: 0,
+    isPurchased: r.isVerified ?? true,
+    helpful: r.helpfulCount ?? r.helpful_count ?? 0,
+    images: Array.isArray(r.images) ? r.images : [],
     postedAt: r.createdAt || r.created_at || new Date().toISOString(),
   }));
   // Phân bố sao 1..5 cho biểu đồ đánh giá.

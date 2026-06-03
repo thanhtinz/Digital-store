@@ -516,6 +516,8 @@ model Review {
   userName   String?  @db.VarChar(255) @map("user_name")
   rating     Int
   comment    String?
+  images     Json?    @map("images")
+  helpfulCount Int    @default(0) @map("helpful_count")
   isVerified Boolean  @default(false) @map("is_verified")
   isVisible  Boolean  @default(true) @map("is_visible")
   createdAt  DateTime @default(now()) @map("created_at")
@@ -523,6 +525,18 @@ model Review {
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@map("reviews")
+}
+
+// Lượt "hữu ích" của khách cho 1 đánh giá (chống vote trùng).
+model ReviewHelpful {
+  id        Int      @id @default(autoincrement())
+  reviewId  Int      @map("review_id")
+  userId    String   @db.VarChar(255) @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([reviewId, userId])
+  @@index([reviewId])
+  @@map("review_helpful")
 }
 
 model SupportPage {

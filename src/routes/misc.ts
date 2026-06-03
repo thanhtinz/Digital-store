@@ -1,9 +1,12 @@
 import { Router, Request, Response } from 'express';
 import slugify from 'slugify';
+import multer from 'multer';
+import sharp from 'sharp';
 import prisma from '../db';
 import { requireUser, requireStaffOrAdmin, optionalUser } from '../middleware/auth';
 
 const router = Router();
+const uploadReviewImage = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
 
 // ════════════════════════════════════════════════════
 // SEARCH
@@ -218,15 +221,62 @@ router.post('/reviews', requireUser, async (req: Request, res: Response) => {
       res.status(400).json({ detail: 'Bạn đã đánh giá sản phẩm này rồi' });
       return;
     }
+    const images = Array.isArray(req.body.images) ? req.body.images.filter((x: any) => typeof x === 'string').slice(0, 6) : [];
     const review = await prisma.review.create({
       data: {
         productId,
         userId: user.user_id.toString(),
         userName: user.display_name || user.email,
         rating, comment: comment || null,
+        images: images.length ? images : undefined,
       },
     });
     res.status(201).json(review);
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+// Upload ảnh cho đánh giá (khách đã đăng nhập). Lưu vào uploaded_images, trả URL.
+router.post('/reviews/upload-image', requireUser, uploadReviewImage.single('file'), async (req: Request, res: Response) => {
+  try {
+    const f = (req as any).file;
+    if (!f || !f.buffer) { res.status(400).json({ detail: 'Thiếu file ảnh' }); return; }
+    let data: Buffer = f.buffer;
+    let mime = f.mimetype || 'image/jpeg';
+    try {
+      data = await sharp(f.buffer).rotate().resize({ width: 1200, withoutEnlargement: true }).webp({ quality: 80 }).toBuffer();
+      mime = 'image/webp';
+    } catch { /* giữ buffer gốc nếu không xử lý được */ }
+    const img = await prisma.uploadedImage.create({ data: { filename: f.originalname || null, data, mimeType: mime } });
+    res.status(201).json({ url: `/api/images/${img.id}` });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+// Bấm "hữu ích" cho đánh giá (toggle, chống trùng).
+router.post('/reviews/:id/helpful', requireUser, async (req: Request, res: Response) => {
+  try {
+    const reviewId = parseInt(req.params.id);
+    const userId = (req as any).user.user_id.toString();
+    const existing = await prisma.reviewHelpful.findUnique({ where: { reviewId_userId: { reviewId, userId } } });
+    let voted: boolean;
+    if (existing) {
+      await prisma.$transaction([
+        prisma.reviewHelpful.delete({ where: { id: existing.id } }),
+        prisma.review.update({ where: { id: reviewId }, data: { helpfulCount: { decrement: 1 } } }),
+      ]);
+      voted = false;
+    } else {
+      await prisma.$transaction([
+        prisma.reviewHelpful.create({ data: { reviewId, userId } }),
+        prisma.review.update({ where: { id: reviewId }, data: { helpfulCount: { increment: 1 } } }),
+      ]);
+      voted = true;
+    }
+    const r = await prisma.review.findUnique({ where: { id: reviewId }, select: { helpfulCount: true } });
+    res.json({ ok: true, voted, helpful_count: Math.max(0, r?.helpfulCount || 0) });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
   }

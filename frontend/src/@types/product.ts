@@ -8,6 +8,7 @@ export type IProductReview = {
   rating: number;
   isPurchased: boolean;
   helpful: number;
+  images?: string[];
   postedAt: Date | string | number;
 };
 

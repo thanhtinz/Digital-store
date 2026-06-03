@@ -1,7 +1,8 @@
 import { useState } from 'react';
 // @mui
-import { Stack, Button, Rating, Avatar, Pagination, Typography } from '@mui/material';
+import { Box, Stack, Button, Rating, Avatar, Pagination, Typography } from '@mui/material';
 // utils
+import axiosInstance from '../../../../utils/axios';
 import { fDate } from '../../../../utils/formatTime';
 import { fShortenNumber } from '../../../../utils/formatNumber';
 // locales
@@ -9,6 +10,7 @@ import { useLocales } from '../../../../locales';
 // @types
 import { IProductReview } from '../../../../@types/product';
 // components
+import Image from '../../../../components/image';
 import Iconify from '../../../../components/iconify';
 
 // ----------------------------------------------------------------------
@@ -64,9 +66,24 @@ type ReviewItemProps = {
 function ReviewItem({ review }: ReviewItemProps) {
   const { translate } = useLocales();
   const tp = (k: string) => `${translate(`product_page.${k}`)}`;
-  const { name, rating, comment, helpful, postedAt, avatarUrl, isPurchased } = review;
+  const { id, name, rating, comment, helpful, postedAt, avatarUrl, isPurchased, images } = review;
 
   const [isHelpful, setIsHelpful] = useState(false);
+  const [count, setCount] = useState(helpful);
+  const [busy, setBusy] = useState(false);
+
+  const toggleHelpful = async () => {
+    setBusy(true);
+    try {
+      const r = await axiosInstance.post(`/api/reviews/${id}/helpful`);
+      setIsHelpful(!!r.data?.voted);
+      setCount(Number(r.data?.helpful_count) || 0);
+    } catch {
+      /* bỏ qua (vd chưa đăng nhập) */
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <Stack
@@ -126,6 +143,26 @@ function ReviewItem({ review }: ReviewItemProps) {
 
         <Typography variant="body2">{comment}</Typography>
 
+        {!!images?.length && (
+          <Stack direction="row" flexWrap="wrap" spacing={1} sx={{ mt: 0.5 }}>
+            {images.map((src, i) => (
+              <Box
+                key={i}
+                component="a"
+                href={src}
+                target="_blank"
+                rel="noopener"
+                sx={{ display: 'inline-block' }}
+              >
+                <Image
+                  src={src}
+                  sx={{ width: 72, height: 72, borderRadius: 1, bgcolor: 'background.neutral' }}
+                />
+              </Box>
+            ))}
+          </Stack>
+        )}
+
         <Stack
           spacing={1}
           alignItems={{ xs: 'flex-start', sm: 'center' }}
@@ -138,11 +175,11 @@ function ReviewItem({ review }: ReviewItemProps) {
           <Button
             size="small"
             color="inherit"
+            disabled={busy}
             startIcon={<Iconify icon={!isHelpful ? 'ic:round-thumb-up' : 'eva:checkmark-fill'} />}
-            onClick={() => setIsHelpful(!isHelpful)}
+            onClick={toggleHelpful}
           >
-            {isHelpful ? tp('helpful') : tp('thank')}(
-            {fShortenNumber(!isHelpful ? helpful : helpful + 1)})
+            {isHelpful ? tp('helpful') : tp('thank')}({fShortenNumber(count)})
           </Button>
         </Stack>
       </Stack>
