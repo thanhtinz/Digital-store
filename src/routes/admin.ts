@@ -759,7 +759,32 @@ router.delete('/banners/admin/images/:id', requireAdmin, async (req: Request, re
   }
 });
 
-// ── Gift codes: public + quote ─────────────────────────
+// ── Gift codes: public + check + quote ─────────────────
+// Kiểm tra 1 mã (không cần subtotal) — cho UI nhập mã xem trước.
+router.get('/gift-codes/check/:code', async (req: Request, res: Response) => {
+  try {
+    const now = new Date();
+    const gc = await prisma.giftCode.findUnique({ where: { code: req.params.code.toUpperCase().trim() } });
+    if (!gc || !gc.isActive) { res.status(404).json({ detail: 'Mã không hợp lệ' }); return; }
+    if (gc.startsAt && gc.startsAt > now) { res.status(400).json({ detail: 'Mã chưa có hiệu lực' }); return; }
+    if (gc.expiresAt && gc.expiresAt < now) { res.status(400).json({ detail: 'Mã đã hết hạn' }); return; }
+    if (gc.usageLimit > 0 && gc.usageCount >= gc.usageLimit) {
+      res.status(400).json({ detail: 'Mã đã hết lượt sử dụng' });
+      return;
+    }
+    res.json({
+      code: gc.code,
+      discount_type: gc.discountType,
+      discount_value: money(gc.discountValue),
+      min_order: money(gc.minOrder),
+      max_discount: gc.maxDiscount ? money(gc.maxDiscount) : null,
+      description: gc.description,
+    });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
 router.get('/gift-codes/public', async (_req: Request, res: Response) => {
   const now = new Date();
   const codes = await prisma.giftCode.findMany({
@@ -815,6 +840,29 @@ router.get('/flash-sales/active', async (_req: Request, res: Response) => {
     original_price: s.package ? money(s.package.price) : 0,
     quantity_limit: s.quantityLimit,
     quantity_sold: s.quantitySold,
+    ends_at: s.endsAt?.toISOString(),
+  })));
+});
+
+// ── Flash sales: upcoming (public) ─────────────────────
+router.get('/flash-sales/upcoming', async (_req: Request, res: Response) => {
+  const now = new Date();
+  const sales = await prisma.flashSale.findMany({
+    where: { isActive: true, startsAt: { gt: now } },
+    include: { package: { include: { product: true } } },
+    orderBy: { startsAt: 'asc' },
+    take: 10,
+  });
+  res.json(sales.map((s: any) => ({
+    id: s.id,
+    package_id: s.packageId,
+    product_name: s.package?.product?.name,
+    package_name: s.package?.name,
+    sale_price: money(s.salePrice),
+    original_price: s.package ? money(s.package.price) : 0,
+    quantity_limit: s.quantityLimit,
+    quantity_sold: s.quantitySold,
+    starts_at: s.startsAt?.toISOString(),
     ends_at: s.endsAt?.toISOString(),
   })));
 });
