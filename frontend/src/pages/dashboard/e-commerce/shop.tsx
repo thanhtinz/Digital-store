@@ -82,6 +82,7 @@ export default function EcommerceShopPage() {
   const {
     reset,
     watch,
+    setValue,
     formState: { dirtyFields },
   } = methods;
 
@@ -96,9 +97,16 @@ export default function EcommerceShopPage() {
   const categorySlug = (query.category as string) || undefined;
   const typeFilter = (query.type as string) || undefined;
 
+  // Tải toàn bộ sản phẩm (theo loại nếu có) — danh mục lọc ở client để
+  // chuyển danh mục trong bộ lọc vẫn hoạt động khi vào từ menu.
   useEffect(() => {
-    dispatch(getProducts({ category: categorySlug, type: typeFilter }));
-  }, [dispatch, categorySlug, typeFilter]);
+    dispatch(getProducts({ type: typeFilter }));
+  }, [dispatch, typeFilter]);
+
+  // Đồng bộ danh mục từ URL vào bộ lọc (highlight đúng danh mục + lọc ngay).
+  useEffect(() => {
+    setValue('category', categorySlug || 'All');
+  }, [categorySlug, setValue]);
 
   const handleResetFilter = () => {
     reset();
