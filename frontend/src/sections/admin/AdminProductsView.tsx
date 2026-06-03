@@ -71,7 +71,31 @@ export default function AdminProductsView() {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<typeof EMPTY | null>(null);
   const [saving, setSaving] = useState(false);
+  const [aiBusy, setAiBusy] = useState(false);
   const [toDelete, setToDelete] = useState<Product | null>(null);
+
+  // Sinh mô tả sản phẩm bằng AI (cần cấu hình AI ở Tích hợp/Cài đặt).
+  const aiGenerate = async () => {
+    if (!form) return;
+    if (!form.name.trim()) {
+      enqueueSnackbar('Nhập tên sản phẩm trước', { variant: 'warning' });
+      return;
+    }
+    setAiBusy(true);
+    try {
+      const r = await axiosInstance.post('/api/admin/ai/generate', {
+        field_type: 'product_description',
+        context: form.name,
+        max_tokens: 400,
+      });
+      if (r.data?.content) setForm((f) => (f ? { ...f, description: r.data.content.trim() } : f));
+      enqueueSnackbar('Đã tạo mô tả bằng AI');
+    } catch (e: any) {
+      enqueueSnackbar(e?.detail || 'AI tạo mô tả thất bại', { variant: 'error' });
+    } finally {
+      setAiBusy(false);
+    }
+  };
 
   const load = () => {
     setLoading(true);
@@ -243,13 +267,27 @@ export default function AdminProductsView() {
                 value={form.image_url}
                 onChange={(e) => setForm({ ...form, image_url: e.target.value })}
               />
-              <TextField
-                label="Mô tả"
-                multiline
-                minRows={2}
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-              />
+              <Stack spacing={1}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    Mô tả
+                  </Typography>
+                  <Button
+                    size="small"
+                    onClick={aiGenerate}
+                    disabled={aiBusy}
+                    startIcon={<Iconify icon={aiBusy ? 'eos-icons:loading' : 'solar:magic-stick-3-bold'} />}
+                  >
+                    {aiBusy ? 'Đang tạo…' : 'Tạo bằng AI'}
+                  </Button>
+                </Stack>
+                <TextField
+                  multiline
+                  minRows={3}
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                />
+              </Stack>
               <Stack direction="row" spacing={2}>
                 <FormControlLabel
                   control={
