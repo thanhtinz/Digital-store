@@ -484,6 +484,8 @@ const vn = {
     load_failed: `Không tải được danh sách`,
   },
   product_page: {
+    related_title: `Sản phẩm liên quan`,
+    recent_title: `Đã xem gần đây`,
     package: `Gói`,
     enter_info: `Nhập thông tin`,
     add_to_cart: `Thêm vào giỏ`,

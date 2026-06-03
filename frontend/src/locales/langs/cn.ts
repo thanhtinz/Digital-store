@@ -484,6 +484,8 @@ const cn = {
     load_failed: `加载列表失败`,
   },
   product_page: {
+    related_title: `相关产品`,
+    recent_title: `最近浏览`,
     package: `套餐`,
     enter_info: `填写信息`,
     add_to_cart: `加入购物车`,

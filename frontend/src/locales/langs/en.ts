@@ -484,6 +484,8 @@ const en = {
     load_failed: `Failed to load list`,
   },
   product_page: {
+    related_title: `Related products`,
+    recent_title: `Recently viewed`,
     package: `Package`,
     enter_info: `Enter details`,
     add_to_cart: `Add to cart`,

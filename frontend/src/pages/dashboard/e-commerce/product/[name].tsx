@@ -29,6 +29,9 @@ import {
   ProductDetailsCarousel,
 } from '../../../../sections/@dashboard/e-commerce/details';
 import CartWidget from '../../../../sections/@dashboard/e-commerce/CartWidget';
+import ProductGridSection from '../../../../sections/@dashboard/e-commerce/ProductGridSection';
+// utils
+import { addRecentProduct, getRecentProducts } from '../../../../utils/recentProducts';
 
 // ----------------------------------------------------------------------
 
@@ -72,12 +75,20 @@ export default function EcommerceProductDetailsPage() {
   const { product, isLoading, checkout } = useSelector((state) => state.product);
 
   const [currentTab, setCurrentTab] = useState('description');
+  const [recent, setRecent] = useState<any[]>([]);
 
   useEffect(() => {
     if (name) {
       dispatch(getProduct(name as string));
     }
+    // Lấy danh sách đã xem TRƯỚC khi thêm sản phẩm hiện tại.
+    setRecent(getRecentProducts());
   }, [dispatch, name]);
+
+  // Ghi nhận sản phẩm hiện tại vào "đã xem gần đây" sau khi tải xong.
+  useEffect(() => {
+    if ((product as any)?.slug) addRecentProduct(product);
+  }, [product]);
 
   const handleAddCart = (newProduct: ICheckoutCartItem) => {
     dispatch(addToCart(newProduct));
@@ -198,6 +209,18 @@ export default function EcommerceProductDetailsPage() {
                   )
               )}
             </Card>
+
+            <ProductGridSection
+              title={tp('related_title')}
+              products={(product as any).related || []}
+              excludeSlug={(product as any).slug}
+            />
+
+            <ProductGridSection
+              title={tp('recent_title')}
+              products={recent}
+              excludeSlug={(product as any).slug}
+            />
           </>
         )}
 

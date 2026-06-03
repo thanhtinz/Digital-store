@@ -4,6 +4,7 @@ import { requireUser, requireAdmin, requireStaffOrAdmin } from '../middleware/au
 import { orderToDict, genOrderCode, applyCoupon, autoDeliver, money, refundOrderBalance } from '../services/orders';
 import { notifyNewOrder } from '../services/telegram';
 import { createNotification } from '../services/notify';
+import { sendMail } from '../services/mail';
 import { awardPointsForOrder, estimatePointDiscount, redeemPointsForOrder, refundPointsForOrder } from '../services/loyalty';
 
 const router = Router();
@@ -13,6 +14,22 @@ const STATUS_LABELS: Record<string, string> = {
   processing: 'Đang xử lý', completed: 'Đã giao hàng', cancelled: 'Đã hủy',
   failed: 'Lỗi / đã hoàn tiền', refunded: 'Đã hoàn tiền',
 };
+
+// Email thông báo cập nhật trạng thái đơn (không chặn nếu lỗi/chưa cấu hình mail).
+function sendOrderStatusEmail(toEmail: string | null | undefined, orderCode: string, status: string) {
+  if (!toEmail) return;
+  const label = STATUS_LABELS[status] || status;
+  const url = `${process.env.PUBLIC_SITE_URL || ''}/dashboard/orders/${orderCode}`;
+  const subject = `Đơn hàng ${orderCode} — ${label}`;
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto">
+      <h2 style="margin:0 0 8px">Cập nhật đơn hàng</h2>
+      <p>Đơn hàng <b>#${orderCode}</b> của bạn đã chuyển sang trạng thái: <b>${label}</b>.</p>
+      <p><a href="${url}" style="display:inline-block;padding:10px 18px;background:#1877F2;color:#fff;text-decoration:none;border-radius:8px">Xem chi tiết đơn hàng</a></p>
+      <p style="color:#888;font-size:12px">Nếu bạn không thực hiện giao dịch này, vui lòng liên hệ hỗ trợ.</p>
+    </div>`;
+  sendMail({ to: toEmail, subject, html, text: `Đơn ${orderCode} đã chuyển sang: ${label}. Xem: ${url}` }).catch(() => {});
+}
 
 // ── Lấy đơn hàng của user ──────────────────────────────
 router.get('/my', requireUser, async (req: Request, res: Response) => {
@@ -363,6 +380,7 @@ router.patch('/admin/:order_code/status', requireStaffOrAdmin, async (req: Reque
         body: notes || undefined,
         link: `/orders/${order.orderCode}`,
       }).catch(() => {});
+      sendOrderStatusEmail(order.userEmail, order.orderCode, status);
       if (status === 'completed') {
         awardPointsForOrder(order.userId, money(order.totalAmount), order.orderCode).catch(() => {});
       }
@@ -408,6 +426,7 @@ router.post('/admin/:order_code/deliver', requireStaffOrAdmin, async (req: Reque
       body: 'Xem thông tin đã giao trong chi tiết đơn hàng',
       link: `/orders/${order.orderCode}`,
     }).catch(() => {});
+    sendOrderStatusEmail(order.userEmail, order.orderCode, 'completed');
     res.json({ message: 'Đã giao hàng', status: updated.status });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });

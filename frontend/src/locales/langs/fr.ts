@@ -484,6 +484,8 @@ const fr = {
     load_failed: `Échec du chargement`,
   },
   product_page: {
+    related_title: `Produits similaires`,
+    recent_title: `Vus récemment`,
     package: `Forfait`,
     enter_info: `Saisir les informations`,
     add_to_cart: `Ajouter au panier`,

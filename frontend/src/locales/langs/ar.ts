@@ -484,6 +484,8 @@ const ar = {
     load_failed: `فشل تحميل القائمة`,
   },
   product_page: {
+    related_title: `منتجات ذات صلة`,
+    recent_title: `شوهدت مؤخراً`,
     package: `الباقة`,
     enter_info: `أدخل المعلومات`,
     add_to_cart: `أضف إلى السلة`,
