@@ -87,10 +87,13 @@ export function GalleryField({
   label = 'Album ảnh',
   value,
   onChange,
+  markCover = false,
 }: {
   label?: string;
   value: string[];
   onChange: (urls: string[]) => void;
+  // markCover: đánh dấu ảnh đầu tiên là "Ảnh bìa" + cho phép đặt ảnh khác làm bìa.
+  markCover?: boolean;
 }) {
   const { enqueueSnackbar } = useSnackbar();
   const [busy, setBusy] = useState(false);
@@ -123,6 +126,7 @@ export function GalleryField({
   };
 
   const remove = (i: number) => onChange(list.filter((_, idx) => idx !== i));
+  const makeCover = (i: number) => onChange([list[i], ...list.filter((_, idx) => idx !== i)]);
 
   return (
     <Stack spacing={1}>
@@ -144,7 +148,44 @@ export function GalleryField({
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
           {list.map((url, i) => (
             <Box key={i} sx={{ position: 'relative', width: 72, height: 72 }}>
-              <Image src={url} sx={{ width: 1, height: 1, borderRadius: 1 }} />
+              <Image
+                src={url}
+                sx={{
+                  width: 1,
+                  height: 1,
+                  borderRadius: 1,
+                  ...(markCover && i === 0 && { border: (t) => `2px solid ${t.palette.primary.main}` }),
+                }}
+              />
+              {markCover && i === 0 && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    bgcolor: 'primary.main',
+                    color: 'common.white',
+                    fontSize: 9,
+                    lineHeight: '14px',
+                    textAlign: 'center',
+                    borderBottomLeftRadius: 4,
+                    borderBottomRightRadius: 4,
+                  }}
+                >
+                  Ảnh bìa
+                </Box>
+              )}
+              {markCover && i !== 0 && (
+                <IconButton
+                  size="small"
+                  title="Đặt làm ảnh bìa"
+                  onClick={() => makeCover(i)}
+                  sx={{ position: 'absolute', bottom: -8, left: -8, bgcolor: 'background.paper', boxShadow: 1, p: 0.25, '&:hover': { bgcolor: 'background.neutral' } }}
+                >
+                  <Iconify icon="solar:star-bold" width={14} />
+                </IconButton>
+              )}
               <IconButton
                 size="small"
                 onClick={() => remove(i)}

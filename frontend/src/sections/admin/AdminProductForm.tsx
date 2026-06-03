@@ -26,7 +26,7 @@ import FormProvider, {
   RHFTextField,
 } from '../../components/hook-form';
 //
-import ImageUploadField, { GalleryField } from './ImageUploadField';
+import { GalleryField } from './ImageUploadField';
 
 // ----------------------------------------------------------------------
 // Form tạo/sửa sản phẩm dạng TRANG ĐẦY ĐỦ (theo layout Minimal: 2 cột + Card),
@@ -45,8 +45,7 @@ type Props = {
 type FormValuesProps = {
   name: string;
   description: string;
-  image_url: string;
-  images: string[];
+  images: string[]; // ảnh đầu tiên = ảnh đại diện (cover)
   category_id: string | number;
   is_featured: boolean;
   is_active: boolean;
@@ -61,18 +60,20 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
     name: Yup.string().required('Vui lòng nhập tên sản phẩm'),
   });
 
-  const defaultValues = useMemo<FormValuesProps>(
-    () => ({
+  const defaultValues = useMemo<FormValuesProps>(() => {
+    // Gộp ảnh đại diện + album thành một danh sách, ảnh bìa đứng đầu.
+    const gallery = Array.isArray(current?.images) ? current.images : [];
+    const cover = current?.imageUrl || '';
+    const images = cover ? [cover, ...gallery.filter((u: string) => u !== cover)] : gallery;
+    return {
       name: current?.name || '',
       description: current?.description || '',
-      image_url: current?.imageUrl || '',
-      images: Array.isArray(current?.images) ? current.images : [],
+      images,
       category_id: current?.categoryId || '',
       is_featured: !!current?.isFeatured,
       is_active: current?.isActive ?? true,
-    }),
-    [current]
-  );
+    };
+  }, [current]);
 
   const methods = useForm<FormValuesProps>({
     resolver: yupResolver(ProductSchema) as any,
@@ -118,7 +119,8 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
     const payload = {
       name: data.name,
       description: data.description,
-      image_url: data.image_url,
+      // Ảnh đầu tiên là ảnh đại diện; cả danh sách lưu vào album.
+      image_url: data.images[0] || '',
       images: data.images,
       category_id: data.category_id || null,
       is_featured: data.is_featured,
@@ -168,10 +170,14 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
 
               <Stack spacing={1}>
                 <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
-                  Album ảnh (tài khoản premium)
+                  Ảnh sản phẩm
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+                  Ảnh đầu tiên là ảnh đại diện (hiện ở danh sách). Bấm ⭐ để đổi ảnh bìa.
                 </Typography>
                 <GalleryField
-                  label=""
+                  label="Ảnh"
+                  markCover
                   value={values.images}
                   onChange={(urls) => setValue('images', urls, { shouldValidate: true })}
                 />
@@ -184,12 +190,6 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
           <Stack spacing={3}>
             <Card sx={{ p: 3 }}>
               <Stack spacing={3}>
-                <ImageUploadField
-                  label="Ảnh sản phẩm"
-                  value={values.image_url}
-                  onChange={(url) => setValue('image_url', url, { shouldValidate: true })}
-                />
-
                 <RHFSelect native name="category_id" label="Danh mục">
                   <option value="">— Không —</option>
                   {categories.map((c) => (
