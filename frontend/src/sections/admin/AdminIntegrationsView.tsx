@@ -64,14 +64,18 @@ export default function AdminIntegrationsView() {
       <Typography variant="h4" sx={{ my: 3 }}>
         Tích hợp
       </Typography>
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
+      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }} variant="scrollable" scrollButtons="auto">
         <Tab value="telegram" label="Telegram Bot" icon={<Iconify icon="solar:bell-bing-bold" />} iconPosition="start" />
         <Tab value="email" label="Email / SMTP" icon={<Iconify icon="solar:letter-bold" />} iconPosition="start" />
         <Tab value="oauth" label="Đăng nhập OAuth" icon={<Iconify icon="solar:key-bold" />} iconPosition="start" />
+        <Tab value="payment" label="Thanh toán" icon={<Iconify icon="solar:card-bold" />} iconPosition="start" />
+        <Tab value="providers" label="Nguồn cung cấp" icon={<Iconify icon="solar:server-square-bold" />} iconPosition="start" />
       </Tabs>
       {tab === 'telegram' && <TelegramTab />}
       {tab === 'email' && <EmailTab />}
       {tab === 'oauth' && <OAuthTab />}
+      {tab === 'payment' && <PaymentTab />}
+      {tab === 'providers' && <ProvidersTab />}
     </Container>
   );
 }
@@ -343,6 +347,284 @@ function EmailTab() {
           </Stack>
         </Stack>
       </CardContent>
+    </Card>
+  );
+}
+
+// ----------------------------------------------------------------------
+// PAYMENT (SePay)
+
+function PaymentTab() {
+  const { ok, err } = useSnack();
+  const [cfg, setCfg] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    axiosInstance.get('/api/admin/payment/config').then((r) => setCfg(r.data)).catch(err).finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const save = async () => {
+    setSaving(true);
+    // Bỏ qua secret đang ở dạng mask (giữ giá trị cũ).
+    const payload: Record<string, string> = {
+      sepay_account_number: cfg.sepay_account_number || '',
+      sepay_bank_code: cfg.sepay_bank_code || '',
+      app_base_url: cfg.app_base_url || '',
+    };
+    if (cfg.sepay_api_key && cfg.sepay_api_key !== '••••••••') payload.sepay_api_key = cfg.sepay_api_key;
+    if (cfg.sepay_webhook_secret && cfg.sepay_webhook_secret !== '••••••••') payload.sepay_webhook_secret = cfg.sepay_webhook_secret;
+    try {
+      await axiosInstance.patch('/api/admin/settings', payload);
+      ok('Đã lưu cấu hình thanh toán');
+    } catch (e) {
+      err(e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading || !cfg) return <Loading />;
+  return (
+    <Card sx={{ maxWidth: 560 }}>
+      <CardHeader title="SePay (VietQR)" subheader="Cổng nạp tiền tự động qua chuyển khoản" />
+      <CardContent>
+        <Stack spacing={2.5}>
+          <TextField label="Số tài khoản" value={cfg.sepay_account_number || ''} onChange={(e) => setCfg({ ...cfg, sepay_account_number: e.target.value })} />
+          <TextField label="Mã ngân hàng (VD: MBBank, VCB)" value={cfg.sepay_bank_code || ''} onChange={(e) => setCfg({ ...cfg, sepay_bank_code: e.target.value })} />
+          <TextField label="SePay API key" placeholder={cfg.sepay_api_key === '••••••••' ? '•••••••• (đã lưu)' : ''} onChange={(e) => setCfg({ ...cfg, sepay_api_key: e.target.value })} />
+          <TextField label="Webhook secret" placeholder={cfg.sepay_webhook_secret === '••••••••' ? '•••••••• (đã lưu)' : ''} onChange={(e) => setCfg({ ...cfg, sepay_webhook_secret: e.target.value })} />
+          <TextField label="App base URL (cho webhook)" value={cfg.app_base_url || ''} onChange={(e) => setCfg({ ...cfg, app_base_url: e.target.value })} helperText={cfg.has_env_override ? 'Đang bị ghi đè bởi biến môi trường' : ''} />
+          <Button variant="contained" onClick={save} disabled={saving}>
+            Lưu
+          </Button>
+        </Stack>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ----------------------------------------------------------------------
+// API PROVIDERS
+
+const PROVIDER_TYPES = [
+  { value: 'giftcard', label: 'Thẻ cào / Giftcard' },
+  { value: 'topup_game', label: 'Nạp game' },
+  { value: 'account_premium', label: 'Tài khoản Premium' },
+  { value: 'smm_panel', label: 'SMM Panel' },
+];
+const PROVIDER_EMPTY = {
+  id: 0,
+  name: '',
+  provider_type: 'giftcard',
+  base_url: '',
+  api_key: '',
+  partner_id: '',
+  is_active: true,
+  exchange_enabled: false,
+  discount_rate: 0,
+  rates_json: '',
+};
+
+function ProvidersTab() {
+  const { ok, err } = useSnack();
+  const [rows, setRows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState<typeof PROVIDER_EMPTY | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [toDelete, setToDelete] = useState<any>(null);
+
+  const load = useCallback(() => {
+    setLoading(true);
+    axiosInstance.get('/api/api-providers').then((r) => setRows(r.data || [])).catch(err).finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => load(), [load]);
+
+  const openEdit = (p: any) => {
+    const cr = p.card_rates || {};
+    const { exchange_enabled, discount_rate, ...rest } = cr;
+    setForm({
+      id: p.id,
+      name: p.name,
+      provider_type: p.provider_type,
+      base_url: p.base_url || '',
+      api_key: '',
+      partner_id: p.partner_id || '',
+      is_active: p.is_active,
+      exchange_enabled: !!exchange_enabled,
+      discount_rate: Number(discount_rate) || 0,
+      rates_json: Object.keys(rest).length ? JSON.stringify(rest, null, 2) : '',
+    });
+  };
+
+  const save = async () => {
+    if (!form) return;
+    if (!form.name.trim()) {
+      err({}, 'Nhập tên nguồn');
+      return;
+    }
+    // card_rates chỉ áp cho giftcard.
+    let card_rates: any;
+    if (form.provider_type === 'giftcard') {
+      let extra = {};
+      if (form.rates_json.trim()) {
+        try {
+          extra = JSON.parse(form.rates_json);
+        } catch {
+          err({}, 'JSON tỷ lệ theo nhà mạng không hợp lệ');
+          return;
+        }
+      }
+      card_rates = { exchange_enabled: form.exchange_enabled, discount_rate: Number(form.discount_rate) || 0, ...extra };
+    }
+    setSaving(true);
+    const payload: any = {
+      name: form.name,
+      provider_type: form.provider_type,
+      base_url: form.base_url,
+      partner_id: form.partner_id,
+      is_active: form.is_active,
+      ...(form.api_key ? { api_key: form.api_key } : {}),
+      ...(card_rates ? { card_rates } : {}),
+    };
+    try {
+      if (form.id) await axiosInstance.put(`/api/api-providers/${form.id}`, payload);
+      else await axiosInstance.post('/api/api-providers', payload);
+      ok('Đã lưu nguồn');
+      setForm(null);
+      load();
+    } catch (e) {
+      err(e);
+    } finally {
+      setSaving(false);
+    }
+  };
+  const remove = async () => {
+    try {
+      await axiosInstance.delete(`/api/api-providers/${toDelete.id}`);
+      ok('Đã xoá');
+      load();
+    } catch (e) {
+      err(e);
+    } finally {
+      setToDelete(null);
+    }
+  };
+
+  if (loading) return <Loading />;
+  return (
+    <Card>
+      <Stack direction="row" justifyContent="flex-end" sx={{ p: 2 }}>
+        <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => setForm({ ...PROVIDER_EMPTY })}>
+          Thêm nguồn
+        </Button>
+      </Stack>
+      <TableContainer>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Tên</TableCell>
+              <TableCell>Loại</TableCell>
+              <TableCell>Đổi thẻ</TableCell>
+              <TableCell align="center">Trạng thái</TableCell>
+              <TableCell align="right">Thao tác</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {rows.map((p) => (
+              <TableRow key={p.id} hover>
+                <TableCell>{p.name}</TableCell>
+                <TableCell>
+                  <Label variant="soft">{PROVIDER_TYPES.find((t) => t.value === p.provider_type)?.label || p.provider_type}</Label>
+                </TableCell>
+                <TableCell>
+                  {p.provider_type === 'giftcard' ? (
+                    <Label color={p.card_rates?.exchange_enabled ? 'success' : 'default'}>
+                      {p.card_rates?.exchange_enabled ? `Bật · ${p.card_rates?.discount_rate || 0}%` : 'Tắt'}
+                    </Label>
+                  ) : (
+                    '—'
+                  )}
+                </TableCell>
+                <TableCell align="center">
+                  <Label color={p.is_active ? 'success' : 'default'}>{p.is_active ? 'Bật' : 'Tắt'}</Label>
+                </TableCell>
+                <TableCell align="right">
+                  <IconButton onClick={() => openEdit(p)}>
+                    <Iconify icon="solar:pen-bold" />
+                  </IconButton>
+                  <IconButton color="error" onClick={() => setToDelete(p)}>
+                    <Iconify icon="solar:trash-bin-trash-bold" />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+            {!rows.length && (
+              <TableRow>
+                <TableCell colSpan={5} align="center" sx={{ py: 6, color: 'text.secondary' }}>
+                  Chưa có nguồn
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Dialog open={!!form} onClose={() => setForm(null)} fullWidth maxWidth="xs">
+        <DialogTitle>{form?.id ? 'Sửa nguồn' : 'Thêm nguồn'}</DialogTitle>
+        <DialogContent>
+          {form && (
+            <Stack spacing={2.5} sx={{ mt: 1 }}>
+              <TextField label="Tên" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              <TextField select label="Loại" value={form.provider_type} disabled={!!form.id} onChange={(e) => setForm({ ...form, provider_type: e.target.value })}>
+                {PROVIDER_TYPES.map((t) => (
+                  <MenuItem key={t.value} value={t.value}>
+                    {t.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField label="Base URL" value={form.base_url} onChange={(e) => setForm({ ...form, base_url: e.target.value })} />
+              <TextField label={form.id ? 'API key (trống = giữ nguyên)' : 'API key'} value={form.api_key} onChange={(e) => setForm({ ...form, api_key: e.target.value })} />
+              <TextField label="Partner ID" value={form.partner_id} onChange={(e) => setForm({ ...form, partner_id: e.target.value })} />
+
+              {form.provider_type === 'giftcard' && (
+                <>
+                  <FormControlLabel
+                    control={<Switch checked={form.exchange_enabled} onChange={(e) => setForm({ ...form, exchange_enabled: e.target.checked })} />}
+                    label="Bật đổi thẻ cào (cho trang Nạp thẻ)"
+                  />
+                  <TextField label="Chiết khấu mặc định (%)" type="number" value={form.discount_rate} onChange={(e) => setForm({ ...form, discount_rate: Number(e.target.value) })} helperText="Phần trăm trừ khi đổi thẻ (vd 20 = nhận 80%)" />
+                  <TextField label="Tỷ lệ theo nhà mạng (JSON, tuỳ chọn)" multiline rows={4} value={form.rates_json} onChange={(e) => setForm({ ...form, rates_json: e.target.value })} placeholder={'{\n  "VIETTEL": { "50000": 25 }\n}'} />
+                </>
+              )}
+
+              <FormControlLabel control={<Switch checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />} label="Kích hoạt" />
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button color="inherit" onClick={() => setForm(null)}>
+            Huỷ
+          </Button>
+          <Button variant="contained" onClick={save} disabled={saving}>
+            Lưu
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <ConfirmDialog
+        open={!!toDelete}
+        onClose={() => setToDelete(null)}
+        title="Xoá nguồn"
+        content={`Xoá "${toDelete?.name}"?`}
+        action={
+          <Button variant="contained" color="error" onClick={remove}>
+            Xoá
+          </Button>
+        }
+      />
     </Card>
   );
 }
