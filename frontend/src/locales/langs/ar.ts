@@ -140,6 +140,8 @@ const ar = {
     my_orders: `طلباتي`,
     my_account: `حسابي`,
     default_desc: `متجر منتجات رقمية — تسليم تلقائي ودفع سريع.`,
+    offers: `العروض`,
+    support_center: `مركز الدعم`,
   },
   search: {
     placeholder: `ابحث عن المنتجات...`,

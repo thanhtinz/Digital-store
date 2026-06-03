@@ -140,6 +140,8 @@ const vn = {
     my_orders: `Đơn hàng của tôi`,
     my_account: `Tài khoản của tôi`,
     default_desc: `Cửa hàng sản phẩm số — giao hàng tự động, thanh toán nhanh.`,
+    offers: `Ưu đãi`,
+    support_center: `Trung tâm hỗ trợ`,
   },
   search: {
     placeholder: `Tìm sản phẩm...`,

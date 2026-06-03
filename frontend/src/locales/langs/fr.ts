@@ -140,6 +140,8 @@ const fr = {
     my_orders: `Mes commandes`,
     my_account: `Mon compte`,
     default_desc: `Boutique de produits numériques — livraison automatique, paiement rapide.`,
+    offers: `Offres`,
+    support_center: `Centre d'aide`,
   },
   search: {
     placeholder: `Rechercher des produits...`,

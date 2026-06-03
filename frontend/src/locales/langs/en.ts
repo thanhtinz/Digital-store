@@ -140,6 +140,8 @@ const en = {
     my_orders: `My orders`,
     my_account: `My account`,
     default_desc: `Digital goods store — automatic delivery, fast checkout.`,
+    offers: `Offers`,
+    support_center: `Support center`,
   },
   search: {
     placeholder: `Search products...`,

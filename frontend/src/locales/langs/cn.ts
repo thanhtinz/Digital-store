@@ -140,6 +140,8 @@ const cn = {
     my_orders: `我的订单`,
     my_account: `我的账户`,
     default_desc: `数字商品商店 — 自动发货，快速结账。`,
+    offers: `优惠`,
+    support_center: `支持中心`,
   },
   search: {
     placeholder: `搜索商品...`,

@@ -17,7 +17,6 @@ import DashboardLayout from '../../../layouts/dashboard';
 import Iconify from '../../../components/iconify';
 import { SkeletonPostItem } from '../../../components/skeleton';
 import { useSettingsContext } from '../../../components/settings';
-import CustomBreadcrumbs from '../../../components/custom-breadcrumbs';
 // sections
 import { BlogPostCard, BlogPostsSort, BlogPostsSearch } from '../../../sections/@dashboard/blog';
 
@@ -72,23 +71,10 @@ export default function BlogPostsPage() {
         <title> Blog: Posts | Minimal UI</title>
       </Head>
 
-      <Container maxWidth={themeStretch ? false : 'lg'}>
-        <CustomBreadcrumbs
-          heading="Blog"
-          links={[
-            {
-              name: 'Dashboard',
-              href: PATH_DASHBOARD.root,
-            },
-            {
-              name: 'Blog',
-              href: PATH_DASHBOARD.blog.root,
-            },
-            {
-              name: 'Posts',
-            },
-          ]}
-        />
+      <Container maxWidth={themeStretch ? false : 'lg'} sx={{ pt: { xs: 3, md: 5 } }}>
+        <Typography variant="h4" sx={{ mb: 4 }}>
+          Blog
+        </Typography>
 
         <Stack mb={5} direction="row" alignItems="center" justifyContent="space-between">
           <BlogPostsSearch />

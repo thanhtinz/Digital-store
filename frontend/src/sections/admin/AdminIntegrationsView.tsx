@@ -133,13 +133,21 @@ export default function AdminIntegrationsView() {
 // ----------------------------------------------------------------------
 // TELEGRAM
 
-const BOT_EMPTY = { id: 0, name: '', department: 'custom', bot_token: '', chat_id: '', notify_types: [] as string[], receive_reports: false, is_active: true };
+const BOT_EMPTY = { id: 0, name: '', department: 'general', bot_token: '', chat_id: '', notify_types: [] as string[], receive_reports: false, is_active: true };
+const DEPARTMENTS = [
+  { value: 'general', label: 'Chung' },
+  { value: 'order', label: 'Đơn hàng' },
+  { value: 'payment', label: 'Thanh toán' },
+  { value: 'support', label: 'Hỗ trợ' },
+  { value: 'smm', label: 'SMM' },
+  { value: 'custom', label: 'Khác' },
+];
 
 function TelegramTab() {
   const { ok, err } = useSnack();
   const base = useAppBaseUrl();
   const [rows, setRows] = useState<any[]>([]);
-  const [types, setTypes] = useState<string[]>([]);
+  const [types, setTypes] = useState<{ id: string; label: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<typeof BOT_EMPTY | null>(null);
   const [saving, setSaving] = useState(false);
@@ -151,7 +159,7 @@ function TelegramTab() {
       .then(([b, t]) => {
         setRows(b.data || []);
         const tt = Array.isArray(t.data) ? t.data : t.data?.types || [];
-        setTypes(tt.map((x: any) => (typeof x === 'string' ? x : x.value || x.key)));
+        setTypes(tt.map((x: any) => (typeof x === 'string' ? { id: x, label: x } : { id: x.id || x.value || x.key, label: x.label || x.id })));
       })
       .catch(err)
       .finally(() => setLoading(false));
@@ -291,7 +299,13 @@ function TelegramTab() {
           {form && (
             <Stack spacing={2.5} sx={{ mt: 1 }}>
               <TextField label="Tên bot" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-              <TextField label="Bộ phận (order/support/custom…)" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} />
+              <TextField select label="Bộ phận" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })}>
+                {DEPARTMENTS.map((d) => (
+                  <MenuItem key={d.value} value={d.value}>
+                    {d.label}
+                  </MenuItem>
+                ))}
+              </TextField>
               <TextField label={form.id ? 'Bot token (trống = giữ nguyên)' : 'Bot token'} value={form.bot_token} onChange={(e) => setForm({ ...form, bot_token: e.target.value })} />
               <TextField label="Chat ID" value={form.chat_id} onChange={(e) => setForm({ ...form, chat_id: e.target.value })} />
               {types.length > 0 && (
@@ -309,15 +323,15 @@ function TelegramTab() {
                     renderValue={(sel) => (
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                         {(sel as string[]).map((v) => (
-                          <Chip key={v} label={v} size="small" />
+                          <Chip key={v} label={types.find((x) => x.id === v)?.label || v} size="small" />
                         ))}
                       </Box>
                     )}
                   >
                     {types.map((tp) => (
-                      <MenuItem key={tp} value={tp}>
-                        <Checkbox checked={form.notify_types.indexOf(tp) > -1} />
-                        <ListItemText primary={tp} />
+                      <MenuItem key={tp.id} value={tp.id}>
+                        <Checkbox checked={form.notify_types.indexOf(tp.id) > -1} />
+                        <ListItemText primary={tp.label} />
                       </MenuItem>
                     ))}
                   </Select>
@@ -1064,7 +1078,10 @@ function OAuthTab() {
                     <TextField label="Client ID" size="small" value={p.clientId || ''} onChange={(e) => setCfg({ ...cfg, [prov]: { ...p, clientId: e.target.value } })} />
                     <TextField label="Client Secret" size="small" placeholder={p.hasSecret ? '•••• (đã lưu)' : ''} onChange={(e) => setCfg({ ...cfg, [prov]: { ...p, clientSecret: e.target.value } })} />
                     <Divider />
-                    <CopyField label="Redirect URI (dán vào nhà cung cấp)" value={redirect} />
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      Redirect URI (dán vào nhà cung cấp):
+                    </Typography>
+                    <CopyField label="Redirect URI" value={redirect} />
                     <Button variant="contained" size="small" onClick={() => saveProvider(prov)} disabled={saving === prov}>
                       Lưu
                     </Button>
