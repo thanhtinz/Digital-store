@@ -187,7 +187,7 @@ function BannersTab() {
         </Table>
       </TableContainer>
 
-      <Dialog open={!!form} onClose={() => setForm(null)} fullWidth maxWidth="xs">
+      <Dialog open={!!form} onClose={() => setForm(null)} fullWidth maxWidth="sm">
         <DialogTitle>{form?.id ? 'Sửa banner' : 'Thêm banner'}</DialogTitle>
         <DialogContent>
           {form && (
@@ -369,7 +369,7 @@ function FlashTab() {
         </Table>
       </TableContainer>
 
-      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="xs">
+      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>Tạo flash sale</DialogTitle>
         <DialogContent>
           <Stack spacing={2.5} sx={{ mt: 1 }}>
@@ -540,7 +540,7 @@ function GiftTab() {
         </Table>
       </TableContainer>
 
-      <Dialog open={!!form} onClose={() => setForm(null)} fullWidth maxWidth="xs">
+      <Dialog open={!!form} onClose={() => setForm(null)} fullWidth maxWidth="sm">
         <DialogTitle>Tạo mã giảm giá</DialogTitle>
         <DialogContent>
           {form && (
@@ -701,7 +701,7 @@ function AnnounceTab() {
         </Table>
       </TableContainer>
 
-      <Dialog open={!!form} onClose={() => setForm(null)} fullWidth maxWidth="xs">
+      <Dialog open={!!form} onClose={() => setForm(null)} fullWidth maxWidth="sm">
         <DialogTitle>{form?.id ? 'Sửa thông báo' : 'Thêm thông báo'}</DialogTitle>
         <DialogContent>
           {form && (

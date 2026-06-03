@@ -14,6 +14,8 @@ import {
 } from '@mui/material';
 // layouts
 import DashboardLayout from '../../layouts/dashboard';
+// locales
+import { useLocales } from '../../locales';
 // routes
 import { PATH_DASHBOARD } from '../../routes/paths';
 // components
@@ -27,26 +29,17 @@ SupportPage.getLayout = (page: React.ReactElement) => (
 
 // ----------------------------------------------------------------------
 
-const FAQS = [
-  {
-    q: 'Sau khi thanh toán bao lâu nhận được hàng?',
-    a: 'Các sản phẩm giao tự động sẽ được gửi ngay sau khi thanh toán thành công. Bạn có thể xem thông tin đã giao trong chi tiết đơn hàng.',
-  },
-  {
-    q: 'Tôi thanh toán bằng cách nào?',
-    a: 'Bạn có thể thanh toán bằng số dư tài khoản hoặc chuyển khoản/QR. Nạp tiền vào số dư ở trang Tài khoản.',
-  },
-  {
-    q: 'Sản phẩm bị lỗi thì xử lý thế nào?',
-    a: 'Vào chi tiết đơn hàng, dùng nút báo lỗi ở mục thông tin đã giao, hoặc liên hệ hỗ trợ trực tiếp. Chúng tôi sẽ kiểm tra và bảo hành theo chính sách.',
-  },
-  {
-    q: 'Tôi có được hoàn tiền không?',
-    a: 'Đơn chưa giao có thể được hủy và hoàn vào số dư. Đơn đã giao được xử lý theo chính sách bảo hành của từng sản phẩm.',
-  },
-];
-
 export default function SupportPage() {
+  const { translate } = useLocales();
+  const t = (k: string) => `${translate(`support_page.${k}`)}`;
+
+  const FAQS = [
+    { q: t('q1'), a: t('a1') },
+    { q: t('q2'), a: t('a2') },
+    { q: t('q3'), a: t('a3') },
+    { q: t('q4'), a: t('a4') },
+  ];
+
   return (
     <>
       <Head>
@@ -55,7 +48,7 @@ export default function SupportPage() {
 
       <Container sx={{ pb: 6 }}>
         <Typography variant="h4" sx={{ my: 3 }}>
-          Trung tâm hỗ trợ
+          {t('title')}
         </Typography>
 
         <Card sx={{ p: 3, mb: 3 }}>
@@ -66,9 +59,9 @@ export default function SupportPage() {
             justifyContent="space-between"
           >
             <Stack spacing={0.5}>
-              <Typography variant="h6">Cần hỗ trợ trực tiếp?</Typography>
+              <Typography variant="h6">{t('direct_title')}</Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                Chat với nhân viên hỗ trợ để được giải đáp nhanh nhất.
+                {t('direct_desc')}
               </Typography>
             </Stack>
             <Button
@@ -77,13 +70,13 @@ export default function SupportPage() {
               variant="contained"
               startIcon={<Iconify icon="solar:chat-round-dots-bold" />}
             >
-              Liên hệ hỗ trợ
+              {t('contact_btn')}
             </Button>
           </Stack>
         </Card>
 
         <Typography variant="h6" sx={{ mb: 2 }}>
-          Câu hỏi thường gặp
+          {t('faq')}
         </Typography>
         {FAQS.map((item, i) => (
           <Accordion key={i}>

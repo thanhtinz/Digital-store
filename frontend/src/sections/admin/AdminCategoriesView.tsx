@@ -230,7 +230,7 @@ export default function AdminCategoriesView() {
         )}
       </Card>
 
-      <Dialog open={!!form} onClose={() => setForm(null)} fullWidth maxWidth="xs">
+      <Dialog open={!!form} onClose={() => setForm(null)} fullWidth maxWidth="sm">
         <DialogTitle>{form?.id ? 'Sửa danh mục' : 'Thêm danh mục'}</DialogTitle>
         <DialogContent>
           {form && (

@@ -106,6 +106,8 @@ const PROVIDER_EMPTY = {
   filter_html: true,
   sync_categories: true,
   sync_services: true,
+  sync_prices: true,
+  sync_descriptions: true,
 };
 
 function ProvidersTab() {
@@ -147,6 +149,8 @@ function ProvidersTab() {
       filter_html: s.filter_html !== false,
       sync_categories: s.sync_categories !== false,
       sync_services: s.sync_services !== false,
+      sync_prices: s.sync_prices !== false,
+      sync_descriptions: s.sync_descriptions !== false,
     });
   };
 
@@ -164,6 +168,8 @@ function ProvidersTab() {
       filter_html: form.filter_html,
       sync_categories: form.sync_categories,
       sync_services: form.sync_services,
+      sync_prices: form.sync_prices,
+      sync_descriptions: form.sync_descriptions,
     };
     const payload = {
       name: form.name,
@@ -263,7 +269,7 @@ function ProvidersTab() {
         </Table>
       </TableContainer>
 
-      <Dialog open={!!form} onClose={() => setForm(null)} fullWidth maxWidth="xs">
+      <Dialog open={!!form} onClose={() => setForm(null)} fullWidth maxWidth="sm">
         <DialogTitle>{form?.id ? 'Sửa nhà cung cấp' : 'Thêm nhà cung cấp'}</DialogTitle>
         {form && (
           <Tabs value={ptab} onChange={(_, v) => setPtab(v)} variant="fullWidth" sx={{ px: 2, borderBottom: 1, borderColor: 'divider' }}>
@@ -319,6 +325,14 @@ function ProvidersTab() {
                   <FormControlLabel
                     control={<Checkbox checked={form.sync_services} onChange={(e) => setForm({ ...form, sync_services: e.target.checked })} />}
                     label="Cho phép đồng bộ Dịch vụ"
+                  />
+                  <FormControlLabel
+                    control={<Checkbox checked={form.sync_prices} onChange={(e) => setForm({ ...form, sync_prices: e.target.checked })} />}
+                    label="Đồng bộ Giá khi cập nhật"
+                  />
+                  <FormControlLabel
+                    control={<Checkbox checked={form.sync_descriptions} onChange={(e) => setForm({ ...form, sync_descriptions: e.target.checked })} />}
+                    label="Đồng bộ Mô tả khi cập nhật"
                   />
                   <FormControlLabel
                     control={<Checkbox checked={form.filter_html} onChange={(e) => setForm({ ...form, filter_html: e.target.checked })} />}
@@ -469,7 +483,7 @@ function CatalogTab() {
         </Typography>
       )}
 
-      <Dialog open={!!catForm} onClose={() => setCatForm(null)} fullWidth maxWidth="xs">
+      <Dialog open={!!catForm} onClose={() => setCatForm(null)} fullWidth maxWidth="sm">
         <DialogTitle>Thêm chuyên mục</DialogTitle>
         <DialogContent>
           <TextField

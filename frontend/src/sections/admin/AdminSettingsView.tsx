@@ -23,10 +23,16 @@ const FIELDS: { key: string; label: string; help?: string; multiline?: boolean }
   { key: 'tax_rate', label: 'Thuế VAT (%)', help: 'Ví dụ 8 = 8%.' },
   { key: 'contact_email', label: 'Email liên hệ' },
   { key: 'hotline', label: 'Hotline' },
-  { key: 'zalo', label: 'Zalo' },
+  { key: 'zalo', label: 'Zalo (URL/SĐT)' },
   { key: 'facebook', label: 'Facebook (URL)' },
+  { key: 'instagram', label: 'Instagram (URL)' },
+  { key: 'youtube', label: 'YouTube (URL)' },
+  { key: 'tiktok', label: 'TikTok (URL)' },
+  { key: 'telegram', label: 'Telegram (URL)' },
   { key: 'address', label: 'Địa chỉ' },
   { key: 'working_hours', label: 'Giờ làm việc' },
+  { key: 'footer_about', label: 'Giới thiệu ở Footer', multiline: true },
+  { key: 'copyright_text', label: 'Dòng bản quyền (Footer)' },
 ];
 
 export default function AdminSettingsView() {

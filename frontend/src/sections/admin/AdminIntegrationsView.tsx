@@ -285,7 +285,7 @@ function TelegramTab() {
         </Table>
       </TableContainer>
 
-      <Dialog open={!!form} onClose={() => setForm(null)} fullWidth maxWidth="xs">
+      <Dialog open={!!form} onClose={() => setForm(null)} fullWidth maxWidth="sm">
         <DialogTitle>{form?.id ? 'Sửa bot' : 'Thêm bot'}</DialogTitle>
         <DialogContent>
           {form && (
@@ -942,7 +942,7 @@ function ProvidersTab() {
         </Table>
       </TableContainer>
 
-      <Dialog open={!!form} onClose={() => setForm(null)} fullWidth maxWidth="xs">
+      <Dialog open={!!form} onClose={() => setForm(null)} fullWidth maxWidth="sm">
         <DialogTitle>{form?.id ? 'Sửa nguồn' : 'Thêm nguồn'}</DialogTitle>
         <DialogContent>
           {form && (

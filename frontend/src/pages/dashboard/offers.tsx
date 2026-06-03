@@ -6,6 +6,8 @@ import { Box, Button, Container, Divider, Stack, Typography } from '@mui/materia
 import { alpha } from '@mui/material/styles';
 // layouts
 import DashboardLayout from '../../layouts/dashboard';
+// locales
+import { useLocales } from '../../locales';
 // utils
 import axiosInstance from '../../utils/axios';
 import { fCurrency } from '../../utils/formatNumber';
@@ -37,6 +39,8 @@ type Coupon = {
 
 export default function OffersPage() {
   const { enqueueSnackbar } = useSnackbar();
+  const { translate } = useLocales();
+  const t = (k: string) => `${translate(`offers_page.${k}`)}`;
   const [products, setProducts] = useState<IProduct[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,7 +65,7 @@ export default function OffersPage() {
 
   const copy = (code: string) => {
     navigator.clipboard?.writeText(code);
-    enqueueSnackbar(`Đã sao chép mã ${code}`);
+    enqueueSnackbar(`${t('copied')} ${code}`);
   };
 
   return (
@@ -72,13 +76,13 @@ export default function OffersPage() {
 
       <Container sx={{ pb: 6 }}>
         <Typography variant="h4" sx={{ my: 3 }}>
-          Ưu đãi & Khuyến mãi
+          {t('title')}
         </Typography>
 
         {coupons.length > 0 && (
           <>
             <Typography variant="h6" sx={{ mb: 2 }}>
-              Mã giảm giá
+              {t('coupons')}
             </Typography>
             <Box
               sx={{
@@ -97,7 +101,7 @@ export default function OffersPage() {
         )}
 
         <Typography variant="h6" sx={{ mb: 2 }}>
-          Sản phẩm nổi bật
+          {t('featured')}
         </Typography>
         <ShopProductList products={products} loading={loading} />
       </Container>
@@ -108,8 +112,12 @@ export default function OffersPage() {
 // ----------------------------------------------------------------------
 
 function CouponCard({ coupon, onCopy }: { coupon: Coupon; onCopy: (code: string) => void }) {
+  const { translate } = useLocales();
+  const t = (k: string) => `${translate(`offers_page.${k}`)}`;
   const value =
-    coupon.discount_type === 'percent' ? `Giảm ${coupon.discount_value}%` : `Giảm ${fCurrency(coupon.discount_value)}`;
+    coupon.discount_type === 'percent'
+      ? `${t('discount_pct')} ${coupon.discount_value}%`
+      : `${t('discount_fixed')} ${fCurrency(coupon.discount_value)}`;
 
   return (
     <Box
@@ -138,12 +146,12 @@ function CouponCard({ coupon, onCopy }: { coupon: Coupon; onCopy: (code: string)
         </Typography>
       )}
       <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>
-        {coupon.min_order > 0 ? `Đơn tối thiểu ${fCurrency(coupon.min_order)}` : 'Áp dụng mọi đơn hàng'}
-        {coupon.max_discount ? ` · Giảm tối đa ${fCurrency(coupon.max_discount)}` : ''}
+        {coupon.min_order > 0 ? `${t('min_order')} ${fCurrency(coupon.min_order)}` : t('apply_all')}
+        {coupon.max_discount ? ` · ${t('max_discount')} ${fCurrency(coupon.max_discount)}` : ''}
       </Typography>
       {coupon.expires_at && (
         <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>
-          HSD: {new Date(coupon.expires_at).toLocaleDateString('vi-VN')}
+          {t('expires')}: {new Date(coupon.expires_at).toLocaleDateString('vi-VN')}
         </Typography>
       )}
 

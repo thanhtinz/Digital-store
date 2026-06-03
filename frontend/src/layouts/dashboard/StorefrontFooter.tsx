@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 // next
 import NextLink from 'next/link';
 // @mui
-import { Box, Container, Divider, Link, Stack, Typography } from '@mui/material';
+import { Box, Container, Divider, IconButton, Link, Stack, Typography } from '@mui/material';
 // utils
 import axiosInstance from '../../utils/axios';
 // locales
 import { useLocales } from '../../locales';
+// components
+import Iconify from '../../components/iconify';
 // routes
 import { PATH_DASHBOARD } from '../../routes/paths';
 
@@ -17,8 +19,26 @@ import { PATH_DASHBOARD } from '../../routes/paths';
 type Settings = {
   site_name?: string;
   site_description?: string;
+  footer_about?: string;
   copyright_text?: string;
+  contact_email?: string;
+  hotline?: string;
+  facebook?: string;
+  zalo?: string;
+  youtube?: string;
+  tiktok?: string;
+  telegram?: string;
+  instagram?: string;
 };
+
+const SOCIALS: { key: keyof Settings; icon: string }[] = [
+  { key: 'facebook', icon: 'mdi:facebook' },
+  { key: 'instagram', icon: 'mdi:instagram' },
+  { key: 'youtube', icon: 'mdi:youtube' },
+  { key: 'tiktok', icon: 'ic:baseline-tiktok' },
+  { key: 'telegram', icon: 'mdi:telegram' },
+  { key: 'zalo', icon: 'simple-icons:zalo' },
+];
 
 function FooterCol({ title, links }: { title: string; links: { label: string; href: string }[] }) {
   return (
@@ -72,9 +92,10 @@ export default function StorefrontFooter() {
   }, []);
 
   const siteName = settings.site_name || 'Digital Store';
-  const siteDesc = settings.site_description || tf('default_desc');
+  const siteDesc = settings.footer_about || settings.site_description || tf('default_desc');
   const copyright =
     settings.copyright_text || `© ${new Date().getFullYear()} ${siteName}. All rights reserved.`;
+  const socials = SOCIALS.filter((s) => settings[s.key]);
 
   return (
     <Box component="footer" sx={{ mt: 10 }}>
@@ -90,6 +111,39 @@ export default function StorefrontFooter() {
             <Typography variant="body2" sx={{ color: 'text.secondary' }}>
               {siteDesc}
             </Typography>
+            {(settings.hotline || settings.contact_email) && (
+              <Stack spacing={0.5}>
+                {settings.hotline && (
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                    <Iconify icon="solar:phone-bold" sx={{ mr: 1, verticalAlign: 'middle' }} />
+                    {settings.hotline}
+                  </Typography>
+                )}
+                {settings.contact_email && (
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                    <Iconify icon="solar:letter-bold" sx={{ mr: 1, verticalAlign: 'middle' }} />
+                    {settings.contact_email}
+                  </Typography>
+                )}
+              </Stack>
+            )}
+            {socials.length > 0 && (
+              <Stack direction="row" spacing={0.5}>
+                {socials.map((s) => (
+                  <IconButton
+                    key={s.key}
+                    component={Link}
+                    href={String(settings[s.key])}
+                    target="_blank"
+                    rel="noopener"
+                    size="small"
+                    sx={{ color: 'text.secondary' }}
+                  >
+                    <Iconify icon={s.icon} />
+                  </IconButton>
+                ))}
+              </Stack>
+            )}
           </Stack>
 
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={5}>
