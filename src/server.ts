@@ -35,6 +35,13 @@ import { featureGate } from './services/features';
 // __dirname is natively available in CommonJS
 
 const app = express();
+// ── Trust proxy ────────────────────────────────────────
+// App chạy sau reverse proxy (Railway edge + Next.js proxy /api). Proxy set header
+// X-Forwarded-For; nếu không bật trust proxy thì express-rate-limit ném lỗi
+// ERR_ERL_UNEXPECTED_X_FORWARDED_FOR (làm request /api bị 500) và gom mọi user vào
+// chung 1 IP proxy -> dễ dính 429 oan. Dùng SỐ hop (không dùng `true` để tránh lỗi
+// ERR_ERL_PERMISSIVE_TRUST_PROXY). Chỉnh qua env TRUST_PROXY_HOPS nếu chuỗi proxy khác.
+app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS || 1));
 // Trong chế độ gộp 1 container: Next.js chiếm PORT công khai, Express chạy nội bộ
 // ở BACKEND_PORT (Next proxy /api, /admin, /static sang đây). Chạy riêng lẻ thì
 // BACKEND_PORT không set -> dùng PORT như cũ.
