@@ -230,7 +230,8 @@ router.delete(['/admin/:id', '/:id'], requireAdmin, async (req: Request, res: Re
 router.post('/admin/:productId/packages', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const productId = parseInt(req.params.productId);
-    const { name, price, original_price, description, notes, image_url, delivery_type, sort_order, is_active } = req.body;
+    const { name, price, original_price, description, notes, image_url, delivery_type, sort_order, is_active,
+      api_provider_id, external_product_id, external_plan_id, auto_markup, markup_percent } = req.body;
     const pkg = await prisma.productPackage.create({
       data: {
         productId, name,
@@ -242,6 +243,11 @@ router.post('/admin/:productId/packages', requireStaffOrAdmin, async (req: Reque
         deliveryType: delivery_type || 'manual',
         sortOrder: sort_order || 0,
         isActive: is_active !== false,
+        apiProviderId: api_provider_id || null,
+        externalProductId: external_product_id || null,
+        externalPlanId: external_plan_id || null,
+        autoMarkup: !!auto_markup,
+        markupPercent: markup_percent != null ? markup_percent : null,
       },
     });
     res.status(201).json(pkg);
@@ -263,6 +269,11 @@ router.patch('/admin/packages/:id', requireStaffOrAdmin, async (req: Request, re
         deliveryType: req.body.delivery_type,
         isActive: req.body.is_active,
         sortOrder: req.body.sort_order,
+        ...(req.body.api_provider_id !== undefined && { apiProviderId: req.body.api_provider_id || null }),
+        ...(req.body.external_product_id !== undefined && { externalProductId: req.body.external_product_id || null }),
+        ...(req.body.external_plan_id !== undefined && { externalPlanId: req.body.external_plan_id || null }),
+        ...(req.body.auto_markup !== undefined && { autoMarkup: !!req.body.auto_markup }),
+        ...(req.body.markup_percent !== undefined && { markupPercent: req.body.markup_percent }),
       },
     });
     res.json(pkg);
@@ -299,6 +310,11 @@ router.get('/admin/:productId/packages', requireStaffOrAdmin, async (req: Reques
         sortOrder: pkg.sortOrder,
         stockQuantity: pkg.stockQuantity,
         isStockManaged: pkg.isStockManaged,
+        apiProviderId: pkg.apiProviderId,
+        externalProductId: pkg.externalProductId,
+        externalPlanId: pkg.externalPlanId,
+        autoMarkup: pkg.autoMarkup,
+        markupPercent: pkg.markupPercent != null ? Number(pkg.markupPercent) : null,
       })),
     });
   } catch (e: any) {

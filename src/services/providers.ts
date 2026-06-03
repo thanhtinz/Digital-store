@@ -149,6 +149,91 @@ function stringifyParams(params: Record<string, any>): Record<string, string> {
   return out;
 }
 
+// ────────────────────────────────────────────────────
+// Topup Game (Shoperis style) — base {url}/api/public, auth x-api-key
+// ────────────────────────────────────────────────────
+
+export interface RemotePlan {
+  id: string;
+  name: string;
+  price: number;
+  sale_price: number | null;
+  in_stock: boolean;
+}
+export interface RemoteProduct {
+  id: string;
+  name: string;
+  slug: string;
+  image: string;
+  plans: RemotePlan[];
+}
+export interface RemoteFormField {
+  key: string;
+  label: string;
+  type: string;
+  required: boolean;
+  options: string[];
+}
+
+export class TopupGameProvider {
+  constructor(private baseUrl: string, private apiKey: string) {}
+
+  private headers() {
+    return { 'x-api-key': this.apiKey, Accept: 'application/json', 'User-Agent': 'Mozilla/5.0' };
+  }
+  private url(path: string) {
+    return `${this.baseUrl.replace(/\/$/, '')}/api/public${path}`;
+  }
+  private async get(path: string, params?: Record<string, any>) {
+    const r = await axios.get(this.url(path), { headers: this.headers(), params, timeout: TIMEOUT });
+    return r.data;
+  }
+
+  async getBalance(): Promise<ProviderBalance> {
+    const data = await this.get('/balance');
+    const bal = data?.data || data || {};
+    return { amount: Number(bal.balance || 0), currency: bal.currency || 'VND', formatted: bal.formatted || '' };
+  }
+
+  /** Map categories → RemoteProduct, products bên trong → plans. */
+  async getProducts(categoryId?: string): Promise<RemoteProduct[]> {
+    const data = await this.get('/categories');
+    let categories = data?.data || data || [];
+    if (!Array.isArray(categories)) categories = categories.categories || [];
+    if (categoryId) categories = categories.filter((c: any) => String(c.id) === String(categoryId));
+    return categories.map((cat: any) => ({
+      id: String(cat.id ?? ''),
+      name: cat.name || '',
+      slug: cat.slug || '',
+      image: cat.image || '',
+      plans: (cat.products || []).map((p: any) => ({
+        id: String(p.id ?? ''),
+        name: p.name || '',
+        price: Number(p.price || 0),
+        sale_price: p.salePrice != null ? Number(p.salePrice) : null,
+        in_stock: Number(p.availableCount || 0) > 0,
+      })),
+    }));
+  }
+
+  /** formFields của 1 category (product_id = category id). */
+  async getFormFields(productId: string): Promise<RemoteFormField[]> {
+    try {
+      const data = await this.get(`/categories/${productId}`);
+      const cat = data?.data || data || {};
+      return (cat.formFields || []).map((f: any) => ({
+        key: f.key || '',
+        label: f.label || '',
+        type: f.type === 'SELECT' ? 'select' : 'text',
+        required: f.isRequired !== false,
+        options: (f.options || []).map((o: any) => o.label || o.value || ''),
+      }));
+    } catch {
+      return [];
+    }
+  }
+}
+
 /**
  * Factory — tạo adapter theo provider type
  */
@@ -159,4 +244,9 @@ export function getProvider(provider: { providerType: string; baseUrl: string; a
     default:
       throw new Error(`Unsupported provider type: ${provider.providerType}`);
   }
+}
+
+/** Adapter cho nguồn topup_game (browse sản phẩm để map khi tạo gói API). */
+export function getTopupProvider(provider: { baseUrl: string; apiKey: string }) {
+  return new TopupGameProvider(provider.baseUrl, provider.apiKey);
 }

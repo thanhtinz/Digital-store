@@ -358,7 +358,20 @@ const DELIVERY_TYPES = [
   { value: 'stock', label: 'Kho có sẵn (tự giao)' },
   { value: 'api', label: 'API nhà cung cấp' },
 ];
-const PKG_EMPTY = { id: 0, name: '', price: 0, original_price: 0, delivery_type: 'manual', sort_order: 0, is_active: true };
+const PKG_EMPTY = {
+  id: 0,
+  name: '',
+  price: 0,
+  original_price: 0,
+  delivery_type: 'manual',
+  sort_order: 0,
+  is_active: true,
+  api_provider_id: '' as string | number,
+  external_product_id: '',
+  external_plan_id: '',
+  auto_markup: false,
+  markup_percent: 0,
+};
 
 function PackagesDialog({ product, onClose, onChanged }: { product: any; onClose: VoidFunction; onChanged: VoidFunction }) {
   const { enqueueSnackbar } = useSnackbar();
@@ -366,6 +379,32 @@ function PackagesDialog({ product, onClose, onChanged }: { product: any; onClose
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState<typeof PKG_EMPTY | null>(null);
   const [fieldsFor, setFieldsFor] = useState<any>(null);
+  const [apiProviders, setApiProviders] = useState<any[]>([]);
+  const [remoteProducts, setRemoteProducts] = useState<any[]>([]);
+  const [loadingRemote, setLoadingRemote] = useState(false);
+
+  // Nạp nguồn topup_game (để map gói giao hàng API).
+  useEffect(() => {
+    if (product) {
+      axiosInstance
+        .get('/api/api-providers')
+        .then((r) => setApiProviders((r.data || []).filter((p: any) => p.provider_type === 'topup_game' && p.is_active)))
+        .catch(() => {});
+    }
+  }, [product]);
+
+  const loadRemote = async (providerId: number | string) => {
+    if (!providerId) return;
+    setLoadingRemote(true);
+    try {
+      const r = await axiosInstance.get(`/api/api-providers/${providerId}/remote-products`);
+      setRemoteProducts(r.data || []);
+    } catch (e: any) {
+      enqueueSnackbar(e?.detail || 'Không tải được sản phẩm nguồn', { variant: 'error' });
+    } finally {
+      setLoadingRemote(false);
+    }
+  };
 
   const load = () => {
     if (!product) return;
@@ -390,6 +429,7 @@ function PackagesDialog({ product, onClose, onChanged }: { product: any; onClose
       enqueueSnackbar('Nhập tên gói', { variant: 'warning' });
       return;
     }
+    const isApi = form.delivery_type === 'api';
     const payload = {
       name: form.name,
       price: Number(form.price) || 0,
@@ -397,6 +437,11 @@ function PackagesDialog({ product, onClose, onChanged }: { product: any; onClose
       delivery_type: form.delivery_type,
       sort_order: Number(form.sort_order) || 0,
       is_active: form.is_active,
+      api_provider_id: isApi && form.api_provider_id ? Number(form.api_provider_id) : null,
+      external_product_id: isApi ? form.external_product_id || null : null,
+      external_plan_id: isApi ? form.external_plan_id || null : null,
+      auto_markup: isApi ? form.auto_markup : false,
+      markup_percent: isApi ? Number(form.markup_percent) || null : null,
     };
     try {
       if (form.id) await axiosInstance.patch(`/api/products/admin/packages/${form.id}`, payload);
@@ -477,6 +522,11 @@ function PackagesDialog({ product, onClose, onChanged }: { product: any; onClose
                           delivery_type: pk.deliveryType || 'manual',
                           sort_order: pk.sortOrder || 0,
                           is_active: pk.isActive,
+                          api_provider_id: pk.apiProviderId || '',
+                          external_product_id: pk.externalProductId || '',
+                          external_plan_id: pk.externalPlanId || '',
+                          auto_markup: !!pk.autoMarkup,
+                          markup_percent: pk.markupPercent || 0,
                         })
                       }
                     >
@@ -525,6 +575,79 @@ function PackagesDialog({ product, onClose, onChanged }: { product: any; onClose
                 control={<Switch checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />}
                 label="Đang bán"
               />
+
+              {form.delivery_type === 'api' && (
+                <>
+                  <Divider>Map sản phẩm nguồn (tự giao qua API)</Divider>
+                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                    <TextField
+                      select
+                      fullWidth
+                      label="Nguồn cung cấp"
+                      value={form.api_provider_id}
+                      onChange={(e) => {
+                        setForm({ ...form, api_provider_id: e.target.value, external_product_id: '', external_plan_id: '' });
+                        loadRemote(e.target.value);
+                      }}
+                    >
+                      {apiProviders.map((p) => (
+                        <MenuItem key={p.id} value={p.id}>
+                          {p.name}
+                        </MenuItem>
+                      ))}
+                      {!apiProviders.length && <MenuItem disabled value="">Chưa có nguồn topup (thêm ở Tích hợp)</MenuItem>}
+                    </TextField>
+                    <Button variant="outlined" disabled={!form.api_provider_id || loadingRemote} onClick={() => loadRemote(form.api_provider_id)} sx={{ flexShrink: 0 }}>
+                      {loadingRemote ? 'Đang tải…' : 'Tải SP nguồn'}
+                    </Button>
+                  </Stack>
+                  {remoteProducts.length > 0 && (
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                      <TextField
+                        select
+                        fullWidth
+                        label="Sản phẩm nguồn"
+                        value={form.external_product_id}
+                        onChange={(e) => setForm({ ...form, external_product_id: e.target.value, external_plan_id: '' })}
+                      >
+                        {remoteProducts.map((rp) => (
+                          <MenuItem key={rp.id} value={rp.id}>
+                            {rp.name}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                      <TextField
+                        select
+                        fullWidth
+                        label="Gói nguồn"
+                        value={form.external_plan_id}
+                        disabled={!form.external_product_id}
+                        onChange={(e) => {
+                          const rp = remoteProducts.find((x) => String(x.id) === String(form.external_product_id));
+                          const plan = rp?.plans?.find((pl: any) => String(pl.id) === String(e.target.value));
+                          setForm({ ...form, external_plan_id: e.target.value, price: form.price || plan?.price || 0 });
+                        }}
+                      >
+                        {(remoteProducts.find((x) => String(x.id) === String(form.external_product_id))?.plans || []).map((pl: any) => (
+                          <MenuItem key={pl.id} value={pl.id}>
+                            {pl.name} — {fCurrency(pl.price)} {pl.in_stock ? '' : '(hết hàng)'}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    </Stack>
+                  )}
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    <FormControlLabel
+                      control={<Switch checked={form.auto_markup} onChange={(e) => setForm({ ...form, auto_markup: e.target.checked })} />}
+                      label="Tự tính giá theo markup"
+                    />
+                    {form.auto_markup && (
+                      <TextField type="number" label="Markup (%)" sx={{ maxWidth: 160 }} value={form.markup_percent} onChange={(e) => setForm({ ...form, markup_percent: Number(e.target.value) })} />
+                    )}
+                  </Stack>
+                </>
+              )}
+
               <Stack direction="row" spacing={1.5}>
                 <Button variant="contained" onClick={save}>
                   Lưu gói
@@ -604,6 +727,37 @@ function FieldsDialog({ pkg, onClose }: { pkg: any; onClose: VoidFunction }) {
     }
   };
 
+  // Nhập trường từ nguồn topup (nếu gói đã map sản phẩm nguồn).
+  const importFromSource = async () => {
+    if (!pkg?.apiProviderId || !pkg?.externalProductId) {
+      enqueueSnackbar('Gói chưa map sản phẩm nguồn', { variant: 'warning' });
+      return;
+    }
+    try {
+      const r = await axiosInstance.get(`/api/api-providers/${pkg.apiProviderId}/remote-products/${pkg.externalProductId}/form-fields`);
+      const remote = r.data || [];
+      if (!remote.length) {
+        enqueueSnackbar('Nguồn không có trường nhập', { variant: 'info' });
+        return;
+      }
+      await Promise.all(
+        remote.map((f: any, i: number) =>
+          axiosInstance.post(`/api/products/admin/packages/${pkg.id}/fields`, {
+            field_name: f.label || f.key,
+            field_type: f.type || 'text',
+            is_required: f.required !== false,
+            options: Array.isArray(f.options) ? f.options.join(',') : '',
+            sort_order: i,
+          })
+        )
+      );
+      enqueueSnackbar(`Đã nhập ${remote.length} trường từ nguồn`);
+      load();
+    } catch (e: any) {
+      enqueueSnackbar(e?.detail || 'Nhập trường thất bại', { variant: 'error' });
+    }
+  };
+
   return (
     <Dialog open={!!pkg} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>Trường nhập — {pkg?.name}</DialogTitle>
@@ -611,7 +765,12 @@ function FieldsDialog({ pkg, onClose }: { pkg: any; onClose: VoidFunction }) {
         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
           Khách sẽ phải nhập các trường này khi mua (vd: email tài khoản, ID game…).
         </Typography>
-        <Stack direction="row" justifyContent="flex-end" sx={{ my: 1 }}>
+        <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ my: 1 }}>
+          {pkg?.apiProviderId && pkg?.externalProductId && (
+            <Button size="small" color="inherit" startIcon={<Iconify icon="solar:download-bold" />} onClick={importFromSource}>
+              Nhập từ nguồn
+            </Button>
+          )}
           <Button size="small" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => setForm({ ...FIELD_EMPTY })}>
             Thêm trường
           </Button>

@@ -7,8 +7,8 @@
 import { Router, Request, Response } from 'express';
 import axios from 'axios';
 import prisma from '../db';
-import { requireAdmin } from '../middleware/auth';
-import { getProvider } from '../services/providers';
+import { requireAdmin, requireStaffOrAdmin } from '../middleware/auth';
+import { getProvider, getTopupProvider } from '../services/providers';
 import {
   AI_PROVIDERS, AI_CONFIG_KEY, getAiConfig, saveAiConfig,
   callProvider, buildMessages, maskKey,
@@ -104,6 +104,11 @@ router.post('/api-providers/:id/test', requireAdmin, async (req: Request, res: R
       res.json({ ok: true, message: `Kết nối OK · số dư: ${balance.formatted || balance.amount}` });
       return;
     }
+    if (provider.providerType === 'topup_game') {
+      const balance = await getTopupProvider(provider).getBalance();
+      res.json({ ok: true, message: `Kết nối OK · số dư: ${balance.formatted || balance.amount} ${balance.currency}` });
+      return;
+    }
     // Các loại khác: kiểm tra reachability cơ bản tới base_url.
     if (!provider.baseUrl) { res.status(400).json({ detail: 'Chưa cấu hình Base URL' }); return; }
     try {
@@ -114,6 +119,35 @@ router.post('/api-providers/:id/test', requireAdmin, async (req: Request, res: R
     }
   } catch (e: any) {
     res.status(400).json({ detail: e.message });
+  }
+});
+
+/** Danh sách sản phẩm/plan từ nguồn topup_game (để map khi tạo gói API). */
+router.get('/api-providers/:id/remote-products', requireStaffOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const provider = await prisma.apiProvider.findUnique({ where: { id: parseInt(req.params.id) } });
+    if (!provider) { res.status(404).json({ detail: 'Không tìm thấy nguồn' }); return; }
+    if (provider.providerType !== 'topup_game') {
+      res.status(400).json({ detail: 'Chỉ hỗ trợ nguồn loại Nạp game (topup_game)' });
+      return;
+    }
+    const products = await getTopupProvider(provider).getProducts(req.query.category_id as string | undefined);
+    res.json(products);
+  } catch (e: any) {
+    res.status(502).json({ detail: `Lỗi gọi nguồn: ${e.message}` });
+  }
+});
+
+/** Trường nhập (form fields) của 1 sản phẩm nguồn. */
+router.get('/api-providers/:id/remote-products/:productId/form-fields', requireStaffOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const provider = await prisma.apiProvider.findUnique({ where: { id: parseInt(req.params.id) } });
+    if (!provider) { res.status(404).json({ detail: 'Không tìm thấy nguồn' }); return; }
+    if (provider.providerType !== 'topup_game') { res.json([]); return; }
+    const fields = await getTopupProvider(provider).getFormFields(req.params.productId);
+    res.json(fields);
+  } catch (e: any) {
+    res.status(502).json({ detail: `Lỗi gọi nguồn: ${e.message}` });
   }
 });
 
