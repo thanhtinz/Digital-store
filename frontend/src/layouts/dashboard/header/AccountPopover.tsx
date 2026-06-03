@@ -35,7 +35,9 @@ export default function AccountPopover() {
   const OPTIONS = [
     { label: t('account'), linkTo: PATH_DASHBOARD.myAccount },
     { label: t('orders'), linkTo: PATH_DASHBOARD.orders.root },
+    { label: t('wishlist'), linkTo: PATH_DASHBOARD.wishlist },
     { label: t('topup'), linkTo: PATH_DASHBOARD.wallet.topup },
+    { label: t('card_charge'), linkTo: PATH_DASHBOARD.wallet.cardCharge },
   ];
 
   const name =
