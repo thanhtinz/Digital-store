@@ -12,6 +12,8 @@ import axios from '../../../../utils/axios';
 import { PATH_DASHBOARD } from '../../../../routes/paths';
 // @types
 import { IProduct } from '../../../../@types/product';
+// locales
+import { useLocales } from '../../../../locales';
 // components
 import Image from '../../../../components/image';
 import Iconify from '../../../../components/iconify';
@@ -22,6 +24,7 @@ import SearchNotFound from '../../../../components/search-not-found';
 
 export default function ShopProductSearch() {
   const { push } = useRouter();
+  const { translate } = useLocales();
 
   const [searchProducts, setSearchProducts] = useState('');
 
@@ -80,7 +83,7 @@ export default function ShopProductSearch() {
         <CustomTextField
           {...params}
           width={220}
-          placeholder="Search..."
+          placeholder={`${translate('nav.search_placeholder')}`}
           onKeyUp={handleKeyUp}
           InputProps={{
             ...params.InputProps,

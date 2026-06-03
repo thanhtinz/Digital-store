@@ -12,6 +12,8 @@ import axios from '../../../../utils/axios';
 import { PATH_DASHBOARD } from '../../../../routes/paths';
 // @types
 import { IBlogPost } from '../../../../@types/blog';
+// locales
+import { useLocales } from '../../../../locales';
 // components
 import Image from '../../../../components/image';
 import Iconify from '../../../../components/iconify';
@@ -22,6 +24,7 @@ import SearchNotFound from '../../../../components/search-not-found';
 
 export default function BlogPostsSearch() {
   const { push } = useRouter();
+  const { translate } = useLocales();
 
   const [searchPosts, setSearchPosts] = useState('');
 
@@ -80,7 +83,7 @@ export default function BlogPostsSearch() {
         <CustomTextField
           {...params}
           width={220}
-          placeholder="Search..."
+          placeholder={`${translate('blog_page.search_placeholder')}`}
           onKeyUp={handleKeyUp}
           InputProps={{
             ...params.InputProps,

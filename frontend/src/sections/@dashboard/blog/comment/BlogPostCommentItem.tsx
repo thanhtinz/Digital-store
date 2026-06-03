@@ -12,6 +12,8 @@ import {
 } from '@mui/material';
 // utils
 import { fDate } from '../../../../utils/formatTime';
+// locales
+import { useLocales } from '../../../../locales';
 
 // ----------------------------------------------------------------------
 
@@ -32,6 +34,8 @@ export default function BlogPostCommentItem({
   postedAt,
   hasReply,
 }: Props) {
+  const { translate } = useLocales();
+  const tb = (k: string) => `${translate(`blog_page.${k}`)}`;
   const [openReply, setOpenReply] = useState(false);
 
   return (
@@ -71,7 +75,7 @@ export default function BlogPostCommentItem({
             onClick={() => setOpenReply(!openReply)}
             sx={{ right: 0, position: 'absolute' }}
           >
-            Reply
+            {tb('reply')}
           </Button>
         )}
       </ListItem>
@@ -84,7 +88,7 @@ export default function BlogPostCommentItem({
             width: (theme) => `calc(100% - ${theme.spacing(7)})`,
           }}
         >
-          <TextField fullWidth size="small" placeholder="Write comment" />
+          <TextField fullWidth size="small" placeholder={tb('write_comment')} />
         </Box>
       )}
 

@@ -488,6 +488,17 @@ const ar = {
     sort_latest: `الأحدث`,
     sort_popular: `الأكثر رواجاً`,
     sort_oldest: `الأقدم`,
+    search_placeholder: `بحث...`,
+    comments: `التعليقات`,
+    recent_posts: `أحدث المقالات`,
+    reply: `رد`,
+    write_comment: `اكتب تعليقاً`,
+    comment_placeholder: `اكتب بعض تعليقاتك...`,
+    post_comment: `نشر التعليق`,
+    comment_required: `التعليق مطلوب`,
+    name_required: `الاسم مطلوب`,
+    email_required: `البريد الإلكتروني مطلوب`,
+    email_invalid: `بريد إلكتروني غير صالح`,
   },
 };
 

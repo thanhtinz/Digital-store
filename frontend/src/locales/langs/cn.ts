@@ -488,6 +488,17 @@ const cn = {
     sort_latest: `最新`,
     sort_popular: `热门`,
     sort_oldest: `最早`,
+    search_placeholder: `搜索...`,
+    comments: `评论`,
+    recent_posts: `最近文章`,
+    reply: `回复`,
+    write_comment: `写评论`,
+    comment_placeholder: `写下您的评论...`,
+    post_comment: `发布评论`,
+    comment_required: `请填写评论`,
+    name_required: `请填写姓名`,
+    email_required: `请填写邮箱`,
+    email_invalid: `邮箱格式不正确`,
   },
 };
 

@@ -17,6 +17,8 @@ import Markdown from '../../../../components/markdown';
 import CustomBreadcrumbs from '../../../../components/custom-breadcrumbs';
 import { useSettingsContext } from '../../../../components/settings';
 import { SkeletonPostDetails } from '../../../../components/skeleton';
+// locales
+import { useLocales } from '../../../../locales';
 // sections
 import {
   BlogPostHero,
@@ -34,6 +36,8 @@ BlogPostPage.getLayout = (page: React.ReactElement) => <DashboardLayout disableG
 
 export default function BlogPostPage() {
   const { themeStretch } = useSettingsContext();
+  const { translate } = useLocales();
+  const tb = (k: string) => `${translate(`blog_page.${k}`)}`;
 
   const {
     query: { title },
@@ -152,7 +156,7 @@ export default function BlogPostPage() {
               }}
             >
               <Stack direction="row" sx={{ mb: 3 }}>
-                <Typography variant="h4">Comments</Typography>
+                <Typography variant="h4">{tb('comments')}</Typography>
 
                 <Typography variant="subtitle2" sx={{ color: 'text.disabled' }}>
                   ({post.comments.length})
@@ -190,7 +194,7 @@ export default function BlogPostPage() {
         {!!recentPosts.length && (
           <>
             <Typography variant="h4" sx={{ my: 5 }}>
-              Recent posts
+              {tb('recent_posts')}
             </Typography>
 
             <Box

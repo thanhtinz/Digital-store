@@ -5,6 +5,8 @@ import { yupResolver } from '@hookform/resolvers/yup';
 // @mui
 import { Stack } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
+// locales
+import { useLocales } from '../../../../locales';
 // components
 import FormProvider, { RHFTextField } from '../../../../components/hook-form';
 
@@ -17,10 +19,13 @@ type FormValuesProps = {
 };
 
 export default function BlogPostCommentForm() {
+  const { translate } = useLocales();
+  const tb = (k: string) => `${translate(`blog_page.${k}`)}`;
+
   const CommentSchema = Yup.object().shape({
-    comment: Yup.string().required('Comment is required'),
-    name: Yup.string().required('Name is required'),
-    email: Yup.string().required('Email is required').email('Email must be a valid email address'),
+    comment: Yup.string().required(tb('comment_required')),
+    name: Yup.string().required(tb('name_required')),
+    email: Yup.string().required(tb('email_required')).email(tb('email_invalid')),
   });
 
   const defaultValues = {
@@ -55,13 +60,13 @@ export default function BlogPostCommentForm() {
       <Stack spacing={3} alignItems="flex-end">
         <RHFTextField
           name="comment"
-          placeholder="Write some of your comments..."
+          placeholder={tb('comment_placeholder')}
           multiline
           rows={3}
         />
 
         <LoadingButton type="submit" variant="contained" loading={isSubmitting}>
-          Post comment
+          {tb('post_comment')}
         </LoadingButton>
       </Stack>
     </FormProvider>

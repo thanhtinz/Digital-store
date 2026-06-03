@@ -488,6 +488,17 @@ const vn = {
     sort_latest: `Mới nhất`,
     sort_popular: `Phổ biến`,
     sort_oldest: `Cũ nhất`,
+    search_placeholder: `Tìm kiếm...`,
+    comments: `Bình luận`,
+    recent_posts: `Bài viết gần đây`,
+    reply: `Trả lời`,
+    write_comment: `Viết bình luận`,
+    comment_placeholder: `Viết bình luận của bạn...`,
+    post_comment: `Gửi bình luận`,
+    comment_required: `Vui lòng nhập bình luận`,
+    name_required: `Vui lòng nhập họ tên`,
+    email_required: `Vui lòng nhập email`,
+    email_invalid: `Email không hợp lệ`,
   },
 };
 

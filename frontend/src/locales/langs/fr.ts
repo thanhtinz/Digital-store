@@ -488,6 +488,17 @@ const fr = {
     sort_latest: `Récents`,
     sort_popular: `Populaires`,
     sort_oldest: `Anciens`,
+    search_placeholder: `Rechercher...`,
+    comments: `Commentaires`,
+    recent_posts: `Articles récents`,
+    reply: `Répondre`,
+    write_comment: `Écrire un commentaire`,
+    comment_placeholder: `Écrivez vos commentaires...`,
+    post_comment: `Publier le commentaire`,
+    comment_required: `Le commentaire est requis`,
+    name_required: `Le nom est requis`,
+    email_required: `L'email est requis`,
+    email_invalid: `Email invalide`,
   },
 };
 
