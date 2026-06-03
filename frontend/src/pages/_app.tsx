@@ -24,6 +24,7 @@ import 'react-lazy-load-image-component/src/effects/blur.css';
 
 // ----------------------------------------------------------------------
 
+import { useEffect } from 'react';
 import { CacheProvider, EmotionCache } from '@emotion/react';
 // next
 import { NextPage } from 'next';
@@ -74,6 +75,22 @@ export default function MyApp(props: MyAppProps) {
   const { Component, pageProps, emotionCache = clientSideEmotionCache } = props;
 
   const getLayout = Component.getLayout ?? ((page) => page);
+
+  // Gỡ service worker cũ (bản static trước đây từng đăng ký sw.js) + xoá cache cũ.
+  // Tránh trình duyệt phục vụ lại giao diện cũ đã cache sau khi đã deploy bản mới
+  // (lý do các thay đổi frontend "không hiện" dù backend đã cập nhật).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((regs) => regs.forEach((r) => r.unregister()))
+        .catch(() => {});
+    }
+    if (typeof caches !== 'undefined' && caches.keys) {
+      caches.keys().then((keys) => keys.forEach((k) => caches.delete(k))).catch(() => {});
+    }
+  }, []);
 
   return (
     <CacheProvider value={emotionCache}>
