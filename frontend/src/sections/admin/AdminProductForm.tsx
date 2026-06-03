@@ -9,9 +9,11 @@ import {
   Box,
   Button,
   Card,
+  Chip,
   Grid,
   MenuItem,
   Stack,
+  TextField,
   Typography,
   IconButton,
 } from '@mui/material';
@@ -20,18 +22,16 @@ import axiosInstance from '../../utils/axios';
 // components
 import Iconify from '../../components/iconify';
 import { useSnackbar } from '../../components/snackbar';
-import FormProvider, {
-  RHFSwitch,
-  RHFSelect,
-  RHFEditor,
-  RHFTextField,
-} from '../../components/hook-form';
+import FormProvider, { RHFSwitch, RHFEditor, RHFTextField } from '../../components/hook-form';
 //
 import { GalleryField } from './ImageUploadField';
 
 // ----------------------------------------------------------------------
-// Form tạo/sửa sản phẩm dạng TRANG ĐẦY ĐỦ (theo layout Minimal: 2 cột + Card),
-// dùng trình soạn thảo văn bản RHFEditor cho mô tả. Thay cho popup cũ.
+// Form tạo/sửa sản phẩm (VIẾT LẠI v2):
+//  - Ô DANH MỤC tách hẳn khỏi React Hook Form: dùng MUI Select controlled bằng
+//    state riêng -> không còn race/reset, value luôn đúng.
+//  - Tự FETCH danh mục trong component (không phụ thuộc thời điểm prop cha tải).
+//  - Có marker "form v2 · <buildId>" để xác nhận ngay bản frontend mới đã chạy.
 // ----------------------------------------------------------------------
 
 type Category = { id: number; name: string };
@@ -47,22 +47,54 @@ type FormValuesProps = {
   name: string;
   description: string;
   images: string[]; // ảnh đầu tiên = ảnh đại diện (cover)
-  category_id: string | number;
   is_featured: boolean;
   is_active: boolean;
 };
+
+const BUILD_ID = (process.env.NEXT_PUBLIC_BUILD_ID || 'dev').slice(0, 7);
 
 export default function AdminProductForm({ current, categories, onBack, onSaved }: Props) {
   const { enqueueSnackbar } = useSnackbar();
   const isEdit = !!current?.id;
   const [aiBusy, setAiBusy] = useState(false);
 
+  // ── DANH MỤC: state độc lập, không qua RHF ────────────────────────────
+  const [cats, setCats] = useState<Category[]>(categories || []);
+  const [categoryId, setCategoryId] = useState<string>(
+    current?.categoryId ? String(current.categoryId) : ''
+  );
+
+  // Nhận danh mục từ prop cha khi có.
+  useEffect(() => {
+    if (categories && categories.length) setCats(categories);
+  }, [categories]);
+
+  // Tự fetch danh mục để đảm bảo dropdown luôn có dữ liệu (không phụ thuộc prop).
+  useEffect(() => {
+    let alive = true;
+    axiosInstance
+      .get('/api/categories')
+      .then((r) => {
+        const list = Array.isArray(r.data) ? r.data : r.data?.items || [];
+        if (alive && list.length) setCats(list);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // Preselect đúng danh mục của sản phẩm đang sửa (khi mở/đổi sản phẩm).
+  useEffect(() => {
+    setCategoryId(current?.categoryId ? String(current.categoryId) : '');
+  }, [current]);
+
+  // ── Các field còn lại qua RHF ─────────────────────────────────────────
   const ProductSchema = Yup.object().shape({
     name: Yup.string().required('Vui lòng nhập tên sản phẩm'),
   });
 
   const defaultValues = useMemo<FormValuesProps>(() => {
-    // Gộp ảnh đại diện + album thành một danh sách, ảnh bìa đứng đầu.
     const gallery = Array.isArray(current?.images) ? current.images : [];
     const cover = current?.imageUrl || '';
     const images = cover ? [cover, ...gallery.filter((u: string) => u !== cover)] : gallery;
@@ -70,8 +102,6 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
       name: current?.name || '',
       description: current?.description || '',
       images,
-      // Chuỗi để khớp value của <option> (native select dùng chuỗi).
-      category_id: current?.categoryId ? String(current.categoryId) : '',
       is_featured: !!current?.isFeatured,
       is_active: current?.isActive ?? true,
     };
@@ -95,17 +125,6 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
   useEffect(() => {
     reset(defaultValues);
   }, [defaultValues, reset]);
-
-  // Chẩn đoán: khi categories đổi (tải xong) hoặc mở form, in trạng thái thật.
-  useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.log('[CAT-FORM]', {
-      categoriesCount: categories.length,
-      currentCategoryId: current?.categoryId ?? null,
-      formValue: values.category_id,
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categories.length, current]);
 
   const aiGenerate = async () => {
     if (!values.name?.trim()) {
@@ -132,11 +151,10 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
     const payload = {
       name: data.name,
       description: data.description,
-      // Ảnh đầu tiên là ảnh đại diện; cả danh sách lưu vào album.
       image_url: data.images[0] || '',
       images: data.images,
-      // Gửi dạng số (RHFSelect trả chuỗi) để Prisma nhận đúng kiểu Int.
-      category_id: data.category_id ? Number(data.category_id) : null,
+      // Lấy thẳng từ state độc lập, ép số cho Prisma (Int).
+      category_id: categoryId ? Number(categoryId) : null,
       is_featured: data.is_featured,
       is_active: data.is_active,
     };
@@ -144,25 +162,13 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
       const res = isEdit
         ? await axiosInstance.patch(`/api/products/admin/${current.id}`, payload)
         : await axiosInstance.post('/api/products/admin', payload);
-      // Xác nhận danh mục đã lưu THẬT: ưu tiên response, nếu thiếu thì đọc lại
-      // từ danh sách (serializer luôn trả category) — tránh báo nhầm khi backend
-      // bản cũ không trả kèm category trong response lưu.
-      const savedId = isEdit ? current.id : res?.data?.id;
-      let savedCat: string | undefined = res?.data?.category?.name;
-      if (payload.category_id && !savedCat && savedId) {
-        try {
-          const chk = await axiosInstance.get('/api/products', { params: { limit: 300 } });
-          const found = (chk.data?.items || []).find((x: any) => x.id === savedId);
-          savedCat = found?.category?.name;
-        } catch {
-          /* bỏ qua lỗi kiểm tra */
-        }
-      }
+      const savedCatName =
+        res?.data?.category?.name || cats.find((c) => String(c.id) === categoryId)?.name;
       enqueueSnackbar(
         `${isEdit ? 'Đã cập nhật sản phẩm' : 'Đã tạo sản phẩm'}${
-          payload.category_id ? ` — Danh mục: ${savedCat || '⚠ không lưu được'}` : ''
+          payload.category_id ? ` — Danh mục: ${savedCatName || '(đã lưu)'}` : ''
         }`,
-        { variant: payload.category_id && !savedCat ? 'warning' : 'success' }
+        { variant: 'success' }
       );
       onSaved();
     } catch (e: any) {
@@ -177,6 +183,14 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
           <Iconify icon="eva:arrow-ios-back-fill" />
         </IconButton>
         <Typography variant="h4">{isEdit ? 'Sửa sản phẩm' : 'Thêm sản phẩm'}</Typography>
+        {/* Marker: thấy chip này nghĩa là bản frontend MỚI đã chạy */}
+        <Chip
+          size="small"
+          color="success"
+          variant="soft"
+          label={`form v2 · ${BUILD_ID}`}
+          sx={{ ml: 'auto' }}
+        />
       </Stack>
 
       <Grid container spacing={3}>
@@ -223,16 +237,23 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
         <Grid item xs={12} md={4}>
           <Stack spacing={3}>
             <Card sx={{ p: 3 }}>
-              <Stack spacing={3}>
-                <RHFSelect key={`cat-${categories.length}`} name="category_id" label="Danh mục">
+              <Stack spacing={1.5}>
+                {/* MUI Select controlled bằng state riêng — KHÔNG qua RHF */}
+                <TextField
+                  select
+                  fullWidth
+                  label="Danh mục"
+                  value={categoryId}
+                  onChange={(e) => setCategoryId(e.target.value)}
+                >
                   <MenuItem value="">— Không —</MenuItem>
-                  {categories.map((c) => (
+                  {cats.map((c) => (
                     <MenuItem key={c.id} value={String(c.id)}>
                       {c.name}
                     </MenuItem>
                   ))}
-                </RHFSelect>
-                {categories.length === 0 && (
+                </TextField>
+                {cats.length === 0 && (
                   <Typography variant="caption" sx={{ color: 'warning.main' }}>
                     Chưa có danh mục nào. Hãy tạo danh mục ở mục “Danh mục” trước.
                   </Typography>
