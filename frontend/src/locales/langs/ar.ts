@@ -74,6 +74,8 @@ const ar = {
     login_register: `تسجيل الدخول / التسجيل`,
     account: `الحساب`,
     admin: `لوحة الإدارة`,
+    admin_overview: `نظرة عامة`,
+    admin_settings: `الإعدادات`,
     logout: `تسجيل الخروج`,
   },
   account_page: {

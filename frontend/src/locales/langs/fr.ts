@@ -74,6 +74,8 @@ const fr = {
     login_register: `Connexion / Inscription`,
     account: `Compte`,
     admin: `Administration`,
+    admin_overview: `Aperçu`,
+    admin_settings: `Paramètres`,
     logout: `Déconnexion`,
   },
   account_page: {

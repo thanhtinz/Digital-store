@@ -122,10 +122,7 @@ export default function AccountPopover() {
 
           {isAdmin && (
             <MenuItem
-              onClick={() => {
-                handleClosePopover();
-                window.location.href = '/admin';
-              }}
+              onClick={() => handleClickItem(PATH_DASHBOARD.admin.root)}
               sx={{ color: 'primary.main', fontWeight: 'fontWeightMedium' }}
             >
               <Iconify icon="solar:shield-user-bold" sx={{ mr: 1 }} />

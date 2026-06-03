@@ -66,6 +66,12 @@ export const PATH_DASHBOARD = {
   wallet: {
     topup: path(ROOTS_DASHBOARD, '/wallet/topup'),
   },
+  admin: {
+    root: path(ROOTS_DASHBOARD, '/admin'),
+    settings: path(ROOTS_DASHBOARD, '/admin/settings'),
+    users: path(ROOTS_DASHBOARD, '/admin/users'),
+    orders: path(ROOTS_DASHBOARD, '/admin/orders'),
+  },
   smm: {
     root: path(ROOTS_DASHBOARD, '/smm'),
     order: path(ROOTS_DASHBOARD, '/smm/order'),

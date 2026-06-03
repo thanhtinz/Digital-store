@@ -74,6 +74,8 @@ const en = {
     login_register: `Sign in / Sign up`,
     account: `Account`,
     admin: `Admin panel`,
+    admin_overview: `Overview`,
+    admin_settings: `Settings`,
     logout: `Logout`,
   },
   account_page: {

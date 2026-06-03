@@ -74,6 +74,8 @@ const cn = {
     login_register: `登录 / 注册`,
     account: `账户`,
     admin: `管理后台`,
+    admin_overview: `概览`,
+    admin_settings: `设置`,
     logout: `退出登录`,
   },
   account_page: {

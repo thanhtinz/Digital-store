@@ -74,6 +74,8 @@ const vn = {
     login_register: `Đăng nhập / Đăng ký`,
     account: `Tài khoản`,
     admin: `Trang quản trị`,
+    admin_overview: `Tổng quan`,
+    admin_settings: `Cài đặt`,
     logout: `Đăng xuất`,
   },
   account_page: {
