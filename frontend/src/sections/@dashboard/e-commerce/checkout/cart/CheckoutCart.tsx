@@ -7,6 +7,8 @@ import { Grid, Card, Button, CardHeader, Typography } from '@mui/material';
 import { PATH_DASHBOARD } from '../../../../../routes/paths';
 // @types
 import { IProductCheckoutState } from '../../../../../@types/product';
+// locales
+import { useLocales } from '../../../../../locales';
 // components
 import Iconify from '../../../../../components/iconify';
 import EmptyContent from '../../../../../components/empty-content';
@@ -33,6 +35,9 @@ export default function CheckoutCart({
   onIncreaseQuantity,
   onDecreaseQuantity,
 }: Props) {
+  const { translate } = useLocales();
+  const t = (k: string) => `${translate(`checkout_page.${k}`)}`;
+
   const { cart, total, discount, subtotal } = checkout;
 
   const totalItems = sum(cart.map((item) => item.quantity));
@@ -46,9 +51,9 @@ export default function CheckoutCart({
           <CardHeader
             title={
               <Typography variant="h6">
-                Cart
+                {t('cart')}
                 <Typography component="span" sx={{ color: 'text.secondary' }}>
-                  &nbsp;({totalItems} item)
+                  &nbsp;({totalItems} {t('items')})
                 </Typography>
               </Typography>
             }
@@ -64,8 +69,8 @@ export default function CheckoutCart({
             />
           ) : (
             <EmptyContent
-              title="Cart is empty"
-              description="Look like you have no items in your shopping cart."
+              title={t('empty_title')}
+              description={t('empty_desc')}
               img="/assets/illustrations/illustration_empty_cart.svg"
             />
           )}
@@ -73,11 +78,11 @@ export default function CheckoutCart({
 
         <Button
           component={NextLink}
-          href={PATH_DASHBOARD.eCommerce.root}
+          href={PATH_DASHBOARD.eCommerce.shop}
           color="inherit"
           startIcon={<Iconify icon="eva:arrow-ios-back-fill" />}
         >
-          Continue Shopping
+          {t('continue_shopping')}
         </Button>
       </Grid>
 
@@ -97,7 +102,7 @@ export default function CheckoutCart({
           disabled={!cart.length}
           onClick={onNextStep}
         >
-          Check Out
+          {t('checkout')}
         </Button>
       </Grid>
     </Grid>

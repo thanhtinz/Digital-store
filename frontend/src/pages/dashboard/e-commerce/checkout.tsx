@@ -25,8 +25,9 @@ import {
 } from '../../../redux/slices/product';
 // @types
 import { ICheckoutBillingAddress } from '../../../@types/product';
+// locales
+import { useLocales } from '../../../locales';
 // components
-import CustomBreadcrumbs from '../../../components/custom-breadcrumbs';
 import { useSettingsContext } from '../../../components/settings';
 // sections
 import {
@@ -39,10 +40,6 @@ import {
 
 // ----------------------------------------------------------------------
 
-const STEPS = ['Cart', 'Billing & address', 'Payment'];
-
-// ----------------------------------------------------------------------
-
 EcommerceCheckoutPage.getLayout = (page: React.ReactElement) => (
   <DashboardLayout>{page}</DashboardLayout>
 );
@@ -51,6 +48,14 @@ EcommerceCheckoutPage.getLayout = (page: React.ReactElement) => (
 
 export default function EcommerceCheckoutPage() {
   const { replace } = useRouter();
+
+  const { translate } = useLocales();
+
+  const STEPS = [
+    `${translate('checkout_page.step_cart')}`,
+    `${translate('checkout_page.step_billing')}`,
+    `${translate('checkout_page.step_payment')}`,
+  ];
 
   const { themeStretch } = useSettingsContext();
 
@@ -121,22 +126,10 @@ export default function EcommerceCheckoutPage() {
   return (
     <>
       <Head>
-        <title> Ecommerce: Checkout | Minimal UI</title>
+        <title> {`${translate('checkout_page.title')}`} </title>
       </Head>
 
-      <Container maxWidth={themeStretch ? false : 'lg'}>
-        <CustomBreadcrumbs
-          heading="Checkout"
-          links={[
-            { name: 'Dashboard', href: PATH_DASHBOARD.root },
-            {
-              name: 'E-Commerce',
-              href: PATH_DASHBOARD.eCommerce.root,
-            },
-            { name: 'Checkout' },
-          ]}
-        />
-
+      <Container maxWidth={themeStretch ? false : 'lg'} sx={{ pt: { xs: 3, md: 5 } }}>
         <Grid container justifyContent={completed ? 'center' : 'flex-start'}>
           <Grid item xs={12} md={8}>
             <CheckoutSteps activeStep={activeStep} steps={STEPS} />

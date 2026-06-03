@@ -1,3 +1,4 @@
+import { useState } from 'react';
 // @mui
 import {
   Box,
@@ -12,9 +13,13 @@ import {
   InputAdornment,
 } from '@mui/material';
 // utils
+import axiosInstance from '../../../../utils/axios';
 import { fCurrency } from '../../../../utils/formatNumber';
+// locales
+import { useLocales } from '../../../../locales';
 // components
 import Iconify from '../../../../components/iconify';
+import { useSnackbar } from '../../../../components/snackbar';
 
 // ----------------------------------------------------------------------
 
@@ -39,16 +44,53 @@ export default function CheckoutSummary({
   enableEdit = false,
   enableDiscount = false,
 }: Props) {
-  const displayShipping = shipping !== null ? 'Free' : '-';
+  const { translate } = useLocales();
+  const t = (k: string) => `${translate(`checkout_page.${k}`)}`;
+  const { enqueueSnackbar } = useSnackbar();
+
+  const [code, setCode] = useState('');
+  const [applying, setApplying] = useState(false);
+  const applied = !!discount && discount > 0;
+
+  const displayShipping = shipping !== null ? t('free') : '-';
+
+  const handleApply = async () => {
+    if (!onApplyDiscount) return;
+    if (applied) {
+      // Bỏ mã đang áp dụng
+      onApplyDiscount(0);
+      setCode('');
+      return;
+    }
+    if (!code.trim()) return;
+    setApplying(true);
+    try {
+      const r = await axiosInstance.post('/api/gift-codes/quote', {
+        code: code.trim().toUpperCase(),
+        subtotal,
+      });
+      const value = Number(r.data?.discount) || 0;
+      if (r.data?.valid && value > 0) {
+        onApplyDiscount(value);
+        enqueueSnackbar(`${t('coupon_applied')}: -${fCurrency(value)}`);
+      } else {
+        enqueueSnackbar(t('coupon_invalid'), { variant: 'error' });
+      }
+    } catch (e: any) {
+      enqueueSnackbar(e?.detail || e?.message || t('coupon_invalid'), { variant: 'error' });
+    } finally {
+      setApplying(false);
+    }
+  };
 
   return (
     <Card sx={{ mb: 3 }}>
       <CardHeader
-        title="Order Summary"
+        title={t('order_summary')}
         action={
           enableEdit && (
             <Button size="small" onClick={onEdit} startIcon={<Iconify icon="eva:edit-fill" />}>
-              Edit
+              {t('edit')}
             </Button>
           )
         }
@@ -58,37 +100,35 @@ export default function CheckoutSummary({
         <Stack spacing={2}>
           <Stack direction="row" justifyContent="space-between">
             <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              Sub Total
+              {t('sub_total')}
             </Typography>
             <Typography variant="subtitle2">{fCurrency(subtotal)}</Typography>
           </Stack>
 
           <Stack direction="row" justifyContent="space-between">
             <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              Discount
+              {t('discount')}
             </Typography>
             <Typography variant="subtitle2">{discount ? fCurrency(-discount) : '-'}</Typography>
           </Stack>
 
           <Stack direction="row" justifyContent="space-between">
             <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              Shipping
+              {t('shipping')}
             </Typography>
-            <Typography variant="subtitle2">
-              {shipping ? fCurrency(shipping) : displayShipping}
-            </Typography>
+            <Typography variant="subtitle2">{shipping ? fCurrency(shipping) : displayShipping}</Typography>
           </Stack>
 
           <Divider />
 
           <Stack direction="row" justifyContent="space-between">
-            <Typography variant="subtitle1">Total</Typography>
+            <Typography variant="subtitle1">{t('total')}</Typography>
             <Box sx={{ textAlign: 'right' }}>
               <Typography variant="subtitle1" sx={{ color: 'error.main' }}>
                 {fCurrency(total)}
               </Typography>
               <Typography variant="caption" sx={{ fontStyle: 'italic' }}>
-                (VAT included if applicable)
+                {t('vat_note')}
               </Typography>
             </Box>
           </Stack>
@@ -96,13 +136,18 @@ export default function CheckoutSummary({
           {enableDiscount && onApplyDiscount && (
             <TextField
               fullWidth
-              placeholder="Discount codes / Gifts"
-              value="DISCOUNT5"
+              value={code}
+              disabled={applied}
+              placeholder={t('coupon_placeholder')}
+              onChange={(e) => setCode(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleApply();
+              }}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <Button onClick={() => onApplyDiscount(5)} sx={{ mr: -0.5 }}>
-                      Apply
+                    <Button onClick={handleApply} disabled={applying} sx={{ mr: -0.5 }}>
+                      {applied ? t('remove') : t('apply')}
                     </Button>
                   </InputAdornment>
                 ),
