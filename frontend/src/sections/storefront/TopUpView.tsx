@@ -16,6 +16,8 @@ import {
 } from '@mui/material';
 // auth
 import { useAuthContext } from '../../auth/useAuthContext';
+// locales
+import { useLocales } from '../../locales';
 // utils
 import axiosInstance from '../../utils/axios';
 import { fCurrency } from '../../utils/formatNumber';
@@ -41,6 +43,8 @@ type TopUp = {
 export default function TopUpView() {
   const { isAuthenticated } = useAuthContext();
   const { enqueueSnackbar } = useSnackbar();
+  const { translate } = useLocales();
+  const t = (k: string) => `${translate(`topup_page.${k}`)}`;
 
   const [amount, setAmount] = useState(100000);
   const [creating, setCreating] = useState(false);
@@ -58,11 +62,11 @@ export default function TopUpView() {
 
   const handleCreate = async () => {
     if (!isAuthenticated) {
-      enqueueSnackbar('Vui lòng đăng nhập để nạp tiền', { variant: 'warning' });
+      enqueueSnackbar(t('login_required'), { variant: 'warning' });
       return;
     }
     if (amount < 10000) {
-      enqueueSnackbar('Số tiền nạp tối thiểu 10.000đ', { variant: 'warning' });
+      enqueueSnackbar(t('min_warning'), { variant: 'warning' });
       return;
     }
     setCreating(true);
@@ -72,7 +76,7 @@ export default function TopUpView() {
       setStatus(res.data.status || 'pending');
       startPolling(res.data.txn_id);
     } catch (e: any) {
-      enqueueSnackbar(e?.detail || e?.message || 'Tạo lệnh nạp thất bại', { variant: 'error' });
+      enqueueSnackbar(e?.detail || e?.message || t('create_failed'), { variant: 'error' });
     } finally {
       setCreating(false);
     }
@@ -88,8 +92,8 @@ export default function TopUpView() {
         setStatus(st);
         if (st && st !== 'pending') {
           if (pollRef.current) clearInterval(pollRef.current);
-          if (st === 'completed') enqueueSnackbar('Nạp tiền thành công!');
-          else enqueueSnackbar('Giao dịch không thành công', { variant: 'error' });
+          if (st === 'completed') enqueueSnackbar(t('success'));
+          else enqueueSnackbar(t('create_failed'), { variant: 'error' });
         }
       } catch {
         /* bỏ qua lỗi mạng tạm thời */
@@ -99,7 +103,7 @@ export default function TopUpView() {
 
   const copy = (text: string) => {
     navigator.clipboard?.writeText(text);
-    enqueueSnackbar('Đã sao chép');
+    enqueueSnackbar(t('copied'));
   };
 
   const completed = status === 'completed';
@@ -107,7 +111,7 @@ export default function TopUpView() {
   return (
     <Container sx={{ pb: 6 }}>
       <Typography variant="h4" sx={{ my: 3 }}>
-        Nạp tiền vào tài khoản
+        {t('title')}
       </Typography>
 
       <Grid container spacing={3}>
@@ -115,7 +119,7 @@ export default function TopUpView() {
         <Grid item xs={12} md={topup ? 6 : 12}>
           <Card sx={{ p: 3 }}>
             <Typography variant="subtitle1" sx={{ mb: 2 }}>
-              Chọn số tiền
+              {t('choose_amount')}
             </Typography>
 
             <Box
@@ -141,11 +145,11 @@ export default function TopUpView() {
             <TextField
               fullWidth
               type="number"
-              label="Số tiền khác (₫)"
+              label={t('other_amount')}
               value={amount}
               disabled={!!topup}
               onChange={(e) => setAmount(Math.max(0, Number(e.target.value) || 0))}
-              helperText="Tối thiểu 10.000 ₫"
+              helperText={t('min_note')}
             />
 
             {!topup ? (
@@ -158,7 +162,7 @@ export default function TopUpView() {
                 onClick={handleCreate}
                 startIcon={creating ? <CircularProgress size={18} color="inherit" /> : null}
               >
-                Tạo mã nạp tiền
+                {t('create_code')}
               </Button>
             ) : (
               <Button
@@ -173,7 +177,7 @@ export default function TopUpView() {
                   setStatus('pending');
                 }}
               >
-                Tạo lệnh nạp khác
+                {t('create_another')}
               </Button>
             )}
           </Card>
@@ -186,16 +190,15 @@ export default function TopUpView() {
               {completed ? (
                 <Stack alignItems="center" spacing={1.5} sx={{ py: 4 }}>
                   <Iconify icon="solar:check-circle-bold" width={72} sx={{ color: 'success.main' }} />
-                  <Typography variant="h6">Nạp tiền thành công</Typography>
+                  <Typography variant="h6">{t('success')}</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    +{fCurrency(topup.amount)} đã được cộng vào tài khoản.
+                    +{fCurrency(topup.amount)} · {t('success_desc')}
                   </Typography>
                 </Stack>
               ) : (
                 <>
                   <Alert severity="info" sx={{ mb: 2 }}>
-                    Quét QR hoặc chuyển khoản đúng <b>số tiền</b> và <b>nội dung</b> bên dưới. Hệ
-                    thống tự động cộng tiền sau khi nhận được (khoảng 10-60 giây).
+                    {t('scan_note')}
                   </Alert>
 
                   {topup.qr_code_url ? (
@@ -207,22 +210,22 @@ export default function TopUpView() {
                     />
                   ) : (
                     <Alert severity="warning" sx={{ mb: 2 }}>
-                      Chưa cấu hình tài khoản nhận (SePay) ở trang quản trị.
+                      {t('not_configured')}
                     </Alert>
                   )}
 
                   <Stack spacing={1.25}>
-                    <Row label="Ngân hàng" value={topup.bank_code} onCopy={copy} />
-                    <Row label="Số tài khoản" value={topup.account_number} onCopy={copy} />
-                    <Row label="Số tiền" value={String(topup.amount)} display={fCurrency(topup.amount)} onCopy={copy} />
-                    <Row label="Nội dung CK" value={topup.transfer_content} highlight onCopy={copy} />
+                    <Row label={t('bank')} value={topup.bank_code} onCopy={copy} />
+                    <Row label={t('account_number')} value={topup.account_number} onCopy={copy} />
+                    <Row label={t('amount')} value={String(topup.amount)} display={fCurrency(topup.amount)} onCopy={copy} />
+                    <Row label={t('content')} value={topup.transfer_content} highlight onCopy={copy} />
                   </Stack>
 
                   <Divider sx={{ my: 2, borderStyle: 'dashed' }} />
                   <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
                     <CircularProgress size={16} />
                     <Typography variant="body2" color="text.secondary">
-                      Đang chờ thanh toán...
+                      {t('waiting')}
                     </Typography>
                   </Stack>
                 </>

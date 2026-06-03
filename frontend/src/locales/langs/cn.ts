@@ -92,6 +92,27 @@ const cn = {
     transactions: `交易记录`,
     no_transactions: `暂无交易`,
   },
+  topup_page: {
+    title: `为账户充值`,
+    choose_amount: `选择金额`,
+    other_amount: `自定义金额 (₫)`,
+    min_note: `最低 10.000 ₫`,
+    create_code: `生成充值码`,
+    create_another: `创建另一笔充值`,
+    success: `充值成功`,
+    success_desc: `金额已添加到您的账户。`,
+    scan_note: `扫描二维码或按下方准确金额和备注转账。收到后系统自动入账（约10-60秒）。`,
+    bank: `银行`,
+    account_number: `账号`,
+    amount: `金额`,
+    content: `转账备注`,
+    waiting: `等待付款...`,
+    not_configured: `管理后台未配置收款账户 (SePay)。`,
+    login_required: `请登录后充值`,
+    min_warning: `最低充值 10.000d`,
+    create_failed: `创建充值失败`,
+    copied: `已复制`,
+  },
 };
 
 export default cn;

@@ -92,6 +92,27 @@ const en = {
     transactions: `Transaction history`,
     no_transactions: `No transactions yet`,
   },
+  topup_page: {
+    title: `Top up your account`,
+    choose_amount: `Choose amount`,
+    other_amount: `Custom amount (₫)`,
+    min_note: `Minimum 10,000 ₫`,
+    create_code: `Create payment code`,
+    create_another: `Create another top-up`,
+    success: `Top-up successful`,
+    success_desc: `The amount has been added to your account.`,
+    scan_note: `Scan the QR or transfer the exact amount and content below. Funds are credited automatically once received (about 10-60s).`,
+    bank: `Bank`,
+    account_number: `Account number`,
+    amount: `Amount`,
+    content: `Transfer content`,
+    waiting: `Waiting for payment...`,
+    not_configured: `Receiving account (SePay) is not configured in admin settings.`,
+    login_required: `Please sign in to top up`,
+    min_warning: `Minimum top-up is 10,000d`,
+    create_failed: `Failed to create top-up`,
+    copied: `Copied`,
+  },
 };
 
 export default en;

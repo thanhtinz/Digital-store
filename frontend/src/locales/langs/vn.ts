@@ -92,6 +92,27 @@ const vn = {
     transactions: `Lịch sử giao dịch`,
     no_transactions: `Chưa có giao dịch`,
   },
+  topup_page: {
+    title: `Nạp tiền vào tài khoản`,
+    choose_amount: `Chọn số tiền`,
+    other_amount: `Số tiền khác (₫)`,
+    min_note: `Tối thiểu 10.000 ₫`,
+    create_code: `Tạo mã nạp tiền`,
+    create_another: `Tạo lệnh nạp khác`,
+    success: `Nạp tiền thành công`,
+    success_desc: `Số tiền đã được cộng vào tài khoản.`,
+    scan_note: `Quét QR hoặc chuyển khoản đúng số tiền và nội dung bên dưới. Hệ thống tự động cộng tiền sau khi nhận được (khoảng 10-60 giây).`,
+    bank: `Ngân hàng`,
+    account_number: `Số tài khoản`,
+    amount: `Số tiền`,
+    content: `Nội dung CK`,
+    waiting: `Đang chờ thanh toán...`,
+    not_configured: `Chưa cấu hình tài khoản nhận (SePay) ở trang quản trị.`,
+    login_required: `Vui lòng đăng nhập để nạp tiền`,
+    min_warning: `Số tiền nạp tối thiểu 10.000đ`,
+    create_failed: `Tạo lệnh nạp thất bại`,
+    copied: `Đã sao chép`,
+  },
 };
 
 export default vn;

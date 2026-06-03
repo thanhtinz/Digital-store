@@ -92,6 +92,27 @@ const ar = {
     transactions: `سجل المعاملات`,
     no_transactions: `لا توجد معاملات`,
   },
+  topup_page: {
+    title: `اشحن رصيد حسابك`,
+    choose_amount: `اختر المبلغ`,
+    other_amount: `مبلغ مخصص (₫)`,
+    min_note: `الحد الأدنى 10000 ₫`,
+    create_code: `إنشاء رمز الدفع`,
+    create_another: `إنشاء عملية شحن أخرى`,
+    success: `تم الشحن بنجاح`,
+    success_desc: `تمت إضافة المبلغ إلى حسابك.`,
+    scan_note: `امسح رمز QR أو حوّل نفس المبلغ والمحتوى أدناه. تتم الإضافة تلقائياً عند الاستلام (حوالي 10-60 ثانية).`,
+    bank: `البنك`,
+    account_number: `رقم الحساب`,
+    amount: `المبلغ`,
+    content: `محتوى التحويل`,
+    waiting: `في انتظار الدفع...`,
+    not_configured: `لم يتم إعداد حساب الاستلام (SePay) في لوحة الإدارة.`,
+    login_required: `يرجى تسجيل الدخول للشحن`,
+    min_warning: `الحد الأدنى للشحن 10000`,
+    create_failed: `فشل إنشاء عملية الشحن`,
+    copied: `تم النسخ`,
+  },
 };
 
 export default ar;

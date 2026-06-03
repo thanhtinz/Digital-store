@@ -92,6 +92,27 @@ const fr = {
     transactions: `Historique des transactions`,
     no_transactions: `Aucune transaction`,
   },
+  topup_page: {
+    title: `Recharger votre compte`,
+    choose_amount: `Choisir le montant`,
+    other_amount: `Montant personnalisé (₫)`,
+    min_note: `Minimum 10 000 ₫`,
+    create_code: `Créer le code de paiement`,
+    create_another: `Créer une autre recharge`,
+    success: `Recharge réussie`,
+    success_desc: `Le montant a été ajouté à votre compte.`,
+    scan_note: `Scannez le QR ou virez le montant et le libellé exacts ci-dessous. Le solde est crédité automatiquement à réception (environ 10-60s).`,
+    bank: `Banque`,
+    account_number: `Numéro de compte`,
+    amount: `Montant`,
+    content: `Libellé du virement`,
+    waiting: `En attente du paiement...`,
+    not_configured: `Le compte de réception (SePay) n'est pas configuré dans l'administration.`,
+    login_required: `Veuillez vous connecter pour recharger`,
+    min_warning: `Recharge minimale 10 000d`,
+    create_failed: `Échec de la création de la recharge`,
+    copied: `Copié`,
+  },
 };
 
 export default fr;
