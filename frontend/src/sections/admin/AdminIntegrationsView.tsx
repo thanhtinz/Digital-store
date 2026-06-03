@@ -118,12 +118,14 @@ export default function AdminIntegrationsView() {
         <Tab value="oauth" label="Đăng nhập OAuth" icon={<Iconify icon="solar:key-bold" />} iconPosition="start" />
         <Tab value="payment" label="Thanh toán" icon={<Iconify icon="solar:card-bold" />} iconPosition="start" />
         <Tab value="providers" label="Nguồn cung cấp" icon={<Iconify icon="solar:server-square-bold" />} iconPosition="start" />
+        <Tab value="ai" label="AI" icon={<Iconify icon="solar:magic-stick-3-bold" />} iconPosition="start" />
       </Tabs>
       {tab === 'telegram' && <TelegramTab />}
       {tab === 'email' && <EmailTab />}
       {tab === 'oauth' && <OAuthTab />}
       {tab === 'payment' && <PaymentTab />}
       {tab === 'providers' && <ProvidersTab />}
+      {tab === 'ai' && <AiTab />}
     </Container>
   );
 }
@@ -497,13 +499,103 @@ function PaymentTab() {
 }
 
 // ----------------------------------------------------------------------
+// AI
+
+function AiTab() {
+  const { ok, err } = useSnack();
+  const [cfg, setCfg] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+
+  const load = useCallback(() => {
+    setLoading(true);
+    axiosInstance.get('/api/admin/ai/config').then((r) => setCfg(r.data)).catch(err).finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => load(), [load]);
+
+  const providers: Record<string, any> = cfg?.providers || {};
+  const models: string[] = cfg?.provider ? providers[cfg.provider]?.models || [] : [];
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await axiosInstance.put('/api/admin/ai/config', {
+        provider: cfg.provider,
+        model: cfg.model,
+        custom_base_url: cfg.custom_base_url || '',
+        ...(cfg.api_key && !String(cfg.api_key).includes('•') ? { api_key: cfg.api_key } : {}),
+      });
+      ok('Đã lưu cấu hình AI');
+      load();
+    } catch (e) {
+      err(e);
+    } finally {
+      setSaving(false);
+    }
+  };
+  const test = async () => {
+    setTesting(true);
+    try {
+      const r = await axiosInstance.post('/api/admin/ai/test');
+      ok(`AI phản hồi: ${r.data?.response || 'OK'}`);
+    } catch (e) {
+      err(e, 'Test AI thất bại');
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  if (loading || !cfg) return <Loading />;
+  return (
+    <Card sx={{ maxWidth: 560 }}>
+      <CardHeader title="Cấu hình AI" subheader="Dùng cho nút ✨ tạo mô tả sản phẩm / nội dung" />
+      <CardContent>
+        <Stack spacing={2.5}>
+          <TextField select label="Nhà cung cấp" value={cfg.provider || ''} onChange={(e) => setCfg({ ...cfg, provider: e.target.value, model: providers[e.target.value]?.default_model || '' })}>
+            <MenuItem value="">— Chọn —</MenuItem>
+            {Object.entries(providers).map(([id, p]: [string, any]) => (
+              <MenuItem key={id} value={id}>
+                {p.name}
+              </MenuItem>
+            ))}
+          </TextField>
+          {models.length > 0 ? (
+            <TextField select label="Model" value={cfg.model || ''} onChange={(e) => setCfg({ ...cfg, model: e.target.value })}>
+              {models.map((m) => (
+                <MenuItem key={m} value={m}>
+                  {m}
+                </MenuItem>
+              ))}
+            </TextField>
+          ) : (
+            <TextField label="Model" value={cfg.model || ''} onChange={(e) => setCfg({ ...cfg, model: e.target.value })} />
+          )}
+          <TextField label="API key" placeholder={cfg.has_api_key ? `${cfg.api_key_masked || '••••'} (đã lưu)` : ''} onChange={(e) => setCfg({ ...cfg, api_key: e.target.value })} />
+          <TextField label="Custom base URL (tuỳ chọn)" value={cfg.custom_base_url || ''} onChange={(e) => setCfg({ ...cfg, custom_base_url: e.target.value })} helperText="Dùng khi provider tương thích OpenAI nhưng khác endpoint" />
+          <Stack direction="row" spacing={1.5}>
+            <Button variant="contained" onClick={save} disabled={saving}>
+              Lưu
+            </Button>
+            <Button variant="outlined" onClick={test} disabled={testing || !cfg.has_api_key} startIcon={<Iconify icon="solar:test-tube-bold" />}>
+              Test
+            </Button>
+          </Stack>
+        </Stack>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ----------------------------------------------------------------------
 // API PROVIDERS
 
+// SMM panel được quản lý riêng ở trang SMM (có số dư + import) nên không liệt kê ở đây.
 const PROVIDER_TYPES = [
   { value: 'giftcard', label: 'Thẻ cào / Giftcard' },
   { value: 'topup_game', label: 'Nạp game' },
   { value: 'account_premium', label: 'Tài khoản Premium' },
-  { value: 'smm_panel', label: 'SMM Panel' },
 ];
 const PROVIDER_EMPTY = {
   id: 0,
@@ -528,7 +620,11 @@ function ProvidersTab() {
 
   const load = useCallback(() => {
     setLoading(true);
-    axiosInstance.get('/api/api-providers').then((r) => setRows(r.data || [])).catch(err).finally(() => setLoading(false));
+    axiosInstance
+      .get('/api/api-providers')
+      .then((r) => setRows((r.data || []).filter((p: any) => p.provider_type !== 'smm_panel')))
+      .catch(err)
+      .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => load(), [load]);

@@ -39,7 +39,7 @@ type User = {
   createdAt: string;
 };
 
-const ROLES = ['user', 'staff', 'admin'];
+const ROLES = ['user', 'staff', 'admin', 'superadmin'];
 
 export default function AdminUsersView() {
   const { enqueueSnackbar } = useSnackbar();
