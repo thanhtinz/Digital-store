@@ -3,13 +3,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/router';
 // @mui
 import { alpha } from '@mui/material/styles';
-import { Box, Divider, Typography, Stack, MenuItem } from '@mui/material';
+import { Avatar, Box, Divider, Typography, Stack, MenuItem } from '@mui/material';
 // routes
 import { PATH_DASHBOARD, PATH_AUTH } from '../../../routes/paths';
 // auth
 import { useAuthContext } from '../../../auth/useAuthContext';
 // components
-import { CustomAvatar } from '../../../components/custom-avatar';
+import Iconify from '../../../components/iconify';
 import { useSnackbar } from '../../../components/snackbar';
 import MenuPopover from '../../../components/menu-popover';
 import { IconButtonAnimate } from '../../../components/animate';
@@ -93,7 +93,13 @@ export default function AccountPopover() {
           }),
         }}
       >
-        <CustomAvatar src={avatar} alt={name} name={name} />
+        <Avatar
+          src={avatar || undefined}
+          alt={name}
+          sx={{ width: 36, height: 36, bgcolor: 'primary.lighter', color: 'primary.main' }}
+        >
+          <Iconify icon="solar:user-rounded-bold" width={22} />
+        </Avatar>
       </IconButtonAnimate>
 
       <MenuPopover open={openPopover} onClose={handleClosePopover} sx={{ width: 200, p: 0 }}>

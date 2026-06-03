@@ -13,7 +13,8 @@ import Logo from '../../../components/logo';
 import Iconify from '../../../components/iconify';
 import { useSettingsContext } from '../../../components/settings';
 //
-import Searchbar from './Searchbar';
+import ProductSearchbar from './ProductSearchbar';
+import BalanceButton from './BalanceButton';
 import AccountPopover from './AccountPopover';
 import LanguagePopover from './LanguagePopover';
 import NotificationsPopover from './NotificationsPopover';
@@ -47,7 +48,7 @@ export default function Header({ onOpenNav }: Props) {
         </IconButton>
       )}
 
-      <Searchbar />
+      <ProductSearchbar />
 
       <Stack
         flexGrow={1}
@@ -56,6 +57,8 @@ export default function Header({ onOpenNav }: Props) {
         justifyContent="flex-end"
         spacing={{ xs: 0.5, sm: 1.5 }}
       >
+        <BalanceButton />
+
         <LanguagePopover />
 
         <NotificationsPopover />

@@ -59,8 +59,9 @@ export default function ProfileView() {
   const { translate } = useLocales();
 
   // Số dư hiển thị NGAY từ thông tin user (tránh nhấp nháy "load rồi mất").
+  const initialBalance = Number((user as any)?.balance);
   const [balance, setBalance] = useState<number | null>(
-    typeof (user as any)?.balance === 'number' ? (user as any).balance : null
+    Number.isFinite(initialBalance) ? initialBalance : null
   );
   const [txs, setTxs] = useState<Tx[]>([]);
   const [orders, setOrders] = useState<OrderLite[]>([]);
@@ -79,7 +80,10 @@ export default function ProfileView() {
     // Cập nhật số dư nền (không xoá giá trị cũ nếu lỗi).
     axiosInstance
       .get('/api/balance/me')
-      .then((r) => mounted.current && setBalance(r.data?.balance ?? balance))
+      .then((r) => {
+        const v = Number(r.data?.balance);
+        if (mounted.current && Number.isFinite(v)) setBalance(v);
+      })
       .catch(() => {});
     axiosInstance
       .get('/api/orders/my', { params: { limit: 5 } })
@@ -123,7 +127,7 @@ export default function ProfileView() {
                 color: 'primary.main',
               }}
             >
-              <Iconify icon="solar:user-rounded-bold-duotone" width={56} />
+              <Iconify icon="solar:user-rounded-bold" width={56} />
             </Avatar>
 
             <Typography variant="h6" noWrap sx={{ px: 1 }}>
