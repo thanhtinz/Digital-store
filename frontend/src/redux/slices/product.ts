@@ -197,7 +197,8 @@ export function getProducts(params?: { category?: string; type?: string; limit?:
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.get('/api/products', {
-        params: { limit: 100, ...(params || {}) },
+        // limit cao để trang "tất cả sản phẩm" (gian hàng) lấy hết.
+        params: { limit: 500, ...(params || {}) },
       });
       dispatch(slice.actions.getProductsSuccess(response.data.products));
     } catch (error) {
@@ -217,6 +218,43 @@ export function getProduct(name: string) {
     } catch (error) {
       console.error(error);
       dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+// ----------------------------------------------------------------------
+// Đồng bộ giỏ hàng với backend (đa thiết bị). Chỉ chạy khi đã đăng nhập.
+
+export function getServerCart() {
+  return async (dispatch: Dispatch) => {
+    try {
+      const res = await axios.get('/api/cart');
+      const items = (res.data?.items || []).map((it: any) => ({
+        colors: [],
+        size: '',
+        ...it,
+      }));
+      if (items.length) dispatch(slice.actions.getCart(items));
+    } catch (error) {
+      /* bỏ qua nếu chưa đăng nhập */
+    }
+  };
+}
+
+export function syncServerCart(cart: any[]) {
+  return async () => {
+    try {
+      await axios.post('/api/cart/sync', {
+        items: (cart || [])
+          .map((c) => ({
+            package_id: Number(c.packageId),
+            quantity: c.quantity || 1,
+            custom_fields: c.customFields || undefined,
+          }))
+          .filter((x) => Number.isFinite(x.package_id) && x.package_id > 0),
+      });
+    } catch (error) {
+      /* bỏ qua */
     }
   };
 }

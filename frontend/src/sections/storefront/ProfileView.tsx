@@ -91,79 +91,99 @@ export default function ProfileView() {
 
   return (
     <Container sx={{ pb: 6 }}>
-      <Typography variant="h4" sx={{ my: 3 }}>
-        Tài khoản của tôi
-      </Typography>
+      {/* COVER HEADER */}
+      <Card
+        sx={{
+          mt: 3,
+          mb: 3,
+          p: { xs: 3, md: 4 },
+          color: 'common.white',
+          position: 'relative',
+          overflow: 'hidden',
+          background: (t) =>
+            `linear-gradient(135deg, ${t.palette.primary.dark} 0%, ${t.palette.primary.main} 100%)`,
+        }}
+      >
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          alignItems={{ xs: 'flex-start', sm: 'center' }}
+          justifyContent="space-between"
+          spacing={3}
+        >
+          <Stack direction="row" spacing={2.5} alignItems="center">
+            <Avatar
+              src={avatar}
+              alt={name}
+              sx={{ width: 80, height: 80, border: '3px solid', borderColor: 'common.white' }}
+            >
+              {name?.[0]?.toUpperCase()}
+            </Avatar>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="h5" noWrap>
+                {name}
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.85 }} noWrap>
+                {email}
+              </Typography>
+              {provider && (
+                <Label variant="filled" color="default" sx={{ mt: 0.75, color: 'text.primary' }}>
+                  {provider}
+                </Label>
+              )}
+            </Box>
+          </Stack>
 
-      <Grid container spacing={3}>
-        {/* CỘT TRÁI */}
-        <Grid item xs={12} md={5}>
-          {/* Thông tin hồ sơ */}
-          <Card sx={{ p: 3, mb: 3 }}>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Avatar src={avatar} alt={name} sx={{ width: 64, height: 64 }}>
-                {name?.[0]?.toUpperCase()}
-              </Avatar>
-              <Box sx={{ minWidth: 0 }}>
-                <Typography variant="h6" noWrap>
-                  {name}
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }} noWrap>
-                  {email}
-                </Typography>
-                {provider && (
-                  <Label variant="soft" color="info" sx={{ mt: 0.5 }}>
-                    {provider}
-                  </Label>
-                )}
-              </Box>
-            </Stack>
-          </Card>
-
-          {/* Ví / Số dư */}
-          <Card
+          <Box
             sx={{
-              p: 3,
-              mb: 3,
-              color: 'common.white',
-              background: (t) => `linear-gradient(135deg, ${t.palette.grey[900]} 0%, ${t.palette.grey[800]} 100%)`,
+              p: 2,
+              borderRadius: 2,
+              minWidth: 220,
+              bgcolor: 'rgba(255,255,255,0.16)',
+              backdropFilter: 'blur(6px)',
             }}
           >
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-              <Box>
-                <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                  Số dư khả dụng
-                </Typography>
-                <Typography variant="h3" sx={{ mt: 0.5 }}>
-                  {balance == null ? '…' : fCurrency(balance)}
-                </Typography>
-              </Box>
-              <Iconify icon="solar:wallet-bold-duotone" width={40} />
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Iconify icon="solar:wallet-bold-duotone" width={24} />
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                Số dư khả dụng
+              </Typography>
             </Stack>
+            <Typography variant="h4" sx={{ mt: 0.5 }}>
+              {balance == null ? '…' : fCurrency(balance)}
+            </Typography>
             <Button
               fullWidth
+              size="small"
               variant="contained"
-              color="primary"
+              color="inherit"
               component={NextLink}
               href={PATH_DASHBOARD.chat.root}
-              sx={{ mt: 2 }}
+              sx={{ mt: 1, color: 'primary.main' }}
             >
               Nạp tiền
             </Button>
-          </Card>
+          </Box>
+        </Stack>
+      </Card>
 
-          {/* Đổi mật khẩu */}
+      <Grid container spacing={3}>
+        {/* CỘT TRÁI: Bảo mật */}
+        <Grid item xs={12} md={5}>
           <AccountChangePassword />
         </Grid>
 
-        {/* CỘT PHẢI */}
+        {/* CỘT PHẢI: Đơn + Giao dịch */}
         <Grid item xs={12} md={7}>
-          {/* Đơn gần đây */}
           <Card sx={{ p: 3, mb: 3 }}>
             <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
               <Typography variant="subtitle1">Đơn hàng gần đây</Typography>
-              <Button component={NextLink} href={PATH_DASHBOARD.orders.root} size="small">
-                Xem tất cả
+              <Button
+                component={NextLink}
+                href={PATH_DASHBOARD.orders.root}
+                size="small"
+                endIcon={<Iconify icon="eva:arrow-ios-forward-fill" />}
+              >
+                Tất cả
               </Button>
             </Stack>
             {orders.length === 0 ? (
@@ -171,7 +191,7 @@ export default function ProfileView() {
                 Chưa có đơn hàng.
               </Typography>
             ) : (
-              <Stack spacing={1.5}>
+              <Stack divider={<Divider sx={{ borderStyle: 'dashed' }} />} spacing={1.5}>
                 {orders.map((o) => (
                   <Stack
                     key={o.id}
@@ -200,7 +220,6 @@ export default function ProfileView() {
             )}
           </Card>
 
-          {/* Lịch sử giao dịch */}
           <Card sx={{ p: 3 }}>
             <Typography variant="subtitle1" sx={{ mb: 2 }}>
               Lịch sử giao dịch

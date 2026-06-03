@@ -15,6 +15,7 @@ import paymentRouter from './routes/payment';
 import ordersRouter from './routes/orders';
 import productsRouter from './routes/products';
 import balanceRouter from './routes/balance';
+import cartRouter from './routes/cart';
 import adminRouter from './routes/admin';
 import miscRouter from './routes/misc';
 import smmRouter from './routes/smm';
@@ -122,6 +123,7 @@ app.use('/api/payment', paymentRouter);
 app.use('/api/orders', ordersRouter);
 app.use('/api/products', productsRouter);
 app.use('/api/balance', balanceRouter);
+app.use('/api/cart', cartRouter);
 app.use('/api', adminRouter);   // categories, banners, settings, admin/*
 app.use('/api', miscRouter);    // search, blog, reviews, wishlist, tickets
 app.use('/api/smm', smmRouter); // SMM panel: catalog, orders, admin

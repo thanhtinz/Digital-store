@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Box } from '@mui/material';
 // hooks
 import useResponsive from '../../hooks/useResponsive';
+import useCartSync from '../../hooks/useCartSync';
 // auth
 import AuthGuard from '../../auth/AuthGuard';
 // components
@@ -25,6 +26,8 @@ type Props = {
 
 export default function DashboardLayout({ children, disableGuard = false }: Props) {
   const { themeLayout } = useSettingsContext();
+
+  useCartSync();
 
   const isDesktop = useResponsive('up', 'lg');
 

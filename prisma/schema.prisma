@@ -253,6 +253,19 @@ model Banner {
   @@map("banners")
 }
 
+model CartItem {
+  id           Int      @id @default(autoincrement())
+  userId       String   @map("user_id") @db.VarChar(255)
+  packageId    Int      @map("package_id")
+  quantity     Int      @default(1)
+  customFields Json?    @map("custom_fields")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, packageId])
+  @@index([userId])
+  @@map("cart_items")
+}
+
 model User {
   id              Int      @id @default(autoincrement())
   email           String   @unique @db.VarChar(255)
