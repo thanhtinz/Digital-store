@@ -35,6 +35,7 @@ import Label from '../../components/label';
 import Iconify from '../../components/iconify';
 import ConfirmDialog from '../../components/confirm-dialog';
 import { useSnackbar } from '../../components/snackbar';
+import ImageUploadField from './ImageUploadField';
 
 // ----------------------------------------------------------------------
 
@@ -271,11 +272,7 @@ export default function AdminProductsView() {
                   </MenuItem>
                 ))}
               </TextField>
-              <TextField
-                label="Ảnh (URL)"
-                value={form.image_url}
-                onChange={(e) => setForm({ ...form, image_url: e.target.value })}
-              />
+              <ImageUploadField label="Ảnh sản phẩm" value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })} />
               <Stack spacing={1}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Typography variant="caption" sx={{ color: 'text.secondary' }}>

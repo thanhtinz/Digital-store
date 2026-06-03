@@ -39,7 +39,7 @@ export default function WishlistView() {
     axiosInstance
       .get('/api/wishlist')
       .then((r) => setProducts(Array.isArray(r.data) ? r.data : []))
-      .catch((e) => enqueueSnackbar(e?.detail || 'Không tải được danh sách', { variant: 'error' }))
+      .catch((e) => enqueueSnackbar(e?.detail || t('load_failed'), { variant: 'error' }))
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);

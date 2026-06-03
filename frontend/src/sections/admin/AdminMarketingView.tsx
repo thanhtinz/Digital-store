@@ -35,6 +35,7 @@ import Image from '../../components/image';
 import Iconify from '../../components/iconify';
 import ConfirmDialog from '../../components/confirm-dialog';
 import { useSnackbar } from '../../components/snackbar';
+import ImageUploadField from './ImageUploadField';
 
 // ----------------------------------------------------------------------
 
@@ -193,8 +194,7 @@ function BannersTab() {
           {form && (
             <Stack spacing={2.5} sx={{ mt: 1 }}>
               <TextField label="Tiêu đề" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-              <TextField label="Ảnh (URL)" value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} />
-              {form.image_url && <Image src={form.image_url} sx={{ borderRadius: 1, height: 120 }} />}
+              <ImageUploadField label="Ảnh banner" value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })} />
               <TextField label="Link khi bấm" value={form.link} onChange={(e) => setForm({ ...form, link: e.target.value })} />
               <TextField select label="Loại" value={form.banner_type} onChange={(e) => setForm({ ...form, banner_type: e.target.value })}>
                 {BANNER_TYPES.map((x) => (

@@ -366,6 +366,9 @@ const en = {
     status: `Status`,
     date: `Date`,
     no_referrals: `No referrals yet`,
+    load_failed: `Failed to load data`,
+    register_failed: `Registration failed`,
+    withdraw_failed: `Withdrawal failed`,
   },
   card_charge_page: {
     title: `Card top-up`,
@@ -386,6 +389,8 @@ const en = {
     declared: `Denomination`,
     credited: `Credited`,
     created: `Time`,
+    input_required: `Enter card code and serial`,
+    submit_failed: `Card submission failed`,
   },
   wishlist_page: {
     title: `Wishlist`,
@@ -393,6 +398,7 @@ const en = {
     empty_desc: `You haven't added any products to your wishlist.`,
     login_required: `Please sign in to view your wishlist.`,
     browse: `Browse products`,
+    load_failed: `Failed to load list`,
   },
   product_page: {
     package: `Package`,

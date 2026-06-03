@@ -366,6 +366,9 @@ const ar = {
     status: `الحالة`,
     date: `التاريخ`,
     no_referrals: `لا إحالات بعد`,
+    load_failed: `فشل تحميل البيانات`,
+    register_failed: `فشل التسجيل`,
+    withdraw_failed: `فشل السحب`,
   },
   card_charge_page: {
     title: `شحن بطاقة`,
@@ -386,6 +389,8 @@ const ar = {
     declared: `الفئة`,
     credited: `تم الإضافة`,
     created: `الوقت`,
+    input_required: `أدخل رمز البطاقة والرقم التسلسلي`,
+    submit_failed: `فشل إرسال البطاقة`,
   },
   wishlist_page: {
     title: `المفضلة`,
@@ -393,6 +398,7 @@ const ar = {
     empty_desc: `لم تقم بإضافة أي منتجات إلى المفضلة.`,
     login_required: `يرجى تسجيل الدخول لعرض المفضلة.`,
     browse: `تصفح المنتجات`,
+    load_failed: `فشل تحميل القائمة`,
   },
   product_page: {
     package: `الباقة`,

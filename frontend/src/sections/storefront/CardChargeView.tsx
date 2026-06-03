@@ -106,7 +106,7 @@ export function CardChargePanel() {
 
   const submit = async () => {
     if (!code.trim() || !serial.trim()) {
-      enqueueSnackbar('Nhập mã thẻ và serial', { variant: 'warning' });
+      enqueueSnackbar(t('input_required'), { variant: 'warning' });
       return;
     }
     setSubmitting(true);
@@ -117,7 +117,7 @@ export function CardChargePanel() {
       setSerial('');
       loadHistory();
     } catch (e: any) {
-      enqueueSnackbar(e?.detail || e?.message || 'Gửi thẻ thất bại', { variant: 'error' });
+      enqueueSnackbar(e?.detail || e?.message || t('submit_failed'), { variant: 'error' });
     } finally {
       setSubmitting(false);
     }

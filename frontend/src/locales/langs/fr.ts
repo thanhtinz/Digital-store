@@ -366,6 +366,9 @@ const fr = {
     status: `Statut`,
     date: `Date`,
     no_referrals: `Aucun parrainage`,
+    load_failed: `Échec du chargement`,
+    register_failed: `Échec de l'inscription`,
+    withdraw_failed: `Échec du retrait`,
   },
   card_charge_page: {
     title: `Recharge carte`,
@@ -386,6 +389,8 @@ const fr = {
     declared: `Valeur`,
     credited: `Crédité`,
     created: `Heure`,
+    input_required: `Saisissez le code et le série`,
+    submit_failed: `Échec de l'envoi de la carte`,
   },
   wishlist_page: {
     title: `Mes favoris`,
@@ -393,6 +398,7 @@ const fr = {
     empty_desc: `Vous n'avez ajouté aucun produit à vos favoris.`,
     login_required: `Connectez-vous pour voir vos favoris.`,
     browse: `Parcourir les produits`,
+    load_failed: `Échec du chargement`,
   },
   product_page: {
     package: `Forfait`,

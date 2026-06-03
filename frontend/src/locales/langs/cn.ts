@@ -366,6 +366,9 @@ const cn = {
     status: `状态`,
     date: `日期`,
     no_referrals: `暂无推广`,
+    load_failed: `加载数据失败`,
+    register_failed: `注册失败`,
+    withdraw_failed: `提现失败`,
   },
   card_charge_page: {
     title: `充值卡`,
@@ -386,6 +389,8 @@ const cn = {
     declared: `面值`,
     credited: `已入账`,
     created: `时间`,
+    input_required: `请输入卡号和序列号`,
+    submit_failed: `提交卡失败`,
   },
   wishlist_page: {
     title: `我的收藏`,
@@ -393,6 +398,7 @@ const cn = {
     empty_desc: `您还没有收藏任何商品。`,
     login_required: `请登录以查看收藏。`,
     browse: `浏览商品`,
+    load_failed: `加载列表失败`,
   },
   product_page: {
     package: `套餐`,

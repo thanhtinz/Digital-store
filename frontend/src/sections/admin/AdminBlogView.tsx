@@ -33,6 +33,7 @@ import Label from '../../components/label';
 import Image from '../../components/image';
 import Iconify from '../../components/iconify';
 import ConfirmDialog from '../../components/confirm-dialog';
+import ImageUploadField from './ImageUploadField';
 import { useSnackbar } from '../../components/snackbar';
 
 // ----------------------------------------------------------------------
@@ -238,8 +239,7 @@ function PostsTab() {
                   </MenuItem>
                 ))}
               </TextField>
-              <TextField label="Ảnh đại diện (URL)" value={form.thumbnail_url} onChange={(e) => setForm({ ...form, thumbnail_url: e.target.value })} />
-              {form.thumbnail_url && <Image src={form.thumbnail_url} sx={{ borderRadius: 1, height: 140 }} />}
+              <ImageUploadField label="Ảnh đại diện" value={form.thumbnail_url} onChange={(url) => setForm({ ...form, thumbnail_url: url })} height={140} />
               <TextField label="Tóm tắt" multiline rows={2} value={form.excerpt} onChange={(e) => setForm({ ...form, excerpt: e.target.value })} />
               <TextField label="Nội dung" multiline rows={8} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} />
               <TextField label="Meta title (SEO)" value={form.meta_title} onChange={(e) => setForm({ ...form, meta_title: e.target.value })} />

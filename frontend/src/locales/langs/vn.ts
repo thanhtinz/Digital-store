@@ -366,6 +366,9 @@ const vn = {
     status: `Trạng thái`,
     date: `Ngày`,
     no_referrals: `Chưa có giới thiệu nào`,
+    load_failed: `Lỗi tải dữ liệu`,
+    register_failed: `Đăng ký thất bại`,
+    withdraw_failed: `Rút thất bại`,
   },
   card_charge_page: {
     title: `Nạp thẻ cào`,
@@ -386,6 +389,8 @@ const vn = {
     declared: `Mệnh giá`,
     credited: `Đã cộng`,
     created: `Thời gian`,
+    input_required: `Nhập mã thẻ và serial`,
+    submit_failed: `Gửi thẻ thất bại`,
   },
   wishlist_page: {
     title: `Sản phẩm yêu thích`,
@@ -393,6 +398,7 @@ const vn = {
     empty_desc: `Bạn chưa thêm sản phẩm nào vào danh sách yêu thích.`,
     login_required: `Vui lòng đăng nhập để xem danh sách yêu thích.`,
     browse: `Khám phá sản phẩm`,
+    load_failed: `Không tải được danh sách`,
   },
   product_page: {
     package: `Gói`,

@@ -72,7 +72,7 @@ export default function AffiliateView() {
     axiosInstance
       .get('/api/affiliate/me')
       .then((r) => setData(r.data))
-      .catch((e) => enqueueSnackbar(e?.detail || 'Lỗi tải dữ liệu', { variant: 'error' }))
+      .catch((e) => enqueueSnackbar(e?.detail || t('load_failed'), { variant: 'error' }))
       .finally(() => setLoading(false));
   };
 
@@ -86,7 +86,7 @@ export default function AffiliateView() {
       enqueueSnackbar(t('registered_ok'));
       load();
     } catch (e: any) {
-      enqueueSnackbar(e?.detail || 'Đăng ký thất bại', { variant: 'error' });
+      enqueueSnackbar(e?.detail || t('register_failed'), { variant: 'error' });
     } finally {
       setBusy(false);
     }
@@ -105,7 +105,7 @@ export default function AffiliateView() {
       setAmount('');
       load();
     } catch (e: any) {
-      enqueueSnackbar(e?.detail || 'Rút thất bại', { variant: 'error' });
+      enqueueSnackbar(e?.detail || t('withdraw_failed'), { variant: 'error' });
     } finally {
       setBusy(false);
     }
