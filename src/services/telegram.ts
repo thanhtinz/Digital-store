@@ -9,7 +9,6 @@
 import axios from 'axios';
 import prisma from '../db';
 import { money } from './orders';
-import { notifyDiscord } from './discord';
 
 const TG_API = 'https://api.telegram.org';
 
@@ -52,8 +51,6 @@ export async function notify(type: string, text: string): Promise<void> {
       return types.includes(type);
     });
     await Promise.all(targets.map((b: any) => sendToBot(b.botToken, b.chatId, text)));
-    // Gửi song song sang Discord nếu đã bật (bỏ thẻ HTML cho dễ đọc).
-    await notifyDiscord(text.replace(/<[^>]+>/g, ''));
   } catch { /* không chặn luồng chính */ }
 }
 

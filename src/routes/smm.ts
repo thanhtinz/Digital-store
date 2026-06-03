@@ -9,7 +9,7 @@
 import { Router, Request, Response } from 'express';
 import slugify from 'slugify';
 import prisma from '../db';
-import { requireUser, requireAdmin } from '../middleware/auth';
+import { requireUser, requireAdmin, requireStaffOrAdmin } from '../middleware/auth';
 import { money, genOrderCode } from '../services/orders';
 import { getProvider } from '../services/providers';
 import { notifySmmOrder } from '../services/telegram';
@@ -432,12 +432,12 @@ router.get('/warranty', requireUser, async (req: Request, res: Response) => {
 // ADMIN — PLATFORMS
 // ════════════════════════════════════════════════════
 
-router.get('/platforms', requireAdmin, async (_req: Request, res: Response) => {
+router.get('/platforms', requireStaffOrAdmin, async (_req: Request, res: Response) => {
   const items = await prisma.smmPlatform.findMany({ orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] });
   res.json(items);
 });
 
-router.post('/platforms', requireAdmin, async (req: Request, res: Response) => {
+router.post('/platforms', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const { name, icon_url, sort_order, is_active } = req.body;
     const slug = slugify(name, { lower: true, strict: true });
@@ -450,7 +450,7 @@ router.post('/platforms', requireAdmin, async (req: Request, res: Response) => {
   }
 });
 
-router.put('/platforms/:pid', requireAdmin, async (req: Request, res: Response) => {
+router.put('/platforms/:pid', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const { name, icon_url, sort_order, is_active } = req.body;
     const item = await prisma.smmPlatform.update({
@@ -468,7 +468,7 @@ router.put('/platforms/:pid', requireAdmin, async (req: Request, res: Response) 
   }
 });
 
-router.delete('/platforms/:pid', requireAdmin, async (req: Request, res: Response) => {
+router.delete('/platforms/:pid', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     await prisma.smmPlatform.delete({ where: { id: parseInt(req.params.pid) } });
     res.json({ message: 'Đã xóa platform' });
@@ -481,7 +481,7 @@ router.delete('/platforms/:pid', requireAdmin, async (req: Request, res: Respons
 // ADMIN — CATEGORIES
 // ════════════════════════════════════════════════════
 
-router.get('/categories/all', requireAdmin, async (_req: Request, res: Response) => {
+router.get('/categories/all', requireStaffOrAdmin, async (_req: Request, res: Response) => {
   const items = await prisma.smmCategory.findMany({
     orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
     include: { platform: true },
@@ -489,7 +489,7 @@ router.get('/categories/all', requireAdmin, async (_req: Request, res: Response)
   res.json(items);
 });
 
-router.get('/platforms/:pid/categories', requireAdmin, async (req: Request, res: Response) => {
+router.get('/platforms/:pid/categories', requireStaffOrAdmin, async (req: Request, res: Response) => {
   const items = await prisma.smmCategory.findMany({
     where: { platformId: parseInt(req.params.pid) },
     orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
@@ -497,7 +497,7 @@ router.get('/platforms/:pid/categories', requireAdmin, async (req: Request, res:
   res.json(items);
 });
 
-router.post('/platforms/:pid/categories', requireAdmin, async (req: Request, res: Response) => {
+router.post('/platforms/:pid/categories', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const { name, sort_order, is_active } = req.body;
     const slug = slugify(`${name}-${Date.now()}`, { lower: true, strict: true });
@@ -510,7 +510,7 @@ router.post('/platforms/:pid/categories', requireAdmin, async (req: Request, res
   }
 });
 
-router.put('/categories/:cid', requireAdmin, async (req: Request, res: Response) => {
+router.put('/categories/:cid', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const { name, sort_order, is_active } = req.body;
     const item = await prisma.smmCategory.update({
@@ -523,7 +523,7 @@ router.put('/categories/:cid', requireAdmin, async (req: Request, res: Response)
   }
 });
 
-router.delete('/categories/:cid', requireAdmin, async (req: Request, res: Response) => {
+router.delete('/categories/:cid', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     await prisma.smmCategory.delete({ where: { id: parseInt(req.params.cid) } });
     res.json({ message: 'Đã xóa danh mục' });
@@ -536,7 +536,7 @@ router.delete('/categories/:cid', requireAdmin, async (req: Request, res: Respon
 // ADMIN — SERVICES
 // ════════════════════════════════════════════════════
 
-router.get('/categories/:cid/services', requireAdmin, async (req: Request, res: Response) => {
+router.get('/categories/:cid/services', requireStaffOrAdmin, async (req: Request, res: Response) => {
   const items = await prisma.smmService.findMany({
     where: { categoryId: parseInt(req.params.cid) },
     orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
@@ -544,7 +544,7 @@ router.get('/categories/:cid/services', requireAdmin, async (req: Request, res: 
   res.json(items);
 });
 
-router.get('/services/all', requireAdmin, async (req: Request, res: Response) => {
+router.get('/services/all', requireStaffOrAdmin, async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
   const [total, items] = await Promise.all([
@@ -559,7 +559,7 @@ router.get('/services/all', requireAdmin, async (req: Request, res: Response) =>
   res.json({ total, page, items });
 });
 
-router.post('/categories/:cid/services', requireAdmin, async (req: Request, res: Response) => {
+router.post('/categories/:cid/services', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const b = req.body;
     const item = await prisma.smmService.create({
@@ -587,7 +587,7 @@ router.post('/categories/:cid/services', requireAdmin, async (req: Request, res:
   }
 });
 
-router.put('/services/:sid', requireAdmin, async (req: Request, res: Response) => {
+router.put('/services/:sid', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const b = req.body;
     const item = await prisma.smmService.update({
@@ -611,7 +611,7 @@ router.put('/services/:sid', requireAdmin, async (req: Request, res: Response) =
   }
 });
 
-router.patch('/services/:sid/active', requireAdmin, async (req: Request, res: Response) => {
+router.patch('/services/:sid/active', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const item = await prisma.smmService.update({
       where: { id: parseInt(req.params.sid) },
@@ -623,7 +623,7 @@ router.patch('/services/:sid/active', requireAdmin, async (req: Request, res: Re
   }
 });
 
-router.delete('/services/:sid', requireAdmin, async (req: Request, res: Response) => {
+router.delete('/services/:sid', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     await prisma.smmService.delete({ where: { id: parseInt(req.params.sid) } });
     res.json({ message: 'Đã xóa dịch vụ' });
@@ -636,7 +636,7 @@ router.delete('/services/:sid', requireAdmin, async (req: Request, res: Response
 // ADMIN — PROVIDERS (API nhà cung cấp)
 // ════════════════════════════════════════════════════
 
-router.get('/providers', requireAdmin, async (_req: Request, res: Response) => {
+router.get('/providers', requireStaffOrAdmin, async (_req: Request, res: Response) => {
   const items = await prisma.apiProvider.findMany({
     where: { providerType: 'smm_panel' },
     orderBy: { id: 'desc' },
@@ -645,7 +645,7 @@ router.get('/providers', requireAdmin, async (_req: Request, res: Response) => {
   res.json(items.map((p: any) => ({ ...p, apiKey: p.apiKey ? '••••••••' : '' })));
 });
 
-router.post('/providers', requireAdmin, async (req: Request, res: Response) => {
+router.post('/providers', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const { name, base_url, api_key } = req.body;
     const item = await prisma.apiProvider.create({
@@ -657,7 +657,7 @@ router.post('/providers', requireAdmin, async (req: Request, res: Response) => {
   }
 });
 
-router.get('/providers/:pid/balance', requireAdmin, async (req: Request, res: Response) => {
+router.get('/providers/:pid/balance', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const provider = await prisma.apiProvider.findUnique({ where: { id: parseInt(req.params.pid) } });
     if (!provider) { res.status(404).json({ detail: 'Provider not found' }); return; }
@@ -670,7 +670,7 @@ router.get('/providers/:pid/balance', requireAdmin, async (req: Request, res: Re
 });
 
 /** Lấy danh sách dịch vụ từ panel của provider (để admin chọn import) */
-router.get('/providers/:pid/remote-services', requireAdmin, async (req: Request, res: Response) => {
+router.get('/providers/:pid/remote-services', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const provider = await prisma.apiProvider.findUnique({ where: { id: parseInt(req.params.pid) } });
     if (!provider) { res.status(404).json({ detail: 'Provider not found' }); return; }
@@ -686,7 +686,7 @@ router.get('/providers/:pid/remote-services', requireAdmin, async (req: Request,
 // ADMIN — ORDERS
 // ════════════════════════════════════════════════════
 
-router.get('/admin/orders', requireAdmin, async (req: Request, res: Response) => {
+router.get('/admin/orders', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
@@ -725,7 +725,7 @@ router.get('/admin/orders', requireAdmin, async (req: Request, res: Response) =>
   }
 });
 
-router.put('/admin/orders/:oid/status', requireAdmin, async (req: Request, res: Response) => {
+router.put('/admin/orders/:oid/status', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const { status, start_count, remains, admin_notes } = req.body;
     const item = await prisma.smmOrder.update({
@@ -744,7 +744,7 @@ router.put('/admin/orders/:oid/status', requireAdmin, async (req: Request, res: 
 });
 
 /** Đồng bộ trạng thái 1 đơn từ provider */
-router.post('/admin/orders/:oid/check', requireAdmin, async (req: Request, res: Response) => {
+router.post('/admin/orders/:oid/check', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const order = await prisma.smmOrder.findUnique({
       where: { id: parseInt(req.params.oid) },
@@ -804,7 +804,7 @@ async function refundSmmOrder(orderId: number, userId: number, amount: number, r
 // ════════════════════════════════════════════════════
 
 /** Sửa provider; nếu đổi price_markup thì tính lại rate bán theo cost_rate. */
-router.put('/providers/:pid', requireAdmin, async (req: Request, res: Response) => {
+router.put('/providers/:pid', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const pid = parseInt(req.params.pid);
     const prov: any = await prisma.apiProvider.findFirst({
@@ -844,7 +844,7 @@ router.put('/providers/:pid', requireAdmin, async (req: Request, res: Response) 
   }
 });
 
-router.delete('/providers/:pid', requireAdmin, async (req: Request, res: Response) => {
+router.delete('/providers/:pid', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const pid = parseInt(req.params.pid);
     const prov = await prisma.apiProvider.findFirst({ where: { id: pid, providerType: 'smm_panel' } });
@@ -857,7 +857,7 @@ router.delete('/providers/:pid', requireAdmin, async (req: Request, res: Respons
 });
 
 /** Xoá nhiều dịch vụ. */
-router.post('/services/bulk-delete', requireAdmin, async (req: Request, res: Response) => {
+router.post('/services/bulk-delete', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const ids = (req.body.ids || []).map((x: any) => parseInt(x)).filter((n: number) => Number.isFinite(n));
     if (!ids.length) { res.status(400).json({ detail: 'ids required' }); return; }
@@ -869,7 +869,7 @@ router.post('/services/bulk-delete', requireAdmin, async (req: Request, res: Res
 });
 
 /** Làm tròn giá bán theo bội số `unit` (mặc định 1000), quy tắc HALF_UP. */
-router.post('/services/round-prices', requireAdmin, async (req: Request, res: Response) => {
+router.post('/services/round-prices', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const ids = (req.body.ids || []).map((x: any) => parseInt(x)).filter((n: number) => Number.isFinite(n));
     const unit = Math.max(1, parseInt(req.body.unit) || 1000);
@@ -891,7 +891,7 @@ router.post('/services/round-prices', requireAdmin, async (req: Request, res: Re
 });
 
 /** Xoá 1 đơn SMM (admin). */
-router.delete('/admin/orders/:oid', requireAdmin, async (req: Request, res: Response) => {
+router.delete('/admin/orders/:oid', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const oid = parseInt(req.params.oid);
     const order = await prisma.smmOrder.findUnique({ where: { id: oid } });
@@ -904,7 +904,7 @@ router.delete('/admin/orders/:oid', requireAdmin, async (req: Request, res: Resp
 });
 
 /** Đồng bộ trạng thái TẤT CẢ đơn API đang chạy từ provider. */
-router.post('/admin/orders/check-all', requireAdmin, async (_req: Request, res: Response) => {
+router.post('/admin/orders/check-all', requireStaffOrAdmin, async (_req: Request, res: Response) => {
   try {
     const FINAL = ['completed', 'failed', 'canceled', 'cancelled', 'partial', 'refunded'];
     const orders = await prisma.smmOrder.findMany({
@@ -951,7 +951,7 @@ router.post('/admin/orders/check-all', requireAdmin, async (_req: Request, res: 
 // ════════════════════════════════════════════════════
 
 /** Xem trước các chuyên mục provider cung cấp + đánh dấu đã tồn tại trên platform. */
-router.get('/providers/:pid/remote-categories', requireAdmin, async (req: Request, res: Response) => {
+router.get('/providers/:pid/remote-categories', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const pid = parseInt(req.params.pid);
     const platformId = parseInt(req.query.platform_id as string) || 0;
@@ -993,7 +993,7 @@ router.get('/providers/:pid/remote-categories', requireAdmin, async (req: Reques
 });
 
 /** Tạo các chuyên mục local từ provider (không kéo dịch vụ). */
-router.post('/categories/sync', requireAdmin, async (req: Request, res: Response) => {
+router.post('/categories/sync', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const { provider_id, platform_id, category_names } = req.body;
     const provider = await prisma.apiProvider.findFirst({
@@ -1033,7 +1033,7 @@ router.post('/categories/sync', requireAdmin, async (req: Request, res: Response
 });
 
 /** Import các dịch vụ được chọn vào 1 chuyên mục local (áp tỷ giá + markup từ settings). */
-router.post('/services/sync-selected', requireAdmin, async (req: Request, res: Response) => {
+router.post('/services/sync-selected', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const { provider_id, target_category_id, external_service_ids } = req.body;
     const provider: any = await prisma.apiProvider.findFirst({

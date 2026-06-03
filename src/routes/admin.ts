@@ -84,7 +84,7 @@ router.patch('/categories/:id', requireStaffOrAdmin, async (req: Request, res: R
   }
 });
 
-router.delete('/categories/:id', requireAdmin, async (req: Request, res: Response) => {
+router.delete('/categories/:id', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     await prisma.category.delete({ where: { id: parseInt(req.params.id) } });
     res.json({ message: 'Đã xóa danh mục' });
@@ -133,7 +133,7 @@ router.patch(['/banners/:id', '/banners/admin/:id'], requireStaffOrAdmin, async 
   }
 });
 
-router.delete(['/banners/:id', '/banners/admin/:id'], requireAdmin, async (req: Request, res: Response) => {
+router.delete(['/banners/:id', '/banners/admin/:id'], requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     await prisma.banner.delete({ where: { id: parseInt(req.params.id) } });
     res.json({ message: 'Đã xóa banner' });
@@ -442,7 +442,7 @@ router.patch(['/admin/announcements/:id', '/announcements/admin/:id'], requireSt
   }
 });
 
-router.delete(['/admin/announcements/:id', '/announcements/admin/:id'], requireAdmin, async (req: Request, res: Response) => {
+router.delete(['/admin/announcements/:id', '/announcements/admin/:id'], requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     await prisma.announcement.delete({ where: { id: parseInt(req.params.id) } });
     res.json({ message: 'Đã xóa' });
@@ -460,7 +460,7 @@ router.get(['/admin/gift-codes', '/gift-codes/admin/list'], requireStaffOrAdmin,
   res.json(codes);
 });
 
-router.post(['/admin/gift-codes', '/gift-codes/admin'], requireAdmin, async (req: Request, res: Response) => {
+router.post(['/admin/gift-codes', '/gift-codes/admin'], requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const { code, discount_type, discount_value, min_order, max_discount, usage_limit, per_user_limit, expires_at, is_active, is_public, description } = req.body;
     const item = await prisma.giftCode.create({
@@ -478,7 +478,7 @@ router.post(['/admin/gift-codes', '/gift-codes/admin'], requireAdmin, async (req
   }
 });
 
-router.delete(['/admin/gift-codes/:id', '/gift-codes/admin/:id'], requireAdmin, async (req: Request, res: Response) => {
+router.delete(['/admin/gift-codes/:id', '/gift-codes/admin/:id'], requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     await prisma.giftCode.delete({ where: { id: parseInt(req.params.id) } });
     res.json({ message: 'Đã xóa mã giảm giá' });
@@ -496,7 +496,7 @@ router.get(['/admin/flash-sales', '/flash-sales/admin/list'], requireStaffOrAdmi
   res.json(items);
 });
 
-router.post(['/admin/flash-sales', '/flash-sales/admin'], requireAdmin, async (req: Request, res: Response) => {
+router.post(['/admin/flash-sales', '/flash-sales/admin'], requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const { package_id, sale_price, quantity_limit, starts_at, ends_at } = req.body;
     const item = await prisma.flashSale.create({
@@ -508,7 +508,7 @@ router.post(['/admin/flash-sales', '/flash-sales/admin'], requireAdmin, async (r
   }
 });
 
-router.delete(['/admin/flash-sales/:id', '/flash-sales/admin/:id'], requireAdmin, async (req: Request, res: Response) => {
+router.delete(['/admin/flash-sales/:id', '/flash-sales/admin/:id'], requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     await prisma.flashSale.delete({ where: { id: parseInt(req.params.id) } });
     res.json({ message: 'Đã xóa flash sale' });
@@ -721,7 +721,7 @@ router.post('/admin/settings/database/test-connection', requireAdmin, async (_re
 });
 
 // ── Bulk delete ────────────────────────────────────────
-router.post('/categories/bulk-delete', requireAdmin, async (req: Request, res: Response) => {
+router.post('/categories/bulk-delete', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const ids = (req.body.ids || []).map((i: any) => parseInt(i));
     await prisma.category.deleteMany({ where: { id: { in: ids } } });
@@ -732,7 +732,7 @@ router.post('/categories/bulk-delete', requireAdmin, async (req: Request, res: R
 });
 
 // ── Banner images library ──────────────────────────────
-router.get('/banners/admin/images', requireAdmin, async (_req: Request, res: Response) => {
+router.get('/banners/admin/images', requireStaffOrAdmin, async (_req: Request, res: Response) => {
   const imgs = await prisma.uploadedImage.findMany({ orderBy: { id: 'desc' }, take: 100, select: { id: true, filename: true, createdAt: true } });
   res.json(imgs.map((i: any) => ({ id: i.id, filename: i.filename, url: `/api/images/${i.id}`, created_at: i.createdAt?.toISOString() })));
 });
@@ -756,7 +756,7 @@ router.post('/banners/admin/upload-image', requireStaffOrAdmin, uploadImage.sing
   }
 });
 
-router.delete('/banners/admin/images/:id', requireAdmin, async (req: Request, res: Response) => {
+router.delete('/banners/admin/images/:id', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     await prisma.uploadedImage.delete({ where: { id: parseInt(req.params.id) } });
     res.json({ ok: true });

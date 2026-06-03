@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 // @mui
 import {
+  Alert,
+  AlertTitle,
   Box,
   Button,
   Card,
@@ -14,9 +16,12 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   FormControlLabel,
   Grid,
   IconButton,
+  InputAdornment,
+  Link,
   ListItemText,
   MenuItem,
   OutlinedInput,
@@ -57,6 +62,49 @@ const Loading = () => (
   </Stack>
 );
 
+/** Lấy App base URL đã cấu hình (fallback origin trình duyệt). */
+function useAppBaseUrl() {
+  const [base, setBase] = useState('');
+  useEffect(() => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    axiosInstance
+      .get('/api/admin/payment/config')
+      .then((r) => setBase((r.data?.app_base_url || '').replace(/\/$/, '') || origin))
+      .catch(() => setBase(origin));
+  }, []);
+  return base;
+}
+
+/** Ô chỉ-đọc hiển thị URL + nút copy (cho webhook/redirect URI). */
+function CopyField({ label, value }: { label: string; value: string }) {
+  const { enqueueSnackbar } = useSnackbar();
+  return (
+    <TextField
+      label={label}
+      value={value}
+      fullWidth
+      size="small"
+      InputProps={{
+        readOnly: true,
+        endAdornment: (
+          <InputAdornment position="end">
+            <IconButton
+              size="small"
+              onClick={() => {
+                navigator.clipboard?.writeText(value);
+                enqueueSnackbar('Đã sao chép');
+              }}
+            >
+              <Iconify icon="solar:copy-bold" />
+            </IconButton>
+          </InputAdornment>
+        ),
+      }}
+      sx={{ '& input': { fontFamily: 'monospace', fontSize: 13 } }}
+    />
+  );
+}
+
 export default function AdminIntegrationsView() {
   const [tab, setTab] = useState('telegram');
   return (
@@ -66,14 +114,12 @@ export default function AdminIntegrationsView() {
       </Typography>
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }} variant="scrollable" scrollButtons="auto">
         <Tab value="telegram" label="Telegram Bot" icon={<Iconify icon="solar:bell-bing-bold" />} iconPosition="start" />
-        <Tab value="discord" label="Discord" icon={<Iconify icon="ic:baseline-discord" />} iconPosition="start" />
         <Tab value="email" label="Email / SMTP" icon={<Iconify icon="solar:letter-bold" />} iconPosition="start" />
         <Tab value="oauth" label="Đăng nhập OAuth" icon={<Iconify icon="solar:key-bold" />} iconPosition="start" />
         <Tab value="payment" label="Thanh toán" icon={<Iconify icon="solar:card-bold" />} iconPosition="start" />
         <Tab value="providers" label="Nguồn cung cấp" icon={<Iconify icon="solar:server-square-bold" />} iconPosition="start" />
       </Tabs>
       {tab === 'telegram' && <TelegramTab />}
-      {tab === 'discord' && <DiscordTab />}
       {tab === 'email' && <EmailTab />}
       {tab === 'oauth' && <OAuthTab />}
       {tab === 'payment' && <PaymentTab />}
@@ -89,6 +135,7 @@ const BOT_EMPTY = { id: 0, name: '', department: 'custom', bot_token: '', chat_i
 
 function TelegramTab() {
   const { ok, err } = useSnack();
+  const base = useAppBaseUrl();
   const [rows, setRows] = useState<any[]>([]);
   const [types, setTypes] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -160,13 +207,29 @@ function TelegramTab() {
 
   if (loading) return <Loading />;
   return (
-    <Card>
-      <Stack direction="row" justifyContent="flex-end" sx={{ p: 2 }}>
-        <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => setForm({ ...BOT_EMPTY })}>
-          Thêm bot
-        </Button>
-      </Stack>
-      <TableContainer>
+    <Stack spacing={3}>
+      <Alert severity="info">
+        <AlertTitle>Cách tạo bot Telegram</AlertTitle>
+        <Box component="ol" sx={{ pl: 2, m: 0, '& li': { mb: 0.5 } }}>
+          <li>Nhắn <Link href="https://t.me/BotFather" target="_blank" rel="noopener">@BotFather</Link> → <b>/newbot</b> để lấy <b>Bot token</b>.</li>
+          <li>Lấy <b>Chat ID</b>: thêm bot vào nhóm/kênh hoặc nhắn bot rồi mở <code>api.telegram.org/bot&lt;token&gt;/getUpdates</code>.</li>
+          <li>Thêm bot bên dưới, bấm <b>Test kết nối</b> rồi <b>Gửi tin test</b>.</li>
+          <li>Bấm <b>Đăng ký webhook</b> để nhận phản hồi 2 chiều (cần đã cấu hình App base URL ở tab Thanh toán).</li>
+        </Box>
+        {base && (
+          <Box sx={{ mt: 1, fontSize: 13, color: 'text.secondary' }}>
+            Webhook sẽ là: <code>{base}/api/telegram/webhook/&lt;token&gt;</code>
+          </Box>
+        )}
+      </Alert>
+
+      <Card>
+        <Stack direction="row" justifyContent="flex-end" sx={{ p: 2 }}>
+          <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => setForm({ ...BOT_EMPTY })}>
+            Thêm bot
+          </Button>
+        </Stack>
+        <TableContainer>
         <Table>
           <TableHead>
             <TableRow>
@@ -273,86 +336,19 @@ function TelegramTab() {
         </DialogActions>
       </Dialog>
 
-      <ConfirmDialog
-        open={!!toDelete}
-        onClose={() => setToDelete(null)}
-        title="Xoá bot"
-        content={`Xoá bot "${toDelete?.name}"?`}
-        action={
-          <Button variant="contained" color="error" onClick={remove}>
-            Xoá
-          </Button>
-        }
-      />
-    </Card>
-  );
-}
-
-// ----------------------------------------------------------------------
-// DISCORD
-
-function DiscordTab() {
-  const { ok, err } = useSnack();
-  const [cfg, setCfg] = useState<any>({ discord_webhook_url: '', discord_enabled: false });
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    axiosInstance.get('/api/admin/bot-config/discord').then((r) => setCfg(r.data)).catch(err).finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const save = async () => {
-    setSaving(true);
-    try {
-      await axiosInstance.put('/api/admin/bot-config/discord', {
-        discord_enabled: cfg.discord_enabled,
-        ...(cfg.discord_webhook_url && cfg.discord_webhook_url !== '••••••••' ? { discord_webhook_url: cfg.discord_webhook_url } : {}),
-      });
-      ok('Đã lưu cấu hình Discord');
-    } catch (e) {
-      err(e);
-    } finally {
-      setSaving(false);
-    }
-  };
-  const test = async () => {
-    try {
-      const r = await axiosInstance.post('/api/admin/bot-config/test-discord', {
-        ...(cfg.discord_webhook_url && cfg.discord_webhook_url !== '••••••••' ? { discord_webhook_url: cfg.discord_webhook_url } : {}),
-      });
-      ok(r.data?.message || 'Đã gửi');
-    } catch (e) {
-      err(e);
-    }
-  };
-
-  if (loading) return <Loading />;
-  return (
-    <Card sx={{ maxWidth: 560 }}>
-      <CardHeader
-        title="Discord Webhook"
-        subheader="Nhận thông báo đơn hàng qua kênh Discord"
-        action={<Switch checked={!!cfg.discord_enabled} onChange={(e) => setCfg({ ...cfg, discord_enabled: e.target.checked })} />}
-      />
-      <CardContent>
-        <Stack spacing={2.5}>
-          <TextField
-            label="Webhook URL"
-            placeholder={cfg.discord_webhook_url === '••••••••' ? '•••••••• (đã lưu)' : 'https://discord.com/api/webhooks/...'}
-            onChange={(e) => setCfg({ ...cfg, discord_webhook_url: e.target.value })}
-          />
-          <Stack direction="row" spacing={1.5}>
-            <Button variant="contained" onClick={save} disabled={saving}>
-              Lưu
+        <ConfirmDialog
+          open={!!toDelete}
+          onClose={() => setToDelete(null)}
+          title="Xoá bot"
+          content={`Xoá bot "${toDelete?.name}"?`}
+          action={
+            <Button variant="contained" color="error" onClick={remove}>
+              Xoá
             </Button>
-            <Button variant="outlined" onClick={test} startIcon={<Iconify icon="solar:plain-bold" />}>
-              Gửi test
-            </Button>
-          </Stack>
-        </Stack>
-      </CardContent>
-    </Card>
+          }
+        />
+      </Card>
+    </Stack>
   );
 }
 
@@ -437,10 +433,10 @@ function PaymentTab() {
 
   const save = async () => {
     setSaving(true);
-    // Bỏ qua secret đang ở dạng mask (giữ giá trị cũ).
     const payload: Record<string, string> = {
       sepay_account_number: cfg.sepay_account_number || '',
       sepay_bank_code: cfg.sepay_bank_code || '',
+      sepay_account_holder: cfg.sepay_account_holder || '',
       app_base_url: cfg.app_base_url || '',
     };
     if (cfg.sepay_api_key && cfg.sepay_api_key !== '••••••••') payload.sepay_api_key = cfg.sepay_api_key;
@@ -456,22 +452,47 @@ function PaymentTab() {
   };
 
   if (loading || !cfg) return <Loading />;
+  const base = (cfg.app_base_url || '').replace(/\/$/, '') || (typeof window !== 'undefined' ? window.location.origin : '');
+  const webhookUrl = `${base}/api/payment/webhook/sepay`;
+
   return (
-    <Card sx={{ maxWidth: 560 }}>
-      <CardHeader title="SePay (VietQR)" subheader="Cổng nạp tiền tự động qua chuyển khoản" />
-      <CardContent>
-        <Stack spacing={2.5}>
-          <TextField label="Số tài khoản" value={cfg.sepay_account_number || ''} onChange={(e) => setCfg({ ...cfg, sepay_account_number: e.target.value })} />
-          <TextField label="Mã ngân hàng (VD: MBBank, VCB)" value={cfg.sepay_bank_code || ''} onChange={(e) => setCfg({ ...cfg, sepay_bank_code: e.target.value })} />
-          <TextField label="SePay API key" placeholder={cfg.sepay_api_key === '••••••••' ? '•••••••• (đã lưu)' : ''} onChange={(e) => setCfg({ ...cfg, sepay_api_key: e.target.value })} />
-          <TextField label="Webhook secret" placeholder={cfg.sepay_webhook_secret === '••••••••' ? '•••••••• (đã lưu)' : ''} onChange={(e) => setCfg({ ...cfg, sepay_webhook_secret: e.target.value })} />
-          <TextField label="App base URL (cho webhook)" value={cfg.app_base_url || ''} onChange={(e) => setCfg({ ...cfg, app_base_url: e.target.value })} helperText={cfg.has_env_override ? 'Đang bị ghi đè bởi biến môi trường' : ''} />
-          <Button variant="contained" onClick={save} disabled={saving}>
-            Lưu
-          </Button>
-        </Stack>
-      </CardContent>
-    </Card>
+    <Stack spacing={3} sx={{ maxWidth: 640 }}>
+      <Card>
+        <CardHeader title="SePay (VietQR)" subheader="Cổng nạp tiền tự động qua chuyển khoản ngân hàng" />
+        <CardContent>
+          <Stack spacing={2.5}>
+            <TextField label="Số tài khoản" value={cfg.sepay_account_number || ''} onChange={(e) => setCfg({ ...cfg, sepay_account_number: e.target.value })} />
+            <TextField label="Tên chủ tài khoản" value={cfg.sepay_account_holder || ''} onChange={(e) => setCfg({ ...cfg, sepay_account_holder: e.target.value })} />
+            <TextField label="Mã ngân hàng (VietQR)" helperText="VD: MBBank, VCB, ACB, TPBank, Techcombank…" value={cfg.sepay_bank_code || ''} onChange={(e) => setCfg({ ...cfg, sepay_bank_code: e.target.value })} />
+            <TextField label="SePay API Token" placeholder={cfg.sepay_api_key === '••••••••' ? '•••••••• (đã lưu)' : ''} helperText="Lấy ở SePay → API Access" onChange={(e) => setCfg({ ...cfg, sepay_api_key: e.target.value })} />
+            <TextField label="Webhook secret (API Key trong cấu hình Webhook)" placeholder={cfg.sepay_webhook_secret === '••••••••' ? '•••••••• (đã lưu)' : ''} helperText="Bắt buộc — dùng để xác thực webhook (chống giả mạo)" onChange={(e) => setCfg({ ...cfg, sepay_webhook_secret: e.target.value })} />
+            <TextField label="App base URL" value={cfg.app_base_url || ''} onChange={(e) => setCfg({ ...cfg, app_base_url: e.target.value })} helperText={cfg.has_env_override ? 'Đang bị ghi đè bởi biến môi trường APP_BASE_URL' : 'Tên miền hệ thống, vd https://shop.example.com'} />
+            <Button variant="contained" onClick={save} disabled={saving}>
+              Lưu
+            </Button>
+          </Stack>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader title="URL Webhook (khai báo trên SePay)" />
+        <CardContent>
+          <Stack spacing={2}>
+            <CopyField label="Webhook URL" value={webhookUrl} />
+            <Alert severity="info" icon={<Iconify icon="solar:info-circle-bold" />}>
+              <AlertTitle>Hướng dẫn cấu hình SePay</AlertTitle>
+              <Box component="ol" sx={{ pl: 2, m: 0, '& li': { mb: 0.5 } }}>
+                <li>Đăng nhập <Link href="https://my.sepay.vn" target="_blank" rel="noopener">my.sepay.vn</Link> → liên kết tài khoản ngân hàng.</li>
+                <li>Vào <b>Cấu hình → Webhooks → Thêm Webhook</b>.</li>
+                <li>Dán <b>Webhook URL</b> ở trên vào ô URL.</li>
+                <li>Phần <b>Kiểu xác thực</b> chọn <b>API Key</b>, nhập một chuỗi bí mật và lưu cùng giá trị đó vào ô <b>Webhook secret</b> phía trên.</li>
+                <li>Lưu lại. Khi khách chuyển khoản đúng nội dung, số dư sẽ tự cộng.</li>
+              </Box>
+            </Alert>
+          </Stack>
+        </CardContent>
+      </Card>
+    </Stack>
   );
 }
 
@@ -715,6 +736,7 @@ function ProvidersTab() {
 
 function OAuthTab() {
   const { ok, err } = useSnack();
+  const base = useAppBaseUrl();
   const [cfg, setCfg] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState('');
@@ -747,41 +769,51 @@ function OAuthTab() {
   if (loading) return <Loading />;
   const providers = Object.keys(cfg);
   return (
-    <Grid container spacing={3}>
-      {providers.map((prov) => {
-        const p = cfg[prov] || {};
-        return (
-          <Grid item xs={12} md={6} key={prov}>
-            <Card>
-              <CardHeader
-                title={prov.charAt(0).toUpperCase() + prov.slice(1)}
-                action={
-                  <Switch
-                    checked={!!p.enabled}
-                    onChange={(e) => setCfg({ ...cfg, [prov]: { ...p, enabled: e.target.checked } })}
-                  />
-                }
-              />
-              <CardContent>
-                <Stack spacing={2}>
-                  <TextField label="Client ID" size="small" value={p.clientId || ''} onChange={(e) => setCfg({ ...cfg, [prov]: { ...p, clientId: e.target.value } })} />
-                  <TextField label="Client Secret" size="small" placeholder={p.hasSecret ? '•••• (đã lưu)' : ''} onChange={(e) => setCfg({ ...cfg, [prov]: { ...p, clientSecret: e.target.value } })} />
-                  <Button variant="contained" size="small" onClick={() => saveProvider(prov)} disabled={saving === prov}>
-                    Lưu
-                  </Button>
-                </Stack>
-              </CardContent>
-            </Card>
+    <Stack spacing={3}>
+      <Alert severity="info">
+        <AlertTitle>Cách lấy Client ID / Secret</AlertTitle>
+        Tạo ứng dụng OAuth trên trang nhà cung cấp (Google Cloud Console, Facebook Developers, GitHub Developer
+        Settings…), rồi dán <b>Redirect URI</b> tương ứng (ô bên dưới mỗi nhà cung cấp) vào phần Authorized redirect URIs.
+      </Alert>
+      <Grid container spacing={3}>
+        {providers.map((prov) => {
+          const p = cfg[prov] || {};
+          const redirect = `${base}/api/auth/${prov}/callback`;
+          return (
+            <Grid item xs={12} md={6} key={prov}>
+              <Card>
+                <CardHeader
+                  title={prov.charAt(0).toUpperCase() + prov.slice(1)}
+                  action={
+                    <Switch
+                      checked={!!p.enabled}
+                      onChange={(e) => setCfg({ ...cfg, [prov]: { ...p, enabled: e.target.checked } })}
+                    />
+                  }
+                />
+                <CardContent>
+                  <Stack spacing={2}>
+                    <TextField label="Client ID" size="small" value={p.clientId || ''} onChange={(e) => setCfg({ ...cfg, [prov]: { ...p, clientId: e.target.value } })} />
+                    <TextField label="Client Secret" size="small" placeholder={p.hasSecret ? '•••• (đã lưu)' : ''} onChange={(e) => setCfg({ ...cfg, [prov]: { ...p, clientSecret: e.target.value } })} />
+                    <Divider />
+                    <CopyField label="Redirect URI (dán vào nhà cung cấp)" value={redirect} />
+                    <Button variant="contained" size="small" onClick={() => saveProvider(prov)} disabled={saving === prov}>
+                      Lưu
+                    </Button>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
+          );
+        })}
+        {!providers.length && (
+          <Grid item xs={12}>
+            <Typography align="center" sx={{ color: 'text.secondary', py: 4 }}>
+              Không có provider OAuth
+            </Typography>
           </Grid>
-        );
-      })}
-      {!providers.length && (
-        <Grid item xs={12}>
-          <Typography align="center" sx={{ color: 'text.secondary', py: 4 }}>
-            Không có provider OAuth
-          </Typography>
-        </Grid>
-      )}
-    </Grid>
+        )}
+      </Grid>
+    </Stack>
   );
 }
