@@ -13,7 +13,9 @@ import {
   Divider,
   IconButton,
   MenuItem,
+  Rating,
   Stack,
+  Switch,
   Tab,
   Table,
   TableBody,
@@ -31,6 +33,7 @@ import { fCurrency } from '../../utils/formatNumber';
 // components
 import Label from '../../components/label';
 import Iconify from '../../components/iconify';
+import ConfirmDialog from '../../components/confirm-dialog';
 import { useSnackbar } from '../../components/snackbar';
 
 // ----------------------------------------------------------------------
@@ -57,9 +60,12 @@ export default function AdminSupportView() {
       </Typography>
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
         <Tab value="tickets" label="Ticket hỗ trợ" icon={<Iconify icon="solar:chat-round-dots-bold" />} iconPosition="start" />
+        <Tab value="reviews" label="Đánh giá" icon={<Iconify icon="solar:star-bold" />} iconPosition="start" />
         <Tab value="withdrawals" label="Duyệt rút tiền" icon={<Iconify icon="solar:wallet-money-bold" />} iconPosition="start" />
       </Tabs>
-      {tab === 'tickets' ? <TicketsTab /> : <WithdrawalsTab />}
+      {tab === 'tickets' && <TicketsTab />}
+      {tab === 'reviews' && <ReviewsTab />}
+      {tab === 'withdrawals' && <WithdrawalsTab />}
     </Container>
   );
 }
@@ -230,6 +236,123 @@ function TicketsTab() {
           </>
         )}
       </Dialog>
+    </Card>
+  );
+}
+
+// ----------------------------------------------------------------------
+// REVIEWS
+
+function ReviewsTab() {
+  const { ok, err } = useSnack();
+  const [rows, setRows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [visible, setVisible] = useState('');
+  const [toDelete, setToDelete] = useState<any>(null);
+
+  const load = useCallback(() => {
+    setLoading(true);
+    axiosInstance
+      .get('/api/admin/reviews', { params: { ...(visible ? { visible } : {}), limit: 100 } })
+      .then((r) => setRows(r.data?.items || []))
+      .catch(err)
+      .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+  useEffect(() => load(), [load]);
+
+  const toggle = async (rv: any) => {
+    try {
+      await axiosInstance.patch(`/api/admin/reviews/${rv.id}`, { is_visible: !rv.is_visible });
+      setRows((rs) => rs.map((x) => (x.id === rv.id ? { ...x, is_visible: !x.is_visible } : x)));
+    } catch (e) {
+      err(e);
+    }
+  };
+  const remove = async () => {
+    try {
+      await axiosInstance.delete(`/api/admin/reviews/${toDelete.id}`);
+      ok('Đã xoá đánh giá');
+      load();
+    } catch (e) {
+      err(e);
+    } finally {
+      setToDelete(null);
+    }
+  };
+
+  return (
+    <Card>
+      <Stack direction="row" sx={{ p: 2 }}>
+        <TextField select size="small" label="Hiển thị" sx={{ minWidth: 180 }} value={visible} onChange={(e) => setVisible(e.target.value)}>
+          <MenuItem value="">Tất cả</MenuItem>
+          <MenuItem value="true">Đang hiện</MenuItem>
+          <MenuItem value="false">Đang ẩn</MenuItem>
+        </TextField>
+      </Stack>
+      {loading ? (
+        <Loading />
+      ) : (
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Sản phẩm</TableCell>
+                <TableCell>Người dùng</TableCell>
+                <TableCell>Đánh giá</TableCell>
+                <TableCell sx={{ maxWidth: 320 }}>Nội dung</TableCell>
+                <TableCell align="center">Hiện</TableCell>
+                <TableCell align="right">Xoá</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {rows.map((rv) => (
+                <TableRow key={rv.id} hover>
+                  <TableCell sx={{ fontSize: 13, maxWidth: 180 }}>
+                    <Typography variant="body2" noWrap>
+                      {rv.product_name}
+                    </Typography>
+                  </TableCell>
+                  <TableCell sx={{ fontSize: 13 }}>{rv.user_name}</TableCell>
+                  <TableCell>
+                    <Rating value={rv.rating} readOnly size="small" />
+                  </TableCell>
+                  <TableCell sx={{ maxWidth: 320, color: 'text.secondary', fontSize: 13 }}>
+                    <Box sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{rv.comment || '—'}</Box>
+                  </TableCell>
+                  <TableCell align="center">
+                    <Switch checked={rv.is_visible} onChange={() => toggle(rv)} size="small" />
+                  </TableCell>
+                  <TableCell align="right">
+                    <IconButton color="error" onClick={() => setToDelete(rv)}>
+                      <Iconify icon="solar:trash-bin-trash-bold" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {!rows.length && (
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 6, color: 'text.secondary' }}>
+                    Chưa có đánh giá
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+
+      <ConfirmDialog
+        open={!!toDelete}
+        onClose={() => setToDelete(null)}
+        title="Xoá đánh giá"
+        content="Xoá đánh giá này?"
+        action={
+          <Button variant="contained" color="error" onClick={remove}>
+            Xoá
+          </Button>
+        }
+      />
     </Card>
   );
 }

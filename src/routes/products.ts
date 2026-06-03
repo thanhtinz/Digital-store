@@ -36,7 +36,7 @@ router.get('/', optionalUser, async (req: Request, res: Response) => {
         take: parseInt(limit as string),
         include: {
           category: true,
-          reviews: { select: { rating: true } },
+          reviews: { where: { isVisible: true }, select: { rating: true } },
           packages: {
             where: { isActive: true },
             orderBy: [{ sortOrder: 'asc' }, { price: 'asc' }],

@@ -232,6 +232,64 @@ router.post('/reviews', requireUser, async (req: Request, res: Response) => {
   }
 });
 
+// ── Admin: kiểm duyệt đánh giá ─────────────────────────
+router.get('/admin/reviews', requireStaffOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = Math.min(parseInt(req.query.limit as string) || 30, 100);
+    const where: any = {};
+    if (req.query.visible === 'true') where.isVisible = true;
+    if (req.query.visible === 'false') where.isVisible = false;
+    const [total, reviews] = await Promise.all([
+      prisma.review.count({ where }),
+      prisma.review.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: { product: { select: { name: true } } },
+      }),
+    ]);
+    res.json({
+      total,
+      page,
+      items: reviews.map((r: any) => ({
+        id: r.id,
+        product_id: r.productId,
+        product_name: r.product?.name,
+        user_name: r.userName,
+        rating: r.rating,
+        comment: r.comment,
+        is_visible: r.isVisible,
+        created_at: r.createdAt?.toISOString(),
+      })),
+    });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+router.patch('/admin/reviews/:id', requireStaffOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const r = await prisma.review.update({
+      where: { id: parseInt(req.params.id) },
+      data: { ...(req.body.is_visible !== undefined && { isVisible: req.body.is_visible }) },
+    });
+    res.json({ id: r.id, is_visible: r.isVisible });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+router.delete('/admin/reviews/:id', requireStaffOrAdmin, async (req: Request, res: Response) => {
+  try {
+    await prisma.review.delete({ where: { id: parseInt(req.params.id) } });
+    res.json({ ok: true });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
 // ════════════════════════════════════════════════════
 // WISHLIST
 // ════════════════════════════════════════════════════
