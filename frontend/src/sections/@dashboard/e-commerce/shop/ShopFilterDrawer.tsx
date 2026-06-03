@@ -187,6 +187,7 @@ export default function ShopFilterDrawer({
 
 function InputRange({ type, max }: { type: 'min' | 'max'; max: number }) {
   const { control, setValue } = useFormContext();
+  const { translate } = useLocales();
 
   const clamp = (value: [number, number]) => {
     let [lo, hi] = value;
@@ -210,7 +211,7 @@ function InputRange({ type, max }: { type: 'min' | 'max'; max: number }) {
               variant="caption"
               sx={{ flexShrink: 0, color: 'text.disabled', fontWeight: 'fontWeightBold' }}
             >
-              {isMin ? 'Từ' : 'Đến'}
+              {isMin ? `${translate('shop_page.from')}` : `${translate('shop_page.to')}`}
             </Typography>
 
             <Input
