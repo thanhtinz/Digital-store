@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 // @mui
 import { LoadingButton } from '@mui/lab';
-import { Box, Button, Card, Grid, Stack, Typography, IconButton } from '@mui/material';
+import { Box, Button, Card, Grid, MenuItem, Stack, Typography, IconButton } from '@mui/material';
 // utils
 import axiosInstance from '../../utils/axios';
 // components
@@ -76,7 +76,12 @@ export default function AdminCategoryForm({
       sort_order: current?.sortOrder || 0,
       is_active: current?.isActive ?? true,
       product_type: current?.productType || presetProductType || 'premium',
-      parent_id: current?.parentId || presetParentId || '',
+      // Chuỗi để khớp value của MenuItem (MUI Select không native).
+      parent_id: current?.parentId
+        ? String(current.parentId)
+        : presetParentId
+        ? String(presetParentId)
+        : '',
     }),
     [current, presetParentId, presetProductType]
   );
@@ -130,22 +135,22 @@ export default function AdminCategoryForm({
               <RHFTextField name="name" label="Tên danh mục" />
 
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>
-                <RHFSelect native name="product_type" label="Loại">
+                <RHFSelect name="product_type" label="Loại">
                   {PRODUCT_TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>
+                    <MenuItem key={t.value} value={t.value}>
                       {t.label}
-                    </option>
+                    </MenuItem>
                   ))}
                 </RHFSelect>
 
-                <RHFSelect native name="parent_id" label="Danh mục cha">
-                  <option value="">— Danh mục gốc —</option>
+                <RHFSelect name="parent_id" label="Danh mục cha">
+                  <MenuItem value="">— Danh mục gốc —</MenuItem>
                   {roots
                     .filter((r) => r.id !== current?.id)
                     .map((r) => (
-                      <option key={r.id} value={r.id}>
+                      <MenuItem key={r.id} value={String(r.id)}>
                         {r.name}
-                      </option>
+                      </MenuItem>
                     ))}
                 </RHFSelect>
               </Stack>
