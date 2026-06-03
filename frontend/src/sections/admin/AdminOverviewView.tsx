@@ -65,9 +65,11 @@ function StatCard({
 }
 
 const QUICK_LINKS = [
-  { label: 'Cài đặt cửa hàng', icon: 'solar:settings-bold-duotone', href: PATH_DASHBOARD.admin.settings },
-  { label: 'Người dùng', icon: 'solar:users-group-rounded-bold-duotone', href: PATH_DASHBOARD.admin.users },
+  { label: 'Sản phẩm', icon: 'solar:box-bold-duotone', href: PATH_DASHBOARD.admin.products },
+  { label: 'Danh mục', icon: 'solar:folder-bold-duotone', href: PATH_DASHBOARD.admin.categories },
   { label: 'Đơn hàng', icon: 'solar:cart-large-bold-duotone', href: PATH_DASHBOARD.admin.orders },
+  { label: 'Người dùng', icon: 'solar:users-group-rounded-bold-duotone', href: PATH_DASHBOARD.admin.users },
+  { label: 'Cài đặt cửa hàng', icon: 'solar:settings-bold-duotone', href: PATH_DASHBOARD.admin.settings },
 ];
 
 export default function AdminOverviewView() {

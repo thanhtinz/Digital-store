@@ -30,8 +30,15 @@ export function useAdminNavConfig() {
       subheader: 'Quản trị',
       items: [
         { title: 'Tổng quan', path: PATH_DASHBOARD.admin.root, icon: ICONS.dashboard },
-        { title: 'Người dùng', path: PATH_DASHBOARD.admin.users, icon: ICONS.user },
         { title: 'Đơn hàng', path: PATH_DASHBOARD.admin.orders, icon: ICONS.cart },
+        { title: 'Người dùng', path: PATH_DASHBOARD.admin.users, icon: ICONS.user },
+      ],
+    },
+    {
+      subheader: 'Cửa hàng',
+      items: [
+        { title: 'Sản phẩm', path: PATH_DASHBOARD.admin.products, icon: ICONS.ecommerce },
+        { title: 'Danh mục', path: PATH_DASHBOARD.admin.categories, icon: ICONS.label },
       ],
     },
     {

@@ -71,6 +71,8 @@ export const PATH_DASHBOARD = {
     settings: path(ROOTS_DASHBOARD, '/admin/settings'),
     users: path(ROOTS_DASHBOARD, '/admin/users'),
     orders: path(ROOTS_DASHBOARD, '/admin/orders'),
+    products: path(ROOTS_DASHBOARD, '/admin/products'),
+    categories: path(ROOTS_DASHBOARD, '/admin/categories'),
   },
   smm: {
     root: path(ROOTS_DASHBOARD, '/smm'),
