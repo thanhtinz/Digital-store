@@ -1,6 +1,24 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { JwtPayload, AdminPayload } from '../types/index';
+import prisma from '../db';
+
+/**
+ * Lấy role HIỆN TẠI từ DB (bảng admin_users theo email) thay vì tin role trong
+ * token. Nhờ vậy khi đổi vai trò, hiệu lực ngay — không cần đăng nhập lại.
+ * Fallback role trong token nếu DB lỗi.
+ */
+async function resolveRole(payload: any): Promise<string> {
+  try {
+    if (payload?.email) {
+      const adminUser = await prisma.adminUser.findUnique({ where: { email: payload.email } });
+      if (adminUser?.role) return adminUser.role;
+    }
+  } catch {
+    /* DB lỗi -> dùng role trong token */
+  }
+  return payload?.role || 'user';
+}
 
 /**
  * Khóa JWT dùng chung toàn hệ thống.
@@ -42,7 +60,7 @@ export function requireUser(req: Request, res: Response, next: NextFunction): vo
  * (Staff bị từ chối — staff chỉ vận hành đơn/chat + quản lý sản phẩm/kho qua
  *  requireStaffOrAdmin.)
  */
-export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
+export async function requireAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
   const header = req.headers.authorization;
   if (!header?.startsWith('Bearer ')) {
     res.status(401).json({ detail: 'Not authenticated' });
@@ -51,11 +69,12 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
   try {
     const token = header.slice(7);
     const payload = jwt.verify(token, JWT_SECRET) as AdminPayload;
-    if (!payload.role || !['admin', 'superadmin'].includes(payload.role)) {
+    const role = await resolveRole(payload);
+    if (!['admin', 'superadmin'].includes(role)) {
       res.status(403).json({ detail: 'Admin access required' });
       return;
     }
-    (req as any).admin = payload;
+    (req as any).admin = { ...payload, role };
     next();
   } catch {
     res.status(401).json({ detail: 'Invalid or expired token' });
@@ -66,7 +85,7 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
  * ADMIN/SUPERADMIN hoặc STAFF. Dùng cho vận hành hằng ngày: quản lý đơn,
  * giao hàng, chat hỗ trợ, quản lý sản phẩm/gói/kho/danh mục/banner.
  */
-export function requireStaffOrAdmin(req: Request, res: Response, next: NextFunction): void {
+export async function requireStaffOrAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
   const header = req.headers.authorization;
   if (!header?.startsWith('Bearer ')) {
     res.status(401).json({ detail: 'Not authenticated' });
@@ -75,11 +94,12 @@ export function requireStaffOrAdmin(req: Request, res: Response, next: NextFunct
   try {
     const token = header.slice(7);
     const payload = jwt.verify(token, JWT_SECRET) as AdminPayload;
-    if (!payload.role || !['admin', 'superadmin', 'staff'].includes(payload.role)) {
+    const role = await resolveRole(payload);
+    if (!['admin', 'superadmin', 'staff'].includes(role)) {
       res.status(403).json({ detail: 'Staff or admin access required' });
       return;
     }
-    (req as any).admin = payload;
+    (req as any).admin = { ...payload, role };
     next();
   } catch {
     res.status(401).json({ detail: 'Invalid or expired token' });

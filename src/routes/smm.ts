@@ -647,9 +647,16 @@ router.get('/providers', requireStaffOrAdmin, async (_req: Request, res: Respons
 
 router.post('/providers', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
-    const { name, base_url, api_key } = req.body;
+    const { name, base_url, api_key, settings, is_active } = req.body;
     const item = await prisma.apiProvider.create({
-      data: { name, providerType: 'smm_panel', baseUrl: base_url, apiKey: api_key, isActive: true },
+      data: {
+        name,
+        providerType: 'smm_panel',
+        baseUrl: base_url,
+        apiKey: api_key,
+        isActive: is_active !== false,
+        ...(settings ? { settings } : {}),
+      },
     });
     res.status(201).json({ ...item, apiKey: '••••••••' });
   } catch (e: any) {

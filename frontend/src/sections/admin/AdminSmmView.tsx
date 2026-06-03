@@ -102,7 +102,10 @@ const PROVIDER_EMPTY = {
   is_active: true,
   exchange_rate: 1,
   price_markup: 0,
+  currency: 'USD',
   filter_html: true,
+  sync_categories: true,
+  sync_services: true,
 };
 
 function ProvidersTab() {
@@ -110,8 +113,14 @@ function ProvidersTab() {
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<typeof PROVIDER_EMPTY | null>(null);
+  const [ptab, setPtab] = useState(0);
   const [saving, setSaving] = useState(false);
   const [toDelete, setToDelete] = useState<any>(null);
+
+  const openForm = (f: typeof PROVIDER_EMPTY) => {
+    setPtab(0);
+    setForm(f);
+  };
 
   const load = useCallback(() => {
     setLoading(true);
@@ -126,7 +135,7 @@ function ProvidersTab() {
 
   const openEdit = (p: any) => {
     const s = p.settings || {};
-    setForm({
+    openForm({
       id: p.id,
       name: p.name,
       base_url: p.baseUrl || '',
@@ -134,36 +143,38 @@ function ProvidersTab() {
       is_active: p.isActive,
       exchange_rate: Number(s.exchange_rate) || 1,
       price_markup: Number(s.price_markup) || 0,
+      currency: s.currency || 'USD',
       filter_html: s.filter_html !== false,
+      sync_categories: s.sync_categories !== false,
+      sync_services: s.sync_services !== false,
     });
   };
 
   const save = async () => {
     if (!form) return;
+    if (!form.name.trim() || !form.base_url.trim()) {
+      err({}, 'Nhập tên và Base URL');
+      return;
+    }
     setSaving(true);
     const settings = {
       exchange_rate: Number(form.exchange_rate) || 1,
       price_markup: Number(form.price_markup) || 0,
+      currency: form.currency || 'USD',
       filter_html: form.filter_html,
-      sync_categories: true,
-      sync_services: true,
+      sync_categories: form.sync_categories,
+      sync_services: form.sync_services,
+    };
+    const payload = {
+      name: form.name,
+      base_url: form.base_url,
+      ...(form.api_key ? { api_key: form.api_key } : {}),
+      is_active: form.is_active,
+      settings,
     };
     try {
-      if (form.id) {
-        await axiosInstance.put(`/api/smm/providers/${form.id}`, {
-          name: form.name,
-          base_url: form.base_url,
-          ...(form.api_key ? { api_key: form.api_key } : {}),
-          is_active: form.is_active,
-          settings,
-        });
-      } else {
-        await axiosInstance.post('/api/smm/providers', {
-          name: form.name,
-          base_url: form.base_url,
-          api_key: form.api_key,
-        });
-      }
+      if (form.id) await axiosInstance.put(`/api/smm/providers/${form.id}`, payload);
+      else await axiosInstance.post('/api/smm/providers', payload);
       ok('Đã lưu nhà cung cấp');
       setForm(null);
       load();
@@ -200,7 +211,7 @@ function ProvidersTab() {
   return (
     <Card>
       <Stack direction="row" justifyContent="flex-end" sx={{ p: 2 }}>
-        <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => setForm({ ...PROVIDER_EMPTY })}>
+        <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => openForm({ ...PROVIDER_EMPTY })}>
           Thêm nhà cung cấp
         </Button>
       </Stack>
@@ -254,39 +265,64 @@ function ProvidersTab() {
 
       <Dialog open={!!form} onClose={() => setForm(null)} fullWidth maxWidth="xs">
         <DialogTitle>{form?.id ? 'Sửa nhà cung cấp' : 'Thêm nhà cung cấp'}</DialogTitle>
+        {form && (
+          <Tabs value={ptab} onChange={(_, v) => setPtab(v)} variant="fullWidth" sx={{ px: 2, borderBottom: 1, borderColor: 'divider' }}>
+            <Tab label="Thông tin" />
+            <Tab label="Giá" />
+            <Tab label="Đồng bộ" />
+          </Tabs>
+        )}
         <DialogContent>
           {form && (
-            <Stack spacing={2.5} sx={{ mt: 1 }}>
-              <TextField label="Tên" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-              <TextField label="Base URL (API)" value={form.base_url} onChange={(e) => setForm({ ...form, base_url: e.target.value })} />
-              <TextField
-                label={form.id ? 'API key (để trống nếu giữ nguyên)' : 'API key'}
-                value={form.api_key}
-                onChange={(e) => setForm({ ...form, api_key: e.target.value })}
-              />
-              {form.id !== 0 && (
+            <Stack spacing={2.5} sx={{ mt: 2 }}>
+              {ptab === 0 && (
                 <>
-                  <Divider>Cấu hình giá</Divider>
+                  <TextField label="Tên" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                  <TextField label="Base URL (API)" value={form.base_url} onChange={(e) => setForm({ ...form, base_url: e.target.value })} />
                   <TextField
-                    label="Tỷ giá (nhân với giá gốc → VNĐ)"
-                    type="number"
-                    value={form.exchange_rate}
-                    onChange={(e) => setForm({ ...form, exchange_rate: Number(e.target.value) })}
-                  />
-                  <TextField
-                    label="Markup giá bán (%)"
-                    type="number"
-                    helperText="Đổi markup sẽ tính lại giá bán toàn bộ dịch vụ của nguồn"
-                    value={form.price_markup}
-                    onChange={(e) => setForm({ ...form, price_markup: Number(e.target.value) })}
-                  />
-                  <FormControlLabel
-                    control={<Checkbox checked={form.filter_html} onChange={(e) => setForm({ ...form, filter_html: e.target.checked })} />}
-                    label="Lọc thẻ HTML trong tên/mô tả"
+                    label={form.id ? 'API key (để trống nếu giữ nguyên)' : 'API key'}
+                    value={form.api_key}
+                    onChange={(e) => setForm({ ...form, api_key: e.target.value })}
                   />
                   <FormControlLabel
                     control={<Checkbox checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />}
                     label="Kích hoạt"
+                  />
+                </>
+              )}
+
+              {ptab === 1 && (
+                <>
+                  <TextField
+                    label="Tỷ giá (nhân giá gốc → VNĐ)"
+                    type="number"
+                    value={form.exchange_rate}
+                    onChange={(e) => setForm({ ...form, exchange_rate: Number(e.target.value) })}
+                  />
+                  <TextField label="Tiền tệ nguồn" value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} helperText="VD: USD" />
+                  <TextField
+                    label="Markup giá bán (%)"
+                    type="number"
+                    helperText="Đổi markup sẽ tự tính lại giá bán toàn bộ dịch vụ của nguồn"
+                    value={form.price_markup}
+                    onChange={(e) => setForm({ ...form, price_markup: Number(e.target.value) })}
+                  />
+                </>
+              )}
+
+              {ptab === 2 && (
+                <>
+                  <FormControlLabel
+                    control={<Checkbox checked={form.sync_categories} onChange={(e) => setForm({ ...form, sync_categories: e.target.checked })} />}
+                    label="Cho phép đồng bộ Chuyên mục"
+                  />
+                  <FormControlLabel
+                    control={<Checkbox checked={form.sync_services} onChange={(e) => setForm({ ...form, sync_services: e.target.checked })} />}
+                    label="Cho phép đồng bộ Dịch vụ"
+                  />
+                  <FormControlLabel
+                    control={<Checkbox checked={form.filter_html} onChange={(e) => setForm({ ...form, filter_html: e.target.checked })} />}
+                    label="Lọc thẻ HTML trong tên/mô tả"
                   />
                 </>
               )}

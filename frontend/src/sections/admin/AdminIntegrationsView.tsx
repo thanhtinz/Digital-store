@@ -374,7 +374,7 @@ function EmailTab() {
 
   const load = useCallback(() => {
     setLoading(true);
-    axiosInstance.get('/api/admin/mail/config').then((r) => setCfg(r.data)).catch(err).finally(() => setLoading(false));
+    axiosInstance.get('/api/admin/mail/config').then((r) => setCfg(r.data)).catch((e) => { err(e); setCfg({}); }).finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => load(), [load]);
@@ -538,7 +538,7 @@ function PaymentTab() {
   const [hist, setHist] = useState<any>(null);
 
   useEffect(() => {
-    axiosInstance.get('/api/admin/payment/config').then((r) => setCfg(r.data)).catch(err).finally(() => setLoading(false));
+    axiosInstance.get('/api/admin/payment/config').then((r) => setCfg(r.data)).catch((e) => { err(e); setCfg({}); }).finally(() => setLoading(false));
     axiosInstance.get('/api/admin/payment/history', { params: { limit: 50 } }).then((r) => setHist(r.data)).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -682,7 +682,7 @@ function AiTab() {
 
   const load = useCallback(() => {
     setLoading(true);
-    axiosInstance.get('/api/admin/ai/config').then((r) => setCfg(r.data)).catch(err).finally(() => setLoading(false));
+    axiosInstance.get('/api/admin/ai/config').then((r) => setCfg(r.data)).catch((e) => { err(e); setCfg({ providers: {} }); }).finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => load(), [load]);
