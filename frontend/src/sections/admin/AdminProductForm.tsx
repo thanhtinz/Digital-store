@@ -1,0 +1,230 @@
+import * as Yup from 'yup';
+import { useEffect, useMemo, useState } from 'react';
+// form
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+// @mui
+import { LoadingButton } from '@mui/lab';
+import {
+  Box,
+  Button,
+  Card,
+  Grid,
+  Stack,
+  Typography,
+  IconButton,
+} from '@mui/material';
+// utils
+import axiosInstance from '../../utils/axios';
+// components
+import Iconify from '../../components/iconify';
+import { useSnackbar } from '../../components/snackbar';
+import FormProvider, {
+  RHFSwitch,
+  RHFSelect,
+  RHFEditor,
+  RHFTextField,
+} from '../../components/hook-form';
+//
+import ImageUploadField, { GalleryField } from './ImageUploadField';
+
+// ----------------------------------------------------------------------
+// Form tạo/sửa sản phẩm dạng TRANG ĐẦY ĐỦ (theo layout Minimal: 2 cột + Card),
+// dùng trình soạn thảo văn bản RHFEditor cho mô tả. Thay cho popup cũ.
+// ----------------------------------------------------------------------
+
+type Category = { id: number; name: string };
+
+type Props = {
+  current?: any | null; // sản phẩm đang sửa (null = tạo mới)
+  categories: Category[];
+  onBack: VoidFunction;
+  onSaved: VoidFunction;
+};
+
+type FormValuesProps = {
+  name: string;
+  description: string;
+  image_url: string;
+  images: string[];
+  category_id: string | number;
+  is_featured: boolean;
+  is_active: boolean;
+};
+
+export default function AdminProductForm({ current, categories, onBack, onSaved }: Props) {
+  const { enqueueSnackbar } = useSnackbar();
+  const isEdit = !!current?.id;
+  const [aiBusy, setAiBusy] = useState(false);
+
+  const ProductSchema = Yup.object().shape({
+    name: Yup.string().required('Vui lòng nhập tên sản phẩm'),
+  });
+
+  const defaultValues = useMemo<FormValuesProps>(
+    () => ({
+      name: current?.name || '',
+      description: current?.description || '',
+      image_url: current?.imageUrl || '',
+      images: Array.isArray(current?.images) ? current.images : [],
+      category_id: current?.categoryId || '',
+      is_featured: !!current?.isFeatured,
+      is_active: current?.isActive ?? true,
+    }),
+    [current]
+  );
+
+  const methods = useForm<FormValuesProps>({
+    resolver: yupResolver(ProductSchema) as any,
+    defaultValues,
+  });
+
+  const {
+    watch,
+    reset,
+    setValue,
+    handleSubmit,
+    formState: { isSubmitting },
+  } = methods;
+
+  const values = watch();
+
+  useEffect(() => {
+    reset(defaultValues);
+  }, [defaultValues, reset]);
+
+  const aiGenerate = async () => {
+    if (!values.name?.trim()) {
+      enqueueSnackbar('Nhập tên sản phẩm trước', { variant: 'warning' });
+      return;
+    }
+    setAiBusy(true);
+    try {
+      const r = await axiosInstance.post('/api/admin/ai/generate', {
+        field_type: 'product_description',
+        context: values.name,
+        max_tokens: 400,
+      });
+      if (r.data?.content) setValue('description', r.data.content.trim(), { shouldValidate: true });
+      enqueueSnackbar('Đã tạo mô tả bằng AI');
+    } catch (e: any) {
+      enqueueSnackbar(e?.detail || 'AI tạo mô tả thất bại', { variant: 'error' });
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
+  const onSubmit = async (data: FormValuesProps) => {
+    const payload = {
+      name: data.name,
+      description: data.description,
+      image_url: data.image_url,
+      images: data.images,
+      category_id: data.category_id || null,
+      is_featured: data.is_featured,
+      is_active: data.is_active,
+    };
+    try {
+      if (isEdit) await axiosInstance.patch(`/api/products/admin/${current.id}`, payload);
+      else await axiosInstance.post('/api/products/admin', payload);
+      enqueueSnackbar(isEdit ? 'Đã cập nhật sản phẩm' : 'Đã tạo sản phẩm');
+      onSaved();
+    } catch (e: any) {
+      enqueueSnackbar(e?.detail || e?.message || 'Lưu thất bại', { variant: 'error' });
+    }
+  };
+
+  return (
+    <FormProvider methods={methods} onSubmit={handleSubmit(onSubmit)}>
+      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 3 }}>
+        <IconButton onClick={onBack}>
+          <Iconify icon="eva:arrow-ios-back-fill" />
+        </IconButton>
+        <Typography variant="h4">{isEdit ? 'Sửa sản phẩm' : 'Thêm sản phẩm'}</Typography>
+      </Stack>
+
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={8}>
+          <Card sx={{ p: 3 }}>
+            <Stack spacing={3}>
+              <RHFTextField name="name" label="Tên sản phẩm" />
+
+              <Stack spacing={1}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
+                    Mô tả
+                  </Typography>
+                  <Button
+                    size="small"
+                    onClick={aiGenerate}
+                    disabled={aiBusy}
+                    startIcon={<Iconify icon={aiBusy ? 'eos-icons:loading' : 'solar:magic-stick-3-bold'} />}
+                  >
+                    {aiBusy ? 'Đang tạo…' : 'Tạo bằng AI'}
+                  </Button>
+                </Stack>
+                <RHFEditor simple name="description" />
+              </Stack>
+
+              <Stack spacing={1}>
+                <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
+                  Album ảnh (tài khoản premium)
+                </Typography>
+                <GalleryField
+                  label=""
+                  value={values.images}
+                  onChange={(urls) => setValue('images', urls, { shouldValidate: true })}
+                />
+              </Stack>
+            </Stack>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={4}>
+          <Stack spacing={3}>
+            <Card sx={{ p: 3 }}>
+              <Stack spacing={3}>
+                <ImageUploadField
+                  label="Ảnh sản phẩm"
+                  value={values.image_url}
+                  onChange={(url) => setValue('image_url', url, { shouldValidate: true })}
+                />
+
+                <RHFSelect native name="category_id" label="Danh mục">
+                  <option value="">— Không —</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </RHFSelect>
+              </Stack>
+            </Card>
+
+            <Card sx={{ p: 3 }}>
+              <Stack spacing={1}>
+                <RHFSwitch name="is_active" label="Đang bán" />
+                <RHFSwitch name="is_featured" label="Nổi bật (hiện trang chủ)" />
+              </Stack>
+            </Card>
+
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
+              <Button fullWidth color="inherit" variant="outlined" size="large" onClick={onBack}>
+                Huỷ
+              </Button>
+              <LoadingButton fullWidth type="submit" variant="contained" size="large" loading={isSubmitting}>
+                {isEdit ? 'Lưu thay đổi' : 'Tạo sản phẩm'}
+              </LoadingButton>
+            </Box>
+
+            {isEdit && (
+              <Typography variant="caption" color="text.secondary">
+                Quản lý <b>gói &amp; giá</b> và <b>trường nhập</b> ở danh sách sản phẩm (biểu tượng hộp).
+              </Typography>
+            )}
+          </Stack>
+        </Grid>
+      </Grid>
+    </FormProvider>
+  );
+}

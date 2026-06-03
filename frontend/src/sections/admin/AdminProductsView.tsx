@@ -4,7 +4,6 @@ import {
   Avatar,
   Button,
   Card,
-  Checkbox,
   CircularProgress,
   Container,
   Dialog,
@@ -35,7 +34,7 @@ import Label from '../../components/label';
 import Iconify from '../../components/iconify';
 import ConfirmDialog from '../../components/confirm-dialog';
 import { useSnackbar } from '../../components/snackbar';
-import ImageUploadField, { GalleryField } from './ImageUploadField';
+import AdminProductForm from './AdminProductForm';
 
 // ----------------------------------------------------------------------
 
@@ -54,17 +53,6 @@ type Product = {
 };
 type Category = { id: number; name: string };
 
-const EMPTY = {
-  id: 0,
-  name: '',
-  description: '',
-  image_url: '',
-  images: [] as string[],
-  category_id: '' as string | number,
-  is_featured: false,
-  is_active: true,
-};
-
 function minPrice(p: Product) {
   const prices = (p.packages || []).map((x) => x.price).filter((n) => n > 0);
   return prices.length ? Math.min(...prices) : 0;
@@ -75,34 +63,10 @@ export default function AdminProductsView() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState<typeof EMPTY | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [aiBusy, setAiBusy] = useState(false);
+  // editing: 'new' = tạo mới, Product = đang sửa, null = xem danh sách
+  const [editing, setEditing] = useState<Product | 'new' | null>(null);
   const [toDelete, setToDelete] = useState<Product | null>(null);
   const [pkgFor, setPkgFor] = useState<Product | null>(null);
-
-  // Sinh mô tả sản phẩm bằng AI (cần cấu hình AI ở Tích hợp/Cài đặt).
-  const aiGenerate = async () => {
-    if (!form) return;
-    if (!form.name.trim()) {
-      enqueueSnackbar('Nhập tên sản phẩm trước', { variant: 'warning' });
-      return;
-    }
-    setAiBusy(true);
-    try {
-      const r = await axiosInstance.post('/api/admin/ai/generate', {
-        field_type: 'product_description',
-        context: form.name,
-        max_tokens: 400,
-      });
-      if (r.data?.content) setForm((f) => (f ? { ...f, description: r.data.content.trim() } : f));
-      enqueueSnackbar('Đã tạo mô tả bằng AI');
-    } catch (e: any) {
-      enqueueSnackbar(e?.detail || 'AI tạo mô tả thất bại', { variant: 'error' });
-    } finally {
-      setAiBusy(false);
-    }
-  };
 
   const load = () => {
     setLoading(true);
@@ -123,48 +87,6 @@ export default function AdminProductsView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const openCreate = () => setForm({ ...EMPTY });
-  const openEdit = (p: Product) =>
-    setForm({
-      id: p.id,
-      name: p.name,
-      description: p.description || '',
-      image_url: p.imageUrl || '',
-      images: Array.isArray(p.images) ? p.images : [],
-      category_id: p.categoryId || '',
-      is_featured: p.isFeatured,
-      is_active: p.isActive,
-    });
-
-  const save = async () => {
-    if (!form) return;
-    if (!form.name.trim()) {
-      enqueueSnackbar('Vui lòng nhập tên sản phẩm', { variant: 'warning' });
-      return;
-    }
-    setSaving(true);
-    const payload = {
-      name: form.name,
-      description: form.description,
-      image_url: form.image_url,
-      images: form.images,
-      category_id: form.category_id || null,
-      is_featured: form.is_featured,
-      is_active: form.is_active,
-    };
-    try {
-      if (form.id) await axiosInstance.patch(`/api/products/admin/${form.id}`, payload);
-      else await axiosInstance.post('/api/products/admin', payload);
-      enqueueSnackbar(form.id ? 'Đã cập nhật sản phẩm' : 'Đã tạo sản phẩm');
-      setForm(null);
-      load();
-    } catch (e: any) {
-      enqueueSnackbar(e?.detail || e?.message || 'Lưu thất bại', { variant: 'error' });
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const remove = async () => {
     if (!toDelete) return;
     try {
@@ -178,11 +100,28 @@ export default function AdminProductsView() {
     }
   };
 
+  // Trang form đầy đủ (tạo/sửa) — thay cho popup cũ.
+  if (editing) {
+    return (
+      <Container sx={{ pb: 6 }} maxWidth="lg">
+        <AdminProductForm
+          current={editing === 'new' ? null : editing}
+          categories={categories}
+          onBack={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null);
+            load();
+          }}
+        />
+      </Container>
+    );
+  }
+
   return (
     <Container sx={{ pb: 6 }} maxWidth="lg">
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ my: 3 }}>
         <Typography variant="h4">Sản phẩm</Typography>
-        <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={openCreate}>
+        <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => setEditing('new')}>
           Thêm sản phẩm
         </Button>
       </Stack>
@@ -229,7 +168,7 @@ export default function AdminProductsView() {
                           <Iconify icon="solar:box-minimalistic-bold" />
                         </IconButton>
                       </Tooltip>
-                      <IconButton onClick={() => openEdit(p)}>
+                      <IconButton onClick={() => setEditing(p)}>
                         <Iconify icon="solar:pen-bold" />
                       </IconButton>
                       <IconButton color="error" onClick={() => setToDelete(p)}>
@@ -250,90 +189,6 @@ export default function AdminProductsView() {
           </TableContainer>
         )}
       </Card>
-
-      {/* Dialog tạo/sửa */}
-      <Dialog open={!!form} onClose={() => setForm(null)} fullWidth maxWidth="sm">
-        <DialogTitle>{form?.id ? 'Sửa sản phẩm' : 'Thêm sản phẩm'}</DialogTitle>
-        <DialogContent>
-          {form && (
-            <Stack spacing={2.5} sx={{ mt: 1 }}>
-              <TextField
-                label="Tên sản phẩm"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                autoFocus
-              />
-              <TextField
-                select
-                label="Danh mục"
-                value={form.category_id}
-                onChange={(e) => setForm({ ...form, category_id: e.target.value })}
-              >
-                <MenuItem value="">— Không —</MenuItem>
-                {categories.map((c) => (
-                  <MenuItem key={c.id} value={c.id}>
-                    {c.name}
-                  </MenuItem>
-                ))}
-              </TextField>
-              <ImageUploadField label="Ảnh sản phẩm" value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })} />
-              <GalleryField label="Album ảnh (tài khoản premium)" value={form.images} onChange={(urls) => setForm({ ...form, images: urls })} />
-              <Stack spacing={1}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                    Mô tả
-                  </Typography>
-                  <Button
-                    size="small"
-                    onClick={aiGenerate}
-                    disabled={aiBusy}
-                    startIcon={<Iconify icon={aiBusy ? 'eos-icons:loading' : 'solar:magic-stick-3-bold'} />}
-                  >
-                    {aiBusy ? 'Đang tạo…' : 'Tạo bằng AI'}
-                  </Button>
-                </Stack>
-                <TextField
-                  multiline
-                  minRows={3}
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                />
-              </Stack>
-              <Stack direction="row" spacing={2}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={form.is_featured}
-                      onChange={(e) => setForm({ ...form, is_featured: e.target.checked })}
-                    />
-                  }
-                  label="Nổi bật"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={form.is_active}
-                      onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
-                    />
-                  }
-                  label="Đang bán"
-                />
-              </Stack>
-              <Typography variant="caption" color="text.secondary">
-                Sau khi lưu, bấm nút <b>Gói &amp; giá</b> (biểu tượng hộp) ở danh sách để thêm gói/giá và trường nhập.
-              </Typography>
-            </Stack>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button color="inherit" onClick={() => setForm(null)}>
-            Huỷ
-          </Button>
-          <Button variant="contained" onClick={save} disabled={saving}>
-            Lưu
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       <ConfirmDialog
         open={!!toDelete}
