@@ -1079,7 +1079,7 @@ function OAuthTab() {
                     <TextField label="Client Secret" size="small" placeholder={p.hasSecret ? '•••• (đã lưu)' : ''} onChange={(e) => setCfg({ ...cfg, [prov]: { ...p, clientSecret: e.target.value } })} />
                     <Divider />
                     <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                      Redirect URI (dán vào nhà cung cấp):
+                      Dán URI này vào "Authorized redirect URIs" của nhà cung cấp
                     </Typography>
                     <CopyField label="Redirect URI" value={redirect} />
                   </Stack>
