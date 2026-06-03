@@ -260,6 +260,12 @@ const fr = {
     clear: `Effacer`,
     products_found: `produits trouvés`,
   },
+  product_page: {
+    package: `Forfait`,
+    enter_info: `Saisir les informations`,
+    add_to_cart: `Ajouter au panier`,
+    buy_now: `Acheter`,
+  },
 };
 
 export default fr;

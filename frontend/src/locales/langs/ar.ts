@@ -260,6 +260,12 @@ const ar = {
     clear: `مسح`,
     products_found: `منتج`,
   },
+  product_page: {
+    package: `الباقة`,
+    enter_info: `أدخل المعلومات`,
+    add_to_cart: `أضف إلى السلة`,
+    buy_now: `اشترِ الآن`,
+  },
 };
 
 export default ar;

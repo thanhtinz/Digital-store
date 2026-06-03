@@ -260,6 +260,12 @@ const vn = {
     clear: `Xoá lọc`,
     products_found: `sản phẩm`,
   },
+  product_page: {
+    package: `Gói`,
+    enter_info: `Nhập thông tin`,
+    add_to_cart: `Thêm vào giỏ`,
+    buy_now: `Mua ngay`,
+  },
 };
 
 export default vn;

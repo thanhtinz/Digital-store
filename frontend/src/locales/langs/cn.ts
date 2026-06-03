@@ -260,6 +260,12 @@ const cn = {
     clear: `清除`,
     products_found: `件商品`,
   },
+  product_page: {
+    package: `套餐`,
+    enter_info: `填写信息`,
+    add_to_cart: `加入购物车`,
+    buy_now: `立即购买`,
+  },
 };
 
 export default cn;

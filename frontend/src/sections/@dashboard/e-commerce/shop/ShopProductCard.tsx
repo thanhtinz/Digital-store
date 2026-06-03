@@ -25,22 +25,37 @@ type Props = {
 };
 
 export default function ShopProductCard({ product }: Props) {
-  const { id, name, cover, price, colors, status, available, sizes, priceSale } = product;
+  const { id, name, status } = product;
+
+  // Sản phẩm số: ảnh = imageUrl, giá = gói rẻ nhất, gói mặc định để thêm vào giỏ.
+  const p: any = product;
+  const packages: any[] = p.packages || [];
+  const cheapest = packages
+    .filter((pk) => pk.price > 0)
+    .sort((a, b) => a.price - b.price)[0] || packages[0];
+  const cover = p.imageUrl || p.cover || '';
+  const price = cheapest?.price ?? p.price ?? 0;
+  const priceSale = cheapest?.originalPrice && cheapest.originalPrice > price ? cheapest.originalPrice : 0;
+  const colors: string[] = p.colors || [];
 
   const dispatch = useDispatch();
 
   const linkTo = PATH_DASHBOARD.eCommerce.view(paramCase(name));
 
   const handleAddCart = async () => {
+    if (!cheapest) return;
     const newProduct = {
       id,
       name,
       cover,
-      available,
+      available: cheapest?.stockQuantity ?? 999,
       price,
-      colors: [colors[0]],
-      size: sizes[0],
+      colors: colors.length ? [colors[0]] : [],
+      size: '',
       quantity: 1,
+      // BẮT BUỘC để đồng bộ giỏ lên backend (/api/cart/sync cần package_id).
+      packageId: String(cheapest.id),
+      subtotal: price,
     };
     try {
       dispatch(addToCart(newProduct));

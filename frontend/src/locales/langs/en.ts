@@ -260,6 +260,12 @@ const en = {
     clear: `Clear`,
     products_found: `products found`,
   },
+  product_page: {
+    package: `Package`,
+    enter_info: `Enter details`,
+    add_to_cart: `Add to cart`,
+    buy_now: `Buy now`,
+  },
 };
 
 export default en;

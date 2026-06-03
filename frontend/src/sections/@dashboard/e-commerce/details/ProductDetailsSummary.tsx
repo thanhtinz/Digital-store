@@ -31,6 +31,8 @@ import Iconify from '../../../../components/iconify';
 import { IncrementerButton } from '../../../../components/custom-input';
 import { ColorSinglePicker } from '../../../../components/color-utils';
 import FormProvider, { RHFSelect } from '../../../../components/hook-form';
+// locales
+import { useLocales } from '../../../../locales';
 
 // ----------------------------------------------------------------------
 
@@ -53,6 +55,8 @@ export default function ProductDetailsSummary({
   ...other
 }: Props) {
   const { push } = useRouter();
+  const { translate } = useLocales();
+  const tp = (k: string) => `${translate(`product_page.${k}`)}`;
 
   const {
     id,
@@ -224,7 +228,7 @@ export default function ProductDetailsSummary({
         {hasPackages ? (
           <Stack direction="row" justifyContent="space-between" alignItems="center">
             <Typography variant="subtitle2" sx={{ height: 40, lineHeight: '40px', flexGrow: 1 }}>
-              Gói
+              {tp('package')}
             </Typography>
 
             <RHFSelect
@@ -303,7 +307,7 @@ export default function ProductDetailsSummary({
         {/* Trường tùy chỉnh theo gói (Digital Store) */}
         {packageFields.length > 0 && (
           <Stack spacing={2}>
-            <Typography variant="subtitle2">Nhập thông tin</Typography>
+            <Typography variant="subtitle2">{tp('enter_info')}</Typography>
             {packageFields.map((f) => {
               const isSelect = f.fieldType === 'select';
               const opts = (f.options || '')
@@ -374,11 +378,11 @@ export default function ProductDetailsSummary({
             onClick={handleAddCart}
             sx={{ whiteSpace: 'nowrap' }}
           >
-            Add to Cart
+            {tp('add_to_cart')}
           </Button>
 
           <Button fullWidth size="large" type="submit" variant="contained" disabled={missingRequired}>
-            Buy Now
+            {tp('buy_now')}
           </Button>
         </Stack>
 
