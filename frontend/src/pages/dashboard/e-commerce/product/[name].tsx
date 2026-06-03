@@ -109,7 +109,7 @@ export default function EcommerceProductDetailsPage() {
       <Container maxWidth={themeStretch ? false : 'lg'} sx={{ pt: { xs: 2, md: 3 } }}>
         <CustomBreadcrumbs
           links={[
-            { name: tp('bc_home'), href: PATH_DASHBOARD.root },
+            { name: tp('bc_home'), href: '/' },
             { name: tp('bc_shop'), href: PATH_DASHBOARD.eCommerce.shop },
             { name: product?.name || '' },
           ]}

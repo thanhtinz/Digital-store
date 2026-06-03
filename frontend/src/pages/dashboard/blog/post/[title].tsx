@@ -98,7 +98,7 @@ export default function BlogPostPage() {
           links={[
             {
               name: tb('bc_home'),
-              href: PATH_DASHBOARD.root,
+              href: '/',
             },
             {
               name: tb('title'),
