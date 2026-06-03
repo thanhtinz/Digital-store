@@ -145,6 +145,7 @@ router.get('/me', requireUser, async (req: Request, res: Response) => {
       email: user.email,
       display_name: user.displayName,
       avatar_url: user.avatarUrl,
+      language: (user as any).language || 'vn',
       balance: user.balance,
       is_active: user.isActive,
       role: adminUser?.role || 'user',
@@ -171,6 +172,19 @@ router.patch('/me', requireUser, async (req: Request, res: Response) => {
 });
 
 // ── Change password ────────────────────────────────────
+// Lưu ngôn ngữ ưa thích của user (cho đồng bộ đa thiết bị).
+router.post('/language', requireUser, async (req: Request, res: Response) => {
+  try {
+    const payload = (req as any).user;
+    const language = String(req.body?.language || '').slice(0, 10);
+    if (!language) { res.status(400).json({ detail: 'Thiếu language' }); return; }
+    await prisma.user.update({ where: { id: payload.user_id }, data: { language } as any });
+    res.json({ language });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
 router.post('/change-password', requireUser, async (req: Request, res: Response) => {
   try {
     const payload = (req as any).user;

@@ -2,6 +2,7 @@ import { createContext, useEffect, useReducer, useCallback, useMemo } from 'reac
 // utils
 import axios from '../utils/axios';
 import localStorageAvailable from '../utils/localStorageAvailable';
+import i18n from '../locales/i18n';
 //
 import { isValidToken, setSession } from './utils';
 import { ActionMapType, AuthStateType, AuthUserType, JWTContextType } from './types';
@@ -102,6 +103,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const response = await axios.get('/api/auth/me');
 
         const user = response.data.user || response.data;
+
+        // Áp ngôn ngữ ưa thích đã lưu của user (đồng bộ đa thiết bị).
+        const lang = (user as any)?.language;
+        if (lang && typeof window !== 'undefined' && localStorage.getItem('i18nextLng') !== lang) {
+          localStorage.setItem('i18nextLng', lang);
+          i18n.changeLanguage(lang);
+        }
 
         dispatch({
           type: Types.INITIAL,

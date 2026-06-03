@@ -259,6 +259,7 @@ model User {
   passwordHash    String?  @db.VarChar(255) @map("password_hash")
   displayName     String?  @db.VarChar(255) @map("display_name")
   avatarUrl       String?  @map("avatar_url")
+  language        String?  @default("vn") @db.VarChar(10)
   provider        String   @default("local") @db.VarChar(50)
   providerId      String?  @db.VarChar(255) @map("provider_id")
   twoFactorSecret String?  @db.VarChar(255) @map("two_factor_secret")

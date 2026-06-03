@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 // utils
 import localStorageAvailable from '../utils/localStorageAvailable';
+import axiosInstance from '../utils/axios';
 // components
 import { useSettingsContext } from '../components/settings';
 //
@@ -22,6 +23,10 @@ export default function useLocales() {
   const handleChangeLanguage = (newlang: string) => {
     i18n.changeLanguage(newlang);
     onChangeDirectionByLang(newlang);
+    // Lưu lựa chọn lên backend (best-effort) nếu đã đăng nhập, để đồng bộ đa thiết bị.
+    if (typeof window !== 'undefined' && localStorage.getItem('accessToken')) {
+      axiosInstance.post('/api/auth/language', { language: newlang }).catch(() => {});
+    }
   };
 
   return {
