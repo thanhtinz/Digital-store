@@ -638,6 +638,7 @@ export default function HomeView() {
               {list.length === 0 && (
                 <Typography variant="body2" sx={{ color: 'text.secondary', py: 3 }}>
                   Chưa có sản phẩm trong danh mục này.
+                  {` [debug: sp giftcard tải về=${giftcard.length}, danh mục=${cats.length}, tab=${active}, slugs sp=${Array.from(new Set(giftcard.map((p: any) => p.category?.slug || 'null'))).join(',') || '∅'}]`}
                 </Typography>
               )}
             </>
