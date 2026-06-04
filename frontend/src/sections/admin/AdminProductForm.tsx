@@ -258,6 +258,12 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
                     Chưa có danh mục nào. Hãy tạo danh mục ở mục “Danh mục” trước.
                   </Typography>
                 )}
+                {/* DEBUG nhìn thấy được — đọc dòng này gửi mình để chốt lỗi */}
+                <Typography variant="caption" sx={{ color: 'error.main', fontWeight: 700 }}>
+                  DEBUG: tải {cats.length} danh mục | đang chọn &quot;{categoryId || '(trống)'}&quot; |
+                  SP lưu cat_id={String(current?.categoryId ?? 'null')} | có category?{' '}
+                  {String(!!current?.category)} ({current?.category?.name || '—'})
+                </Typography>
               </Stack>
             </Card>
 
