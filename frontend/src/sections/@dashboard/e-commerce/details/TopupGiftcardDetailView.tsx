@@ -228,7 +228,7 @@ export default function TopupGiftcardDetailView({ product, onAddCart, onGotoStep
                       onClick={() => !oos && selectPkg(pkg)}
                       sx={{
                         position: 'relative',
-                        p: 1.25,
+                        overflow: 'hidden',
                         cursor: oos ? 'not-allowed' : 'pointer',
                         opacity: oos ? 0.5 : 1,
                         borderRadius: 1.5,
@@ -253,29 +253,34 @@ export default function TopupGiftcardDetailView({ product, onAddCart, onGotoStep
                         </Label>
                       )}
                       {showImg && (
-                        <Image
-                          src={pkg.imageUrl}
-                          alt={pkg.name}
-                          ratio={isGiftcard ? '3/4' : '1/1'}
-                          sx={{ borderRadius: 1, mb: 1 }}
-                        />
+                        <Box sx={{ p: 1.5 }}>
+                          <Image
+                            src={pkg.imageUrl}
+                            alt={pkg.name}
+                            ratio={isGiftcard ? '3/4' : '1/1'}
+                            sx={{ borderRadius: 1 }}
+                          />
+                        </Box>
                       )}
-                      <Typography variant="subtitle2" noWrap title={pkg.name}>
-                        {pkg.name}
-                      </Typography>
-                      <Stack direction="row" spacing={0.5} alignItems="baseline" sx={{ flexWrap: 'wrap' }}>
-                        <Typography variant="subtitle2" color="primary.main">
-                          {fCurrency(eff)}
+                      <Divider />
+                      <Box sx={{ p: 1.5 }}>
+                        <Typography variant="subtitle2" noWrap title={pkg.name}>
+                          {pkg.name}
                         </Typography>
-                        {hasFlash && (
-                          <Typography
-                            variant="caption"
-                            sx={{ color: 'text.disabled', textDecoration: 'line-through' }}
-                          >
-                            {fCurrency(pkg.price)}
+                        <Stack direction="row" spacing={0.5} alignItems="baseline" sx={{ flexWrap: 'wrap', mt: 0.25 }}>
+                          <Typography variant="subtitle1" sx={{ color: 'primary.main', fontWeight: 700 }}>
+                            {fCurrency(eff)}
                           </Typography>
-                        )}
-                      </Stack>
+                          {hasFlash && (
+                            <Typography
+                              variant="caption"
+                              sx={{ color: 'text.disabled', textDecoration: 'line-through' }}
+                            >
+                              {fCurrency(pkg.price)}
+                            </Typography>
+                          )}
+                        </Stack>
+                      </Box>
                     </Box>
                   );
                 })}

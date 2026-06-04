@@ -9,6 +9,8 @@ import {
   Container,
   Link,
   Stack,
+  Tab,
+  Tabs,
   Typography,
 } from '@mui/material';
 // locales
@@ -175,10 +177,11 @@ function TopupCard({ product }: { product: any }) {
   );
 }
 
-// Logo card cho lưới Gift Card (chỉ ảnh + tên).
+// Logo card cho lưới Gift Card (chỉ ảnh, fallback tên).
 function GiftcardLogo({ product }: { product: any }) {
   const p = product;
   const slug = p.code || p.slug || p.id;
+  const img = p.cover || p.imageUrl;
   return (
     <Link
       component={NextLink}
@@ -193,15 +196,19 @@ function GiftcardLogo({ product }: { product: any }) {
           '&:hover': { boxShadow: (theme) => theme.customShadows.z16 },
         }}
       >
-        <Image src={p.cover || p.imageUrl} ratio="1/1" alt={p.name} />
-        <Typography
-          variant="caption"
-          noWrap
-          sx={{ display: 'block', p: 1, textAlign: 'center' }}
-          title={p.name}
-        >
-          {p.name}
-        </Typography>
+        {img ? (
+          <Image src={img} ratio="1/1" alt={p.name} />
+        ) : (
+          <Stack
+            alignItems="center"
+            justifyContent="center"
+            sx={{ aspectRatio: '1 / 1', p: 1, textAlign: 'center', bgcolor: 'background.neutral' }}
+          >
+            <Typography variant="caption" sx={{ fontWeight: 600 }}>
+              {p.name}
+            </Typography>
+          </Stack>
+        )}
       </Card>
     </Link>
   );
@@ -217,6 +224,7 @@ export default function HomeView() {
   const [newest, setNewest] = useState<IProduct[]>([]);
   const [topup, setTopup] = useState<IProduct[]>([]);
   const [giftcard, setGiftcard] = useState<IProduct[]>([]);
+  const [gcTab, setGcTab] = useState<string>('');
   const [smm, setSmm] = useState<any[]>([]);
   const [flash, setFlash] = useState<FlashSale[]>([]);
   const [banner, setBanner] = useState<Banner | null>(null);
@@ -232,7 +240,7 @@ export default function HomeView() {
           axiosInstance.get('/api/products', { params: { featured: 'true', limit: 8 } }),
           axiosInstance.get('/api/products', { params: { limit: 8, sort: 'newest' } }),
           axiosInstance.get('/api/products', { params: { type: 'game', limit: 12 } }),
-          axiosInstance.get('/api/products', { params: { type: 'giftcard', limit: 12 } }),
+          axiosInstance.get('/api/products', { params: { type: 'giftcard', limit: 60 } }),
           axiosInstance.get('/api/smm/catalog'),
           axiosInstance.get('/api/flash-sales/active'),
           axiosInstance.get('/api/banners'),
@@ -403,29 +411,54 @@ export default function HomeView() {
         </>
       )}
 
-      {/* GIFT CARD — lưới logo */}
-      {giftcard.length > 0 && (
-        <>
-          <SectionHead
-            title="Gift Card"
-            viewAllHref={`${PATH_DASHBOARD.eCommerce.shop}?type=giftcard`}
-            viewAllLabel={t('view_all')}
-          />
-          <Box
-            display="grid"
-            gap={2}
-            gridTemplateColumns={{
-              xs: 'repeat(3, 1fr)',
-              sm: 'repeat(4, 1fr)',
-              md: 'repeat(6, 1fr)',
-            }}
-          >
-            {giftcard.map((p: any) => (
-              <GiftcardLogo key={p.id} product={p} />
-            ))}
-          </Box>
-        </>
-      )}
+      {/* GIFT CARD — tabs theo danh mục + lưới logo (theo thiết kế gốc) */}
+      {giftcard.length > 0 &&
+        (() => {
+          // Gom danh mục từ sản phẩm giftcard.
+          const catsMap = new Map<string, string>();
+          giftcard.forEach((p: any) => {
+            const slug = p.categorySlug || '';
+            if (!catsMap.has(slug)) catsMap.set(slug, p.category || 'Khác');
+          });
+          const cats = Array.from(catsMap.entries()).map(([slug, name]) => ({ slug, name }));
+          const active = catsMap.has(gcTab) ? gcTab : cats[0]?.slug || '';
+          const list = giftcard.filter((p: any) => (p.categorySlug || '') === active);
+          return (
+            <>
+              <SectionHead
+                title="Gift Card"
+                viewAllHref={`${PATH_DASHBOARD.eCommerce.shop}?type=giftcard`}
+                viewAllLabel={t('view_all')}
+              />
+              {cats.length > 1 && (
+                <Tabs
+                  value={active}
+                  onChange={(_e, v) => setGcTab(v)}
+                  variant="scrollable"
+                  scrollButtons="auto"
+                  sx={{ mb: 2 }}
+                >
+                  {cats.map((c) => (
+                    <Tab key={c.slug} value={c.slug} label={c.name} />
+                  ))}
+                </Tabs>
+              )}
+              <Box
+                display="grid"
+                gap={2}
+                gridTemplateColumns={{
+                  xs: 'repeat(3, 1fr)',
+                  sm: 'repeat(4, 1fr)',
+                  md: 'repeat(6, 1fr)',
+                }}
+              >
+                {list.map((p: any) => (
+                  <GiftcardLogo key={p.id} product={p} />
+                ))}
+              </Box>
+            </>
+          );
+        })()}
 
       {/* SMM — TĂNG TƯƠNG TÁC */}
       {smm.length > 0 && (
