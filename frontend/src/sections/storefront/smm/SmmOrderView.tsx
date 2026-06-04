@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+// next
+import { useRouter } from 'next/router';
 // @mui
 import {
   Alert,
@@ -42,11 +44,12 @@ type Service = {
   can_cancel?: boolean;
 };
 type Category = { id: number; name: string; services: Service[] };
-type Platform = { id: number; name: string; icon_url?: string; categories: Category[] };
+type Platform = { id: number; name: string; slug?: string; icon_url?: string; categories: Category[] };
 
 // ----------------------------------------------------------------------
 
 export default function SmmOrderView() {
+  const router = useRouter();
   const { isAuthenticated } = useAuthContext();
   const { enqueueSnackbar } = useSnackbar();
   const { translate } = useLocales();
@@ -63,6 +66,7 @@ export default function SmmOrderView() {
 
   const [catalog, setCatalog] = useState<Platform[]>([]);
   const [platformId, setPlatformId] = useState('');
+  const [appliedQuery, setAppliedQuery] = useState(false);
   const [categoryId, setCategoryId] = useState('');
   const [serviceId, setServiceId] = useState('');
   const [link, setLink] = useState('');
@@ -107,6 +111,19 @@ export default function SmmOrderView() {
       alive = false;
     };
   }, []);
+
+  // Tự chọn nền tảng theo query ?platform=<slug|id> (vd bấm từ trang chủ).
+  // Chỉ áp dụng 1 lần để người dùng vẫn đổi nền tảng thủ công sau đó.
+  useEffect(() => {
+    if (appliedQuery || !router.isReady || !catalog.length) return;
+    const q = router.query.platform;
+    const key = Array.isArray(q) ? q[0] : q;
+    if (key) {
+      const match = catalog.find((p) => p.slug === key || String(p.id) === key);
+      if (match) setPlatformId(String(match.id));
+    }
+    setAppliedQuery(true);
+  }, [appliedQuery, router.isReady, router.query.platform, catalog]);
 
   // Số dư hiện tại (để cảnh báo không đủ tiền).
   const refreshBalance = () => {
