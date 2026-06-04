@@ -709,7 +709,136 @@ router.get('/providers/:pid/remote-services', requireStaffOrAdmin, async (req: R
     if (!provider) { res.status(404).json({ detail: 'Provider not found' }); return; }
     const adapter = getProvider(provider);
     const services = await adapter.getServices();
-    res.json({ total: services.length, services });
+    // Preview giá bán (áp tỷ giá + markup) + gom nhóm chuyên mục.
+    const settings: any = (provider as any).settings || {};
+    const exchangeRate = parseFloat(settings.exchange_rate) || 1;
+    const priceMarkup = parseFloat(settings.price_markup) || 0;
+    const cost = (r: any) => Math.round((parseFloat(r) || 0) * exchangeRate * 100) / 100;
+    const markup = (c: number) =>
+      priceMarkup > 0 ? Math.round(c * (1 + priceMarkup / 100) * 100) / 100 : Math.round(c * 100) / 100;
+    const enriched = services.map((s: any) => {
+      const c = cost(s.rate);
+      return { ...s, rate_raw: s.rate, cost_local: c, rate_local: markup(c) };
+    });
+    const catMap: Record<string, number> = {};
+    services.forEach((s: any) => {
+      const cat = s.category || 'Khác';
+      catMap[cat] = (catMap[cat] || 0) + 1;
+    });
+    const categories = Object.entries(catMap).map(([name, count]) => ({ name, count }));
+    res.json({ total: services.length, services: enriched, categories });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+/** Đồng bộ TOÀN BỘ dịch vụ từ nguồn (tạo chuyên mục + dịch vụ, áp tỷ giá/markup, theo toggle settings). */
+router.post('/services/sync', requireStaffOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const { provider_id, platform_id } = req.body;
+    const provider: any = await prisma.apiProvider.findFirst({
+      where: { id: provider_id, providerType: 'smm_panel', isActive: true },
+    });
+    if (!provider) { res.status(404).json({ detail: 'SMM provider not found or inactive' }); return; }
+    if (!platform_id) { res.status(400).json({ detail: 'Thiếu platform_id (nền tảng đích)' }); return; }
+
+    const settings = provider.settings || {};
+    const syncCategories = settings.sync_categories !== false;
+    const syncServices = settings.sync_services !== false;
+    const syncPrices = settings.sync_prices !== false;
+    const syncDescriptions = settings.sync_descriptions !== false;
+    const syncAdvanced = settings.sync_advanced !== false;
+    const filterHtml = settings.filter_html !== false;
+    const exchangeRate = parseFloat(settings.exchange_rate) || 1;
+    const priceMarkup = parseFloat(settings.price_markup) || 0;
+    const stripHtml = (t: string) => (filterHtml && t ? String(t).replace(/<[^>]+>/g, '').trim() : t);
+    const cost = (r: any) => Math.round((parseFloat(r) || 0) * exchangeRate * 100) / 100;
+    const markup = (c: number) =>
+      priceMarkup > 0 ? Math.round(c * (1 + priceMarkup / 100) * 100) / 100 : Math.round(c * 100) / 100;
+
+    let raw: any[];
+    try {
+      raw = await getProvider(provider).getServices();
+    } catch (e: any) {
+      res.status(502).json({ detail: `Lỗi gọi nguồn: ${e.message}` });
+      return;
+    }
+
+    let created = 0;
+    let updated = 0;
+    let skipped = 0;
+    const catCache: Record<string, any> = {};
+    for (const svc of raw) {
+      const extId = String(parseInt(svc.service));
+      if (!extId || extId === 'NaN') { skipped += 1; continue; }
+      const remoteCat = svc.category || 'Khác';
+      let cat = catCache[remoteCat];
+      if (cat === undefined) {
+        cat = await prisma.smmCategory.findFirst({ where: { platformId: platform_id, name: remoteCat } });
+        if (!cat && syncCategories) {
+          cat = await prisma.smmCategory.create({
+            data: {
+              platformId: platform_id,
+              name: remoteCat,
+              slug: slugify(`${remoteCat}-${Date.now()}`, { lower: true, strict: true }),
+              isActive: true,
+            },
+          });
+        }
+        catCache[remoteCat] = cat || null;
+      }
+      if (!cat) { skipped += 1; continue; }
+
+      const costRate = cost(svc.rate);
+      const rate = markup(costRate);
+      const existing = await prisma.smmService.findFirst({
+        where: { apiProviderId: provider.id, externalServiceId: extId },
+      });
+      if (existing) {
+        if (!syncServices) { skipped += 1; continue; }
+        const data: any = {};
+        if (syncPrices) {
+          data.rate = rate;
+          data.costRate = costRate;
+          data.minQuantity = parseInt(svc.min) || 1;
+          data.maxQuantity = parseInt(svc.max) || 10000;
+        }
+        if (syncDescriptions) {
+          data.name = stripHtml(svc.name || `Service ${extId}`);
+          data.description = stripHtml(svc.description || svc.desc || '');
+        }
+        if (syncAdvanced) {
+          data.canRefill = !!svc.refill;
+          data.canCancel = !!svc.cancel;
+          data.serviceType = svc.type || 'Default';
+        }
+        if (Object.keys(data).length) {
+          await prisma.smmService.update({ where: { id: existing.id }, data });
+          updated += 1;
+        } else skipped += 1;
+      } else {
+        if (!syncServices) { skipped += 1; continue; }
+        await prisma.smmService.create({
+          data: {
+            categoryId: cat.id,
+            name: stripHtml(svc.name || `Service ${extId}`),
+            description: stripHtml(svc.description || svc.desc || ''),
+            rate,
+            costRate,
+            minQuantity: parseInt(svc.min) || 1,
+            maxQuantity: parseInt(svc.max) || 10000,
+            deliveryType: 'api',
+            apiProviderId: provider.id,
+            externalServiceId: extId,
+            canRefill: !!svc.refill,
+            canCancel: !!svc.cancel,
+            serviceType: svc.type || 'Default',
+          },
+        });
+        created += 1;
+      }
+    }
+    res.json({ ok: true, created, updated, skipped, total_raw: raw.length });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
   }

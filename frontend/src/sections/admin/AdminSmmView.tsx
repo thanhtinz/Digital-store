@@ -978,6 +978,27 @@ function ImportTab() {
     }
   };
 
+  const syncAll = async () => {
+    if (!providerId || !platformId) {
+      err({}, 'Chọn nguồn và nền tảng đích');
+      return;
+    }
+    setBusy(true);
+    try {
+      const r = await axiosInstance.post('/api/smm/services/sync', {
+        provider_id: providerId,
+        platform_id: platformId,
+      });
+      ok(`Đồng bộ toàn bộ: tạo ${r.data?.created ?? 0}, cập nhật ${r.data?.updated ?? 0}, bỏ qua ${r.data?.skipped ?? 0}`);
+      const c = await axiosInstance.get('/api/smm/categories/all');
+      setCats(c.data || []);
+    } catch (e) {
+      err(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const filtered = remoteServices.filter(
     (s) =>
       !svcFilter ||
@@ -1014,9 +1035,14 @@ function ImportTab() {
         <Card sx={{ p: 2.5 }}>
           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
             <Typography variant="h6">Chuyên mục từ nguồn ({remoteCats.length})</Typography>
-            <Button variant="contained" disabled={!platformId || busy} onClick={syncCategories} startIcon={<Iconify icon="solar:download-bold" />}>
-              Tạo chuyên mục còn thiếu
-            </Button>
+            <Stack direction="row" spacing={1}>
+              <Button variant="outlined" disabled={!platformId || busy} onClick={syncCategories} startIcon={<Iconify icon="solar:download-bold" />}>
+                Tạo chuyên mục còn thiếu
+              </Button>
+              <Button variant="contained" color="warning" disabled={!platformId || busy} onClick={syncAll} startIcon={<Iconify icon="solar:refresh-circle-bold" />}>
+                Đồng bộ toàn bộ
+              </Button>
+            </Stack>
           </Stack>
           <Stack direction="row" flexWrap="wrap" gap={1}>
             {remoteCats.map((c) => (
@@ -1068,6 +1094,7 @@ function ImportTab() {
                   <TableCell>Dịch vụ (nguồn)</TableCell>
                   <TableCell>Chuyên mục</TableCell>
                   <TableCell align="right">Giá gốc</TableCell>
+                  <TableCell align="right">Giá bán</TableCell>
                   <TableCell align="center">Min/Max</TableCell>
                 </TableRow>
               </TableHead>
@@ -1093,7 +1120,10 @@ function ImportTab() {
                         </Typography>
                       </TableCell>
                       <TableCell sx={{ fontSize: 13 }}>{s.category}</TableCell>
-                      <TableCell align="right">{s.rate}</TableCell>
+                      <TableCell align="right" sx={{ color: 'text.secondary' }}>{s.rate}</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                        {s.rate_local != null ? fCurrency(s.rate_local) : '—'}
+                      </TableCell>
                       <TableCell align="center" sx={{ fontSize: 13 }}>
                         {s.min}/{s.max}
                       </TableCell>
