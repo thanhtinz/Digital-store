@@ -304,7 +304,6 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
             <Card sx={{ p: 3 }}>
               <Stack spacing={1}>
                 <RHFSwitch name="is_active" label="Đang bán" />
-                <RHFSwitch name="is_featured" label="Nổi bật (hiện trang chủ)" />
               </Stack>
             </Card>
 
