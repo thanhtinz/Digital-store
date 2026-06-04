@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 // @mui
 import {
+  Box,
   Avatar,
   Button,
   Card,
@@ -241,6 +242,12 @@ function PackagesDialog({ product, onClose, onChanged }: { product: any; onClose
   const [apiProviders, setApiProviders] = useState<any[]>([]);
   const [remoteProducts, setRemoteProducts] = useState<any[]>([]);
   const [loadingRemote, setLoadingRemote] = useState(false);
+  // Import gói từ nguồn
+  const [impProvider, setImpProvider] = useState<string | number>('');
+  const [impProductId, setImpProductId] = useState('');
+  const [impMarkup, setImpMarkup] = useState(0);
+  const [importing, setImporting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   // Nạp nguồn topup_game (để map gói giao hàng API).
   useEffect(() => {
@@ -327,11 +334,112 @@ function PackagesDialog({ product, onClose, onChanged }: { product: any; onClose
     }
   };
 
+  const doImport = async () => {
+    if (!product || !impProvider || !impProductId) {
+      enqueueSnackbar('Chọn nguồn và sản phẩm nguồn', { variant: 'warning' });
+      return;
+    }
+    setImporting(true);
+    try {
+      const r = await axiosInstance.post(`/api/products/admin/${product.id}/import-packages`, {
+        api_provider_id: impProvider,
+        external_product_id: impProductId,
+        auto_markup: Number(impMarkup) > 0,
+        markup_percent: Number(impMarkup) || 0,
+      });
+      enqueueSnackbar(r.data?.message || 'Đã import gói');
+      load();
+      onChanged();
+    } catch (e: any) {
+      enqueueSnackbar(e?.detail || 'Import thất bại', { variant: 'error' });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const doSyncPrices = async () => {
+    if (!product) return;
+    setSyncing(true);
+    try {
+      const r = await axiosInstance.post(`/api/products/admin/${product.id}/sync-prices`, {});
+      enqueueSnackbar(r.data?.message || 'Đã đồng bộ giá');
+      load();
+      onChanged();
+    } catch (e: any) {
+      enqueueSnackbar(e?.detail || 'Đồng bộ thất bại', { variant: 'error' });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <Dialog open={!!product} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle>Gói & giá — {product?.name}</DialogTitle>
       <DialogContent>
-        <Stack direction="row" justifyContent="flex-end" sx={{ mb: 1 }}>
+        {apiProviders.length > 0 && (
+          <Box sx={{ p: 1.5, mb: 1.5, borderRadius: 1, bgcolor: 'background.neutral' }}>
+            <Typography variant="caption" sx={{ fontWeight: 700, display: 'block', mb: 1 }}>
+              Import gói từ nhà cung cấp (Topup) — tự tạo gói + trường nhập từ nguồn
+            </Typography>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }}>
+              <TextField
+                select
+                size="small"
+                label="Nguồn"
+                sx={{ minWidth: 150 }}
+                value={impProvider}
+                onChange={(e) => {
+                  setImpProvider(e.target.value);
+                  setImpProductId('');
+                  loadRemote(e.target.value);
+                }}
+              >
+                {apiProviders.map((p: any) => (
+                  <MenuItem key={p.id} value={p.id}>
+                    {p.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                select
+                size="small"
+                label={loadingRemote ? 'Đang tải...' : 'Sản phẩm nguồn'}
+                sx={{ minWidth: 180 }}
+                value={impProductId}
+                onChange={(e) => setImpProductId(e.target.value)}
+                disabled={!impProvider || loadingRemote}
+              >
+                {remoteProducts.map((rp: any) => (
+                  <MenuItem key={rp.id} value={rp.id}>
+                    {rp.name} ({rp.plans?.length || 0} gói)
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                size="small"
+                type="number"
+                label="Markup %"
+                sx={{ width: 110 }}
+                value={impMarkup}
+                onChange={(e) => setImpMarkup(Number(e.target.value))}
+              />
+              <Button size="small" variant="contained" disabled={importing} onClick={doImport}>
+                {importing ? 'Đang import...' : 'Import'}
+              </Button>
+            </Stack>
+          </Box>
+        )}
+
+        <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ mb: 1 }}>
+          <Button
+            size="small"
+            color="inherit"
+            startIcon={<Iconify icon="solar:refresh-bold" />}
+            disabled={syncing}
+            onClick={doSyncPrices}
+          >
+            {syncing ? 'Đang đồng bộ...' : 'Đồng bộ giá nguồn'}
+          </Button>
           <Button size="small" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => setForm({ ...PKG_EMPTY })}>
             Thêm gói
           </Button>

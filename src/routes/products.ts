@@ -3,6 +3,7 @@ import slugify from 'slugify';
 import prisma from '../db';
 import { requireAdmin, requireStaffOrAdmin, optionalUser, requireUser } from '../middleware/auth';
 import { money } from '../services/orders';
+import { getTopupProvider } from '../services/providers';
 
 const router = Router();
 
@@ -514,5 +515,98 @@ function serializeProduct(p: any, detailed = false): Record<string, any> {
     createdAt: p.createdAt?.toISOString(),
   };
 }
+
+// ── Admin: IMPORT toàn bộ gói + trường tuỳ chỉnh từ nhà cung cấp (topup) ──
+// Tạo các gói (api-linked) từ plans của 1 sản phẩm nguồn + áp markup, và gắn
+// trường nhập (UID/server...) lấy từ provider cho từng gói.
+router.post('/admin/:productId/import-packages', requireStaffOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const productId = parseInt(req.params.productId);
+    const { api_provider_id, external_product_id, markup_percent, auto_markup } = req.body;
+    if (!api_provider_id || !external_product_id) {
+      res.status(422).json({ detail: 'Thiếu nhà cung cấp hoặc sản phẩm nguồn' });
+      return;
+    }
+    const provider = await prisma.apiProvider.findUnique({ where: { id: Number(api_provider_id) } });
+    if (!provider) { res.status(404).json({ detail: 'Không tìm thấy nhà cung cấp' }); return; }
+    const tp = getTopupProvider({ baseUrl: provider.baseUrl, apiKey: provider.apiKey });
+    const remotes = await tp.getProducts(String(external_product_id));
+    const remote = remotes[0];
+    if (!remote) { res.status(404).json({ detail: 'Không tìm thấy sản phẩm nguồn' }); return; }
+    const mk = auto_markup ? Number(markup_percent) || 0 : 0;
+    const applyMarkup = (p: number) => (auto_markup ? Math.round(p * (1 + mk / 100)) : p);
+    const fields = await tp.getFormFields(String(external_product_id));
+    const existing = await prisma.productPackage.findMany({ where: { productId }, select: { externalPlanId: true } });
+    const have = new Set(existing.map((x: any) => x.externalPlanId).filter(Boolean));
+    let created = 0;
+    for (const plan of remote.plans) {
+      if (have.has(String(plan.id))) continue;
+      const pkg = await prisma.productPackage.create({
+        data: {
+          productId,
+          name: plan.name,
+          price: applyMarkup(plan.sale_price ?? plan.price),
+          deliveryType: 'api',
+          apiProviderId: provider.id,
+          externalProductId: String(external_product_id),
+          externalPlanId: String(plan.id),
+          autoMarkup: !!auto_markup,
+          markupPercent: mk || null,
+          isActive: true,
+          sortOrder: created,
+        },
+      });
+      for (let i = 0; i < fields.length; i++) {
+        const f = fields[i];
+        await prisma.packageField.create({
+          data: {
+            packageId: pkg.id,
+            fieldName: f.label || f.key,
+            fieldType: f.type === 'select' ? 'select' : 'text',
+            isRequired: f.required !== false,
+            options: f.options?.length ? f.options.join('\n') : null,
+            sortOrder: i,
+          },
+        });
+      }
+      created++;
+    }
+    res.json({ message: `Đã import ${created} gói từ nguồn`, created });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+// ── Admin: ĐỒNG BỘ GIÁ các gói api-linked từ nhà cung cấp (áp markup đã lưu) ──
+router.post('/admin/:productId/sync-prices', requireStaffOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const productId = parseInt(req.params.productId);
+    const pkgs = await prisma.productPackage.findMany({
+      where: { productId, deliveryType: 'api', NOT: { apiProviderId: null } },
+    });
+    const cache: Record<string, any[]> = {};
+    let updated = 0;
+    for (const pkg of pkgs as any[]) {
+      if (!pkg.apiProviderId || !pkg.externalProductId || !pkg.externalPlanId) continue;
+      const provider = await prisma.apiProvider.findUnique({ where: { id: pkg.apiProviderId } });
+      if (!provider) continue;
+      const key = `${provider.id}:${pkg.externalProductId}`;
+      if (!cache[key]) {
+        const remotes = await getTopupProvider({ baseUrl: provider.baseUrl, apiKey: provider.apiKey })
+          .getProducts(String(pkg.externalProductId));
+        cache[key] = remotes[0]?.plans || [];
+      }
+      const plan = cache[key].find((pl: any) => String(pl.id) === String(pkg.externalPlanId));
+      if (!plan) continue;
+      const base = plan.sale_price ?? plan.price;
+      const newPrice = pkg.autoMarkup ? Math.round(base * (1 + (pkg.markupPercent || 0) / 100)) : base;
+      await prisma.productPackage.update({ where: { id: pkg.id }, data: { price: newPrice } });
+      updated++;
+    }
+    res.json({ message: `Đã đồng bộ giá ${updated} gói`, updated });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
 
 export default router;
