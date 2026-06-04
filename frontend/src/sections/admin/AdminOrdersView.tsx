@@ -1,9 +1,16 @@
 import { useEffect, useState } from 'react';
 // @mui
 import {
+  Box,
+  Button,
   Card,
   CircularProgress,
   Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
   Stack,
   Table,
   TableBody,
@@ -11,6 +18,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Tooltip,
   Typography,
 } from '@mui/material';
 // utils
@@ -18,6 +26,7 @@ import axiosInstance from '../../utils/axios';
 import { fCurrency } from '../../utils/formatNumber';
 import { fDateTime } from '../../utils/formatTime';
 // components
+import Iconify from '../../components/iconify';
 import Label from '../../components/label';
 import { useSnackbar } from '../../components/snackbar';
 
@@ -49,6 +58,31 @@ export default function AdminOrdersView() {
   const { enqueueSnackbar } = useSnackbar();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  // Dialog xem/cấp lại license mã nguồn của 1 đơn.
+  const [licOrder, setLicOrder] = useState<Order | null>(null);
+  const [licenses, setLicenses] = useState<any[]>([]);
+  const [licLoading, setLicLoading] = useState(false);
+
+  const openLicenses = (o: Order) => {
+    setLicOrder(o);
+    setLicLoading(true);
+    setLicenses([]);
+    axiosInstance
+      .get('/api/admin/source/licenses', { params: { orderId: o.id } })
+      .then((r) => setLicenses(r.data?.items || []))
+      .catch((e) => enqueueSnackbar(e?.detail || 'Lỗi tải license', { variant: 'error' }))
+      .finally(() => setLicLoading(false));
+  };
+
+  const resend = async (licenseId: number) => {
+    try {
+      const r = await axiosInstance.post(`/api/admin/source/licenses/${licenseId}/resend`);
+      enqueueSnackbar(`Đã cấp lại — license mới: ${r.data?.license_key}`);
+      if (licOrder) openLicenses(licOrder);
+    } catch (e: any) {
+      enqueueSnackbar(e?.detail || 'Cấp lại thất bại', { variant: 'error' });
+    }
+  };
 
   useEffect(() => {
     axiosInstance
@@ -83,6 +117,7 @@ export default function AdminOrdersView() {
                   <TableCell>Tổng tiền</TableCell>
                   <TableCell>Trạng thái</TableCell>
                   <TableCell>Thời gian</TableCell>
+                  <TableCell align="center">License</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -99,11 +134,18 @@ export default function AdminOrdersView() {
                       </Label>
                     </TableCell>
                     <TableCell>{date(o) ? fDateTime(date(o)) : '—'}</TableCell>
+                    <TableCell align="center">
+                      <Tooltip title="License mã nguồn">
+                        <IconButton size="small" onClick={() => openLicenses(o)}>
+                          <Iconify icon="solar:key-bold" width={18} />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
                   </TableRow>
                 ))}
                 {!orders.length && (
                   <TableRow>
-                    <TableCell colSpan={5} align="center" sx={{ py: 6, color: 'text.secondary' }}>
+                    <TableCell colSpan={6} align="center" sx={{ py: 6, color: 'text.secondary' }}>
                       Không có đơn hàng
                     </TableCell>
                   </TableRow>
@@ -113,6 +155,46 @@ export default function AdminOrdersView() {
           </TableContainer>
         )}
       </Card>
+
+      <Dialog open={!!licOrder} onClose={() => setLicOrder(null)} fullWidth maxWidth="sm">
+        <DialogTitle>License mã nguồn — đơn {licOrder ? code(licOrder) : ''}</DialogTitle>
+        <DialogContent dividers>
+          {licLoading ? (
+            <Stack alignItems="center" sx={{ py: 4 }}>
+              <CircularProgress />
+            </Stack>
+          ) : licenses.length ? (
+            <Stack spacing={1.5}>
+              {licenses.map((l) => (
+                <Box
+                  key={l.id}
+                  sx={{ p: 1.5, border: (t) => `1px solid ${t.palette.divider}`, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}
+                >
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="subtitle2" noWrap>{l.product_name}</Typography>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+                      <code>{l.license_key}</code>
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+                      {l.status === 'active' ? 'Đang hiệu lực' : 'Đã thu hồi'} · còn {l.remaining_downloads} lượt tải
+                    </Typography>
+                  </Box>
+                  <Button size="small" variant="soft" onClick={() => resend(l.id)} startIcon={<Iconify icon="solar:refresh-bold" />}>
+                    Cấp lại
+                  </Button>
+                </Box>
+              ))}
+            </Stack>
+          ) : (
+            <Typography variant="body2" sx={{ color: 'text.secondary', py: 3, textAlign: 'center' }}>
+              Đơn này không có sản phẩm mã nguồn.
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button color="inherit" onClick={() => setLicOrder(null)}>Đóng</Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 }

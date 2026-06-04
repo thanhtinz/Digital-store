@@ -1,6 +1,7 @@
 export { default as ProductDetailsCarousel } from './ProductDetailsCarousel';
 export { default as ProductDetailsSummary } from './ProductDetailsSummary';
 export { default as TopupGiftcardDetailView } from './TopupGiftcardDetailView';
+export { default as SourceDetailView } from './SourceDetailView';
 
 export { default as ProductDetailsReview } from './ProductDetailsReview';
 export { default as ProductDetailsReviewList } from './ProductDetailsReviewList';

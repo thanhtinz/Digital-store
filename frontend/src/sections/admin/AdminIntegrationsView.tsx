@@ -458,6 +458,13 @@ function EmailTab() {
         <CardHeader title="Cấu hình Email" subheader="Hệ thống gửi email (đơn hàng, đặt lại mật khẩu…)" />
         <CardContent>
           <Stack spacing={2.5}>
+            <Alert severity="info">
+              <AlertTitle>Hướng dẫn cấu hình email</AlertTitle>
+              <b>Relay:</b> dùng dịch vụ gửi mail (Resend/SendGrid…) qua API key — đơn giản, ít vào spam.<br />
+              <b>SMTP (máy chủ riêng):</b> nhập host/port/user/pass của nhà cung cấp mail.<br />
+              <b>Direct:</b> server tự gửi — cần thêm bản ghi DNS (DKIM/SPF) bên dưới.<br />
+              Nhập xong bấm <b>Lưu</b> rồi dùng ô <b>Gửi test</b> để kiểm tra.
+            </Alert>
             <TextField select label="Chế độ gửi" value={mode} onChange={(e) => setCfg({ ...cfg, mail_mode: e.target.value })}>
               {MAIL_MODES.map((m) => (
                 <MenuItem key={m.value} value={m.value}>
@@ -471,6 +478,13 @@ function EmailTab() {
             {mode === 'smtp' && (
               <>
                 <Divider>SMTP</Divider>
+                <Alert severity="info">
+                  <AlertTitle>Gợi ý SMTP phổ biến</AlertTitle>
+                  <b>Gmail:</b> host <code>smtp.gmail.com</code>, port <code>587</code>, user là địa chỉ Gmail, password là{' '}
+                  <b>App Password</b> (Tài khoản Google → Bảo mật → Xác minh 2 bước → Mật khẩu ứng dụng), KHÔNG dùng mật khẩu đăng nhập.<br />
+                  <b>Outlook:</b> <code>smtp.office365.com</code> port <code>587</code>. &nbsp;
+                  Port 587 = STARTTLS, port 465 = SSL.
+                </Alert>
                 <TextField label="SMTP host" value={cfg.mail_smtp_host || ''} onChange={(e) => setCfg({ ...cfg, mail_smtp_host: e.target.value })} />
                 <TextField label="SMTP port" value={cfg.mail_smtp_port || ''} onChange={(e) => setCfg({ ...cfg, mail_smtp_port: e.target.value })} />
                 <TextField label="SMTP user" value={cfg.mail_smtp_user || ''} onChange={(e) => setCfg({ ...cfg, mail_smtp_user: e.target.value })} />

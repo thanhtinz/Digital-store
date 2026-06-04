@@ -692,11 +692,21 @@ router.post('/providers', requireStaffOrAdmin, async (req: Request, res: Respons
 
 router.get('/providers/:pid/balance', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
-    const provider = await prisma.apiProvider.findUnique({ where: { id: parseInt(req.params.pid) } });
+    const provider: any = await prisma.apiProvider.findUnique({ where: { id: parseInt(req.params.pid) } });
     if (!provider) { res.status(404).json({ detail: 'Provider not found' }); return; }
     const adapter = getProvider(provider);
     const balance = await adapter.getBalance();
-    res.json(balance);
+    const settings = provider.settings || {};
+    const exchangeRate = parseFloat(settings.exchange_rate) || 1;
+    const amount = Number(balance?.amount || 0);
+    res.json({
+      ok: true,
+      amount,
+      currency: settings.currency || balance?.currency || 'USD',
+      formatted: balance?.formatted,
+      exchange_rate: exchangeRate,
+      balance_vnd: Math.round(amount * exchangeRate),
+    });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
   }

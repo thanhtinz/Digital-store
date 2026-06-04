@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import prisma from '../db';
 import { requireUser, requireAdmin, requireStaffOrAdmin } from '../middleware/auth';
 import { orderToDict, genOrderCode, applyCoupon, autoDeliver, money, refundOrderBalance, maybeSendGiftEmail } from '../services/orders';
+import { issueSourceForOrder } from '../services/source';
 import { notifyNewOrder } from '../services/telegram';
 import { createNotification } from '../services/notify';
 import { sendMail } from '../services/mail';
@@ -382,6 +383,9 @@ router.patch('/admin/:order_code/status', requireStaffOrAdmin, async (req: Reque
 
     if (status === 'paid') {
       await autoDeliver(order.id);
+    } else if (status === 'completed') {
+      // Admin chuyển thẳng sang completed: vẫn cấp license mã nguồn (idempotent).
+      await issueSourceForOrder(order.id).catch(() => {});
     }
 
     // Thông báo cho khách + tích điểm khi giao xong (không chặn nếu lỗi)

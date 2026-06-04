@@ -243,7 +243,7 @@ router.get('/:slug', optionalUser, async (req: Request, res: Response) => {
 router.post(['/admin', '/'], requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const { name, category_id, description, notes, image_url, images, is_featured, is_active, sort_order,
-      topup_type, server_region } = req.body;
+      topup_type, server_region, source_meta } = req.body;
     if (!name) { res.status(422).json({ detail: 'Tên sản phẩm không được để trống' }); return; }
     const slug = slugify(name, { lower: true, strict: true });
     const product = await prisma.product.create({
@@ -258,6 +258,7 @@ router.post(['/admin', '/'], requireStaffOrAdmin, async (req: Request, res: Resp
         sortOrder: sort_order || 0,
         topupType: topup_type || null,
         serverRegion: server_region || null,
+        sourceMeta: source_meta && typeof source_meta === 'object' ? source_meta : undefined,
       },
       include: { category: true },
     });
@@ -291,6 +292,9 @@ router.patch(['/admin/:id', '/:id'], requireStaffOrAdmin, async (req: Request, r
     }
     if (req.body.images !== undefined) {
       data.images = Array.isArray(req.body.images) ? req.body.images : null;
+    }
+    if (req.body.source_meta !== undefined) {
+      data.sourceMeta = req.body.source_meta && typeof req.body.source_meta === 'object' ? req.body.source_meta : null;
     }
     const product = await prisma.product.update({ where: { id }, data, include: { category: true } });
     res.json(serializeProduct(product));
@@ -537,6 +541,7 @@ function serializeProduct(p: any, detailed = false): Record<string, any> {
     productType: p.category?.productType || 'premium',
     topupType: p.topupType || null,
     serverRegion: p.serverRegion || null,
+    sourceMeta: p.sourceMeta || null,
     packages,
     // Rating trung bình + số lượt (cho lọc theo sao ở trang gian hàng).
     rating: ratingAvg,

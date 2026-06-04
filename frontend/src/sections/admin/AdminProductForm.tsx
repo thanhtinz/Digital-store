@@ -25,6 +25,7 @@ import { useSnackbar } from '../../components/snackbar';
 import FormProvider, { RHFSwitch, RHFEditor, RHFTextField } from '../../components/hook-form';
 //
 import { GalleryField } from './ImageUploadField';
+import AdminSourceVersions from './AdminSourceVersions';
 
 // ----------------------------------------------------------------------
 // Form tạo/sửa sản phẩm (VIẾT LẠI v2):
@@ -88,16 +89,33 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
   const [topupType, setTopupType] = useState<string>(current?.topupType || '');
   const [serverRegion, setServerRegion] = useState<string>(current?.serverRegion || '');
 
+  // ── Meta cho mã nguồn/theme (chỉ dùng cho danh mục type 'source') ──
+  const sm0 = current?.sourceMeta || {};
+  const [srcDemo, setSrcDemo] = useState<string>(sm0.demoUrl || '');
+  const [srcTech, setSrcTech] = useState<string>(Array.isArray(sm0.techStack) ? sm0.techStack.join(', ') : (sm0.techStack || ''));
+  const [srcLang, setSrcLang] = useState<string>(sm0.language || '');
+  const [srcDoc, setSrcDoc] = useState<string>(sm0.documentationUrl || '');
+  const [srcReq, setSrcReq] = useState<string>(sm0.requirements || '');
+  const [srcCompat, setSrcCompat] = useState<string>(sm0.compatibility || '');
+
   // Preselect đúng danh mục + tag của sản phẩm đang sửa (khi mở/đổi sản phẩm).
   useEffect(() => {
     setCategoryId(current?.categoryId ? String(current.categoryId) : '');
     setTopupType(current?.topupType || '');
     setServerRegion(current?.serverRegion || '');
+    const sm = current?.sourceMeta || {};
+    setSrcDemo(sm.demoUrl || '');
+    setSrcTech(Array.isArray(sm.techStack) ? sm.techStack.join(', ') : (sm.techStack || ''));
+    setSrcLang(sm.language || '');
+    setSrcDoc(sm.documentationUrl || '');
+    setSrcReq(sm.requirements || '');
+    setSrcCompat(sm.compatibility || '');
   }, [current]);
 
   // Danh mục đang chọn có phải loại Game không -> hiện ô Loại topup/Server.
   const selectedCat = cats.find((c) => String(c.id) === categoryId);
   const isGameCat = (selectedCat as any)?.productType === 'game';
+  const isSourceCat = (selectedCat as any)?.productType === 'source';
 
   // ── Các field còn lại qua RHF ─────────────────────────────────────────
   const ProductSchema = Yup.object().shape({
@@ -170,6 +188,17 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
       // Tag game (chỉ gửi khi danh mục là Game; ngược lại để trống).
       topup_type: isGameCat ? topupType || null : null,
       server_region: isGameCat ? serverRegion || null : null,
+      // Meta mã nguồn/theme (chỉ gửi khi danh mục là source).
+      source_meta: isSourceCat
+        ? {
+            demoUrl: srcDemo || '',
+            techStack: srcTech.split(',').map((s) => s.trim()).filter(Boolean),
+            language: srcLang || '',
+            documentationUrl: srcDoc || '',
+            requirements: srcReq || '',
+            compatibility: srcCompat || '',
+          }
+        : undefined,
     };
     try {
       const res = isEdit
@@ -244,6 +273,30 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
               </Stack>
             </Stack>
           </Card>
+
+          {isSourceCat && (
+            <Card sx={{ p: 3, mt: 3 }}>
+              <Typography variant="subtitle1" sx={{ mb: 2 }}>
+                Thông tin mã nguồn / theme
+              </Typography>
+              <Stack spacing={2}>
+                <TextField label="Link demo trực tiếp" value={srcDemo} onChange={(e) => setSrcDemo(e.target.value)} fullWidth placeholder="https://demo.example.com" />
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                  <TextField label="Công nghệ (phẩy ngăn cách)" value={srcTech} onChange={(e) => setSrcTech(e.target.value)} fullWidth placeholder="React, Next.js, MUI" />
+                  <TextField label="Ngôn ngữ" value={srcLang} onChange={(e) => setSrcLang(e.target.value)} sx={{ width: { sm: 200 } }} placeholder="TypeScript" />
+                </Stack>
+                <TextField label="Link tài liệu" value={srcDoc} onChange={(e) => setSrcDoc(e.target.value)} fullWidth placeholder="https://docs.example.com" />
+                <TextField label="Yêu cầu hệ thống" value={srcReq} onChange={(e) => setSrcReq(e.target.value)} fullWidth multiline minRows={2} placeholder="Node 18+, PHP 8+…" />
+                <TextField label="Tương thích" value={srcCompat} onChange={(e) => setSrcCompat(e.target.value)} fullWidth placeholder="Chrome, Firefox, Safari, Edge" />
+              </Stack>
+            </Card>
+          )}
+
+          {isSourceCat && isEdit && (
+            <Box sx={{ mt: 3 }}>
+              <AdminSourceVersions productId={current.id} />
+            </Box>
+          )}
         </Grid>
 
         <Grid item xs={12} md={4}>

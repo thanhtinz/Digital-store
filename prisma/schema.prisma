@@ -89,6 +89,7 @@ model Product {
   sortOrder    Int      @default(0) @map("sort_order")
   topupType    String?  @db.VarChar(20) @map("topup_type")
   serverRegion String?  @db.VarChar(20) @map("server_region")
+  sourceMeta   Json?    @map("source_meta")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
@@ -96,9 +97,68 @@ model Product {
   packages ProductPackage[]
   reviews  Review[]
   wishlists Wishlist[]
+  sourceVersions  SourceVersion[]
+  sourceLicenses  SourceLicense[]
 
   @@index([slug])
   @@map("products")
+}
+
+// ── Mã nguồn / theme: phiên bản (changelog + file trên Google Drive) ──
+model SourceVersion {
+  id          Int      @id @default(autoincrement())
+  productId   Int      @map("product_id")
+  version     String   @db.VarChar(50)
+  changelog   String?
+  driveFileId String?  @db.VarChar(255) @map("drive_file_id")
+  fileName    String?  @db.VarChar(255) @map("file_name")
+  fileSize    String?  @db.VarChar(50)  @map("file_size")
+  isLatest    Boolean  @default(false) @map("is_latest")
+  releasedAt  DateTime @default(now()) @map("released_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  product Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  grants  DownloadGrant[]
+
+  @@index([productId])
+  @@map("source_versions")
+}
+
+// ── License cấp cho khách khi mua mã nguồn ──
+model SourceLicense {
+  id         Int      @id @default(autoincrement())
+  licenseKey String   @unique @db.VarChar(64) @map("license_key")
+  userId     String   @db.VarChar(255) @map("user_id")
+  orderId    Int?     @map("order_id")
+  productId  Int      @map("product_id")
+  packageId  Int?     @map("package_id")
+  status     String   @default("active") @db.VarChar(20) // active | revoked
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  product Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  grants  DownloadGrant[]
+
+  @@index([userId])
+  @@index([productId])
+  @@map("source_licenses")
+}
+
+// ── 1 lượt tải: chỉ tiêu khi tải xong; token dùng-một-lần + hết hạn ──
+model DownloadGrant {
+  id        Int       @id @default(autoincrement())
+  licenseId Int       @map("license_id")
+  versionId Int?      @map("version_id")
+  token     String?   @unique @db.VarChar(64)
+  reason    String    @default("purchase") @db.VarChar(20) // purchase | update | admin_resend
+  expiresAt DateTime? @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  license SourceLicense  @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  version SourceVersion? @relation(fields: [versionId], references: [id])
+
+  @@index([licenseId])
+  @@map("download_grants")
 }
 
 model ProductPackage {
