@@ -97,6 +97,8 @@ export default function HomeView() {
 
   const [featured, setFeatured] = useState<IProduct[]>([]);
   const [newest, setNewest] = useState<IProduct[]>([]);
+  const [topup, setTopup] = useState<IProduct[]>([]);
+  const [giftcard, setGiftcard] = useState<IProduct[]>([]);
   const [flash, setFlash] = useState<FlashSale[]>([]);
   const [banner, setBanner] = useState<Banner | null>(null);
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -106,15 +108,24 @@ export default function HomeView() {
     let alive = true;
 
     async function load() {
-      const [trendingRes, newestRes, flashRes, bannerRes, blogRes] = await Promise.allSettled([
-        axiosInstance.get('/api/products/trending', { params: { limit: 8 } }),
-        axiosInstance.get('/api/products', { params: { limit: 8, sort: 'newest' } }),
-        axiosInstance.get('/api/flash-sales/active'),
-        axiosInstance.get('/api/banners'),
-        axiosInstance.get('/api/blog/posts', { params: { limit: 4 } }),
-      ]);
+      const [trendingRes, newestRes, topupRes, giftcardRes, flashRes, bannerRes, blogRes] =
+        await Promise.allSettled([
+          axiosInstance.get('/api/products/trending', { params: { limit: 8 } }),
+          axiosInstance.get('/api/products', { params: { limit: 8, sort: 'newest' } }),
+          axiosInstance.get('/api/products', { params: { type: 'game', limit: 12 } }),
+          axiosInstance.get('/api/products', { params: { type: 'giftcard', limit: 12 } }),
+          axiosInstance.get('/api/flash-sales/active'),
+          axiosInstance.get('/api/banners'),
+          axiosInstance.get('/api/blog/posts', { params: { limit: 4 } }),
+        ]);
 
       if (!alive) return;
+
+      const pickList = (r: PromiseSettledResult<any>): IProduct[] =>
+        r.status === 'fulfilled' ? r.value.data?.products || r.value.data?.items || [] : [];
+
+      setTopup(pickList(topupRes));
+      setGiftcard(pickList(giftcardRes));
 
       if (trendingRes.status === 'fulfilled') {
         const d = trendingRes.value.data;
@@ -248,6 +259,30 @@ export default function HomeView() {
             viewAllLabel={t('view_all')}
           />
           <ShopProductList products={newest} loading={false} />
+        </>
+      )}
+
+      {/* TOPUP GAME */}
+      {topup.length > 0 && (
+        <>
+          <SectionHead
+            title={`${translate('nav.topup_game')}`}
+            viewAllHref={`${PATH_DASHBOARD.eCommerce.shop}?type=game`}
+            viewAllLabel={t('view_all')}
+          />
+          <ShopProductList products={topup} loading={false} />
+        </>
+      )}
+
+      {/* GIFT CARD */}
+      {giftcard.length > 0 && (
+        <>
+          <SectionHead
+            title={`${translate('nav.giftcard')}`}
+            viewAllHref={`${PATH_DASHBOARD.eCommerce.shop}?type=giftcard`}
+            viewAllLabel={t('view_all')}
+          />
+          <ShopProductList products={giftcard} loading={false} />
         </>
       )}
 
