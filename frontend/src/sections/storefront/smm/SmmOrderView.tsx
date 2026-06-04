@@ -79,6 +79,11 @@ export default function SmmOrderView() {
   const [taxRate, setTaxRate] = useState(0);
   const [scheduleOn, setScheduleOn] = useState(false);
   const [scheduleAt, setScheduleAt] = useState('');
+  // Tìm nhanh + nhiều link + subscriptions
+  const [search, setSearch] = useState('');
+  const [multiOn, setMultiOn] = useState(false);
+  const [linksText, setLinksText] = useState('');
+  const [sub, setSub] = useState({ username: '', min_posts: '', max_posts: '', delay: '', expiry: '' });
 
   useEffect(() => {
     axiosInstance
@@ -123,12 +128,46 @@ export default function SmmOrderView() {
   const services = category?.services || [];
   const service = services.find((s) => String(s.id) === serviceId);
 
+  // Tìm nhanh dịch vụ trên toàn catalog.
+  const allServices = useMemo(() => {
+    const out: any[] = [];
+    catalog.forEach((p: any) =>
+      (p.categories || []).forEach((c: any) =>
+        (c.services || []).forEach((s: any) => out.push({ s, p, c }))
+      )
+    );
+    return out;
+  }, [catalog]);
+  const searchResults =
+    search.trim().length >= 2
+      ? allServices
+          .filter(({ s }) =>
+            `${s.name} ${s.id} ${s.display_id || ''}`.toLowerCase().includes(search.toLowerCase())
+          )
+          .slice(0, 12)
+      : [];
+  const pickService = ({ s, p, c }: any) => {
+    setPlatformId(String(p.id));
+    setCategoryId(String(c.id));
+    setServiceId(String(s.id));
+    setSearch('');
+  };
+
   const stype = service?.service_type || 'Default';
   const isComments = stype === 'Custom Comments';
   const isHashtag = stype === 'Mentions Hashtag';
   const isSeo = stype === 'SEO';
   const isPackage = stype === 'Package';
-  const canDrip = !isComments && !isPackage; // drip-feed cho dịch vụ số lượng thường
+  const isSubs = stype === 'Subscriptions';
+  const canDrip = !isComments && !isPackage && !isSubs; // drip-feed cho dịch vụ số lượng thường
+
+  // Nhiều link (multi) hay 1 link.
+  const links = multiOn
+    ? linksText.split('\n').map((l) => l.trim()).filter(Boolean)
+    : link.trim()
+    ? [link.trim()]
+    : [];
+  const linkCount = links.length || 1;
 
   const effectiveQty = isComments
     ? extra.split('\n').map((l) => l.trim()).filter(Boolean).length
@@ -137,8 +176,8 @@ export default function SmmOrderView() {
     : quantity;
 
   const estimate = useMemo(
-    () => (service ? (service.rate * effectiveQty) / 1000 : 0),
-    [service, effectiveQty]
+    () => (service ? ((service.rate * effectiveQty) / 1000) * linkCount : 0),
+    [service, effectiveQty, linkCount]
   );
 
   const taxAmount = Math.round((estimate * taxRate) / 100);
@@ -152,24 +191,50 @@ export default function SmmOrderView() {
       enqueueSnackbar(t('login_required'), { variant: 'warning' });
       return;
     }
-    const extras: Record<string, string> = {};
+    if (!links.length) {
+      enqueueSnackbar(t('link'), { variant: 'warning' });
+      return;
+    }
+    const extras: Record<string, any> = {};
     if (isComments) extras.comments = extra;
     if (isHashtag) extras.hashtags = extra;
     if (isSeo) extras.keywords = extra;
+    if (isSubs) {
+      extras.username = sub.username;
+      extras.min_posts = sub.min_posts;
+      extras.max_posts = sub.max_posts;
+      extras.delay = sub.delay;
+      extras.expiry = sub.expiry;
+    }
 
     setSubmitting(true);
+    let ok = 0;
+    let failMsg = '';
     try {
-      await axiosInstance.post('/api/smm/orders', {
-        service_id: service.id,
-        link,
-        quantity: effectiveQty,
-        extras,
-        repeat_count: dripOn && canDrip ? runs : 0,
-        repeat_interval: dripOn && canDrip ? interval : 0,
-        scheduled_at: scheduleOn && scheduleAt ? new Date(scheduleAt).toISOString() : undefined,
-      });
-      enqueueSnackbar(t('success'));
+      // Đặt từng link một (multi-link tạo nhiều đơn).
+      for (const lk of links) {
+        try {
+          await axiosInstance.post('/api/smm/orders', {
+            service_id: service.id,
+            link: lk,
+            quantity: effectiveQty,
+            extras,
+            repeat_count: dripOn && canDrip ? runs : 0,
+            repeat_interval: dripOn && canDrip ? interval : 0,
+            scheduled_at: scheduleOn && scheduleAt ? new Date(scheduleAt).toISOString() : undefined,
+          });
+          ok += 1;
+        } catch (err: any) {
+          failMsg = err?.detail || err?.message || '';
+        }
+      }
+      if (ok === 0) {
+        enqueueSnackbar(failMsg || t('submit_failed'), { variant: 'error' });
+        return;
+      }
+      enqueueSnackbar(links.length > 1 ? `Đã đặt ${ok}/${links.length} đơn` : t('success'));
       setLink('');
+      setLinksText('');
       setExtra('');
       refreshBalance(); // cập nhật số dư sau khi trừ tiền
     } catch (e: any) {
@@ -187,6 +252,46 @@ export default function SmmOrderView() {
 
       <Card sx={{ p: 3, maxWidth: 640 }}>
         <Stack spacing={2.5}>
+          {/* Tìm nhanh dịch vụ */}
+          <Box sx={{ position: 'relative' }}>
+            <TextField
+              fullWidth
+              label="Tìm nhanh dịch vụ (tên / #ID)"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              InputProps={{ startAdornment: <Iconify icon="eva:search-fill" sx={{ mr: 1, color: 'text.disabled' }} /> }}
+            />
+            {searchResults.length > 0 && (
+              <Card
+                sx={{
+                  position: 'absolute',
+                  zIndex: 20,
+                  left: 0,
+                  right: 0,
+                  mt: 0.5,
+                  maxHeight: 280,
+                  overflow: 'auto',
+                  boxShadow: (th) => th.customShadows.z16,
+                }}
+              >
+                {searchResults.map(({ s, p, c }: any) => (
+                  <Box
+                    key={s.id}
+                    onClick={() => pickService({ s, p, c })}
+                    sx={{ p: 1.25, cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }}
+                  >
+                    <Typography variant="body2" noWrap>
+                      <b>#{s.display_id || s.id}</b> {s.name}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      {p.name} · {c.name} · {fCurrency(s.rate)}/1000
+                    </Typography>
+                  </Box>
+                ))}
+              </Card>
+            )}
+          </Box>
+
           <TextField
             select
             label={t('platform')}
@@ -267,12 +372,76 @@ export default function SmmOrderView() {
                 )}
               </Box>
 
-              <TextField
-                label={t('link')}
-                placeholder="https://..."
-                value={link}
-                onChange={(e) => setLink(e.target.value)}
-              />
+              {/* Link: 1 hoặc nhiều */}
+              <Box>
+                <FormControlLabel
+                  control={<Switch checked={multiOn} onChange={(e) => setMultiOn(e.target.checked)} />}
+                  label="Đặt nhiều link cùng lúc"
+                />
+                {multiOn ? (
+                  <TextField
+                    fullWidth
+                    multiline
+                    minRows={3}
+                    label={`${t('link')} — mỗi dòng 1 link (${linkCount})`}
+                    placeholder={'https://...\nhttps://...'}
+                    value={linksText}
+                    onChange={(e) => setLinksText(e.target.value)}
+                  />
+                ) : (
+                  <TextField
+                    fullWidth
+                    label={t('link')}
+                    placeholder="https://..."
+                    value={link}
+                    onChange={(e) => setLink(e.target.value)}
+                  />
+                )}
+              </Box>
+
+              {isSubs && (
+                <Stack spacing={2}>
+                  <Typography variant="subtitle2">Thông tin theo dõi (Subscriptions)</Typography>
+                  <TextField
+                    label="Username / Link kênh"
+                    value={sub.username}
+                    onChange={(e) => setSub({ ...sub, username: e.target.value })}
+                  />
+                  <Stack direction="row" spacing={2}>
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Bài tối thiểu"
+                      value={sub.min_posts}
+                      onChange={(e) => setSub({ ...sub, min_posts: e.target.value })}
+                    />
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Bài tối đa"
+                      value={sub.max_posts}
+                      onChange={(e) => setSub({ ...sub, max_posts: e.target.value })}
+                    />
+                  </Stack>
+                  <Stack direction="row" spacing={2}>
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Giãn cách (phút)"
+                      value={sub.delay}
+                      onChange={(e) => setSub({ ...sub, delay: e.target.value })}
+                    />
+                    <TextField
+                      fullWidth
+                      type="date"
+                      label="Hết hạn"
+                      InputLabelProps={{ shrink: true }}
+                      value={sub.expiry}
+                      onChange={(e) => setSub({ ...sub, expiry: e.target.value })}
+                    />
+                  </Stack>
+                </Stack>
+              )}
 
               {isComments || isHashtag || isSeo ? (
                 <TextField
@@ -282,7 +451,7 @@ export default function SmmOrderView() {
                   value={extra}
                   onChange={(e) => setExtra(e.target.value)}
                 />
-              ) : (
+              ) : isSubs ? null : (
                 <TextField
                   label={t('quantity')}
                   type="number"
@@ -384,7 +553,7 @@ export default function SmmOrderView() {
                 size="large"
                 variant="contained"
                 onClick={handleSubmit}
-                disabled={submitting || !link || effectiveQty < 1 || insufficient}
+                disabled={submitting || !links.length || effectiveQty < 1 || insufficient}
               >
                 {t('submit')}
               </Button>
