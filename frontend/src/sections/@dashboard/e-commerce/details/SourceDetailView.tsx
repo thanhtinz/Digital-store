@@ -48,8 +48,25 @@ type Version = {
 
 export default function SourceDetailView({ product, cart, onAddCart, onGotoStep }: Props) {
   const p: any = product;
-  const meta = p.sourceMeta || {};
-  const tech: string[] = Array.isArray(meta.techStack) ? meta.techStack : [];
+  // Đọc phòng thủ: sourceMeta có thể là object (bình thường) hoặc chuỗi JSON
+  // (nếu bị double-encode ở đâu đó) — parse lại để không bị mất hết thông số.
+  const meta: any = (() => {
+    const raw = p.sourceMeta;
+    if (raw && typeof raw === 'string') {
+      try {
+        return JSON.parse(raw) || {};
+      } catch {
+        return {};
+      }
+    }
+    return raw || {};
+  })();
+  // techStack có thể là mảng hoặc chuỗi "React, Next.js" — chuẩn hoá về mảng.
+  const tech: string[] = Array.isArray(meta.techStack)
+    ? meta.techStack
+    : typeof meta.techStack === 'string'
+      ? meta.techStack.split(',').map((s: string) => s.trim()).filter(Boolean)
+      : [];
 
   const [versions, setVersions] = useState<Version[]>([]);
   const [tab, setTab] = useState('description');
@@ -106,15 +123,29 @@ export default function SourceDetailView({ product, cart, onAddCart, onGotoStep 
           </Stack>
         )}
         <Divider sx={{ mb: 1 }} />
-        <SpecRow label="Ngôn ngữ" value={meta.language} />
-        <SpecRow label="Phiên bản mới nhất" value={latest ? `v${latest.version}` : null} />
-        <SpecRow label="Cập nhật" value={latest?.releasedAt ? fDateTime(latest.releasedAt) : null} />
-        <SpecRow label="Dung lượng" value={latest?.fileSize} />
-        <SpecRow label="Tương thích" value={meta.compatibility} />
-        <SpecRow
-          label="Tài liệu"
-          value={meta.documentationUrl ? <Link href={meta.documentationUrl} target="_blank" rel="noopener">Xem tài liệu</Link> : null}
-        />
+        {(() => {
+          const rows = [
+            { label: 'Ngôn ngữ', value: meta.language },
+            { label: 'Phiên bản mới nhất', value: latest ? `v${latest.version}` : null },
+            { label: 'Cập nhật', value: latest?.releasedAt ? fDateTime(latest.releasedAt) : null },
+            { label: 'Dung lượng', value: latest?.fileSize },
+            { label: 'Tương thích', value: meta.compatibility },
+            {
+              label: 'Tài liệu',
+              value: meta.documentationUrl ? (
+                <Link href={meta.documentationUrl} target="_blank" rel="noopener">Xem tài liệu</Link>
+              ) : null,
+            },
+          ];
+          const hasAny = tech.length > 0 || rows.some((r) => r.value);
+          return hasAny ? (
+            rows.map((r) => <SpecRow key={r.label} label={r.label} value={r.value} />)
+          ) : (
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              Chưa cập nhật thông số kỹ thuật.
+            </Typography>
+          );
+        })()}
       </Box>
 
       <Box>
@@ -123,7 +154,7 @@ export default function SourceDetailView({ product, cart, onAddCart, onGotoStep 
           Đã mua? Nhập license key để lấy link tải. Link dùng một lần và sẽ hết hạn — bạn cũng có thể vào{' '}
           <Link href="/dashboard/downloads">Tải xuống của tôi</Link>.
         </Typography>
-        <Stack direction="row" spacing={1} sx={{ maxWidth: 480 }}>
+        <Stack direction="row" spacing={1} alignItems="stretch" sx={{ maxWidth: 480 }}>
           <TextField
             size="small"
             fullWidth
@@ -131,7 +162,12 @@ export default function SourceDetailView({ product, cart, onAddCart, onGotoStep 
             value={licenseKey}
             onChange={(e) => setLicenseKey(e.target.value)}
           />
-          <Button variant="contained" onClick={redeem} disabled={redeeming || !licenseKey.trim()}>
+          <Button
+            variant="contained"
+            onClick={redeem}
+            disabled={redeeming || !licenseKey.trim()}
+            sx={{ flexShrink: 0, whiteSpace: 'nowrap', px: 2.5 }}
+          >
             Lấy link
           </Button>
         </Stack>
