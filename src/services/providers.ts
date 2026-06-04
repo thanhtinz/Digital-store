@@ -6,6 +6,7 @@
  */
 
 import axios from 'axios';
+import crypto from 'crypto';
 
 const TIMEOUT = 15000;
 
@@ -324,4 +325,70 @@ export class AccountPremiumProvider {
 
 export function getPremiumProvider(provider: { baseUrl: string; apiKey: string; apiSecret?: string | null }) {
   return new AccountPremiumProvider(provider.baseUrl, provider.apiKey, provider.apiSecret);
+}
+
+// ──────────────────────────────────────────────────────────────
+// Giftcard (Thesieure / chargingws/v2): partner_id + partner_key, ký md5.
+// Port từ src Python api/providers/giftcard.py
+//   sign = md5(partner_key + code + command + partner_id + request_id + serial + telco)
+//   callback_sign = md5(partner_key + code + serial)
+// ──────────────────────────────────────────────────────────────
+export interface CardChargeResult {
+  status: number; // 1=đúng mệnh giá, 2=sai mệnh giá, 3=lỗi, 4=bảo trì, 99=chờ, 100=gửi thất bại
+  message?: string;
+  value?: number;
+  trans_id?: string;
+  [k: string]: any;
+}
+
+export class GiftcardProvider {
+  private partnerKey: string;
+  constructor(private baseUrl: string, apiKey: string, apiSecret?: string | null, private partnerId: string = '') {
+    this.partnerKey = apiSecret || apiKey;
+  }
+  private sign(p: { code?: string; command?: string; request_id?: string; serial?: string; telco?: string }): string {
+    const raw = [this.partnerKey, p.code || '', p.command || '', this.partnerId, p.request_id || '', p.serial || '', p.telco || ''].join('');
+    return crypto.createHash('md5').update(raw).digest('hex');
+  }
+  private callbackSign(code: string, serial: string): string {
+    return crypto.createHash('md5').update(`${this.partnerKey}${code}${serial}`).digest('hex');
+  }
+  private url(path = '/chargingws/v2'): string {
+    return `${this.baseUrl.replace(/\/$/, '')}${path}`;
+  }
+  private async postForm(data: Record<string, any>): Promise<any> {
+    const body = new URLSearchParams();
+    Object.entries(data).forEach(([k, v]) => body.append(k, String(v)));
+    const r = await axios.post(this.url(), body.toString(), {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'Mozilla/5.0', Accept: 'application/json' },
+      timeout: 20000,
+    });
+    return r.data;
+  }
+
+  async chargeCard(telco: string, code: string, serial: string, amount: number, requestId: string): Promise<CardChargeResult> {
+    const sign = this.sign({ code, command: 'charging', request_id: requestId, serial, telco });
+    try {
+      return await this.postForm({ telco, code, serial, amount, request_id: requestId, partner_id: this.partnerId, sign, command: 'charging' });
+    } catch (e: any) {
+      return { status: 100, message: String(e?.message || e) };
+    }
+  }
+
+  async checkCardStatus(telco: string, code: string, serial: string, amount: number, requestId: string): Promise<CardChargeResult> {
+    const sign = this.sign({ code, command: 'check', request_id: requestId, serial, telco });
+    return this.postForm({ telco, code, serial, amount, request_id: requestId, partner_id: this.partnerId, sign, command: 'check' });
+  }
+
+  verifyCallbackSign(code: string, serial: string, receivedSign: string): boolean {
+    return !!receivedSign && this.callbackSign(code, serial) === receivedSign;
+  }
+
+  async getBalance(): Promise<ProviderBalance> {
+    return { amount: 0, currency: 'VND', formatted: 'N/A' };
+  }
+}
+
+export function getGiftcardProvider(provider: { baseUrl: string; apiKey: string; apiSecret?: string | null; partnerId?: string | null }) {
+  return new GiftcardProvider(provider.baseUrl, provider.apiKey, provider.apiSecret, provider.partnerId || '');
 }

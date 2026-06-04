@@ -15,6 +15,7 @@ import prisma from '../db';
 import { requireUser, requireAdmin } from '../middleware/auth';
 import { money } from '../services/orders';
 import { notifyCardCharge } from '../services/telegram';
+import { getGiftcardProvider } from '../services/providers';
 
 const router = Router();
 
@@ -87,15 +88,76 @@ router.post('/submit', requireUser, async (req: Request, res: Response) => {
       },
     });
 
-    // Lưu ý: việc gọi adapter provider thực tế (charge card) được xử lý bất đồng bộ
-    // qua callback /balance/card-charge/callback. Ở đây chỉ tạo giao dịch pending.
+    // Gọi provider THẬT để gửi thẻ. Provider có thể trả kết quả NGAY (status 1/2/3/4/100)
+    // hoặc trả 99 = chờ callback. (Trước đây chỉ tạo pending mà không gọi provider.)
+    let finalStatus = 'pending';
+    try {
+      const adapter = getGiftcardProvider(provider);
+      const result = await adapter.chargeCard(txn.telco, txn.code, txn.serial, Number(amount), requestId);
+      const sc = Number(result.status ?? 99);
+      const transId = String(result.trans_id || '');
+      if (sc === 1) {
+        const creditAmount = Math.round(Number(amount) * (1 - Number(discountRate) / 100));
+        await prisma.$transaction(async (txc: any) => {
+          const upd = await txc.cardChargeTransaction.updateMany({
+            where: { id: txn.id, status: 'pending' },
+            data: { status: 'success', realValue: amount, creditedAmount: creditAmount, transId },
+          });
+          if (upd.count === 0) return;
+          const dbUser = await txc.user.update({
+            where: { id: txn.userId },
+            data: { balance: { increment: creditAmount } },
+          });
+          await txc.balanceTransaction.create({
+            data: {
+              userId: txn.userId,
+              amount: creditAmount,
+              balanceAfter: money(dbUser.balance),
+              type: 'topup',
+              status: 'completed',
+              reference: requestId,
+              description: `Nạp thẻ ${txn.telco} ${Number(amount).toLocaleString()}đ`,
+            },
+          });
+        });
+        finalStatus = 'success';
+      } else if (sc === 2) {
+        await prisma.cardChargeTransaction.update({
+          where: { id: txn.id },
+          data: { status: 'wrong_amount', realValue: Number(result.value) || 0, creditedAmount: 0, transId },
+        });
+        finalStatus = 'wrong_amount';
+      } else if (sc === 4) {
+        await prisma.cardChargeTransaction.update({ where: { id: txn.id }, data: { status: 'maintenance', transId } });
+        finalStatus = 'maintenance';
+      } else if (sc === 3 || sc === 100) {
+        await prisma.cardChargeTransaction.update({
+          where: { id: txn.id },
+          data: { status: 'failed', creditedAmount: 0, transId },
+        });
+        finalStatus = 'failed';
+      } else if (transId) {
+        // 99 = chờ callback
+        await prisma.cardChargeTransaction.update({ where: { id: txn.id }, data: { transId } });
+      }
+    } catch {
+      // Lỗi gọi provider -> giữ pending, chờ callback hoặc kiểm tra lại sau.
+    }
+
     notifyCardCharge(user.email, txn.telco, amount).catch(() => {});
+    const MSG: Record<string, string> = {
+      success: 'Nạp thẻ thành công',
+      wrong_amount: 'Sai mệnh giá thẻ',
+      failed: 'Thẻ lỗi hoặc gửi thất bại',
+      maintenance: 'Hệ thống đổi thẻ đang bảo trì',
+      pending: 'Đã gửi thẻ, đang chờ xử lý',
+    };
     res.json({
       request_id: txn.requestId,
-      status: txn.status,
+      status: finalStatus,
       declared_amount: money(txn.declaredAmount),
       discount_rate: money(txn.discountRate),
-      message: 'Đã gửi thẻ, đang chờ xử lý',
+      message: MSG[finalStatus] || 'Đã gửi thẻ',
     });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
