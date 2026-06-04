@@ -290,7 +290,7 @@ function SourceCarousel({ products }: { products: any[] }) {
             sx={{
               flex: '0 0 auto',
               scrollSnapAlign: 'start',
-              width: { xs: '100%', sm: '47%', md: '31.5%' },
+              width: { xs: '78%', sm: '38%', md: '24%' },
             }}
           >
             <SourceCard product={p} />
@@ -573,12 +573,12 @@ export default function HomeView() {
           // Gom danh mục từ sản phẩm giftcard.
           const catsMap = new Map<string, string>();
           giftcard.forEach((p: any) => {
-            const slug = p.categorySlug || '';
-            if (!catsMap.has(slug)) catsMap.set(slug, p.category || 'Khác');
+            const slug = p.category?.slug || '';
+            if (!catsMap.has(slug)) catsMap.set(slug, p.category?.name || 'Khác');
           });
           const cats = Array.from(catsMap.entries()).map(([slug, name]) => ({ slug, name }));
           const active = catsMap.has(gcTab) ? gcTab : cats[0]?.slug || '';
-          const list = giftcard.filter((p: any) => (p.categorySlug || '') === active);
+          const list = giftcard.filter((p: any) => (p.category?.slug || '') === active);
           return (
             <>
               <SectionHead
