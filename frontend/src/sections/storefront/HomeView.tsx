@@ -252,17 +252,25 @@ export default function HomeView() {
       const pickList = (r: PromiseSettledResult<any>): IProduct[] =>
         r.status === 'fulfilled' ? r.value.data?.products || r.value.data?.items || [] : [];
 
+      // Mục "Nổi bật" & "Mới" chỉ hiển thị sản phẩm premium —
+      // không lẫn topup (game) và giftcard (đã có khu vực riêng bên dưới).
+      const onlyPremium = (list: IProduct[]): IProduct[] =>
+        list.filter((p: any) => {
+          const tp = p.productType ?? p.category?.productType;
+          return tp !== 'game' && tp !== 'giftcard';
+        });
+
       setTopup(pickList(topupRes));
       setGiftcard(pickList(giftcardRes));
       setSmm(smmRes.status === 'fulfilled' && Array.isArray(smmRes.value.data) ? smmRes.value.data : []);
 
       if (trendingRes.status === 'fulfilled') {
         const d = trendingRes.value.data;
-        setFeatured(d?.items || d?.products || []);
+        setFeatured(onlyPremium(d?.items || d?.products || []));
       }
       if (newestRes.status === 'fulfilled') {
         const d = newestRes.value.data;
-        setNewest(d?.products || d?.items || []);
+        setNewest(onlyPremium(d?.products || d?.items || []));
       }
       if (flashRes.status === 'fulfilled' && Array.isArray(flashRes.value.data)) {
         setFlash(flashRes.value.data);
