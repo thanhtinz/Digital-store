@@ -59,8 +59,14 @@ router.get('/', optionalUser, async (req: Request, res: Response) => {
     const where: any = {};
     if (active !== 'all') where.isActive = active !== 'false';
     if (category) where.category = { slug: category };
-    // Lọc theo loại danh mục (premium | game | giftcard) cho sidebar storefront.
-    if (type) where.category = { ...(where.category || {}), productType: type as string };
+    // Lọc theo loại danh mục (premium | game | giftcard | source) cho sidebar storefront.
+    // Khớp cả danh mục con: sản phẩm thuộc danh mục con của 1 danh mục đúng type cũng được tính.
+    if (type) {
+      const typeMatch = [{ productType: type as string }, { parent: { productType: type as string } }];
+      where.category = where.category
+        ? { AND: [where.category, { OR: typeMatch }] }
+        : { OR: typeMatch };
+    }
     if (featured === 'true') where.isFeatured = true;
     if (search) where.name = { contains: search as string, mode: 'insensitive' };
 
