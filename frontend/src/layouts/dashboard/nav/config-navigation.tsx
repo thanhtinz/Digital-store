@@ -83,7 +83,6 @@ export function useNavConfig() {
   const t = (key: string) => `${translate(`nav.${key}`)}`;
 
   const [categories, setCategories] = useState<AnyCat[]>([]);
-  const [giftcards, setGiftcards] = useState<AnyProduct[]>([]);
 
   useEffect(() => {
     let alive = true;
@@ -92,13 +91,6 @@ export function useNavConfig() {
       .then((res) => {
         const list = Array.isArray(res.data) ? res.data : res.data?.items || [];
         if (alive) setCategories(list);
-      })
-      .catch(() => {});
-    axiosInstance
-      .get('/api/products', { params: { type: 'giftcard', limit: 50 } })
-      .then((res) => {
-        const list = res.data?.products || res.data?.items || [];
-        if (alive) setGiftcards(list);
       })
       .catch(() => {});
     return () => {
@@ -118,13 +110,10 @@ export function useNavConfig() {
     .filter((c) => c.slug && activeOf(c) && typeOf(c) === 'game')
     .map((c) => ({ title: c.name || c.slug || '', path: shopByCat(c.slug) }));
 
-  // Sản phẩm giftcard -> dropdown Giftcard.
-  const giftcardItems = giftcards
-    .filter((p) => p.slug || p.code)
-    .map((p) => ({
-      title: p.name || p.slug || '',
-      path: PATH_DASHBOARD.eCommerce.view((p.slug || p.code) as string),
-    }));
+  // Danh mục giftcard -> dropdown Giftcard (hiện DANH MỤC, không phải sản phẩm).
+  const giftcardItems = categories
+    .filter((c) => c.slug && activeOf(c) && typeOf(c) === 'giftcard')
+    .map((c) => ({ title: c.name || c.slug || '', path: shopByCat(c.slug) }));
 
   // ── Lắp ráp menu ──
   const shopping = {

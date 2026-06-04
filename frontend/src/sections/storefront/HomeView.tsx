@@ -23,6 +23,7 @@ import { IProduct } from '../../@types/product';
 // components
 import { paramCase } from 'change-case';
 import Image from '../../components/image';
+import Label from '../../components/label';
 import Iconify from '../../components/iconify';
 // sections
 import { ShopProductList } from '../@dashboard/e-commerce/shop';
@@ -86,6 +87,76 @@ function SectionHead({
         </Link>
       )}
     </Stack>
+  );
+}
+
+// ----------------------------------------------------------------------
+
+// Card game cho slider Topup (ảnh + badge UID/Login + server).
+function TopupCard({ product }: { product: any }) {
+  const p = product;
+  const slug = p.code || p.slug || p.id;
+  return (
+    <Link
+      component={NextLink}
+      href={PATH_DASHBOARD.eCommerce.view(slug)}
+      color="inherit"
+      underline="none"
+      sx={{ flex: '0 0 auto', width: { xs: 150, sm: 168 }, scrollSnapAlign: 'start' }}
+    >
+      <Card sx={{ overflow: 'hidden' }}>
+        <Box sx={{ position: 'relative' }}>
+          <Image src={p.cover || p.imageUrl} ratio="1/1" alt={p.name} />
+          <Stack direction="row" sx={{ position: 'absolute', top: 8, left: 8, flexWrap: 'wrap', gap: 0.5 }}>
+            {p.topupType && (
+              <Label color="warning" variant="filled" sx={{ textTransform: 'none' }}>
+                {p.topupType === 'uid' ? 'UID' : 'Login'}
+              </Label>
+            )}
+            {p.serverRegion && (
+              <Label color="info" variant="filled" sx={{ textTransform: 'none' }}>
+                {p.serverRegion === 'vietnam' ? 'VN' : 'Global'}
+              </Label>
+            )}
+          </Stack>
+        </Box>
+        <Typography variant="subtitle2" noWrap sx={{ p: 1.5 }} title={p.name}>
+          {p.name}
+        </Typography>
+      </Card>
+    </Link>
+  );
+}
+
+// Logo card cho lưới Gift Card (chỉ ảnh + tên).
+function GiftcardLogo({ product }: { product: any }) {
+  const p = product;
+  const slug = p.code || p.slug || p.id;
+  return (
+    <Link
+      component={NextLink}
+      href={PATH_DASHBOARD.eCommerce.view(slug)}
+      color="inherit"
+      underline="none"
+    >
+      <Card
+        sx={{
+          overflow: 'hidden',
+          transition: (theme) => theme.transitions.create('box-shadow'),
+          '&:hover': { boxShadow: (theme) => theme.customShadows.z16 },
+        }}
+      >
+        <Image src={p.cover || p.imageUrl} ratio="1/1" alt={p.name} />
+        <Typography
+          variant="caption"
+          noWrap
+          sx={{ display: 'block', p: 1, textAlign: 'center' }}
+          title={p.name}
+        >
+          {p.name}
+        </Typography>
+      </Card>
+    </Link>
   );
 }
 
@@ -265,27 +336,53 @@ export default function HomeView() {
         </>
       )}
 
-      {/* TOPUP GAME */}
+      {/* TOPUP GAME — slider */}
       {topup.length > 0 && (
         <>
           <SectionHead
-            title={`${translate('nav.topup_game')}`}
+            title="Topup Game"
             viewAllHref={`${PATH_DASHBOARD.eCommerce.shop}?type=game`}
             viewAllLabel={t('view_all')}
           />
-          <ShopProductList products={topup} loading={false} />
+          <Box
+            sx={{
+              display: 'flex',
+              gap: 2,
+              overflowX: 'auto',
+              pb: 1.5,
+              scrollSnapType: 'x mandatory',
+              '&::-webkit-scrollbar': { height: 6 },
+              '&::-webkit-scrollbar-thumb': { borderRadius: 3, bgcolor: 'divider' },
+            }}
+          >
+            {topup.map((p: any) => (
+              <TopupCard key={p.id} product={p} />
+            ))}
+          </Box>
         </>
       )}
 
-      {/* GIFT CARD */}
+      {/* GIFT CARD — lưới logo */}
       {giftcard.length > 0 && (
         <>
           <SectionHead
-            title={`${translate('nav.giftcard')}`}
+            title="Gift Card"
             viewAllHref={`${PATH_DASHBOARD.eCommerce.shop}?type=giftcard`}
             viewAllLabel={t('view_all')}
           />
-          <ShopProductList products={giftcard} loading={false} />
+          <Box
+            display="grid"
+            gap={2}
+            gridTemplateColumns={{
+              xs: 'repeat(3, 1fr)',
+              sm: 'repeat(4, 1fr)',
+              md: 'repeat(6, 1fr)',
+            }}
+          >
+            {giftcard.map((p: any) => (
+              <GiftcardLogo key={p.id} product={p} />
+            ))}
+          </Box>
         </>
       )}
 
