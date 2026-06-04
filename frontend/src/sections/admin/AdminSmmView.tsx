@@ -394,6 +394,8 @@ function CatalogTab() {
   const [platName, setPlatName] = useState('');
   const [platIcon, setPlatIcon] = useState('');
   const [catForm, setCatForm] = useState<{ platformId: number; name: string } | null>(null);
+  const [editPlat, setEditPlat] = useState<{ id: number; name: string; icon_url: string } | null>(null);
+  const [editCat, setEditCat] = useState<{ id: number; name: string } | null>(null);
   const [toDelete, setToDelete] = useState<{ kind: 'platform' | 'category'; id: number; name: string } | null>(null);
 
   const load = useCallback(() => {
@@ -428,6 +430,33 @@ function CatalogTab() {
       await axiosInstance.post(`/api/smm/platforms/${catForm.platformId}/categories`, { name: catForm.name });
       setCatForm(null);
       ok('Đã thêm chuyên mục');
+      load();
+    } catch (e) {
+      err(e);
+    }
+  };
+
+  const savePlat = async () => {
+    if (!editPlat?.name.trim()) return;
+    try {
+      await axiosInstance.put(`/api/smm/platforms/${editPlat.id}`, {
+        name: editPlat.name,
+        icon_url: editPlat.icon_url || null,
+      });
+      setEditPlat(null);
+      ok('Đã lưu nền tảng');
+      load();
+    } catch (e) {
+      err(e);
+    }
+  };
+
+  const saveCat = async () => {
+    if (!editCat?.name.trim()) return;
+    try {
+      await axiosInstance.put(`/api/smm/categories/${editCat.id}`, { name: editCat.name });
+      setEditCat(null);
+      ok('Đã lưu chuyên mục');
       load();
     } catch (e) {
       err(e);
@@ -474,11 +503,38 @@ function CatalogTab() {
         return (
           <Card key={pl.id} sx={{ p: 2 }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
-              <Typography variant="h6">{pl.name}</Typography>
+              <Stack direction="row" alignItems="center" spacing={1.5}>
+                {pl.iconUrl ? (
+                  <Box
+                    component="img"
+                    src={pl.iconUrl}
+                    alt={pl.name}
+                    sx={{ width: 32, height: 32, borderRadius: 1, objectFit: 'cover' }}
+                  />
+                ) : (
+                  <Box
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 1,
+                      display: 'grid',
+                      placeItems: 'center',
+                      bgcolor: 'background.neutral',
+                      color: 'text.disabled',
+                    }}
+                  >
+                    <Iconify icon="solar:share-bold" width={18} />
+                  </Box>
+                )}
+                <Typography variant="h6">{pl.name}</Typography>
+              </Stack>
               <Stack direction="row" spacing={1}>
                 <Button size="small" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => setCatForm({ platformId: pl.id, name: '' })}>
                   Chuyên mục
                 </Button>
+                <IconButton onClick={() => setEditPlat({ id: pl.id, name: pl.name, icon_url: pl.iconUrl || '' })}>
+                  <Iconify icon="solar:pen-bold" />
+                </IconButton>
                 <IconButton color="error" onClick={() => setToDelete({ kind: 'platform', id: pl.id, name: pl.name })}>
                   <Iconify icon="solar:trash-bin-trash-bold" />
                 </IconButton>
@@ -489,6 +545,7 @@ function CatalogTab() {
                 <Chip
                   key={c.id}
                   label={c.name}
+                  onClick={() => setEditCat({ id: c.id, name: c.name })}
                   onDelete={() => setToDelete({ kind: 'category', id: c.id, name: c.name })}
                   variant="soft"
                 />
@@ -526,6 +583,60 @@ function CatalogTab() {
           </Button>
           <Button variant="contained" onClick={addCategory}>
             Thêm
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Sửa nền tảng */}
+      <Dialog open={!!editPlat} onClose={() => setEditPlat(null)} fullWidth maxWidth="sm">
+        <DialogTitle>Sửa nền tảng</DialogTitle>
+        {editPlat && (
+          <DialogContent>
+            <Stack spacing={2} sx={{ pt: 1 }}>
+              <ImageUploadField
+                label="Icon nền tảng"
+                value={editPlat.icon_url}
+                onChange={(url) => setEditPlat({ ...editPlat, icon_url: url })}
+                height={96}
+              />
+              <TextField
+                fullWidth
+                label="Tên nền tảng"
+                value={editPlat.name}
+                onChange={(e) => setEditPlat({ ...editPlat, name: e.target.value })}
+              />
+            </Stack>
+          </DialogContent>
+        )}
+        <DialogActions>
+          <Button color="inherit" onClick={() => setEditPlat(null)}>
+            Huỷ
+          </Button>
+          <Button variant="contained" onClick={savePlat}>
+            Lưu
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Sửa chuyên mục */}
+      <Dialog open={!!editCat} onClose={() => setEditCat(null)} fullWidth maxWidth="sm">
+        <DialogTitle>Sửa chuyên mục</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            fullWidth
+            label="Tên chuyên mục"
+            sx={{ mt: 1 }}
+            value={editCat?.name || ''}
+            onChange={(e) => editCat && setEditCat({ ...editCat, name: e.target.value })}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button color="inherit" onClick={() => setEditCat(null)}>
+            Huỷ
+          </Button>
+          <Button variant="contained" onClick={saveCat}>
+            Lưu
           </Button>
         </DialogActions>
       </Dialog>
