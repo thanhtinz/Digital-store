@@ -807,19 +807,29 @@ function ServicesTab() {
   return (
     <>
     <Card>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ p: 2 }}>
-        <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
-          {data.total} dịch vụ • đã chọn {selected.length}
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        alignItems={{ xs: 'stretch', sm: 'center' }}
+        justifyContent="space-between"
+        spacing={1.5}
+        sx={{ p: 2 }}
+      >
+        <Typography variant="subtitle2" sx={{ color: 'text.secondary', flexShrink: 0 }}>
+          {data.total} dịch vụ · đã chọn <b>{selected.length}</b>
         </Typography>
-        <Stack direction="row" spacing={1}>
-          <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => setSvcForm({ ...SVC_EMPTY })}>
+        <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1, '& .MuiButton-root': { whiteSpace: 'nowrap', flexShrink: 0 } }}>
+          <Button size="small" variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => setSvcForm({ ...SVC_EMPTY })}>
             Thêm dịch vụ
           </Button>
-          <Button disabled={!selected.length} startIcon={<Iconify icon="solar:tag-price-bold" />} onClick={roundPrices}>
-            Làm tròn giá (1k)
-          </Button>
-          <Button color="error" disabled={!selected.length} startIcon={<Iconify icon="solar:trash-bin-trash-bold" />} onClick={bulkDelete}>
-            Xoá đã chọn
+          <Tooltip title="Làm tròn giá bán về bội số 1.000đ gần nhất">
+            <span>
+              <Button size="small" variant="soft" disabled={!selected.length} startIcon={<Iconify icon="solar:tag-price-bold" />} onClick={roundPrices}>
+                Làm tròn 1k
+              </Button>
+            </span>
+          </Tooltip>
+          <Button size="small" variant="soft" color="error" disabled={!selected.length} startIcon={<Iconify icon="solar:trash-bin-trash-bold" />} onClick={bulkDelete}>
+            Xoá{selected.length ? ` (${selected.length})` : ''}
           </Button>
         </Stack>
       </Stack>
