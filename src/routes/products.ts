@@ -502,7 +502,11 @@ function serializeProduct(p: any, detailed = false): Record<string, any> {
     isActive: p.isActive,
     sortOrder: p.sortOrder,
     categoryId: p.categoryId,
-    category: p.category ? { id: p.category.id, name: p.category.name, slug: p.category.slug } : null,
+    category: p.category ? { id: p.category.id, name: p.category.name, slug: p.category.slug, productType: p.category.productType } : null,
+    // Loại sản phẩm + thông tin topup (cho layout chi tiết riêng game/giftcard).
+    productType: p.category?.productType || 'premium',
+    topupType: p.topupType || null,
+    serverRegion: p.serverRegion || null,
     packages,
     // Rating trung bình + số lượt (cho lọc theo sao ở trang gian hàng).
     rating: ratingAvg,

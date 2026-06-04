@@ -25,6 +25,7 @@ import { IProduct, ICheckoutCartItem } from '../../../../@types/product';
 // _mock
 import { _socials } from '../../../../_mock/arrays';
 // components
+import Image from '../../../../components/image';
 import Label from '../../../../components/label';
 import Iconify from '../../../../components/iconify';
 import { IncrementerButton } from '../../../../components/custom-input';
@@ -79,9 +80,27 @@ export default function ProductDetailsSummary({
     packages = [],
   } = product;
 
+  // Loại sản phẩm + thông tin topup (cho layout riêng game/giftcard).
+  const pAny: any = product;
+  const productType: string = pAny.productType || 'premium';
+  const topupType: string | null = pAny.topupType || null;
+  const serverRegion: string | null = pAny.serverRegion || null;
+  const isGame = productType === 'game';
+  const isGiftcard = productType === 'giftcard';
+
   // Digital Store: bán theo gói. Nếu có gói thì dùng gói thay cho size/màu.
   const hasPackages = Array.isArray(packages) && packages.length > 0;
   const defaultPackage = hasPackages ? packages[0] : undefined;
+
+  // Giá hiệu lực của 1 gói (ưu tiên flash sale).
+  const pkgPrice = (pkg: any) => (pkg?.flashSale?.salePrice ?? pkg?.price) || 0;
+  // Chọn gói bằng cách bấm thẻ (thay cho dropdown).
+  const selectPackage = (pkg: any) => {
+    setValue('packageId', String(pkg.id));
+    setValue('packageName', pkg.name);
+    setValue('price', pkgPrice(pkg));
+    setCustomFields({});
+  };
 
   // Còn hàng nếu có ít nhất 1 gói khả dụng (gói không quản kho hoặc còn tồn).
   const inStock =
@@ -144,17 +163,6 @@ export default function ProductDetailsSummary({
       enqueueSnackbar(e?.detail || e?.message || tp('action_failed'), { variant: 'error' });
     } finally {
       setAlerting(false);
-    }
-  };
-
-  const handleChangePackage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const pkgId = event.target.value;
-    const pkg = packages.find((p) => String(p.id) === String(pkgId));
-    setValue('packageId', pkgId);
-    setCustomFields({}); // đổi gói thì xóa dữ liệu trường cũ
-    if (pkg) {
-      setValue('packageName', pkg.name);
-      setValue('price', pkg.price);
     }
   };
 
@@ -224,6 +232,31 @@ export default function ProductDetailsSummary({
 
           <Typography variant="h5">{name}</Typography>
 
+          {(isGame || isGiftcard) && (
+            <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
+              {isGame && (
+                <Label variant="filled" color="warning">
+                  TOP UP
+                </Label>
+              )}
+              {isGiftcard && (
+                <Label variant="filled" color="info">
+                  GIFT CARD
+                </Label>
+              )}
+              {isGame && topupType && (
+                <Label variant="soft" color="default" startIcon={<Iconify icon={topupType === 'uid' ? 'solar:user-id-bold' : 'solar:login-3-bold'} />}>
+                  {topupType === 'uid' ? 'UID' : 'Đăng nhập'}
+                </Label>
+              )}
+              {isGame && serverRegion && (
+                <Label variant="soft" color="default">
+                  {serverRegion === 'vietnam' ? '🇻🇳 Việt Nam' : '🌐 Global'}
+                </Label>
+              )}
+            </Stack>
+          )}
+
           <Stack direction="row" alignItems="center" spacing={1}>
             <Rating value={totalRating} precision={0.1} readOnly />
 
@@ -249,23 +282,73 @@ export default function ProductDetailsSummary({
         <Divider sx={{ borderStyle: 'dashed' }} />
 
         {hasPackages ? (
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Typography variant="subtitle2" sx={{ height: 40, lineHeight: '40px', flexGrow: 1 }}>
-              {tp('package')}
-            </Typography>
-
-            <RHFSelect
-              name="packageId"
-              size="small"
-              onChange={handleChangePackage}
-              sx={{ maxWidth: 220 }}
+          <Stack spacing={1.5}>
+            <Typography variant="subtitle2">{tp('package')}</Typography>
+            <Box
+              display="grid"
+              gap={1.5}
+              gridTemplateColumns={{ xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' }}
             >
-              {packages.map((pkg) => (
-                <MenuItem key={pkg.id} value={String(pkg.id)}>
-                  {pkg.name} — {fCurrency(pkg.price)}
-                </MenuItem>
-              ))}
-            </RHFSelect>
+              {packages.map((pkg: any) => {
+                const selected = String(pkg.id) === String(values.packageId);
+                const oos = pkg.isStockManaged && (pkg.stockQuantity || 0) <= 0;
+                const eff = pkgPrice(pkg);
+                const hasFlash = !!pkg.flashSale?.salePrice && pkg.price > eff;
+                const showImg = (isGame || isGiftcard) && !!pkg.imageUrl;
+                return (
+                  <Box
+                    key={pkg.id}
+                    onClick={() => !oos && selectPackage(pkg)}
+                    sx={{
+                      position: 'relative',
+                      p: 1.25,
+                      cursor: oos ? 'not-allowed' : 'pointer',
+                      opacity: oos ? 0.5 : 1,
+                      borderRadius: 1.5,
+                      bgcolor: selected ? 'primary.lighter' : 'background.paper',
+                      border: (theme) =>
+                        `solid 2px ${selected ? theme.palette.primary.main : theme.palette.divider}`,
+                      transition: (theme) => theme.transitions.create('border-color'),
+                    }}
+                  >
+                    {hasFlash && (
+                      <Label color="error" variant="filled" sx={{ position: 'absolute', top: 6, left: 6, zIndex: 9 }}>
+                        SALE
+                      </Label>
+                    )}
+                    {oos && (
+                      <Label color="error" sx={{ position: 'absolute', top: 6, right: 6, zIndex: 9 }}>
+                        {tp('out_of_stock')}
+                      </Label>
+                    )}
+                    {showImg && (
+                      <Image
+                        src={pkg.imageUrl}
+                        alt={pkg.name}
+                        ratio={isGiftcard ? '3/4' : '1/1'}
+                        sx={{ borderRadius: 1, mb: 1 }}
+                      />
+                    )}
+                    <Typography variant="subtitle2" noWrap title={pkg.name}>
+                      {pkg.name}
+                    </Typography>
+                    <Stack direction="row" spacing={0.5} alignItems="baseline" flexWrap="wrap">
+                      <Typography variant="subtitle2" color="primary.main">
+                        {fCurrency(eff)}
+                      </Typography>
+                      {hasFlash && (
+                        <Typography
+                          variant="caption"
+                          sx={{ color: 'text.disabled', textDecoration: 'line-through' }}
+                        >
+                          {fCurrency(pkg.price)}
+                        </Typography>
+                      )}
+                    </Stack>
+                  </Box>
+                );
+              })}
+            </Box>
           </Stack>
         ) : (
           <>

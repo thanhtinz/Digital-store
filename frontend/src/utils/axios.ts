@@ -40,6 +40,10 @@ function adaptProduct(p: any): any {
     categoryId: p.categoryId ?? p.category_id ?? null,
     // Giữ slug danh mục để trang khách lọc theo danh mục (adapter làm phẳng category -> chuỗi).
     categorySlug: p.category?.slug ?? p.categorySlug ?? '',
+    // Loại sản phẩm + topup info (cho layout chi tiết riêng game/giftcard).
+    productType: p.productType ?? p.category?.productType ?? 'premium',
+    topupType: p.topupType ?? p.topup_type ?? null,
+    serverRegion: p.serverRegion ?? p.server_region ?? null,
     cover: image,
     images,
     name: p.name ?? '',
