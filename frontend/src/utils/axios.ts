@@ -36,6 +36,8 @@ function adaptProduct(p: any): any {
 
   return {
     id: String(p.id ?? p.slug ?? ''),
+    // Giữ lại categoryId thô để admin/consumer khác dùng (storefront bỏ qua field thừa).
+    categoryId: p.categoryId ?? p.category_id ?? null,
     cover: image,
     images,
     name: p.name ?? '',
@@ -98,6 +100,14 @@ function adaptPost(p: any): any {
 axiosInstance.interceptors.response.use(
   (response) => {
     const url = response.config.url || '';
+    // ADMIN cần DỮ LIỆU THÔ (categoryId + category là object {id,name,slug}).
+    // Adapter dưới đây dành cho TRANG KHÁCH (Minimal IProduct): nó biến category
+    // thành chuỗi tên và XOÁ categoryId -> hỏng hiển thị cột danh mục & preselect
+    // ở admin. Vì vậy bỏ qua adapter cho mọi request admin (URL có /products/admin
+    // hoặc query admin=1 mà danh sách admin gắn kèm).
+    if (url.includes('/products/admin') || url.includes('admin=1')) {
+      return response;
+    }
     const d = response.data;
 
     // /api/products/search -> { results: [...] } (đặt trước branch :slug)

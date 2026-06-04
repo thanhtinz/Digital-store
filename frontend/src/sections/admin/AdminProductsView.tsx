@@ -71,7 +71,7 @@ export default function AdminProductsView() {
   const load = () => {
     setLoading(true);
     Promise.all([
-      axiosInstance.get('/api/products', { params: { limit: 300 } }),
+      axiosInstance.get('/api/products', { params: { limit: 300, admin: 1, active: 'all' } }),
       axiosInstance.get('/api/categories'),
     ])
       .then(([p, c]) => {
@@ -155,13 +155,7 @@ export default function AdminProductsView() {
                         {p.isFeatured && <Label color="warning" variant="soft">Nổi bật</Label>}
                       </Stack>
                     </TableCell>
-                    <TableCell>
-                      {p.category?.name || (
-                        <Typography component="span" variant="caption" sx={{ color: 'error.main', fontWeight: 700 }}>
-                          ⚠catId={String(p.categoryId ?? 'null')}
-                        </Typography>
-                      )}
-                    </TableCell>
+                    <TableCell>{p.category?.name || '—'}</TableCell>
                     <TableCell>{minPrice(p) ? fCurrency(minPrice(p)) : '—'}</TableCell>
                     <TableCell>
                       <Label color={p.isActive ? 'success' : 'default'} variant="soft">
