@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 // @mui
 import {
   Box,
@@ -53,7 +54,20 @@ const TABS = [
 ];
 
 export default function AdminSmmView() {
+  const router = useRouter();
   const [tab, setTab] = useState('providers');
+
+  // Đồng bộ tab từ URL (?tab=) để reload/back giữ nguyên tab đang xem.
+  useEffect(() => {
+    if (!router.isReady) return;
+    const q = router.query.tab;
+    if (typeof q === 'string' && TABS.some((t) => t.value === q)) setTab(q);
+  }, [router.isReady, router.query.tab]);
+
+  const changeTab = (v: string) => {
+    setTab(v);
+    router.replace({ pathname: router.pathname, query: { ...router.query, tab: v } }, undefined, { shallow: true });
+  };
 
   return (
     <Container maxWidth="lg" sx={{ pb: 8 }}>
@@ -61,7 +75,7 @@ export default function AdminSmmView() {
         SMM Panel
       </Typography>
 
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }} variant="scrollable" scrollButtons="auto">
+      <Tabs value={tab} onChange={(_, v) => changeTab(v)} sx={{ mb: 3 }} variant="scrollable" scrollButtons="auto">
         {TABS.map((t) => (
           <Tab key={t.value} value={t.value} label={t.label} icon={<Iconify icon={t.icon} />} iconPosition="start" />
         ))}
