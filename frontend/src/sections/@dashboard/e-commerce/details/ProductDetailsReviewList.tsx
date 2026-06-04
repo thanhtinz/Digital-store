@@ -1,6 +1,20 @@
-import { useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 // @mui
-import { Box, Stack, Button, Rating, Avatar, Pagination, Typography } from '@mui/material';
+import {
+  Box,
+  Stack,
+  Button,
+  Rating,
+  Avatar,
+  Pagination,
+  Typography,
+  Chip,
+  MenuItem,
+  TextField,
+  Checkbox,
+  FormControlLabel,
+  Paper,
+} from '@mui/material';
 // utils
 import axiosInstance from '../../../../utils/axios';
 import { fDate } from '../../../../utils/formatTime';
@@ -15,58 +29,175 @@ import Iconify from '../../../../components/iconify';
 
 // ----------------------------------------------------------------------
 
+const PAGE_SIZE = 5;
+
+const SORT_OPTIONS = [
+  { value: 'newest', label: 'Mới nhất' },
+  { value: 'helpful', label: 'Hữu ích nhất' },
+  { value: 'rating_high', label: 'Sao cao → thấp' },
+  { value: 'rating_low', label: 'Sao thấp → cao' },
+];
+
 type Props = {
   reviews: IProductReview[];
+  productId?: string | number;
 };
 
-export default function ProductDetailsReviewList({ reviews }: Props) {
-  const PAGE_SIZE = 5;
+export default function ProductDetailsReviewList({ reviews, productId }: Props) {
+  const [items, setItems] = useState<IProductReview[]>(reviews);
   const [page, setPage] = useState(1);
-  const pageCount = Math.ceil((reviews.length || 0) / PAGE_SIZE);
-  const paged = reviews.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const [pages, setPages] = useState(Math.ceil((reviews.length || 0) / PAGE_SIZE) || 1);
+  const [sort, setSort] = useState('newest');
+  const [rating, setRating] = useState(0); // 0 = tất cả
+  const [hasImages, setHasImages] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const fetchReviews = useCallback(async () => {
+    if (!productId) return;
+    setLoading(true);
+    try {
+      const r = await axiosInstance.get(`/api/products/${productId}/reviews`, {
+        params: {
+          page,
+          limit: PAGE_SIZE,
+          sort,
+          ...(rating ? { rating } : {}),
+          ...(hasImages ? { has_images: 1 } : {}),
+        },
+      });
+      const list: IProductReview[] = (r.data?.reviews || r.data?.items || []).map((x: any) => ({
+        id: String(x.id),
+        name: x.name || x.userName || 'Khách',
+        avatarUrl: x.avatarUrl || '',
+        comment: x.comment || '',
+        rating: x.rating || 0,
+        isPurchased: x.isPurchased ?? x.isVerified ?? false,
+        helpful: x.helpful ?? x.helpfulCount ?? 0,
+        images: Array.isArray(x.images) ? x.images : [],
+        adminReply: x.adminReply ?? null,
+        adminReplyAt: x.adminReplyAt ?? null,
+        postedAt: x.postedAt || x.createdAt || new Date().toISOString(),
+      }));
+      setItems(list);
+      setPages(r.data?.pages || 1);
+    } catch {
+      /* giữ nguyên dữ liệu hiện có nếu lỗi mạng */
+    } finally {
+      setLoading(false);
+    }
+  }, [productId, page, sort, rating, hasImages]);
+
+  // Tải lại khi đổi bộ lọc / sắp xếp / trang. Bỏ qua nếu không có productId
+  // (fallback dùng prop reviews + phân trang client).
+  useEffect(() => {
+    if (productId) fetchReviews();
+  }, [fetchReviews, productId]);
+
+  // Đồng bộ khi prop reviews thay đổi (vd sau khi gửi đánh giá mới).
+  useEffect(() => {
+    if (productId) {
+      setPage(1);
+      fetchReviews();
+    } else {
+      setItems(reviews);
+      setPages(Math.ceil((reviews.length || 0) / PAGE_SIZE) || 1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reviews]);
+
+  const handleFilter = (next: { sort?: string; rating?: number; hasImages?: boolean }) => {
+    if (next.sort !== undefined) setSort(next.sort);
+    if (next.rating !== undefined) setRating(next.rating);
+    if (next.hasImages !== undefined) setHasImages(next.hasImages);
+    setPage(1);
+  };
+
+  // Khi không có productId: phân trang client trên prop.
+  const clientPaged = !productId
+    ? items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+    : items;
 
   return (
     <>
       <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        alignItems={{ sm: 'center' }}
+        spacing={1.5}
+        sx={{ pt: 4, px: { xs: 2.5, md: 0 } }}
+      >
+        <TextField
+          select
+          size="small"
+          label="Sắp xếp"
+          value={sort}
+          onChange={(e) => handleFilter({ sort: e.target.value })}
+          sx={{ minWidth: 180 }}
+        >
+          {SORT_OPTIONS.map((o) => (
+            <MenuItem key={o.value} value={o.value}>
+              {o.label}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, flexGrow: 1 }}>
+          <Chip
+            label="Tất cả"
+            size="small"
+            color={rating === 0 ? 'primary' : 'default'}
+            variant={rating === 0 ? 'filled' : 'outlined'}
+            onClick={() => handleFilter({ rating: 0 })}
+          />
+          {[5, 4, 3, 2, 1].map((s) => (
+            <Chip
+              key={s}
+              size="small"
+              label={`${s} ★`}
+              color={rating === s ? 'primary' : 'default'}
+              variant={rating === s ? 'filled' : 'outlined'}
+              onClick={() => handleFilter({ rating: s })}
+            />
+          ))}
+        </Box>
+
+        <FormControlLabel
+          control={
+            <Checkbox
+              size="small"
+              checked={hasImages}
+              onChange={(e) => handleFilter({ hasImages: e.target.checked })}
+            />
+          }
+          label="Có hình ảnh"
+        />
+      </Stack>
+
+      <Stack
         spacing={5}
         sx={{
-          pt: 5,
-          pl: {
-            xs: 2.5,
-            md: 0,
-          },
-          pr: {
-            xs: 2.5,
-            md: 5,
-          },
+          pt: 3,
+          pl: { xs: 2.5, md: 0 },
+          pr: { xs: 2.5, md: 5 },
+          opacity: loading ? 0.5 : 1,
+          transition: 'opacity .2s',
         }}
       >
-        {paged.map((review) => (
+        {clientPaged.map((review) => (
           <ReviewItem key={review.id} review={review} />
         ))}
-        {reviews.length === 0 && (
+        {clientPaged.length === 0 && (
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             Chưa có đánh giá nào.
           </Typography>
         )}
       </Stack>
 
-      {pageCount > 1 && (
+      {pages > 1 && (
         <Stack
-          alignItems={{
-            xs: 'center',
-            md: 'flex-end',
-          }}
-          sx={{
-            my: 5,
-            mr: { md: 5 },
-          }}
+          alignItems={{ xs: 'center', md: 'flex-end' }}
+          sx={{ my: 5, mr: { md: 5 } }}
         >
-          <Pagination
-            count={pageCount}
-            page={page}
-            onChange={(_e, value) => setPage(value)}
-          />
+          <Pagination count={pages} page={page} onChange={(_e, value) => setPage(value)} />
         </Stack>
       )}
     </>
@@ -82,7 +213,8 @@ type ReviewItemProps = {
 function ReviewItem({ review }: ReviewItemProps) {
   const { translate } = useLocales();
   const tp = (k: string) => `${translate(`product_page.${k}`)}`;
-  const { id, name, rating, comment, helpful, postedAt, avatarUrl, isPurchased, images } = review;
+  const { id, name, rating, comment, helpful, postedAt, avatarUrl, isPurchased, images, adminReply, adminReplyAt } =
+    review;
 
   const [isHelpful, setIsHelpful] = useState(false);
   const [count, setCount] = useState(helpful);
@@ -177,6 +309,28 @@ function ReviewItem({ review }: ReviewItemProps) {
               </Box>
             ))}
           </Stack>
+        )}
+
+        {adminReply && (
+          <Paper
+            variant="outlined"
+            sx={{ mt: 1, p: 1.5, bgcolor: 'background.neutral', borderRadius: 1.5 }}
+          >
+            <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mb: 0.5 }}>
+              <Iconify icon="solar:shop-2-bold" width={16} sx={{ color: 'primary.main' }} />
+              <Typography variant="subtitle2" sx={{ color: 'primary.main' }}>
+                Phản hồi từ cửa hàng
+              </Typography>
+              {adminReplyAt && (
+                <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+                  · {fDate(adminReplyAt)}
+                </Typography>
+              )}
+            </Stack>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              {adminReply}
+            </Typography>
+          </Paper>
         )}
 
         <Stack

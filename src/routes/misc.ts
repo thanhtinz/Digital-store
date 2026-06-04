@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import slugify from 'slugify';
 import multer from 'multer';
 import sharp from 'sharp';
+import { Prisma } from '@prisma/client';
 import prisma from '../db';
 import { requireUser, requireStaffOrAdmin, optionalUser } from '../middleware/auth';
 
@@ -190,15 +191,73 @@ router.get(['/admin/blog/posts/id/:id', '/blog/admin/posts/id/:id'], requireStaf
 // REVIEWS
 // ════════════════════════════════════════════════════
 
+// Map 1 bản ghi Review (raw Prisma) sang shape mà frontend cần.
+function serializeReview(r: any): Record<string, any> {
+  return {
+    id: String(r.id),
+    name: r.userName || 'Khách',
+    avatarUrl: '',
+    rating: r.rating || 0,
+    comment: r.comment || '',
+    images: Array.isArray(r.images) ? r.images : [],
+    helpful: Math.max(0, r.helpfulCount || 0),
+    isPurchased: !!r.isVerified,
+    adminReply: r.adminReply || null,
+    adminReplyAt: r.adminReplyAt ? r.adminReplyAt.toISOString() : null,
+    postedAt: r.createdAt ? r.createdAt.toISOString() : new Date().toISOString(),
+  };
+}
+
 router.get(['/products/:productId/reviews', '/reviews/product/:productId'], async (req: Request, res: Response) => {
   try {
-    const reviews = await prisma.review.findMany({
-      where: { productId: parseInt(req.params.productId), isVisible: true },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
+    const productId = parseInt(req.params.productId);
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 5, 1), 50);
+    const sort = String(req.query.sort || 'newest');
+    const ratingFilter = parseInt(req.query.rating as string);
+    const hasImages = req.query.has_images === 'true' || req.query.has_images === '1';
+
+    const baseWhere: any = { productId, isVisible: true };
+    const where: any = { ...baseWhere };
+    if (ratingFilter >= 1 && ratingFilter <= 5) where.rating = ratingFilter;
+    if (hasImages) where.images = { not: Prisma.AnyNull };
+
+    let orderBy: any = { createdAt: 'desc' };
+    if (sort === 'helpful') orderBy = [{ helpfulCount: 'desc' }, { createdAt: 'desc' }];
+    else if (sort === 'rating_high') orderBy = [{ rating: 'desc' }, { createdAt: 'desc' }];
+    else if (sort === 'rating_low') orderBy = [{ rating: 'asc' }, { createdAt: 'desc' }];
+
+    // Phân bố sao + trung bình tính trên TOÀN BỘ đánh giá hiển thị (không phụ thuộc lọc).
+    const grouped = await prisma.review.groupBy({
+      by: ['rating'],
+      where: baseWhere,
+      _count: { _all: true },
     });
-    const avg = reviews.length ? reviews.reduce((a: number, b: { rating: number }) => a + b.rating, 0) / reviews.length : 0;
-    res.json({ reviews, average: avg.toFixed(1), total: reviews.length });
+    const distribution = [1, 2, 3, 4, 5].map((star) => ({
+      star,
+      count: grouped.find((g: any) => g.rating === star)?._count._all || 0,
+    }));
+    const totalAll = distribution.reduce((a, d) => a + d.count, 0);
+    const sumAll = distribution.reduce((a, d) => a + d.star * d.count, 0);
+    const average = totalAll ? Math.round((sumAll / totalAll) * 10) / 10 : 0;
+
+    const [filteredTotal, reviews] = await Promise.all([
+      prisma.review.count({ where }),
+      prisma.review.findMany({ where, orderBy, skip: (page - 1) * limit, take: limit }),
+    ]);
+
+    const items = reviews.map(serializeReview);
+    res.json({
+      reviews: items,
+      items,
+      page,
+      limit,
+      total: filteredTotal,
+      pages: Math.ceil(filteredTotal / limit) || 1,
+      totalAll,
+      average,
+      distribution,
+    });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
   }
@@ -221,6 +280,20 @@ router.post('/reviews', requireUser, async (req: Request, res: Response) => {
       res.status(400).json({ detail: 'Bạn đã đánh giá sản phẩm này rồi' });
       return;
     }
+    // Xác thực "đã mua": chỉ cho đánh giá khi user có đơn đã thanh toán/hoàn tất
+    // chứa 1 gói thuộc sản phẩm này. Đặt nhãn "Đã mua hàng" (isVerified).
+    const purchased = await prisma.order.findFirst({
+      where: {
+        userId: user.user_id.toString(),
+        status: { in: ['paid', 'completed'] },
+        package: { productId },
+      },
+      select: { id: true },
+    });
+    if (!purchased) {
+      res.status(403).json({ detail: 'Bạn cần mua sản phẩm này trước khi đánh giá' });
+      return;
+    }
     const images = Array.isArray(req.body.images) ? req.body.images.filter((x: any) => typeof x === 'string').slice(0, 6) : [];
     const review = await prisma.review.create({
       data: {
@@ -228,6 +301,7 @@ router.post('/reviews', requireUser, async (req: Request, res: Response) => {
         userId: user.user_id.toString(),
         userName: user.display_name || user.email,
         rating, comment: comment || null,
+        isVerified: true,
         images: images.length ? images : undefined,
       },
     });
@@ -318,7 +392,11 @@ router.get('/admin/reviews', requireStaffOrAdmin, async (req: Request, res: Resp
         user_name: r.userName,
         rating: r.rating,
         comment: r.comment,
+        images: Array.isArray(r.images) ? r.images : [],
         is_visible: r.isVisible,
+        is_verified: r.isVerified,
+        admin_reply: r.adminReply || null,
+        admin_reply_at: r.adminReplyAt?.toISOString() || null,
         created_at: r.createdAt?.toISOString(),
       })),
     });
@@ -329,11 +407,21 @@ router.get('/admin/reviews', requireStaffOrAdmin, async (req: Request, res: Resp
 
 router.patch('/admin/reviews/:id', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
-    const r = await prisma.review.update({
-      where: { id: parseInt(req.params.id) },
-      data: { ...(req.body.is_visible !== undefined && { isVisible: req.body.is_visible }) },
+    const data: any = {};
+    if (req.body.is_visible !== undefined) data.isVisible = req.body.is_visible;
+    // Admin trả lời công khai dưới đánh giá (gửi chuỗi rỗng = gỡ trả lời).
+    if (req.body.admin_reply !== undefined) {
+      const reply = typeof req.body.admin_reply === 'string' ? req.body.admin_reply.trim() : '';
+      data.adminReply = reply || null;
+      data.adminReplyAt = reply ? new Date() : null;
+    }
+    const r = await prisma.review.update({ where: { id: parseInt(req.params.id) }, data });
+    res.json({
+      id: r.id,
+      is_visible: r.isVisible,
+      admin_reply: r.adminReply || null,
+      admin_reply_at: r.adminReplyAt?.toISOString() || null,
     });
-    res.json({ id: r.id, is_visible: r.isVisible });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
   }
