@@ -32,6 +32,14 @@ export type CategoryOption = { label: string; value: string };
 
 export const FILTER_RATING_OPTIONS = ['up4Star', 'up3Star', 'up2Star', 'up1Star'];
 
+// Phân loại sản phẩm để tách nhóm trên trang gian hàng.
+export const PRODUCT_TYPE_VALUES = [
+  { value: 'premium', label: 'Tài khoản Premium' },
+  { value: 'game', label: 'Nạp game' },
+  { value: 'giftcard', label: 'Giftcard' },
+  { value: 'source', label: 'Mã nguồn & Theme' },
+];
+
 type Props = {
   open: boolean;
   isDefault: boolean;
@@ -56,6 +64,7 @@ export default function ShopFilterDrawer({
   const t = (k: string) => `${translate(`shop_page.${k}`)}`;
 
   const options = [{ label: t('all'), value: 'All' }, ...categories];
+  const typeOptions = [{ label: t('all'), value: 'All' }, ...PRODUCT_TYPE_VALUES];
 
   // Mốc giá cho slider (chia 4 nhãn).
   const step = Math.max(1000, Math.round(maxPrice / 100 / 1000) * 1000);
@@ -96,6 +105,11 @@ export default function ShopFilterDrawer({
 
         <Scrollbar>
           <Stack spacing={3} sx={{ p: 2.5 }}>
+            <Stack spacing={1}>
+              <Typography variant="subtitle1">Loại sản phẩm</Typography>
+              <RHFRadioGroup name="productType" options={typeOptions} />
+            </Stack>
+
             <Stack spacing={1}>
               <Typography variant="subtitle1">{t('category')}</Typography>
               <RHFRadioGroup name="category" options={options} />

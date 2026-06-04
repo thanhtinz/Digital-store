@@ -69,6 +69,7 @@ export default function EcommerceShopPage() {
   const defaultValues = {
     gender: [],
     category: 'All',
+    productType: 'All',
     colors: [],
     priceRange: [0, 0],
     rating: '',
@@ -87,7 +88,10 @@ export default function EcommerceShopPage() {
   } = methods;
 
   const isDefault =
-    !dirtyFields.category && !dirtyFields.priceRange && !dirtyFields.rating;
+    !dirtyFields.category &&
+    !dirtyFields.productType &&
+    !dirtyFields.priceRange &&
+    !dirtyFields.rating;
 
   const values = watch();
 
@@ -97,16 +101,21 @@ export default function EcommerceShopPage() {
   const categorySlug = (query.category as string) || undefined;
   const typeFilter = (query.type as string) || undefined;
 
-  // Tải toàn bộ sản phẩm (theo loại nếu có) — danh mục lọc ở client để
-  // chuyển danh mục trong bộ lọc vẫn hoạt động khi vào từ menu.
+  // Tải toàn bộ sản phẩm — lọc theo danh mục & loại ở client để các bộ lọc
+  // trong drawer hoạt động liền mạch khi vào từ menu (?category / ?type).
   useEffect(() => {
-    dispatch(getProducts({ type: typeFilter }));
-  }, [dispatch, typeFilter]);
+    dispatch(getProducts());
+  }, [dispatch]);
 
   // Đồng bộ danh mục từ URL vào bộ lọc (highlight đúng danh mục + lọc ngay).
   useEffect(() => {
     setValue('category', categorySlug || 'All');
   }, [categorySlug, setValue]);
+
+  // Đồng bộ loại sản phẩm từ URL (?type=) vào bộ lọc.
+  useEffect(() => {
+    setValue('productType', typeFilter || 'All');
+  }, [typeFilter, setValue]);
 
   const handleResetFilter = () => {
     reset();
@@ -188,7 +197,7 @@ const RATING_THRESHOLD: Record<string, number> = {
 };
 
 function applyFilter(products: IProduct[], filters: IProductFilter) {
-  const { category, priceRange, rating, sortBy } = filters;
+  const { category, productType, priceRange, rating, sortBy } = filters;
 
   // SORT BY
   if (sortBy === 'featured') {
@@ -202,6 +211,13 @@ function applyFilter(products: IProduct[], filters: IProductFilter) {
   }
   if (sortBy === 'priceAsc') {
     products = orderBy(products, [(p: any) => effPrice(p)], ['asc']);
+  }
+
+  // FILTER theo loại sản phẩm (premium | game | giftcard | source).
+  if (productType && productType !== 'All') {
+    products = products.filter(
+      (product: any) => (product.productType || product.category?.productType) === productType
+    );
   }
 
   // FILTER theo danh mục (so theo slug). Adapter làm phẳng category -> chuỗi tên,

@@ -68,6 +68,7 @@ export type IProductPackage = {
 export type IProductFilter = {
   gender: string[];
   category: string;
+  productType: string;
   colors: string[];
   priceRange: number[];
   rating: string;
