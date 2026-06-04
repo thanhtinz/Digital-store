@@ -204,9 +204,12 @@ function applyFilter(products: IProduct[], filters: IProductFilter) {
     products = orderBy(products, [(p: any) => effPrice(p)], ['asc']);
   }
 
-  // FILTER theo danh mục (so theo slug của danh mục thật)
+  // FILTER theo danh mục (so theo slug). Adapter làm phẳng category -> chuỗi tên,
+  // nên ưu tiên categorySlug (đã giữ lại); fallback category?.slug cho dữ liệu thô.
   if (category && category !== 'All') {
-    products = products.filter((product: any) => product.category?.slug === category);
+    products = products.filter(
+      (product: any) => (product.categorySlug || product.category?.slug) === category
+    );
   }
 
   // FILTER theo khoảng giá (VNĐ) — chỉ áp khi người dùng đặt mốc.

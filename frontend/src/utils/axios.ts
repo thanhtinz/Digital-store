@@ -38,6 +38,8 @@ function adaptProduct(p: any): any {
     id: String(p.id ?? p.slug ?? ''),
     // Giữ lại categoryId thô để admin/consumer khác dùng (storefront bỏ qua field thừa).
     categoryId: p.categoryId ?? p.category_id ?? null,
+    // Giữ slug danh mục để trang khách lọc theo danh mục (adapter làm phẳng category -> chuỗi).
+    categorySlug: p.category?.slug ?? p.categorySlug ?? '',
     cover: image,
     images,
     name: p.name ?? '',
