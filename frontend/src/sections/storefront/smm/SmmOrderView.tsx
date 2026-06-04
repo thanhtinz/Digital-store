@@ -75,6 +75,20 @@ export default function SmmOrderView() {
   const [dripOn, setDripOn] = useState(false);
   const [runs, setRuns] = useState(2);
   const [interval, setIntervalMin] = useState(30);
+  // VAT + đặt lịch
+  const [taxRate, setTaxRate] = useState(0);
+  const [scheduleOn, setScheduleOn] = useState(false);
+  const [scheduleAt, setScheduleAt] = useState('');
+
+  useEffect(() => {
+    axiosInstance
+      .get('/api/settings')
+      .then((r) => {
+        const tr = Number(r.data?.tax_rate);
+        if (Number.isFinite(tr)) setTaxRate(tr);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -127,7 +141,9 @@ export default function SmmOrderView() {
     [service, effectiveQty]
   );
 
-  const insufficient = balance != null && estimate > balance;
+  const taxAmount = Math.round((estimate * taxRate) / 100);
+  const total = estimate + taxAmount;
+  const insufficient = balance != null && total > balance;
   const avgTime = fAvgTime(service?.avg_time_minutes);
 
   const handleSubmit = async () => {
@@ -150,6 +166,7 @@ export default function SmmOrderView() {
         extras,
         repeat_count: dripOn && canDrip ? runs : 0,
         repeat_interval: dripOn && canDrip ? interval : 0,
+        scheduled_at: scheduleOn && scheduleAt ? new Date(scheduleAt).toISOString() : undefined,
       });
       enqueueSnackbar(t('success'));
       setLink('');
@@ -223,6 +240,7 @@ export default function SmmOrderView() {
               {/* Thông tin dịch vụ */}
               <Box sx={{ p: 2, borderRadius: 1.5, bgcolor: 'background.neutral' }}>
                 <Stack direction="row" flexWrap="wrap" sx={{ gap: 1, mb: service.description ? 1.5 : 0 }}>
+                  <Chip size="small" variant="soft" color="primary" label={`#${(service as any).display_id || service.id}`} />
                   <Chip size="small" variant="soft" label={`${t('price_label')} ${fCurrency(service.rate)}/1000`} />
                   <Chip size="small" variant="soft" label={`${t('min_label')} ${service.min_quantity.toLocaleString()}`} />
                   <Chip size="small" variant="soft" label={`${t('max_label')} ${service.max_quantity.toLocaleString()}`} />
@@ -315,17 +333,50 @@ export default function SmmOrderView() {
                 </Box>
               )}
 
+              {/* Đặt lịch chạy đơn */}
+              <Box sx={{ border: (th) => `dashed 1px ${th.palette.divider}`, borderRadius: 1.5, p: 2 }}>
+                <FormControlLabel
+                  control={<Switch checked={scheduleOn} onChange={(e) => setScheduleOn(e.target.checked)} />}
+                  label="Đặt lịch chạy"
+                />
+                <Collapse in={scheduleOn}>
+                  <TextField
+                    type="datetime-local"
+                    fullWidth
+                    sx={{ mt: 2 }}
+                    label="Thời gian chạy"
+                    value={scheduleAt}
+                    onChange={(e) => setScheduleAt(e.target.value)}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Collapse>
+              </Box>
+
               <Divider sx={{ borderStyle: 'dashed' }} />
               <Stack direction="row" justifyContent="space-between">
-                <Typography variant="subtitle1">{t('subtotal')}</Typography>
-                <Typography variant="subtitle1" color="primary.main">
-                  {fCurrency(estimate)}
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  {t('subtotal')}
+                </Typography>
+                <Typography variant="body2">{fCurrency(estimate)}</Typography>
+              </Stack>
+              {taxRate > 0 && (
+                <Stack direction="row" justifyContent="space-between">
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                    {`VAT ${taxRate}%`}
+                  </Typography>
+                  <Typography variant="body2">{fCurrency(taxAmount)}</Typography>
+                </Stack>
+              )}
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Typography variant="subtitle1">Tổng cộng</Typography>
+                <Typography variant="h6" color="primary.main">
+                  {fCurrency(total)}
                 </Typography>
               </Stack>
 
               {insufficient && (
                 <Alert severity="warning">
-                  {`${translate('smm_order.insufficient', { amount: fCurrency(estimate) })}`}
+                  {`${translate('smm_order.insufficient', { amount: fCurrency(total) })}`}
                 </Alert>
               )}
 
