@@ -85,6 +85,7 @@ export function useNavConfig() {
   const [categories, setCategories] = useState<AnyCat[]>([]);
   const [topupProducts, setTopupProducts] = useState<AnyProduct[]>([]);
   const [giftcardProducts, setGiftcardProducts] = useState<AnyProduct[]>([]);
+  const [sourceProducts, setSourceProducts] = useState<AnyProduct[]>([]);
 
   useEffect(() => {
     let alive = true;
@@ -105,6 +106,12 @@ export function useNavConfig() {
       .get('/api/products', { params: { type: 'giftcard', limit: 60 } })
       .then((res) => {
         if (alive) setGiftcardProducts(res.data?.products || res.data?.items || []);
+      })
+      .catch(() => {});
+    axiosInstance
+      .get('/api/products', { params: { type: 'source', limit: 60 } })
+      .then((res) => {
+        if (alive) setSourceProducts(res.data?.products || res.data?.items || []);
       })
       .catch(() => {});
     return () => {
@@ -128,6 +135,11 @@ export function useNavConfig() {
 
   // Sản phẩm giftcard -> dropdown Giftcard (SẢN PHẨM).
   const giftcardItems = giftcardProducts
+    .filter((p) => p.slug || p.code)
+    .map((p) => ({ title: p.name || p.slug || '', path: viewProduct(p) }));
+
+  // Sản phẩm mã nguồn/theme -> dropdown Mã nguồn (SẢN PHẨM).
+  const sourceItems = sourceProducts
     .filter((p) => p.slug || p.code)
     .map((p) => ({ title: p.name || p.slug || '', path: viewProduct(p) }));
 
@@ -155,6 +167,14 @@ export function useNavConfig() {
       path: PATH_DASHBOARD.eCommerce.shop,
       icon: ICONS.label,
       children: giftcardItems,
+    });
+  }
+  if (sourceItems.length) {
+    serviceItems.push({
+      title: 'Mã nguồn & Theme',
+      path: `${PATH_DASHBOARD.eCommerce.shop}?type=source`,
+      icon: ICONS.menu,
+      children: sourceItems,
     });
   }
   serviceItems.push({

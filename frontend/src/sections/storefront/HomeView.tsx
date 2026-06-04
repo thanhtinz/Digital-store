@@ -255,11 +255,11 @@ export default function HomeView() {
         r.status === 'fulfilled' ? r.value.data?.products || r.value.data?.items || [] : [];
 
       // Mục "Nổi bật" & "Mới" chỉ hiển thị sản phẩm premium —
-      // không lẫn topup (game) và giftcard (đã có khu vực riêng bên dưới).
+      // không lẫn topup (game), giftcard, mã nguồn (đã có khu vực riêng bên dưới).
       const onlyPremium = (list: IProduct[]): IProduct[] =>
         list.filter((p: any) => {
           const tp = p.productType ?? p.category?.productType;
-          return tp !== 'game' && tp !== 'giftcard';
+          return tp !== 'game' && tp !== 'giftcard' && tp !== 'source';
         });
 
       setTopup(pickList(topupRes));
