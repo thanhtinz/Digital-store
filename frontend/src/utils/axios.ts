@@ -68,6 +68,8 @@ function adaptProduct(p: any): any {
     gender: p.gender ?? '',
     // giữ nguyên packages gốc để trang chi tiết tự render gói
     packages: p.packages ?? [],
+    // giữ sản phẩm liên quan (đã adapt) cho trang chi tiết
+    related: Array.isArray(p.related) ? p.related.map(adaptProduct) : undefined,
   };
 }
 

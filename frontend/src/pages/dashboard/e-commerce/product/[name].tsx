@@ -17,8 +17,6 @@ import { ICheckoutCartItem } from '../../../../@types/product';
 // layouts
 import DashboardLayout from '../../../../layouts/dashboard';
 // components
-import Image from '../../../../components/image';
-import Label from '../../../../components/label';
 import Iconify from '../../../../components/iconify';
 import Markdown from '../../../../components/markdown';
 import CustomBreadcrumbs from '../../../../components/custom-breadcrumbs';
@@ -29,6 +27,7 @@ import {
   ProductDetailsSummary,
   ProductDetailsReview,
   ProductDetailsCarousel,
+  TopupGiftcardDetailView,
 } from '../../../../sections/@dashboard/e-commerce/details';
 import CartWidget from '../../../../sections/@dashboard/e-commerce/CartWidget';
 import ProductGridSection from '../../../../sections/@dashboard/e-commerce/ProductGridSection';
@@ -75,6 +74,10 @@ export default function EcommerceProductDetailsPage() {
   const dispatch = useDispatch();
 
   const { product, isLoading, checkout } = useSelector((state) => state.product);
+
+  // Sản phẩm topup (game) / giftcard dùng TRANG CHI TIẾT RIÊNG (không phải premium).
+  const pType = (product as any)?.productType || 'premium';
+  const isTopupOrGift = pType === 'game' || pType === 'giftcard';
 
   const [currentTab, setCurrentTab] = useState('description');
   const [recent, setRecent] = useState<any[]>([]);
@@ -130,81 +133,41 @@ export default function EcommerceProductDetailsPage() {
 
         <CartWidget totalItems={checkout.totalItems} />
 
-        {product && (() => {
-          const pType = (product as any).productType || 'premium';
-          const isGame = pType === 'game';
-          const isGiftcard = pType === 'giftcard';
-          const topupType = (product as any).topupType;
-          const serverRegion = (product as any).serverRegion;
-          const cover = (product as any).cover || (product as any).imageUrl;
+        {/* ── GAME / GIFTCARD: trang chi tiết RIÊNG ── */}
+        {product && isTopupOrGift && (
+          <>
+            <TopupGiftcardDetailView
+              product={product}
+              cart={checkout.cart}
+              onAddCart={handleAddCart}
+              onGotoStep={handleGotoStep}
+            />
 
-          // ── GAME / GIFTCARD: header riêng + cột đơn (theo thiết kế gốc) ──
-          if (isGame || isGiftcard) {
-            return (
-              <>
-                {isGiftcard ? (
-                  <Card sx={{ p: 3, mb: 3, textAlign: 'center' }}>
-                    <Label color="info" variant="filled" sx={{ mb: 1.5 }}>
-                      GIFT CARD
-                    </Label>
-                    <Typography variant="h3">{product.name}</Typography>
-                  </Card>
-                ) : (
-                  <Card sx={{ p: { xs: 2, md: 3 }, mb: 3 }}>
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2.5} alignItems={{ sm: 'center' }}>
-                      <Image
-                        src={cover}
-                        alt={product.name}
-                        sx={{
-                          flexShrink: 0,
-                          borderRadius: 2,
-                          width: { xs: '100%', sm: 150 },
-                          height: { xs: 200, sm: 150 },
-                        }}
-                      />
-                      <Stack spacing={1.25}>
-                        <Label variant="filled" color="warning" sx={{ mr: 'auto' }}>
-                          <Iconify icon="solar:gamepad-bold" sx={{ mr: 0.5 }} /> TOP UP
-                        </Label>
-                        <Typography variant="h4">{product.name}</Typography>
-                        <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
-                          {topupType && (
-                            <Label
-                              variant="soft"
-                              color="default"
-                              startIcon={
-                                <Iconify icon={topupType === 'uid' ? 'solar:user-id-bold' : 'solar:login-3-bold'} />
-                              }
-                            >
-                              {topupType === 'uid' ? 'UID' : 'Đăng nhập'}
-                            </Label>
-                          )}
-                          {serverRegion && (
-                            <Label variant="soft" color="default">
-                              {serverRegion === 'vietnam' ? '🇻🇳 Việt Nam' : '🌐 Quốc tế'}
-                            </Label>
-                          )}
-                        </Stack>
-                      </Stack>
-                    </Stack>
-                  </Card>
-                )}
+            <Card sx={{ mt: 4 }}>
+              <Typography variant="h6" sx={{ p: 3, pb: 1 }}>
+                {`Đánh giá (${product.reviews?.length || 0})`}
+              </Typography>
+              <Divider />
+              <ProductDetailsReview product={product} />
+            </Card>
 
-                <Card sx={{ p: { xs: 1, md: 2 } }}>
-                  <ProductDetailsSummary
-                    product={product}
-                    cart={checkout.cart}
-                    onAddCart={handleAddCart}
-                    onGotoStep={handleGotoStep}
-                    hideTitle
-                  />
-                </Card>
-              </>
-            );
-          }
+            <ProductGridSection
+              title={tp('related_title')}
+              products={(product as any).related || []}
+              excludeSlug={(product as any).slug}
+            />
 
-          // ── PREMIUM: bố cục 2 cột như cũ ──
-          return (
+            <ProductGridSection
+              title={tp('recent_title')}
+              products={recent}
+              excludeSlug={(product as any).slug}
+            />
+          </>
+        )}
+
+        {/* ── PREMIUM: bố cục cũ ── */}
+        {product && !isTopupOrGift && (
+          <>
             <Grid container spacing={3}>
               <Grid item xs={12} md={6} lg={7}>
                 <ProductDetailsCarousel product={product} />
@@ -219,11 +182,6 @@ export default function EcommerceProductDetailsPage() {
                 />
               </Grid>
             </Grid>
-          );
-        })()}
-
-        {product && (
-          <>
 
             <Box
               gap={5}
