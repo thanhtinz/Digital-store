@@ -28,6 +28,7 @@ import {
   ProductDetailsReview,
   ProductDetailsCarousel,
   TopupGiftcardDetailView,
+  SourceDetailView,
 } from '../../../../sections/@dashboard/e-commerce/details';
 import CartWidget from '../../../../sections/@dashboard/e-commerce/CartWidget';
 import ProductGridSection from '../../../../sections/@dashboard/e-commerce/ProductGridSection';
@@ -78,6 +79,7 @@ export default function EcommerceProductDetailsPage() {
   // Sản phẩm topup (game) / giftcard dùng TRANG CHI TIẾT RIÊNG (không phải premium).
   const pType = (product as any)?.productType || 'premium';
   const isTopupOrGift = pType === 'game' || pType === 'giftcard';
+  const isSource = pType === 'source';
 
   const [currentTab, setCurrentTab] = useState('description');
   const [recent, setRecent] = useState<any[]>([]);
@@ -165,8 +167,32 @@ export default function EcommerceProductDetailsPage() {
           </>
         )}
 
+        {/* ── MÃ NGUỒN / THEME: trang chi tiết riêng ── */}
+        {product && isSource && (
+          <>
+            <SourceDetailView
+              product={product}
+              cart={checkout.cart}
+              onAddCart={handleAddCart}
+              onGotoStep={handleGotoStep}
+            />
+
+            <ProductGridSection
+              title={tp('related_title')}
+              products={(product as any).related || []}
+              excludeSlug={(product as any).slug}
+            />
+
+            <ProductGridSection
+              title={tp('recent_title')}
+              products={recent}
+              excludeSlug={(product as any).slug}
+            />
+          </>
+        )}
+
         {/* ── PREMIUM: bố cục cũ ── */}
-        {product && !isTopupOrGift && (
+        {product && !isTopupOrGift && !isSource && (
           <>
             <Grid container spacing={3}>
               <Grid item xs={12} md={6} lg={7}>
