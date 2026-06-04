@@ -794,10 +794,20 @@ router.post('/banners/admin/upload-image', requireStaffOrAdmin, uploadImage.sing
     if (!f || !f.buffer) { res.status(400).json({ detail: 'Thiếu file ảnh' }); return; }
     let data: Buffer = f.buffer;
     let mime = f.mimetype || 'image/jpeg';
+    const isGif = (f.mimetype || '').includes('gif');
     try {
-      data = await sharp(f.buffer).rotate().resize({ width: 1600, withoutEnlargement: true }).webp({ quality: 82 }).toBuffer();
+      if (isGif) {
+        // GIF: đọc animated (mọi frame) -> webp động để GIỮ chuyển động (không bị tĩnh).
+        data = await sharp(f.buffer, { animated: true }).resize({ width: 1600, withoutEnlargement: true }).webp({ quality: 82 }).toBuffer();
+      } else {
+        data = await sharp(f.buffer).rotate().resize({ width: 1600, withoutEnlargement: true }).webp({ quality: 82 }).toBuffer();
+      }
       mime = 'image/webp';
-    } catch { /* không phải ảnh xử lý được -> giữ buffer gốc */ }
+    } catch {
+      // Không xử lý được -> giữ buffer + mime GỐC (GIF gốc vẫn còn animation).
+      data = f.buffer;
+      mime = f.mimetype || 'image/jpeg';
+    }
     const img = await prisma.uploadedImage.create({ data: { filename: f.originalname || null, data, mimeType: mime } });
     res.status(201).json({ id: img.id, url: `/api/images/${img.id}`, filename: img.filename });
   } catch (e: any) {

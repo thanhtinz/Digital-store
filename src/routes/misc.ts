@@ -244,10 +244,18 @@ router.post('/reviews/upload-image', requireUser, uploadReviewImage.single('file
     if (!f || !f.buffer) { res.status(400).json({ detail: 'Thiếu file ảnh' }); return; }
     let data: Buffer = f.buffer;
     let mime = f.mimetype || 'image/jpeg';
+    const isGif = (f.mimetype || '').includes('gif');
     try {
-      data = await sharp(f.buffer).rotate().resize({ width: 1200, withoutEnlargement: true }).webp({ quality: 80 }).toBuffer();
+      if (isGif) {
+        data = await sharp(f.buffer, { animated: true }).resize({ width: 1200, withoutEnlargement: true }).webp({ quality: 80 }).toBuffer();
+      } else {
+        data = await sharp(f.buffer).rotate().resize({ width: 1200, withoutEnlargement: true }).webp({ quality: 80 }).toBuffer();
+      }
       mime = 'image/webp';
-    } catch { /* giữ buffer gốc nếu không xử lý được */ }
+    } catch {
+      data = f.buffer;
+      mime = f.mimetype || 'image/jpeg';
+    }
     const img = await prisma.uploadedImage.create({ data: { filename: f.originalname || null, data, mimeType: mime } });
     res.status(201).json({ url: `/api/images/${img.id}` });
   } catch (e: any) {
