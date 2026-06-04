@@ -355,6 +355,7 @@ export default function HomeView() {
   const [topup, setTopup] = useState<IProduct[]>([]);
   const [giftcard, setGiftcard] = useState<IProduct[]>([]);
   const [source, setSource] = useState<IProduct[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [gcTab, setGcTab] = useState<string>('');
   const [smm, setSmm] = useState<any[]>([]);
   const [flash, setFlash] = useState<FlashSale[]>([]);
@@ -395,6 +396,12 @@ export default function HomeView() {
       setTopup(pickList(topupRes));
       setGiftcard(pickList(giftcardRes));
       setSource(pickList(sourceRes));
+
+      // Danh mục (cho tabs giftcard theo cấu hình danh mục, không chỉ từ sản phẩm).
+      axiosInstance
+        .get('/api/categories')
+        .then((r) => alive && setCategories(Array.isArray(r.data) ? r.data : r.data?.items || []))
+        .catch(() => {});
       setSmm(smmRes.status === 'fulfilled' && Array.isArray(smmRes.value.data) ? smmRes.value.data : []);
 
       if (trendingRes.status === 'fulfilled') {
@@ -570,15 +577,46 @@ export default function HomeView() {
       {/* GIFT CARD — tabs theo danh mục + lưới logo (theo thiết kế gốc) */}
       {giftcard.length > 0 &&
         (() => {
-          // Gom danh mục từ sản phẩm giftcard.
+          // Tìm danh mục CHA (top-level) của mỗi sản phẩm để gom tab theo cấu hình danh mục.
+          const catBySlug = new Map<string, any>();
+          const catById = new Map<number, any>();
+          categories.forEach((c: any) => {
+            if (c.slug) catBySlug.set(c.slug, c);
+            if (c.id != null) catById.set(c.id, c);
+          });
+          const topOf = (slug: string) => {
+            let cur = catBySlug.get(slug);
+            let guard = 0;
+            while (cur && (cur.parentId ?? cur.parent_id) != null && guard < 5) {
+              cur = catById.get(cur.parentId ?? cur.parent_id);
+              guard += 1;
+            }
+            return cur;
+          };
+          // Khoá nhóm của 1 sản phẩm = slug danh mục cha (fallback: danh mục trực tiếp).
+          const keyOf = (p: any) => {
+            const top = topOf(p.category?.slug || '');
+            return top?.slug || p.category?.slug || '';
+          };
+          // Tabs = các danh mục giftcard cấp 1 đã cấu hình (kèm danh mục xuất hiện ở sản phẩm).
           const catsMap = new Map<string, string>();
+          categories
+            .filter(
+              (c: any) =>
+                c.slug &&
+                (c.isActive ?? c.is_active ?? true) &&
+                (c.productType ?? c.product_type) === 'giftcard' &&
+                (c.parentId ?? c.parent_id) == null
+            )
+            .forEach((c: any) => catsMap.set(c.slug, c.name || c.slug));
           giftcard.forEach((p: any) => {
-            const slug = p.category?.slug || '';
-            if (!catsMap.has(slug)) catsMap.set(slug, p.category?.name || 'Khác');
+            const top = topOf(p.category?.slug || '');
+            const slug = top?.slug || p.category?.slug || '';
+            if (slug && !catsMap.has(slug)) catsMap.set(slug, top?.name || p.category?.name || 'Khác');
           });
           const cats = Array.from(catsMap.entries()).map(([slug, name]) => ({ slug, name }));
           const active = catsMap.has(gcTab) ? gcTab : cats[0]?.slug || '';
-          const list = giftcard.filter((p: any) => (p.category?.slug || '') === active);
+          const list = giftcard.filter((p: any) => keyOf(p) === active);
           return (
             <>
               <SectionHead
@@ -612,6 +650,11 @@ export default function HomeView() {
                   <GiftcardLogo key={p.id} product={p} />
                 ))}
               </Box>
+              {list.length === 0 && (
+                <Typography variant="body2" sx={{ color: 'text.secondary', py: 3 }}>
+                  Chưa có sản phẩm trong danh mục này.
+                </Typography>
+              )}
             </>
           );
         })()}

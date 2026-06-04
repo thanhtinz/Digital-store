@@ -85,7 +85,6 @@ export function useNavConfig() {
   const [categories, setCategories] = useState<AnyCat[]>([]);
   const [topupProducts, setTopupProducts] = useState<AnyProduct[]>([]);
   const [giftcardProducts, setGiftcardProducts] = useState<AnyProduct[]>([]);
-  const [sourceProducts, setSourceProducts] = useState<AnyProduct[]>([]);
 
   useEffect(() => {
     let alive = true;
@@ -106,12 +105,6 @@ export function useNavConfig() {
       .get('/api/products', { params: { type: 'giftcard', limit: 60 } })
       .then((res) => {
         if (alive) setGiftcardProducts(res.data?.products || res.data?.items || []);
-      })
-      .catch(() => {});
-    axiosInstance
-      .get('/api/products', { params: { type: 'source', limit: 60 } })
-      .then((res) => {
-        if (alive) setSourceProducts(res.data?.products || res.data?.items || []);
       })
       .catch(() => {});
     return () => {
@@ -138,10 +131,10 @@ export function useNavConfig() {
     .filter((p) => p.slug || p.code)
     .map((p) => ({ title: p.name || p.slug || '', path: viewProduct(p) }));
 
-  // Sản phẩm mã nguồn/theme -> dropdown Mã nguồn (SẢN PHẨM).
-  const sourceItems = sourceProducts
-    .filter((p) => p.slug || p.code)
-    .map((p) => ({ title: p.name || p.slug || '', path: viewProduct(p) }));
+  // Mã nguồn/theme -> dropdown Mã nguồn (DANH MỤC, không phải sản phẩm).
+  const sourceItems = categories
+    .filter((c) => c.slug && activeOf(c) && typeOf(c) === 'source' && parentOf(c) == null)
+    .map((c) => ({ title: c.name || c.slug || '', path: shopByCat(c.slug), icon: ICONS.menu }));
 
   // ── Lắp ráp menu ──
   const shopping = {
