@@ -693,6 +693,8 @@ function ServicesTab() {
     min_quantity: 1,
     max_quantity: 10000,
     delivery_type: 'manual',
+    api_provider_id: '' as any,
+    external_service_id: '',
     service_type: 'Default',
     can_refill: false,
     can_cancel: false,
@@ -701,7 +703,27 @@ function ServicesTab() {
     sort_order: 0,
   };
   const [svcForm, setSvcForm] = useState<typeof SVC_EMPTY | null>(null);
+  const [providers, setProviders] = useState<any[]>([]);
+  const [remoteSvcs, setRemoteSvcs] = useState<any[]>([]);
+  const [loadingRemote, setLoadingRemote] = useState(false);
   const limit = 50;
+
+  useEffect(() => {
+    axiosInstance.get('/api/smm/providers').then((r) => setProviders(r.data || [])).catch(() => {});
+  }, []);
+
+  const loadRemoteSvcs = async (pid: any) => {
+    if (!pid) { setRemoteSvcs([]); return; }
+    setLoadingRemote(true);
+    try {
+      const r = await axiosInstance.get(`/api/smm/providers/${pid}/remote-services`);
+      setRemoteSvcs(r.data?.services || []);
+    } catch (e) {
+      err(e);
+    } finally {
+      setLoadingRemote(false);
+    }
+  };
 
   const load = useCallback(() => {
     setLoading(true);
@@ -728,6 +750,9 @@ function ServicesTab() {
         min_quantity: Number(svcForm.min_quantity) || 1,
         max_quantity: Number(svcForm.max_quantity) || 10000,
         delivery_type: svcForm.delivery_type,
+        api_provider_id:
+          svcForm.delivery_type === 'api' && svcForm.api_provider_id ? Number(svcForm.api_provider_id) : null,
+        external_service_id: svcForm.delivery_type === 'api' ? svcForm.external_service_id || null : null,
         service_type: svcForm.service_type || 'Default',
         can_refill: svcForm.can_refill,
         can_cancel: svcForm.can_cancel,
@@ -929,6 +954,68 @@ function ServicesTab() {
                 <MenuItem value="api">API</MenuItem>
               </TextField>
             </Stack>
+
+            {svcForm.delivery_type === 'api' && (
+              <Box sx={{ p: 2, borderRadius: 1.5, bgcolor: 'background.neutral' }}>
+                <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
+                  Đấu nối API nhà cung cấp
+                </Typography>
+                <Stack spacing={2}>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Nguồn (provider)"
+                    value={svcForm.api_provider_id}
+                    onChange={(e) => {
+                      setSvcForm({ ...svcForm, api_provider_id: e.target.value, external_service_id: '' });
+                      loadRemoteSvcs(e.target.value);
+                    }}
+                  >
+                    {providers.map((p) => (
+                      <MenuItem key={p.id} value={p.id}>
+                        {p.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  <TextField
+                    select
+                    fullWidth
+                    label={loadingRemote ? 'Đang tải dịch vụ nguồn...' : 'Chọn dịch vụ nguồn'}
+                    value={remoteSvcs.some((s) => String(s.service) === String(svcForm.external_service_id)) ? svcForm.external_service_id : ''}
+                    disabled={!svcForm.api_provider_id || loadingRemote || !remoteSvcs.length}
+                    onChange={(e) => {
+                      const picked = remoteSvcs.find((s) => String(s.service) === String(e.target.value));
+                      setSvcForm({
+                        ...svcForm,
+                        external_service_id: String(e.target.value),
+                        ...(picked
+                          ? {
+                              name: svcForm.name || picked.name || '',
+                              rate: svcForm.rate || Number(picked.rate_local) || svcForm.rate,
+                              min_quantity: Number(picked.min) || svcForm.min_quantity,
+                              max_quantity: Number(picked.max) || svcForm.max_quantity,
+                            }
+                          : {}),
+                      });
+                    }}
+                  >
+                    {remoteSvcs.slice(0, 500).map((s) => (
+                      <MenuItem key={s.service} value={String(s.service)}>
+                        #{s.service} — {s.name} ({fCurrency(s.rate_local || 0)})
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  <TextField
+                    fullWidth
+                    label="Hoặc nhập ID dịch vụ nguồn"
+                    value={svcForm.external_service_id}
+                    onChange={(e) => setSvcForm({ ...svcForm, external_service_id: e.target.value })}
+                    helperText="Dùng khi không tải được danh sách hoặc muốn nhập tay"
+                  />
+                </Stack>
+              </Box>
+            )}
+
             <Stack direction="row" spacing={2}>
               <TextField
                 fullWidth
