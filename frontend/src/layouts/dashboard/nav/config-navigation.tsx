@@ -134,7 +134,7 @@ export function useNavConfig() {
   // Mã nguồn/theme -> dropdown Mã nguồn (DANH MỤC, không phải sản phẩm).
   const sourceItems = categories
     .filter((c) => c.slug && activeOf(c) && typeOf(c) === 'source' && parentOf(c) == null)
-    .map((c) => ({ title: c.name || c.slug || '', path: shopByCat(c.slug), icon: ICONS.menu }));
+    .map((c) => ({ title: c.name || c.slug || '', path: shopByCat(c.slug) }));
 
   // ── Lắp ráp menu ──
   const shopping = {
