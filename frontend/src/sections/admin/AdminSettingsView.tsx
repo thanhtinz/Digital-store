@@ -33,6 +33,15 @@ const FIELDS: { key: string; label: string; help?: string; multiline?: boolean }
   { key: 'working_hours', label: 'Giờ làm việc' },
   { key: 'footer_about', label: 'Giới thiệu ở Footer', multiline: true },
   { key: 'copyright_text', label: 'Dòng bản quyền (Footer)' },
+  // ── Mã nguồn / Theme: kết nối Google Drive (service account) ──
+  {
+    key: 'google_service_account_json',
+    label: 'Google Drive — Service Account JSON',
+    help: 'Dán toàn bộ nội dung JSON của service account. Sau đó share folder Drive chứa file cho email "client_email" trong JSON này.',
+    multiline: true,
+  },
+  { key: 'source_drive_folder_id', label: 'Drive — Folder ID (tuỳ chọn)', help: 'ID folder gốc chứa mã nguồn (để tham chiếu).' },
+  { key: 'source_download_expiry_minutes', label: 'Link tải hết hạn sau (phút)', help: 'Mặc định 60. Link tải dùng một lần và hết hạn sau số phút này.' },
 ];
 
 export default function AdminSettingsView() {

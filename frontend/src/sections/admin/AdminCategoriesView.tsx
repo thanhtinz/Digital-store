@@ -44,10 +44,11 @@ const PRODUCT_TYPES = [
   { value: 'premium', label: 'Tài khoản Premium' },
   { value: 'game', label: 'Nạp game (Topup)' },
   { value: 'giftcard', label: 'Giftcard' },
+  { value: 'source', label: 'Mã nguồn / Theme' },
 ];
 const typeLabel = (t?: string) => PRODUCT_TYPES.find((x) => x.value === t)?.label || t || 'premium';
 const typeColor = (t?: string): any =>
-  ({ premium: 'info', game: 'warning', giftcard: 'success' }[t || 'premium'] || 'default');
+  ({ premium: 'info', game: 'warning', giftcard: 'success', source: 'secondary' }[t || 'premium'] || 'default');
 
 type EditState = { current: Category | null; presetParentId?: number; presetProductType?: string };
 
