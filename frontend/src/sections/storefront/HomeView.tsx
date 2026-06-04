@@ -99,6 +99,7 @@ export default function HomeView() {
   const [newest, setNewest] = useState<IProduct[]>([]);
   const [topup, setTopup] = useState<IProduct[]>([]);
   const [giftcard, setGiftcard] = useState<IProduct[]>([]);
+  const [smm, setSmm] = useState<any[]>([]);
   const [flash, setFlash] = useState<FlashSale[]>([]);
   const [banner, setBanner] = useState<Banner | null>(null);
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -108,12 +109,13 @@ export default function HomeView() {
     let alive = true;
 
     async function load() {
-      const [trendingRes, newestRes, topupRes, giftcardRes, flashRes, bannerRes, blogRes] =
+      const [trendingRes, newestRes, topupRes, giftcardRes, smmRes, flashRes, bannerRes, blogRes] =
         await Promise.allSettled([
           axiosInstance.get('/api/products', { params: { featured: 'true', limit: 8 } }),
           axiosInstance.get('/api/products', { params: { limit: 8, sort: 'newest' } }),
           axiosInstance.get('/api/products', { params: { type: 'game', limit: 12 } }),
           axiosInstance.get('/api/products', { params: { type: 'giftcard', limit: 12 } }),
+          axiosInstance.get('/api/smm/catalog'),
           axiosInstance.get('/api/flash-sales/active'),
           axiosInstance.get('/api/banners'),
           axiosInstance.get('/api/blog/posts', { params: { limit: 4 } }),
@@ -126,6 +128,7 @@ export default function HomeView() {
 
       setTopup(pickList(topupRes));
       setGiftcard(pickList(giftcardRes));
+      setSmm(smmRes.status === 'fulfilled' && Array.isArray(smmRes.value.data) ? smmRes.value.data : []);
 
       if (trendingRes.status === 'fulfilled') {
         const d = trendingRes.value.data;
@@ -283,6 +286,82 @@ export default function HomeView() {
             viewAllLabel={t('view_all')}
           />
           <ShopProductList products={giftcard} loading={false} />
+        </>
+      )}
+
+      {/* SMM — TĂNG TƯƠNG TÁC */}
+      {smm.length > 0 && (
+        <>
+          <SectionHead
+            title="Tăng tương tác"
+            viewAllHref={PATH_DASHBOARD.smm.order}
+            viewAllLabel={t('view_all')}
+          />
+          <Typography variant="body2" sx={{ color: 'text.secondary', mt: -2, mb: 2 }}>
+            Tăng like, follow, view, comment cho mọi nền tảng mạng xã hội — giá rẻ, giao nhanh.
+          </Typography>
+          <Box
+            gap={2}
+            display="grid"
+            gridTemplateColumns={{
+              xs: 'repeat(2, 1fr)',
+              sm: 'repeat(3, 1fr)',
+              md: 'repeat(4, 1fr)',
+            }}
+          >
+            {smm.map((p: any) => {
+              const catCount = (p.categories || []).length;
+              return (
+                <Link
+                  key={p.id || p.slug}
+                  component={NextLink}
+                  href={`${PATH_DASHBOARD.smm.order}?platform=${encodeURIComponent(p.slug || '')}`}
+                  color="inherit"
+                  underline="none"
+                >
+                  <Card
+                    sx={{
+                      p: 2,
+                      height: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1.5,
+                      transition: (theme) => theme.transitions.create('box-shadow'),
+                      '&:hover': { boxShadow: (theme) => theme.customShadows.z16 },
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 48,
+                        height: 48,
+                        flexShrink: 0,
+                        borderRadius: 1.5,
+                        display: 'grid',
+                        placeItems: 'center',
+                        overflow: 'hidden',
+                        bgcolor: 'background.neutral',
+                        color: 'primary.main',
+                      }}
+                    >
+                      {p.icon_url ? (
+                        <Image src={p.icon_url} alt={p.name} sx={{ width: 48, height: 48 }} />
+                      ) : (
+                        <Iconify icon="solar:share-bold" width={26} />
+                      )}
+                    </Box>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography variant="subtitle2" noWrap title={p.name}>
+                        {p.name}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                        {catCount} danh mục
+                      </Typography>
+                    </Box>
+                  </Card>
+                </Link>
+              );
+            })}
+          </Box>
         </>
       )}
 

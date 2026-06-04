@@ -20,6 +20,11 @@ type Props = {
 };
 
 export default function ProductDetailsReviewList({ reviews }: Props) {
+  const PAGE_SIZE = 5;
+  const [page, setPage] = useState(1);
+  const pageCount = Math.ceil((reviews.length || 0) / PAGE_SIZE);
+  const paged = reviews.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   return (
     <>
       <Stack
@@ -36,23 +41,34 @@ export default function ProductDetailsReviewList({ reviews }: Props) {
           },
         }}
       >
-        {reviews.map((review) => (
+        {paged.map((review) => (
           <ReviewItem key={review.id} review={review} />
         ))}
+        {reviews.length === 0 && (
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            Chưa có đánh giá nào.
+          </Typography>
+        )}
       </Stack>
 
-      <Stack
-        alignItems={{
-          xs: 'center',
-          md: 'flex-end',
-        }}
-        sx={{
-          my: 5,
-          mr: { md: 5 },
-        }}
-      >
-        <Pagination count={10} />
-      </Stack>
+      {pageCount > 1 && (
+        <Stack
+          alignItems={{
+            xs: 'center',
+            md: 'flex-end',
+          }}
+          sx={{
+            my: 5,
+            mr: { md: 5 },
+          }}
+        >
+          <Pagination
+            count={pageCount}
+            page={page}
+            onChange={(_e, value) => setPage(value)}
+          />
+        </Stack>
+      )}
     </>
   );
 }
