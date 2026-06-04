@@ -100,12 +100,13 @@ function adaptPost(p: any): any {
 axiosInstance.interceptors.response.use(
   (response) => {
     const url = response.config.url || '';
+    // Lưu ý: query params nằm ở config.params (KHÔNG nằm trong config.url).
+    const params: any = response.config.params || {};
     // ADMIN cần DỮ LIỆU THÔ (categoryId + category là object {id,name,slug}).
     // Adapter dưới đây dành cho TRANG KHÁCH (Minimal IProduct): nó biến category
-    // thành chuỗi tên và XOÁ categoryId -> hỏng hiển thị cột danh mục & preselect
-    // ở admin. Vì vậy bỏ qua adapter cho mọi request admin (URL có /products/admin
-    // hoặc query admin=1 mà danh sách admin gắn kèm).
-    if (url.includes('/products/admin') || url.includes('admin=1')) {
+    // thành chuỗi tên -> hỏng hiển thị cột danh mục ở admin. Bỏ qua adapter cho
+    // mọi request admin (URL có /products/admin hoặc danh sách admin gắn admin=1).
+    if (url.includes('/products/admin') || params.admin) {
       return response;
     }
     const d = response.data;
