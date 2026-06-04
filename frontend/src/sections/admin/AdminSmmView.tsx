@@ -38,6 +38,7 @@ import Label from '../../components/label';
 import Iconify from '../../components/iconify';
 import ConfirmDialog from '../../components/confirm-dialog';
 import ImageUploadField from './ImageUploadField';
+import Editor from '../../components/editor';
 import { useSnackbar } from '../../components/snackbar';
 
 // ----------------------------------------------------------------------
@@ -927,14 +928,17 @@ function ServicesTab() {
               value={svcForm.name}
               onChange={(e) => setSvcForm({ ...svcForm, name: e.target.value })}
             />
-            <TextField
-              fullWidth
-              multiline
-              minRows={2}
-              label="Mô tả (tuỳ chọn)"
-              value={svcForm.description}
-              onChange={(e) => setSvcForm({ ...svcForm, description: e.target.value })}
-            />
+            <Box>
+              <Typography variant="caption" sx={{ color: 'text.secondary', mb: 0.75, display: 'block' }}>
+                Mô tả (tuỳ chọn)
+              </Typography>
+              <Editor
+                simple
+                id="svc-desc"
+                value={svcForm.description}
+                onChange={(v) => setSvcForm({ ...svcForm, description: v })}
+              />
+            </Box>
             <Stack direction="row" spacing={2}>
               <TextField
                 fullWidth

@@ -376,9 +376,10 @@ export default function SmmOrderView() {
                   )}
                 </Stack>
                 {service.description && (
-                  <Typography variant="body2" sx={{ color: 'text.secondary', whiteSpace: 'pre-line' }}>
-                    {service.description}
-                  </Typography>
+                  <Box
+                    sx={{ color: 'text.secondary', typography: 'body2', '& p': { m: 0 }, '& img': { maxWidth: '100%' } }}
+                    dangerouslySetInnerHTML={{ __html: service.description }}
+                  />
                 )}
               </Box>
 
