@@ -36,6 +36,7 @@ import { fCurrency } from '../../utils/formatNumber';
 import Label from '../../components/label';
 import Iconify from '../../components/iconify';
 import ConfirmDialog from '../../components/confirm-dialog';
+import ImageUploadField from './ImageUploadField';
 import { useSnackbar } from '../../components/snackbar';
 
 // ----------------------------------------------------------------------
@@ -384,6 +385,7 @@ function CatalogTab() {
   const [cats, setCats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [platName, setPlatName] = useState('');
+  const [platIcon, setPlatIcon] = useState('');
   const [catForm, setCatForm] = useState<{ platformId: number; name: string } | null>(null);
   const [toDelete, setToDelete] = useState<{ kind: 'platform' | 'category'; id: number; name: string } | null>(null);
 
@@ -403,8 +405,9 @@ function CatalogTab() {
   const addPlatform = async () => {
     if (!platName.trim()) return;
     try {
-      await axiosInstance.post('/api/smm/platforms', { name: platName });
+      await axiosInstance.post('/api/smm/platforms', { name: platName, icon_url: platIcon || null });
       setPlatName('');
+      setPlatIcon('');
       ok('Đã thêm nền tảng');
       load();
     } catch (e) {
@@ -443,8 +446,16 @@ function CatalogTab() {
   return (
     <Stack spacing={3}>
       <Card sx={{ p: 2 }}>
-        <Stack direction="row" spacing={1.5} alignItems="center">
-          <TextField size="small" label="Tên nền tảng mới" value={platName} onChange={(e) => setPlatName(e.target.value)} />
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'flex-end' }}>
+          <Box sx={{ width: { xs: '100%', sm: 140 } }}>
+            <ImageUploadField label="Icon nền tảng" value={platIcon} onChange={setPlatIcon} height={72} />
+          </Box>
+          <TextField
+            size="small"
+            label="Tên nền tảng mới"
+            value={platName}
+            onChange={(e) => setPlatName(e.target.value)}
+          />
           <Button variant="contained" onClick={addPlatform} startIcon={<Iconify icon="eva:plus-fill" />}>
             Thêm nền tảng
           </Button>
@@ -536,6 +547,18 @@ function ServicesTab() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<number[]>([]);
+  const [cats, setCats] = useState<any[]>([]);
+  const SVC_EMPTY = {
+    categoryId: '' as any,
+    name: '',
+    description: '',
+    rate: 0,
+    min_quantity: 1,
+    max_quantity: 10000,
+    delivery_type: 'manual',
+    service_type: 'Default',
+  };
+  const [svcForm, setSvcForm] = useState<typeof SVC_EMPTY | null>(null);
   const limit = 50;
 
   const load = useCallback(() => {
@@ -548,6 +571,29 @@ function ServicesTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
   useEffect(() => load(), [load]);
+  useEffect(() => {
+    axiosInstance.get('/api/smm/categories/all').then((r) => setCats(r.data || [])).catch(() => {});
+  }, []);
+
+  const saveSvc = async () => {
+    if (!svcForm?.categoryId || !svcForm.name.trim()) return;
+    try {
+      await axiosInstance.post(`/api/smm/categories/${svcForm.categoryId}/services`, {
+        name: svcForm.name,
+        description: svcForm.description || null,
+        rate: Number(svcForm.rate) || 0,
+        min_quantity: Number(svcForm.min_quantity) || 1,
+        max_quantity: Number(svcForm.max_quantity) || 10000,
+        delivery_type: svcForm.delivery_type,
+        service_type: svcForm.service_type || 'Default',
+      });
+      ok('Đã thêm dịch vụ');
+      setSvcForm(null);
+      load();
+    } catch (e) {
+      err(e);
+    }
+  };
 
   const toggle = (id: number) =>
     setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
@@ -585,12 +631,16 @@ function ServicesTab() {
   const pages = Math.max(1, Math.ceil(data.total / limit));
 
   return (
+    <>
     <Card>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ p: 2 }}>
         <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
           {data.total} dịch vụ • đã chọn {selected.length}
         </Typography>
         <Stack direction="row" spacing={1}>
+          <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => setSvcForm({ ...SVC_EMPTY })}>
+            Thêm dịch vụ
+          </Button>
           <Button disabled={!selected.length} startIcon={<Iconify icon="solar:tag-price-bold" />} onClick={roundPrices}>
             Làm tròn giá (1k)
           </Button>
@@ -678,6 +728,88 @@ function ServicesTab() {
         </Stack>
       )}
     </Card>
+
+    <Dialog open={!!svcForm} onClose={() => setSvcForm(null)} fullWidth maxWidth="sm">
+      <DialogTitle>Thêm dịch vụ thủ công</DialogTitle>
+      {svcForm && (
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <TextField
+              select
+              fullWidth
+              label="Chuyên mục"
+              value={svcForm.categoryId}
+              onChange={(e) => setSvcForm({ ...svcForm, categoryId: e.target.value })}
+            >
+              {cats.map((c: any) => (
+                <MenuItem key={c.id} value={c.id}>
+                  {(c.platformName || c.platform?.name) ? `${c.platformName || c.platform?.name} / ` : ''}
+                  {c.name}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              fullWidth
+              label="Tên dịch vụ"
+              value={svcForm.name}
+              onChange={(e) => setSvcForm({ ...svcForm, name: e.target.value })}
+            />
+            <TextField
+              fullWidth
+              multiline
+              minRows={2}
+              label="Mô tả (tuỳ chọn)"
+              value={svcForm.description}
+              onChange={(e) => setSvcForm({ ...svcForm, description: e.target.value })}
+            />
+            <Stack direction="row" spacing={2}>
+              <TextField
+                fullWidth
+                type="number"
+                label="Giá bán / 1 đơn vị (VNĐ)"
+                value={svcForm.rate}
+                onChange={(e) => setSvcForm({ ...svcForm, rate: Number(e.target.value) })}
+              />
+              <TextField
+                select
+                sx={{ minWidth: 140 }}
+                label="Giao hàng"
+                value={svcForm.delivery_type}
+                onChange={(e) => setSvcForm({ ...svcForm, delivery_type: e.target.value })}
+              >
+                <MenuItem value="manual">Thủ công</MenuItem>
+                <MenuItem value="api">API</MenuItem>
+              </TextField>
+            </Stack>
+            <Stack direction="row" spacing={2}>
+              <TextField
+                fullWidth
+                type="number"
+                label="Số lượng tối thiểu"
+                value={svcForm.min_quantity}
+                onChange={(e) => setSvcForm({ ...svcForm, min_quantity: Number(e.target.value) })}
+              />
+              <TextField
+                fullWidth
+                type="number"
+                label="Số lượng tối đa"
+                value={svcForm.max_quantity}
+                onChange={(e) => setSvcForm({ ...svcForm, max_quantity: Number(e.target.value) })}
+              />
+            </Stack>
+          </Stack>
+        </DialogContent>
+      )}
+      <DialogActions>
+        <Button color="inherit" onClick={() => setSvcForm(null)}>
+          Huỷ
+        </Button>
+        <Button variant="contained" disabled={!svcForm?.categoryId || !svcForm?.name.trim()} onClick={saveSvc}>
+          Lưu dịch vụ
+        </Button>
+      </DialogActions>
+    </Dialog>
+    </>
   );
 }
 
