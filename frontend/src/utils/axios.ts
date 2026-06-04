@@ -144,7 +144,10 @@ axiosInstance.interceptors.response.use(
       else if (d?.id || d?.name) response.data = { product: adaptProduct(d) };
     }
     // /api/products/items -> { items: [...] }
-    if (d?.items && Array.isArray(d.items)) {
+    // CHỈ áp dụng cho endpoint products. Trước đây bắt MỌI response có `items`
+    // (vd /smm/services/all) khiến dịch vụ SMM bị adaptProduct làm hỏng field
+    // (mất minQuantity/maxQuantity/category/isActive) -> admin hiển thị sai.
+    if (/\/products/.test(url) && d?.items && Array.isArray(d.items)) {
       d.items = d.items.map((it: any) => (it?.name || it?.image_url ? adaptProduct(it) : it));
     }
 
