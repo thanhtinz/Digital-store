@@ -913,7 +913,7 @@ function ServicesTab() {
                       size="small"
                       variant="soft"
                       color="info"
-                      label={`Min/Max: ${s.minQuantity ?? '—'} / ${s.maxQuantity ?? '—'}`}
+                      label={`Min/Max: ${s.minQuantity ?? 1} / ${s.maxQuantity ?? 10000}`}
                     />
                   </Stack>
                 </Box>
@@ -976,7 +976,7 @@ function ServicesTab() {
                   <TableCell align="right">{fCurrency(s.costRate)}</TableCell>
                   <TableCell align="right">{fCurrency(s.rate)}</TableCell>
                   <TableCell align="center" sx={{ fontSize: 13 }}>
-                    {s.minQuantity ?? '—'}/{s.maxQuantity ?? '—'}
+                    {s.minQuantity ?? 1}/{s.maxQuantity ?? 10000}
                   </TableCell>
                   <TableCell align="center">
                     <Label color={s.isActive ? 'success' : 'default'} onClick={() => toggleActive(s)} sx={{ cursor: 'pointer' }}>
