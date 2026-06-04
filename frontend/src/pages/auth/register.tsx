@@ -11,7 +11,7 @@ export default function RegisterPage() {
   return (
     <>
       <Head>
-        <title> Register | Minimal UI</title>
+        <title> Register | Digital Store</title>
       </Head>
 
       <GuestGuard>

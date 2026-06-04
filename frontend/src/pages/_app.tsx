@@ -47,6 +47,7 @@ import ThemeProvider from '../theme';
 import ThemeLocalization from '../locales';
 // components
 import { StyledChart } from '../components/chart';
+import SiteHead from '../components/SiteHead';
 import ProgressBar from '../components/progress-bar';
 import SnackbarProvider from '../components/snackbar';
 import { MotionLazyContainer } from '../components/animate';
@@ -113,6 +114,7 @@ export default function MyApp(props: MyAppProps) {
                     <ThemeLocalization>
                       <SnackbarProvider>
                         <StyledChart />
+                        <SiteHead />
                         <ProgressBar />
                         {getLayout(<Component {...pageProps} />)}
                       </SnackbarProvider>
