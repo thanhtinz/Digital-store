@@ -83,6 +83,8 @@ export function useNavConfig() {
   const t = (key: string) => `${translate(`nav.${key}`)}`;
 
   const [categories, setCategories] = useState<AnyCat[]>([]);
+  const [topupProducts, setTopupProducts] = useState<AnyProduct[]>([]);
+  const [giftcardProducts, setGiftcardProducts] = useState<AnyProduct[]>([]);
 
   useEffect(() => {
     let alive = true;
@@ -93,27 +95,41 @@ export function useNavConfig() {
         if (alive) setCategories(list);
       })
       .catch(() => {});
+    axiosInstance
+      .get('/api/products', { params: { type: 'game', limit: 60 } })
+      .then((res) => {
+        if (alive) setTopupProducts(res.data?.products || res.data?.items || []);
+      })
+      .catch(() => {});
+    axiosInstance
+      .get('/api/products', { params: { type: 'giftcard', limit: 60 } })
+      .then((res) => {
+        if (alive) setGiftcardProducts(res.data?.products || res.data?.items || []);
+      })
+      .catch(() => {});
     return () => {
       alive = false;
     };
   }, []);
 
   const shopByCat = (slug?: string) => `${PATH_DASHBOARD.eCommerce.shop}?category=${slug || ''}`;
+  const viewProduct = (p: AnyProduct) =>
+    PATH_DASHBOARD.eCommerce.view((p.slug || p.code || String(p.id || '')) as string);
 
   // Danh mục lớn premium (cấp 1) -> mục phẳng trong "Mua sắm".
   const premiumCats = categories
     .filter((c) => c.slug && activeOf(c) && typeOf(c) === 'premium' && parentOf(c) == null)
     .map((c) => ({ title: c.name || c.slug || '', path: shopByCat(c.slug), icon: ICONS.menu }));
 
-  // Danh mục game -> dropdown Topup.
-  const gameCats = categories
-    .filter((c) => c.slug && activeOf(c) && typeOf(c) === 'game')
-    .map((c) => ({ title: c.name || c.slug || '', path: shopByCat(c.slug) }));
+  // Sản phẩm topup (type game) -> dropdown Topup (SẢN PHẨM).
+  const gameCats = topupProducts
+    .filter((p) => p.slug || p.code)
+    .map((p) => ({ title: p.name || p.slug || '', path: viewProduct(p) }));
 
-  // Danh mục giftcard -> dropdown Giftcard (hiện DANH MỤC, không phải sản phẩm).
-  const giftcardItems = categories
-    .filter((c) => c.slug && activeOf(c) && typeOf(c) === 'giftcard')
-    .map((c) => ({ title: c.name || c.slug || '', path: shopByCat(c.slug) }));
+  // Sản phẩm giftcard -> dropdown Giftcard (SẢN PHẨM).
+  const giftcardItems = giftcardProducts
+    .filter((p) => p.slug || p.code)
+    .map((p) => ({ title: p.name || p.slug || '', path: viewProduct(p) }));
 
   // ── Lắp ráp menu ──
   const shopping = {
