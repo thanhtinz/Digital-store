@@ -150,9 +150,6 @@ export default function TopupGiftcardDetailView({ product, onAddCart, onGotoStep
       {/* ── HEADER ───────────────────────────────────────── */}
       {isGiftcard ? (
         <Card sx={{ p: { xs: 3, md: 4 }, textAlign: 'center' }}>
-          <Label color="info" variant="filled" sx={{ mb: 1.5 }}>
-            <Iconify icon="solar:gift-bold" sx={{ mr: 0.5 }} /> GIFT CARD
-          </Label>
           <Typography variant="h3">{p.name}</Typography>
           <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ mt: 1 }}>
             <Rating value={p.totalRating || p.rating || 0} precision={0.1} readOnly size="small" />
@@ -193,9 +190,6 @@ export default function TopupGiftcardDetailView({ product, onAddCart, onGotoStep
             )}
 
             <Stack spacing={1.25}>
-              <Label variant="filled" color="warning" sx={{ mr: 'auto' }}>
-                <Iconify icon="solar:gamepad-bold" sx={{ mr: 0.5 }} /> TOP UP
-              </Label>
               <Typography variant="h4">{p.name}</Typography>
               <Stack direction="row" alignItems="center" spacing={1}>
                 <Rating value={p.totalRating || p.rating || 0} precision={0.1} readOnly size="small" />
