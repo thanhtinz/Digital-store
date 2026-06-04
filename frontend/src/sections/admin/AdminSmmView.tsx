@@ -17,6 +17,7 @@ import {
   IconButton,
   MenuItem,
   Stack,
+  Switch,
   Tab,
   Table,
   TableBody,
@@ -553,10 +554,16 @@ function ServicesTab() {
     name: '',
     description: '',
     rate: 0,
+    cost_rate: 0,
     min_quantity: 1,
     max_quantity: 10000,
     delivery_type: 'manual',
     service_type: 'Default',
+    can_refill: false,
+    can_cancel: false,
+    drip_feed: false,
+    avg_time_minutes: '' as any,
+    sort_order: 0,
   };
   const [svcForm, setSvcForm] = useState<typeof SVC_EMPTY | null>(null);
   const limit = 50;
@@ -582,10 +589,16 @@ function ServicesTab() {
         name: svcForm.name,
         description: svcForm.description || null,
         rate: Number(svcForm.rate) || 0,
+        cost_rate: Number(svcForm.cost_rate) || 0,
         min_quantity: Number(svcForm.min_quantity) || 1,
         max_quantity: Number(svcForm.max_quantity) || 10000,
         delivery_type: svcForm.delivery_type,
         service_type: svcForm.service_type || 'Default',
+        can_refill: svcForm.can_refill,
+        can_cancel: svcForm.can_cancel,
+        drip_feed: svcForm.drip_feed,
+        avg_time_minutes: Number(svcForm.avg_time_minutes) || null,
+        sort_order: Number(svcForm.sort_order) || 0,
       });
       ok('Đã thêm dịch vụ');
       setSvcForm(null);
@@ -795,6 +808,58 @@ function ServicesTab() {
                 label="Số lượng tối đa"
                 value={svcForm.max_quantity}
                 onChange={(e) => setSvcForm({ ...svcForm, max_quantity: Number(e.target.value) })}
+              />
+            </Stack>
+            <Stack direction="row" spacing={2}>
+              <TextField
+                fullWidth
+                type="number"
+                label="Giá vốn / 1 đơn vị (VNĐ)"
+                value={svcForm.cost_rate}
+                onChange={(e) => setSvcForm({ ...svcForm, cost_rate: Number(e.target.value) })}
+              />
+              <TextField
+                select
+                fullWidth
+                label="Loại dịch vụ"
+                value={svcForm.service_type}
+                onChange={(e) => setSvcForm({ ...svcForm, service_type: e.target.value })}
+              >
+                {['Default', 'Package', 'Custom Comments', 'Mentions Hashtag', 'SEO', 'Subscriptions'].map((tpe) => (
+                  <MenuItem key={tpe} value={tpe}>
+                    {tpe}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Stack>
+            <Stack direction="row" spacing={2}>
+              <TextField
+                fullWidth
+                type="number"
+                label="Thời gian giao TB (phút)"
+                value={svcForm.avg_time_minutes}
+                onChange={(e) => setSvcForm({ ...svcForm, avg_time_minutes: e.target.value })}
+              />
+              <TextField
+                fullWidth
+                type="number"
+                label="Thứ tự"
+                value={svcForm.sort_order}
+                onChange={(e) => setSvcForm({ ...svcForm, sort_order: Number(e.target.value) })}
+              />
+            </Stack>
+            <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
+              <FormControlLabel
+                control={<Switch checked={svcForm.can_refill} onChange={(e) => setSvcForm({ ...svcForm, can_refill: e.target.checked })} />}
+                label="Bảo hành (refill)"
+              />
+              <FormControlLabel
+                control={<Switch checked={svcForm.can_cancel} onChange={(e) => setSvcForm({ ...svcForm, can_cancel: e.target.checked })} />}
+                label="Cho huỷ"
+              />
+              <FormControlLabel
+                control={<Switch checked={svcForm.drip_feed} onChange={(e) => setSvcForm({ ...svcForm, drip_feed: e.target.checked })} />}
+                label="Drip-feed"
               />
             </Stack>
           </Stack>
