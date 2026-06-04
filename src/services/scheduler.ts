@@ -13,6 +13,22 @@
 import prisma from '../db';
 import { sendReport } from '../services/telegram';
 import { getProvider } from './providers';
+import { syncPendingSmmOrders } from '../routes/smm';
+
+const FINAL_SMM = ['completed', 'failed', 'canceled', 'cancelled', 'partial', 'refunded'];
+let lastSmmOrderSync = 0;
+// Auto-sync trạng thái đơn SMM API mỗi 5 phút (chỉ khi có đơn chưa hoàn tất).
+async function maybeSyncSmmOrders(): Promise<void> {
+  const now = Date.now();
+  if (now - lastSmmOrderSync < 5 * 60 * 1000) return;
+  lastSmmOrderSync = now;
+  const pending = await prisma.smmOrder.count({
+    where: { deliveryType: 'api', externalOrderId: { not: null }, status: { notIn: FINAL_SMM } },
+  });
+  if (pending === 0) return;
+  const r = await syncPendingSmmOrders();
+  if (r.updated) console.log(`[auto-sync] SMM đơn: cập nhật ${r.updated}/${r.checked}`);
+}
 
 let lastDayKey = '';
 let lastWeekKey = '';
@@ -61,6 +77,8 @@ async function tick(): Promise<void> {
   try { await processRepeatSmm(); } catch (e) { console.error('SMM repeat error:', e); }
   // Tự hủy đơn chờ thanh toán quá hạn + hoàn điểm
   try { await processExpiredOrders(); } catch (e) { console.error('Expire orders error:', e); }
+  // Auto-sync trạng thái đơn SMM API (throttle 5 phút)
+  try { await maybeSyncSmmOrders(); } catch (e) { console.error('SMM auto-sync error:', e); }
 }
 
 // ── Tự hủy đơn chờ thanh toán quá hạn ──────────────────

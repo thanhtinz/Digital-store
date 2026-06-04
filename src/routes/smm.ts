@@ -911,43 +911,46 @@ router.delete('/admin/orders/:oid', requireStaffOrAdmin, async (req: Request, re
 });
 
 /** Đồng bộ trạng thái TẤT CẢ đơn API đang chạy từ provider. */
+// Đồng bộ trạng thái các đơn SMM API chưa hoàn tất từ provider. Tái dùng cho
+// route admin + scheduler (auto-sync định kỳ).
+export async function syncPendingSmmOrders(): Promise<{ checked: number; updated: number; total: number }> {
+  const FINAL = ['completed', 'failed', 'canceled', 'cancelled', 'partial', 'refunded'];
+  const orders = await prisma.smmOrder.findMany({
+    where: { deliveryType: 'api', externalOrderId: { not: null }, status: { notIn: FINAL } },
+    include: { apiProvider: true },
+    take: 200,
+  });
+  let checked = 0;
+  let updated = 0;
+  for (const order of orders) {
+    if (!order.apiProvider || !order.externalOrderId) continue;
+    try {
+      const adapter = getProvider(order.apiProvider);
+      const result = await adapter.getOrderStatus(order.externalOrderId);
+      checked += 1;
+      if (result.status && result.status !== order.status) {
+        const data = result.deliveryData ? JSON.parse(result.deliveryData) : {};
+        await prisma.smmOrder.update({
+          where: { id: order.id },
+          data: {
+            status: result.status,
+            startCount: data.start_count ? parseInt(data.start_count) : order.startCount,
+            remains: data.remains !== undefined ? parseInt(data.remains) : order.remains,
+          },
+        });
+        updated += 1;
+      }
+    } catch {
+      /* bỏ qua đơn lỗi, tiếp tục */
+    }
+  }
+  return { checked, updated, total: orders.length };
+}
+
 router.post('/admin/orders/check-all', requireStaffOrAdmin, async (_req: Request, res: Response) => {
   try {
-    const FINAL = ['completed', 'failed', 'canceled', 'cancelled', 'partial', 'refunded'];
-    const orders = await prisma.smmOrder.findMany({
-      where: {
-        deliveryType: 'api',
-        externalOrderId: { not: null },
-        status: { notIn: FINAL },
-      },
-      include: { apiProvider: true },
-      take: 200,
-    });
-    let checked = 0;
-    let updated = 0;
-    for (const order of orders) {
-      if (!order.apiProvider || !order.externalOrderId) continue;
-      try {
-        const adapter = getProvider(order.apiProvider);
-        const result = await adapter.getOrderStatus(order.externalOrderId);
-        checked += 1;
-        if (result.status && result.status !== order.status) {
-          const data = result.deliveryData ? JSON.parse(result.deliveryData) : {};
-          await prisma.smmOrder.update({
-            where: { id: order.id },
-            data: {
-              status: result.status,
-              startCount: data.start_count ? parseInt(data.start_count) : order.startCount,
-              remains: data.remains !== undefined ? parseInt(data.remains) : order.remains,
-            },
-          });
-          updated += 1;
-        }
-      } catch {
-        /* bỏ qua đơn lỗi, tiếp tục */
-      }
-    }
-    res.json({ ok: true, checked, updated, total: orders.length });
+    const r = await syncPendingSmmOrders();
+    res.json({ ok: true, ...r });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
   }
