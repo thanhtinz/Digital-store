@@ -224,6 +224,7 @@ export default function HomeView() {
   const [newest, setNewest] = useState<IProduct[]>([]);
   const [topup, setTopup] = useState<IProduct[]>([]);
   const [giftcard, setGiftcard] = useState<IProduct[]>([]);
+  const [source, setSource] = useState<IProduct[]>([]);
   const [gcTab, setGcTab] = useState<string>('');
   const [smm, setSmm] = useState<any[]>([]);
   const [flash, setFlash] = useState<FlashSale[]>([]);
@@ -235,12 +236,13 @@ export default function HomeView() {
     let alive = true;
 
     async function load() {
-      const [trendingRes, newestRes, topupRes, giftcardRes, smmRes, flashRes, bannerRes, blogRes] =
+      const [trendingRes, newestRes, topupRes, giftcardRes, sourceRes, smmRes, flashRes, bannerRes, blogRes] =
         await Promise.allSettled([
           axiosInstance.get('/api/products', { params: { featured: 'true', limit: 8 } }),
           axiosInstance.get('/api/products', { params: { limit: 8, sort: 'newest' } }),
           axiosInstance.get('/api/products', { params: { type: 'game', limit: 12 } }),
           axiosInstance.get('/api/products', { params: { type: 'giftcard', limit: 60 } }),
+          axiosInstance.get('/api/products', { params: { type: 'source', limit: 8 } }),
           axiosInstance.get('/api/smm/catalog'),
           axiosInstance.get('/api/flash-sales/active'),
           axiosInstance.get('/api/banners'),
@@ -262,6 +264,7 @@ export default function HomeView() {
 
       setTopup(pickList(topupRes));
       setGiftcard(pickList(giftcardRes));
+      setSource(pickList(sourceRes));
       setSmm(smmRes.status === 'fulfilled' && Array.isArray(smmRes.value.data) ? smmRes.value.data : []);
 
       if (trendingRes.status === 'fulfilled') {
@@ -416,6 +419,21 @@ export default function HomeView() {
               <TopupCard key={p.id} product={p} />
             ))}
           </Box>
+        </>
+      )}
+
+      {/* MÃ NGUỒN & THEME */}
+      {source.length > 0 && (
+        <>
+          <SectionHead
+            title="Mã nguồn & Theme"
+            viewAllHref={`${PATH_DASHBOARD.eCommerce.shop}?type=source`}
+            viewAllLabel={t('view_all')}
+          />
+          <Typography variant="body2" sx={{ color: 'text.secondary', mt: -2, mb: 2 }}>
+            Source code, theme, template — có demo trực tiếp, tải về kèm license & cập nhật.
+          </Typography>
+          <ShopProductList products={source} loading={false} />
         </>
       )}
 

@@ -69,6 +69,7 @@ export const PATH_DASHBOARD = {
     history: path(ROOTS_DASHBOARD, '/wallet/history'),
   },
   wishlist: path(ROOTS_DASHBOARD, '/wishlist'),
+  downloads: path(ROOTS_DASHBOARD, '/downloads'),
   affiliate: path(ROOTS_DASHBOARD, '/affiliate'),
   admin: {
     root: path(ROOTS_DASHBOARD, '/admin'),
