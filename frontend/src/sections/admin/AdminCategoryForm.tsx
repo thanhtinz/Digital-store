@@ -34,6 +34,7 @@ const PRODUCT_TYPES = [
   { value: 'premium', label: 'Tài khoản Premium' },
   { value: 'game', label: 'Nạp game (Topup)' },
   { value: 'giftcard', label: 'Giftcard' },
+  { value: 'source', label: 'Mã nguồn / Theme' },
 ];
 
 type Props = {
