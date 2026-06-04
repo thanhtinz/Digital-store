@@ -2,6 +2,8 @@
 import NextLink from 'next/link';
 // @mui
 import { Stack, Typography, Link } from '@mui/material';
+// hooks
+import useSiteSettings from '../../hooks/useSiteSettings';
 // layouts
 import LoginLayout from '../../layouts/login';
 // routes
@@ -13,16 +15,19 @@ import AuthRegisterForm from './AuthRegisterForm';
 // ----------------------------------------------------------------------
 
 export default function Register() {
+  const settings = useSiteSettings();
+  const siteName = settings.site_name || 'Digital Store';
+
   return (
-    <LoginLayout title="Manage the job more effectively with Minimal">
+    <LoginLayout title={settings.site_description || `Chào mừng đến với ${siteName}`}>
       <Stack spacing={2} sx={{ mb: 5, position: 'relative' }}>
-        <Typography variant="h4">Get started absolutely free.</Typography>
+        <Typography variant="h4">Đăng ký tài khoản miễn phí.</Typography>
 
         <Stack direction="row" spacing={0.5}>
-          <Typography variant="body2"> Already have an account? </Typography>
+          <Typography variant="body2"> Đã có tài khoản? </Typography>
 
           <Link component={NextLink} href={PATH_AUTH.login} variant="subtitle2">
-            Sign in
+            Đăng nhập
           </Link>
         </Stack>
       </Stack>
@@ -33,13 +38,13 @@ export default function Register() {
         component="div"
         sx={{ color: 'text.secondary', mt: 3, typography: 'caption', textAlign: 'center' }}
       >
-        {'By signing up, I agree to '}
+        {'Khi đăng ký, tôi đồng ý với '}
         <Link underline="always" color="text.primary">
-          Terms of Service
+          Điều khoản dịch vụ
         </Link>
-        {' and '}
+        {' và '}
         <Link underline="always" color="text.primary">
-          Privacy Policy
+          Chính sách bảo mật
         </Link>
         .
       </Typography>

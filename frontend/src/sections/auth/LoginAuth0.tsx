@@ -1,5 +1,5 @@
 // @mui
-import { Alert, Tooltip, Stack, Typography, Box, Button } from '@mui/material';
+import { Tooltip, Stack, Typography, Box, Button } from '@mui/material';
 // auth
 import { useAuthContext } from '../../auth/useAuthContext';
 // layouts
@@ -25,7 +25,7 @@ export default function LoginAuth0() {
   return (
     <LoginLayout>
       <Stack spacing={2} sx={{ mb: 5, position: 'relative' }}>
-        <Typography variant="h4">Sign in to Minimal</Typography>
+        <Typography variant="h4">Đăng nhập</Typography>
 
         <Tooltip title={method} placement="left">
           <Box
@@ -36,10 +36,6 @@ export default function LoginAuth0() {
           />
         </Tooltip>
       </Stack>
-
-      <Alert severity="info" sx={{ mb: 3 }}>
-        Use email : <strong>demo@minimals.cc</strong> / password :<strong> demo1234</strong>
-      </Alert>
 
       <Button
         fullWidth

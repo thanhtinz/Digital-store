@@ -31,13 +31,9 @@ export default class MyDocument extends Document {
           <meta name="emotion-insertion-point" content="" />
           {(this.props as any).emotionStyleTags}
 
-          {/* Meta */}
-          <meta
-            name="description"
-            content="The starting point for your next project with Minimal UI Kit, built on the newest version of Material-UI ©, ready to be customized to your style"
-          />
-          <meta name="keywords" content="react,material,kit,application,dashboard,admin,template" />
-          <meta name="author" content="Minimal UI Kit" />
+          {/* Meta (mặc định; SiteHead sẽ cập nhật theo cấu hình backend) */}
+          <meta name="description" content="Digital Store" />
+          <meta name="author" content="Digital Store" />
         </Head>
 
         <body>
