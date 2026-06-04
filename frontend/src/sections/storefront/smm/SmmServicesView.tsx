@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 // @mui
 import {
+  Box,
   Card,
   Container,
+  Stack,
   Table,
   TableBody,
   TableCell,
@@ -24,6 +26,7 @@ import Scrollbar from '../../../components/scrollbar';
 type Row = {
   id: number;
   platform: string;
+  icon?: string;
   category: string;
   name: string;
   rate: number;
@@ -50,6 +53,7 @@ export default function SmmServicesView() {
               flat.push({
                 id: s.id,
                 platform: p.name,
+                icon: p.icon_url,
                 category: c.name,
                 name: s.name,
                 rate: s.rate,
@@ -89,7 +93,19 @@ export default function SmmServicesView() {
               <TableBody>
                 {rows.map((r) => (
                   <TableRow key={r.id} hover>
-                    <TableCell>{r.platform}</TableCell>
+                    <TableCell>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        {r.icon && (
+                          <Box
+                            component="img"
+                            src={r.icon}
+                            alt={r.platform}
+                            sx={{ width: 22, height: 22, borderRadius: 0.5, objectFit: 'cover' }}
+                          />
+                        )}
+                        <span>{r.platform}</span>
+                      </Stack>
+                    </TableCell>
                     <TableCell>{r.category}</TableCell>
                     <TableCell>{r.name}</TableCell>
                     <TableCell align="right">{fCurrency(r.rate)}</TableCell>

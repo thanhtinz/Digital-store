@@ -42,7 +42,7 @@ type Service = {
   can_cancel?: boolean;
 };
 type Category = { id: number; name: string; services: Service[] };
-type Platform = { id: number; name: string; categories: Category[] };
+type Platform = { id: number; name: string; icon_url?: string; categories: Category[] };
 
 // ----------------------------------------------------------------------
 
@@ -304,7 +304,17 @@ export default function SmmOrderView() {
           >
             {catalog.map((p) => (
               <MenuItem key={p.id} value={String(p.id)}>
-                {p.name}
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  {p.icon_url && (
+                    <Box
+                      component="img"
+                      src={p.icon_url}
+                      alt={p.name}
+                      sx={{ width: 22, height: 22, borderRadius: 0.5, objectFit: 'cover', flexShrink: 0 }}
+                    />
+                  )}
+                  <span>{p.name}</span>
+                </Stack>
               </MenuItem>
             ))}
           </TextField>
