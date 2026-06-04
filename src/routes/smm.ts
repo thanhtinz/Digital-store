@@ -724,32 +724,56 @@ router.get('/admin/orders', requireStaffOrAdmin, async (req: Request, res: Respo
     const page = parseInt(req.query.page as string) || 1;
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
     const status = req.query.status as string;
+    const search = (req.query.search as string)?.trim();
     const where: any = {};
     if (status) where.status = status;
-    const [total, orders] = await Promise.all([
+    if (search) where.OR = [{ orderCode: { contains: search } }, { link: { contains: search } }];
+    const [total, orders, statusGroups, revenueAgg] = await Promise.all([
       prisma.smmOrder.count({ where }),
       prisma.smmOrder.findMany({
         where,
         orderBy: { id: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
-        include: { user: { select: { email: true } } },
+        include: { user: { select: { email: true } }, apiProvider: { select: { name: true } } },
       }),
+      prisma.smmOrder.groupBy({ by: ['status'], _count: { _all: true } }).catch(() => [] as any[]),
+      prisma.smmOrder.aggregate({ _sum: { charge: true }, where: { status: { in: ['completed', 'partial'] } } }).catch(() => ({ _sum: { charge: 0 } } as any)),
     ]);
+    const sc: Record<string, number> = {};
+    (statusGroups as any[]).forEach((g) => { sc[g.status] = g._count._all; });
     res.json({
       total,
       page,
+      stats: {
+        total: Object.values(sc).reduce((a, b) => a + b, 0),
+        pending: sc.pending || 0,
+        in_progress: (sc.in_progress || 0) + (sc.processing || 0),
+        completed: sc.completed || 0,
+        partial: sc.partial || 0,
+        canceled: (sc.canceled || 0) + (sc.failed || 0),
+        scheduled: sc.scheduled || 0,
+        revenue: Number((revenueAgg as any)?._sum?.charge || 0),
+      },
       orders: orders.map((o: any) => ({
         id: o.id,
         order_code: o.orderCode,
         user_email: o.user?.email,
         service_name: o.serviceName,
+        service_type: o.serviceType,
+        provider_name: o.apiProvider?.name || null,
         link: o.link,
         quantity: o.quantity,
+        start_count: o.startCount,
+        remains: o.remains,
         charge: money(o.charge),
         status: o.status,
         delivery_type: o.deliveryType,
         external_order_id: o.externalOrderId,
+        admin_notes: o.adminNotes,
+        scheduled_at: o.scheduledAt?.toISOString() || null,
+        repeat_count: o.repeatCount,
+        repeat_remaining: o.repeatRemaining,
         created_at: o.createdAt?.toISOString(),
       })),
     });
@@ -800,6 +824,50 @@ router.post('/admin/orders/:oid/check', requireStaffOrAdmin, async (req: Request
       },
     });
     res.json({ id: updated.id, status: updated.status, start_count: updated.startCount, remains: updated.remains });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+/** Đồng bộ HÀNG LOẠT trạng thái đơn API chưa hoàn tất + tự hoàn tiền đơn huỷ/lỗi. */
+router.post('/admin/orders/check-all', requireStaffOrAdmin, async (_req: Request, res: Response) => {
+  try {
+    const orders = await prisma.smmOrder.findMany({
+      where: {
+        deliveryType: 'api',
+        status: { in: ['pending', 'processing', 'in_progress'] },
+        NOT: { externalOrderId: null },
+      },
+      include: { apiProvider: true },
+      take: 200,
+    });
+    let checked = 0;
+    let refunded = 0;
+    for (const order of orders as any[]) {
+      if (!order.apiProvider || !order.externalOrderId) continue;
+      try {
+        const adapter = getProvider(order.apiProvider);
+        const result = await adapter.getOrderStatus(order.externalOrderId);
+        checked += 1;
+        if (['canceled', 'failed'].includes(result.status)) {
+          await refundSmmOrder(order.id, order.userId, money(order.charge), `Đơn ${result.status}`);
+          refunded += 1;
+        } else {
+          const data = result.deliveryData ? JSON.parse(result.deliveryData) : {};
+          await prisma.smmOrder.update({
+            where: { id: order.id },
+            data: {
+              status: result.status,
+              startCount: data.start_count ? parseInt(data.start_count) : order.startCount,
+              remains: data.remains !== undefined ? parseInt(data.remains) : order.remains,
+            },
+          });
+        }
+      } catch {
+        /* bỏ qua đơn lỗi, tiếp tục */
+      }
+    }
+    res.json({ checked, refunded, total: orders.length, message: `Đã kiểm tra ${checked} đơn, hoàn tiền ${refunded} đơn` });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
   }

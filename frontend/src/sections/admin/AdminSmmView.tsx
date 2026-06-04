@@ -1121,7 +1121,7 @@ const ORDER_STATUS = ['pending', 'processing', 'in_progress', 'completed', 'part
 
 function OrdersTab() {
   const { ok, err } = useSnack();
-  const [data, setData] = useState<{ orders: any[]; total: number }>({ orders: [], total: 0 });
+  const [data, setData] = useState<{ orders: any[]; total: number; stats?: any }>({ orders: [], total: 0 });
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(true);
@@ -1191,6 +1191,19 @@ function OrdersTab() {
         </Button>
       </Stack>
 
+      {data.stats && (
+        <Box sx={{ px: 2, pb: 1.5, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Chip size="small" variant="soft" label={`Tổng: ${data.stats.total}`} />
+          <Chip size="small" variant="soft" color="warning" label={`Chờ: ${data.stats.pending}`} />
+          <Chip size="small" variant="soft" color="info" label={`Đang chạy: ${data.stats.in_progress}`} />
+          <Chip size="small" variant="soft" color="success" label={`Hoàn thành: ${data.stats.completed}`} />
+          <Chip size="small" variant="soft" color="info" label={`Một phần: ${data.stats.partial}`} />
+          <Chip size="small" variant="soft" color="error" label={`Huỷ/Lỗi: ${data.stats.canceled}`} />
+          <Chip size="small" variant="soft" color="secondary" label={`Lịch: ${data.stats.scheduled}`} />
+          <Chip size="small" variant="soft" color="success" label={`Doanh thu: ${fCurrency(data.stats.revenue)}`} />
+        </Box>
+      )}
+
       {loading ? (
         <Loading />
       ) : (
@@ -1217,7 +1230,14 @@ function OrdersTab() {
                       {o.service_name}
                     </Typography>
                   </TableCell>
-                  <TableCell align="right">{o.quantity}</TableCell>
+                  <TableCell align="right">
+                    {o.quantity}
+                    {o.remains != null && (
+                      <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary' }}>
+                        còn {o.remains}
+                      </Typography>
+                    )}
+                  </TableCell>
                   <TableCell align="right">{fCurrency(o.charge)}</TableCell>
                   <TableCell>
                     <TextField select size="small" variant="standard" value={o.status} onChange={(e) => updateStatus(o.id, e.target.value)} sx={{ minWidth: 120 }}>
