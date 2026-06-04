@@ -162,14 +162,14 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
       const res = isEdit
         ? await axiosInstance.patch(`/api/products/admin/${current.id}`, payload)
         : await axiosInstance.post('/api/products/admin', payload);
-      // DEBUG hiện ngay trong toast: GỬI gì & SERVER trả gì (chốt frontend vs backend).
+      // DEBUG hiện ngay trong toast: GỬI gì & SERVER trả gì + GỌI backend nào.
       enqueueSnackbar(
         `${isEdit ? 'Đã cập nhật' : 'Đã tạo'} | GỬI category_id=${String(
           payload.category_id ?? 'null'
         )} | SERVER trả categoryId=${String(res?.data?.categoryId ?? 'null')} cat=${
           res?.data?.category?.name || '—'
-        }`,
-        { variant: 'success', autoHideDuration: 8000 }
+        } | API="${axiosInstance.defaults.baseURL || '(same-origin)'}"`,
+        { variant: 'success', autoHideDuration: 12000 }
       );
       onSaved();
     } catch (e: any) {
