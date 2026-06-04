@@ -133,6 +133,12 @@ export default function EcommerceProductDetailsPage() {
 
         <CartWidget totalItems={checkout.totalItems} />
 
+        {product && (
+          <Typography variant="caption" sx={{ color: 'error.main', fontWeight: 700, display: 'block', mb: 1 }}>
+            DEBUG type = {pType} {isTopupOrGift ? '(trang RIÊNG game/giftcard)' : '(trang premium)'}
+          </Typography>
+        )}
+
         {/* ── GAME / GIFTCARD: trang chi tiết RIÊNG ── */}
         {product && isTopupOrGift && (
           <>
