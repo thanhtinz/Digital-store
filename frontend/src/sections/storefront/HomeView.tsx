@@ -6,6 +6,7 @@ import {
   Box,
   Button,
   Card,
+  Chip,
   Container,
   Link,
   Stack,
@@ -174,6 +175,79 @@ function TopupCard({ product }: { product: any }) {
         </Box>
       </Card>
     </Link>
+  );
+}
+
+// Card cho Mã nguồn / Theme: ảnh demo 16/9, tech stack, giá, nút "Demo".
+function SourceCard({ product }: { product: any }) {
+  const p = product;
+  const slug = p.slug || p.code || p.id;
+  const meta = p.sourceMeta || {};
+  const tech: string[] = Array.isArray(meta.techStack) ? meta.techStack : [];
+  const lang: string = meta.language || '';
+  const tags = [lang, ...tech].filter(Boolean).slice(0, 3);
+  const packages: any[] = p.packages || [];
+  const prices = packages
+    .map((pk: any) => Number(pk.flashSale?.salePrice ?? pk.price) || 0)
+    .filter((n: number) => n > 0);
+  const minP = prices.length ? Math.min(...prices) : 0;
+  const detail = PATH_DASHBOARD.eCommerce.view(slug);
+  return (
+    <Card
+      sx={{
+        overflow: 'hidden',
+        transition: (theme) => theme.transitions.create('box-shadow'),
+        '&:hover': { boxShadow: (theme) => theme.customShadows.z16 },
+      }}
+    >
+      <Box sx={{ position: 'relative' }}>
+        <Link component={NextLink} href={detail} underline="none">
+          <Image src={p.imageUrl || p.cover} alt={p.name} ratio="16/9" />
+        </Link>
+        {meta.demoUrl && (
+          <Button
+            size="small"
+            href={meta.demoUrl}
+            target="_blank"
+            rel="noopener"
+            startIcon={<Iconify icon="solar:eye-bold" width={16} />}
+            sx={{
+              position: 'absolute',
+              bottom: 8,
+              right: 8,
+              bgcolor: 'background.paper',
+              color: 'text.primary',
+              boxShadow: (theme) => theme.customShadows.z8,
+              '&:hover': { bgcolor: 'background.paper' },
+            }}
+          >
+            Demo
+          </Button>
+        )}
+      </Box>
+      <Stack spacing={1} sx={{ p: 2 }}>
+        <Link
+          component={NextLink}
+          href={detail}
+          color="inherit"
+          variant="subtitle2"
+          noWrap
+          title={p.name}
+        >
+          {p.name}
+        </Link>
+        {tags.length > 0 && (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+            {tags.map((tg) => (
+              <Chip key={tg} label={tg} size="small" variant="outlined" />
+            ))}
+          </Box>
+        )}
+        <Box component="span" sx={{ typography: 'subtitle1', color: minP ? 'text.primary' : 'info.main' }}>
+          {minP ? fCurrency(minP) : 'Liên hệ'}
+        </Box>
+      </Stack>
+    </Card>
   );
 }
 
@@ -433,7 +507,19 @@ export default function HomeView() {
           <Typography variant="body2" sx={{ color: 'text.secondary', mt: -2, mb: 2 }}>
             Source code, theme, template — có demo trực tiếp, tải về kèm license & cập nhật.
           </Typography>
-          <ShopProductList products={source} loading={false} />
+          <Box
+            display="grid"
+            gap={2}
+            gridTemplateColumns={{
+              xs: '1fr',
+              sm: 'repeat(2, 1fr)',
+              md: 'repeat(3, 1fr)',
+            }}
+          >
+            {source.map((p: any) => (
+              <SourceCard key={p.id} product={p} />
+            ))}
+          </Box>
         </>
       )}
 
