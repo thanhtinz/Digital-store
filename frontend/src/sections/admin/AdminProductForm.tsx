@@ -162,13 +162,14 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
       const res = isEdit
         ? await axiosInstance.patch(`/api/products/admin/${current.id}`, payload)
         : await axiosInstance.post('/api/products/admin', payload);
-      const savedCatName =
-        res?.data?.category?.name || cats.find((c) => String(c.id) === categoryId)?.name;
+      // DEBUG hiện ngay trong toast: GỬI gì & SERVER trả gì (chốt frontend vs backend).
       enqueueSnackbar(
-        `${isEdit ? 'Đã cập nhật sản phẩm' : 'Đã tạo sản phẩm'}${
-          payload.category_id ? ` — Danh mục: ${savedCatName || '(đã lưu)'}` : ''
+        `${isEdit ? 'Đã cập nhật' : 'Đã tạo'} | GỬI category_id=${String(
+          payload.category_id ?? 'null'
+        )} | SERVER trả categoryId=${String(res?.data?.categoryId ?? 'null')} cat=${
+          res?.data?.category?.name || '—'
         }`,
-        { variant: 'success' }
+        { variant: 'success', autoHideDuration: 8000 }
       );
       onSaved();
     } catch (e: any) {
