@@ -159,18 +159,20 @@ export default function TopupGiftcardDetailView({ product, onAddCart, onGotoStep
           </Stack>
         </Card>
       ) : (
-        <Card sx={{ p: { xs: 2, md: 3 } }}>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2.5} alignItems={{ sm: 'center' }}>
+        <Card
+          sx={{
+            p: { xs: 2.5, md: 3 },
+            color: 'common.white',
+            background: (theme) =>
+              `linear-gradient(135deg, ${theme.palette.grey[900]} 0%, ${theme.palette.grey[800]} 100%)`,
+          }}
+        >
+          <Stack direction="row" spacing={2.5} alignItems="center">
             {cover ? (
               <Image
                 src={cover}
                 alt={p.name}
-                sx={{
-                  flexShrink: 0,
-                  borderRadius: 2,
-                  width: { xs: '100%', sm: 150 },
-                  height: { xs: 200, sm: 150 },
-                }}
+                sx={{ flexShrink: 0, borderRadius: 2, width: { xs: 88, sm: 110 }, height: { xs: 88, sm: 110 } }}
               />
             ) : (
               <Stack
@@ -179,42 +181,20 @@ export default function TopupGiftcardDetailView({ product, onAddCart, onGotoStep
                 sx={{
                   flexShrink: 0,
                   borderRadius: 2,
-                  width: { xs: '100%', sm: 150 },
-                  height: { xs: 200, sm: 150 },
-                  bgcolor: 'background.neutral',
-                  color: 'text.disabled',
+                  width: { xs: 88, sm: 110 },
+                  height: { xs: 88, sm: 110 },
+                  bgcolor: 'rgba(255,255,255,0.08)',
                 }}
               >
-                <Iconify icon="solar:gamepad-bold" width={48} />
+                <Iconify icon="solar:gamepad-bold" width={44} />
               </Stack>
             )}
 
-            <Stack spacing={1.25}>
+            <Stack spacing={0.5} sx={{ minWidth: 0 }}>
               <Typography variant="h4">{p.name}</Typography>
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <Rating value={p.totalRating || p.rating || 0} precision={0.1} readOnly size="small" />
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  ({fShortenNumber(p.totalReview || p.ratingCount || 0)} {tp('reviews')})
-                </Typography>
-              </Stack>
-              <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
-                {topupType && (
-                  <Label
-                    variant="soft"
-                    color="default"
-                    startIcon={
-                      <Iconify icon={topupType === 'uid' ? 'solar:user-id-bold' : 'solar:login-3-bold'} />
-                    }
-                  >
-                    {topupType === 'uid' ? 'UID' : 'Đăng nhập'}
-                  </Label>
-                )}
-                {serverRegion && (
-                  <Label variant="soft" color="default">
-                    {serverRegion === 'vietnam' ? '🇻🇳 Việt Nam' : '🌐 Quốc tế'}
-                  </Label>
-                )}
-              </Stack>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                {fShortenNumber(p.soldCount ?? p.sold ?? 0)} đã bán
+              </Typography>
             </Stack>
           </Stack>
         </Card>
@@ -226,7 +206,7 @@ export default function TopupGiftcardDetailView({ product, onAddCart, onGotoStep
           {/* Packages */}
           {packages.length > 0 ? (
             <Stack spacing={1.5}>
-              <Typography variant="subtitle1">{tp('package')}</Typography>
+              <Typography variant="subtitle1">{isGiftcard ? tp('package') : 'Chọn gói nạp'}</Typography>
               <Box
                 display="grid"
                 gap={1.5}
@@ -310,7 +290,7 @@ export default function TopupGiftcardDetailView({ product, onAddCart, onGotoStep
           {/* Custom fields */}
           {packageFields.length > 0 && (
             <Stack spacing={2}>
-              <Typography variant="subtitle1">{tp('enter_info')}</Typography>
+              <Typography variant="subtitle1">Thông tin đơn hàng</Typography>
               {packageFields.map((f: any) => {
                 const isSelect = f.fieldType === 'select';
                 const opts = (f.options || '')

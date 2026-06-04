@@ -35,6 +35,7 @@ import Iconify from '../../components/iconify';
 import ConfirmDialog from '../../components/confirm-dialog';
 import { useSnackbar } from '../../components/snackbar';
 import AdminProductForm from './AdminProductForm';
+import ImageUploadField from './ImageUploadField';
 
 // ----------------------------------------------------------------------
 
@@ -218,6 +219,7 @@ const DELIVERY_TYPES = [
 const PKG_EMPTY = {
   id: 0,
   name: '',
+  image_url: '',
   price: 0,
   original_price: 0,
   delivery_type: 'manual',
@@ -289,6 +291,7 @@ function PackagesDialog({ product, onClose, onChanged }: { product: any; onClose
     const isApi = form.delivery_type === 'api';
     const payload = {
       name: form.name,
+      image_url: form.image_url || null,
       price: Number(form.price) || 0,
       original_price: Number(form.original_price) || null,
       delivery_type: form.delivery_type,
@@ -374,6 +377,7 @@ function PackagesDialog({ product, onClose, onChanged }: { product: any; onClose
                         setForm({
                           id: pk.id,
                           name: pk.name,
+                          image_url: pk.imageUrl || '',
                           price: pk.price,
                           original_price: pk.originalPrice || 0,
                           delivery_type: pk.deliveryType || 'manual',
@@ -413,6 +417,12 @@ function PackagesDialog({ product, onClose, onChanged }: { product: any; onClose
               {form.id ? 'Sửa gói' : 'Thêm gói'}
             </Typography>
             <Stack spacing={2}>
+              <ImageUploadField
+                label="Ảnh icon gói (hiện ở lưới chọn gói)"
+                value={form.image_url}
+                onChange={(url) => setForm({ ...form, image_url: url })}
+                height={96}
+              />
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                 <TextField fullWidth label="Tên gói" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
                 <TextField select label="Giao hàng" sx={{ minWidth: 200 }} value={form.delivery_type} onChange={(e) => setForm({ ...form, delivery_type: e.target.value })}>
