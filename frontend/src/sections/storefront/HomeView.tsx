@@ -575,48 +575,26 @@ export default function HomeView() {
       )}
 
       {/* GIFT CARD — tabs theo danh mục + lưới logo (theo thiết kế gốc) */}
-      {giftcard.length > 0 &&
+      {(giftcard.length > 0 || categories.some((c: any) => (c.productType ?? c.product_type) === 'giftcard')) &&
         (() => {
-          // Tìm danh mục CHA (top-level) của mỗi sản phẩm để gom tab theo cấu hình danh mục.
-          const catBySlug = new Map<string, any>();
-          const catById = new Map<number, any>();
-          categories.forEach((c: any) => {
-            if (c.slug) catBySlug.set(c.slug, c);
-            if (c.id != null) catById.set(c.id, c);
-          });
-          const topOf = (slug: string) => {
-            let cur = catBySlug.get(slug);
-            let guard = 0;
-            while (cur && (cur.parentId ?? cur.parent_id) != null && guard < 5) {
-              cur = catById.get(cur.parentId ?? cur.parent_id);
-              guard += 1;
-            }
-            return cur;
-          };
-          // Khoá nhóm của 1 sản phẩm = slug danh mục cha (fallback: danh mục trực tiếp).
-          const keyOf = (p: any) => {
-            const top = topOf(p.category?.slug || '');
-            return top?.slug || p.category?.slug || '';
-          };
-          // Tabs = các danh mục giftcard cấp 1 đã cấu hình (kèm danh mục xuất hiện ở sản phẩm).
+          // Tabs = TẤT CẢ danh mục type giftcard đang bật (theo cấu hình admin),
+          // kèm danh mục xuất hiện ở sản phẩm (phòng khi chưa load kịp categories).
           const catsMap = new Map<string, string>();
           categories
             .filter(
               (c: any) =>
                 c.slug &&
                 (c.isActive ?? c.is_active ?? true) &&
-                (c.productType ?? c.product_type) === 'giftcard' &&
-                (c.parentId ?? c.parent_id) == null
+                (c.productType ?? c.product_type) === 'giftcard'
             )
             .forEach((c: any) => catsMap.set(c.slug, c.name || c.slug));
           giftcard.forEach((p: any) => {
-            const top = topOf(p.category?.slug || '');
-            const slug = top?.slug || p.category?.slug || '';
-            if (slug && !catsMap.has(slug)) catsMap.set(slug, top?.name || p.category?.name || 'Khác');
+            const slug = p.category?.slug || '';
+            if (slug && !catsMap.has(slug)) catsMap.set(slug, p.category?.name || 'Khác');
           });
           const cats = Array.from(catsMap.entries()).map(([slug, name]) => ({ slug, name }));
           const active = catsMap.has(gcTab) ? gcTab : cats[0]?.slug || '';
-          const list = giftcard.filter((p: any) => keyOf(p) === active);
+          const list = giftcard.filter((p: any) => (p.category?.slug || '') === active);
           return (
             <>
               <SectionHead
