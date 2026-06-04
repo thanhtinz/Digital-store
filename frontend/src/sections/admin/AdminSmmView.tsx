@@ -686,6 +686,7 @@ function ServicesTab() {
   const [selected, setSelected] = useState<number[]>([]);
   const [cats, setCats] = useState<any[]>([]);
   const SVC_EMPTY = {
+    id: null as number | null,
     categoryId: '' as any,
     name: '',
     description: '',
@@ -741,33 +742,61 @@ function ServicesTab() {
   }, []);
 
   const saveSvc = async () => {
-    if (!svcForm?.categoryId || !svcForm.name.trim()) return;
+    if (!svcForm?.name.trim()) return;
+    if (!svcForm.id && !svcForm.categoryId) return;
+    const payload = {
+      name: svcForm.name,
+      description: svcForm.description || null,
+      rate: Number(svcForm.rate) || 0,
+      cost_rate: Number(svcForm.cost_rate) || 0,
+      min_quantity: Number(svcForm.min_quantity) || 1,
+      max_quantity: Number(svcForm.max_quantity) || 10000,
+      delivery_type: svcForm.delivery_type,
+      api_provider_id:
+        svcForm.delivery_type === 'api' && svcForm.api_provider_id ? Number(svcForm.api_provider_id) : null,
+      external_service_id: svcForm.delivery_type === 'api' ? svcForm.external_service_id || null : null,
+      service_type: svcForm.service_type || 'Default',
+      can_refill: svcForm.can_refill,
+      can_cancel: svcForm.can_cancel,
+      drip_feed: svcForm.drip_feed,
+      avg_time_minutes: Number(svcForm.avg_time_minutes) || null,
+      sort_order: Number(svcForm.sort_order) || 0,
+    };
     try {
-      await axiosInstance.post(`/api/smm/categories/${svcForm.categoryId}/services`, {
-        name: svcForm.name,
-        description: svcForm.description || null,
-        rate: Number(svcForm.rate) || 0,
-        cost_rate: Number(svcForm.cost_rate) || 0,
-        min_quantity: Number(svcForm.min_quantity) || 1,
-        max_quantity: Number(svcForm.max_quantity) || 10000,
-        delivery_type: svcForm.delivery_type,
-        api_provider_id:
-          svcForm.delivery_type === 'api' && svcForm.api_provider_id ? Number(svcForm.api_provider_id) : null,
-        external_service_id: svcForm.delivery_type === 'api' ? svcForm.external_service_id || null : null,
-        service_type: svcForm.service_type || 'Default',
-        can_refill: svcForm.can_refill,
-        can_cancel: svcForm.can_cancel,
-        drip_feed: svcForm.drip_feed,
-        avg_time_minutes: Number(svcForm.avg_time_minutes) || null,
-        sort_order: Number(svcForm.sort_order) || 0,
-      });
-      ok('Đã thêm dịch vụ');
+      if (svcForm.id) {
+        await axiosInstance.put(`/api/smm/services/${svcForm.id}`, payload);
+        ok('Đã cập nhật dịch vụ');
+      } else {
+        await axiosInstance.post(`/api/smm/categories/${svcForm.categoryId}/services`, payload);
+        ok('Đã thêm dịch vụ');
+      }
       setSvcForm(null);
       load();
     } catch (e) {
       err(e);
     }
   };
+
+  const editService = (s: any) =>
+    setSvcForm({
+      id: s.id,
+      categoryId: s.categoryId ?? '',
+      name: s.name || '',
+      description: s.description || '',
+      rate: s.rate || 0,
+      cost_rate: s.costRate || 0,
+      min_quantity: s.minQuantity || 1,
+      max_quantity: s.maxQuantity || 10000,
+      delivery_type: s.deliveryType || 'manual',
+      api_provider_id: s.apiProviderId || '',
+      external_service_id: s.externalServiceId || '',
+      service_type: s.serviceType || 'Default',
+      can_refill: !!s.canRefill,
+      can_cancel: !!s.canCancel,
+      drip_feed: !!s.dripFeed,
+      avg_time_minutes: s.avgTimeMinutes ?? '',
+      sort_order: s.sortOrder || 0,
+    });
 
   const toggle = (id: number) =>
     setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
@@ -869,6 +898,7 @@ function ServicesTab() {
                 <TableCell align="right">Giá bán</TableCell>
                 <TableCell align="center">Min/Max</TableCell>
                 <TableCell align="center">Trạng thái</TableCell>
+                <TableCell align="right">Sửa</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -898,11 +928,18 @@ function ServicesTab() {
                       {s.isActive ? 'Bật' : 'Tắt'}
                     </Label>
                   </TableCell>
+                  <TableCell align="right">
+                    <Tooltip title="Sửa dịch vụ">
+                      <IconButton size="small" onClick={() => editService(s)}>
+                        <Iconify icon="solar:pen-bold" width={18} />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
                 </TableRow>
               ))}
               {!data.items.length && (
                 <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 6, color: 'text.secondary' }}>
+                  <TableCell colSpan={8} align="center" sx={{ py: 6, color: 'text.secondary' }}>
                     Chưa có dịch vụ. Dùng tab “Import từ nguồn”.
                   </TableCell>
                 </TableRow>
@@ -928,7 +965,7 @@ function ServicesTab() {
     </Card>
 
     <Dialog open={!!svcForm} onClose={() => setSvcForm(null)} fullWidth maxWidth="sm">
-      <DialogTitle>Thêm dịch vụ thủ công</DialogTitle>
+      <DialogTitle>{svcForm?.id ? `Sửa dịch vụ #${svcForm.id}` : 'Thêm dịch vụ thủ công'}</DialogTitle>
       {svcForm && (
         <DialogContent>
           <Stack spacing={2} sx={{ pt: 1 }}>
@@ -937,6 +974,8 @@ function ServicesTab() {
               fullWidth
               label="Chuyên mục"
               value={svcForm.categoryId}
+              disabled={!!svcForm.id}
+              helperText={svcForm.id ? 'Không thể đổi chuyên mục khi sửa' : ''}
               onChange={(e) => setSvcForm({ ...svcForm, categoryId: e.target.value })}
             >
               {cats.map((c: any) => (
@@ -1119,7 +1158,11 @@ function ServicesTab() {
         <Button color="inherit" onClick={() => setSvcForm(null)}>
           Huỷ
         </Button>
-        <Button variant="contained" disabled={!svcForm?.categoryId || !svcForm?.name.trim()} onClick={saveSvc}>
+        <Button
+          variant="contained"
+          disabled={!svcForm?.name.trim() || (!svcForm?.id && !svcForm?.categoryId)}
+          onClick={saveSvc}
+        >
           Lưu dịch vụ
         </Button>
       </DialogActions>
