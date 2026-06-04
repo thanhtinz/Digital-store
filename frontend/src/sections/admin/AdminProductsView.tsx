@@ -17,12 +17,14 @@ import {
   MenuItem,
   Stack,
   Switch,
+  Tab,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Tabs,
   TextField,
   Tooltip,
   Typography,
@@ -137,27 +139,23 @@ export default function AdminProductsView() {
     <Container sx={{ pb: 6 }} maxWidth="lg">
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ my: 3 }}>
         <Typography variant="h4">Sản phẩm</Typography>
-        <Stack direction="row" spacing={1.5} alignItems="center">
-          <TextField
-            select
-            size="small"
-            label="Loại"
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            sx={{ minWidth: 180 }}
-          >
-            <MenuItem value="all">Tất cả loại</MenuItem>
-            {PRODUCT_TYPES.map((t) => (
-              <MenuItem key={t.value} value={t.value}>
-                {t.label}
-              </MenuItem>
-            ))}
-          </TextField>
-          <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => setEditing('new')}>
-            Thêm sản phẩm
-          </Button>
-        </Stack>
+        <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => setEditing('new')}>
+          Thêm sản phẩm
+        </Button>
       </Stack>
+
+      <Tabs
+        value={typeFilter}
+        onChange={(_e, v) => setTypeFilter(v)}
+        variant="scrollable"
+        scrollButtons="auto"
+        sx={{ mb: 2 }}
+      >
+        <Tab value="all" label="Tất cả" />
+        {PRODUCT_TYPES.map((t) => (
+          <Tab key={t.value} value={t.value} label={t.label} />
+        ))}
+      </Tabs>
 
       <Card>
         {loading ? (

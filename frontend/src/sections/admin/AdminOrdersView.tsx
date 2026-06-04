@@ -11,15 +11,15 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
-  MenuItem,
   Stack,
+  Tab,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  TextField,
+  Tabs,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -114,24 +114,22 @@ export default function AdminOrdersView() {
 
   return (
     <Container sx={{ pb: 6 }} maxWidth="lg">
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ my: 3 }}>
-        <Typography variant="h4">Đơn hàng</Typography>
-        <TextField
-          select
-          size="small"
-          label="Loại"
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-          sx={{ minWidth: 180 }}
-        >
-          <MenuItem value="all">Tất cả loại</MenuItem>
-          {PRODUCT_TYPES.map((t) => (
-            <MenuItem key={t.value} value={t.value}>
-              {t.label}
-            </MenuItem>
-          ))}
-        </TextField>
-      </Stack>
+      <Typography variant="h4" sx={{ my: 3 }}>
+        Đơn hàng
+      </Typography>
+
+      <Tabs
+        value={typeFilter}
+        onChange={(_e, v) => setTypeFilter(v)}
+        variant="scrollable"
+        scrollButtons="auto"
+        sx={{ mb: 2 }}
+      >
+        <Tab value="all" label="Tất cả" />
+        {PRODUCT_TYPES.map((t) => (
+          <Tab key={t.value} value={t.value} label={t.label} />
+        ))}
+      </Tabs>
 
       <Card>
         {loading ? (
