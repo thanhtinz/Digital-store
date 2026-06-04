@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 // @mui
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -136,21 +137,36 @@ function ProvidersTab() {
   const [ptab, setPtab] = useState(0);
   const [saving, setSaving] = useState(false);
   const [toDelete, setToDelete] = useState<any>(null);
+  // Số dư lấy từ nguồn (theo provider id): { loading | error | data }.
+  const [balances, setBalances] = useState<Record<number, any>>({});
 
   const openForm = (f: typeof PROVIDER_EMPTY) => {
     setPtab(0);
     setForm(f);
   };
 
+  const loadBalance = useCallback((p: any) => {
+    setBalances((b) => ({ ...b, [p.id]: { loading: true } }));
+    axiosInstance
+      .get(`/api/smm/providers/${p.id}/balance`)
+      .then((r) => setBalances((b) => ({ ...b, [p.id]: { data: r.data } })))
+      .catch((e) => setBalances((b) => ({ ...b, [p.id]: { error: e?.detail || e?.response?.data?.detail || 'Lỗi' } })));
+  }, []);
+
   const load = useCallback(() => {
     setLoading(true);
     axiosInstance
       .get('/api/smm/providers')
-      .then((r) => setRows(r.data || []))
+      .then((r) => {
+        const list = r.data || [];
+        setRows(list);
+        // Tự lấy số dư cho các nguồn đang bật.
+        list.filter((p: any) => p.isActive).forEach((p: any) => loadBalance(p));
+      })
       .catch(err)
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadBalance]);
   useEffect(() => load(), [load]);
 
   const openEdit = (p: any) => {
@@ -223,15 +239,6 @@ function ProvidersTab() {
     }
   };
 
-  const checkBalance = async (p: any) => {
-    try {
-      const r = await axiosInstance.get(`/api/smm/providers/${p.id}/balance`);
-      ok(`Số dư ${p.name}: ${r.data?.balance ?? r.data?.amount ?? JSON.stringify(r.data)}`);
-    } catch (e) {
-      err(e, 'Không lấy được số dư');
-    }
-  };
-
   if (loading) return <Loading />;
 
   return (
@@ -250,6 +257,7 @@ function ProvidersTab() {
               <TableCell>Markup</TableCell>
               <TableCell>Tỷ giá</TableCell>
               <TableCell>Thống kê</TableCell>
+              <TableCell>Số dư nguồn</TableCell>
               <TableCell>Trạng thái</TableCell>
               <TableCell align="right">Thao tác</TableCell>
             </TableRow>
@@ -266,13 +274,30 @@ function ProvidersTab() {
                   <br />
                   <span style={{ color: '#637381' }}>DT: {fCurrency(p.stats?.revenue || 0)}</span>
                 </TableCell>
+                <TableCell sx={{ fontSize: 13, whiteSpace: 'nowrap' }}>
+                  {(() => {
+                    const b = balances[p.id];
+                    if (!b) return <span style={{ color: '#919EAB' }}>—</span>;
+                    if (b.loading) return <CircularProgress size={14} />;
+                    if (b.error) return <span style={{ color: '#FF5630' }} title={b.error}>Lỗi</span>;
+                    const d = b.data || {};
+                    return (
+                      <Stack spacing={0}>
+                        <span style={{ fontWeight: 600 }}>{fCurrency(d.balance_vnd || 0)}</span>
+                        <span style={{ color: '#637381', fontSize: 12 }}>
+                          {(d.amount ?? 0).toLocaleString()} {d.currency || ''}
+                        </span>
+                      </Stack>
+                    );
+                  })()}
+                </TableCell>
                 <TableCell>
                   <Label color={p.isActive ? 'success' : 'default'}>{p.isActive ? 'Bật' : 'Tắt'}</Label>
                 </TableCell>
                 <TableCell align="right">
-                  <Tooltip title="Số dư">
-                    <IconButton onClick={() => checkBalance(p)}>
-                      <Iconify icon="solar:wallet-bold" />
+                  <Tooltip title="Cập nhật số dư">
+                    <IconButton onClick={() => loadBalance(p)}>
+                      <Iconify icon="solar:refresh-bold" />
                     </IconButton>
                   </Tooltip>
                   <IconButton onClick={() => openEdit(p)}>
@@ -286,7 +311,7 @@ function ProvidersTab() {
             ))}
             {!rows.length && (
               <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 6, color: 'text.secondary' }}>
+                <TableCell colSpan={8} align="center" sx={{ py: 6, color: 'text.secondary' }}>
                   Chưa có nhà cung cấp
                 </TableCell>
               </TableRow>
@@ -1336,27 +1361,6 @@ function ImportTab() {
     }
   };
 
-  const syncAll = async () => {
-    if (!providerId || !platformId) {
-      err({}, 'Chọn nguồn và nền tảng đích');
-      return;
-    }
-    setBusy(true);
-    try {
-      const r = await axiosInstance.post('/api/smm/services/sync', {
-        provider_id: providerId,
-        platform_id: platformId,
-      });
-      ok(`Đồng bộ toàn bộ: tạo ${r.data?.created ?? 0}, cập nhật ${r.data?.updated ?? 0}, bỏ qua ${r.data?.skipped ?? 0}`);
-      const c = await axiosInstance.get('/api/smm/categories/all');
-      setCats(c.data || []);
-    } catch (e) {
-      err(e);
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const filtered = remoteServices.filter(
     (s) =>
       !svcFilter ||
@@ -1367,6 +1371,10 @@ function ImportTab() {
 
   return (
     <Stack spacing={3}>
+      <Alert severity="info">
+        Chọn <b>nguồn</b> và <b>nền tảng đích</b> → bấm <b>Tải từ nguồn</b> → tích chọn từng dịch vụ muốn lấy →
+        chọn <b>chuyên mục đích</b> → bấm <b>Import</b>. Chỉ những dịch vụ được tích mới được thêm.
+      </Alert>
       <Card sx={{ p: 2.5 }}>
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ md: 'center' }}>
           <TextField select fullWidth label="Nguồn (provider)" value={providerId} onChange={(e) => setProviderId(Number(e.target.value))}>
@@ -1396,9 +1404,6 @@ function ImportTab() {
             <Stack direction="row" spacing={1}>
               <Button variant="outlined" disabled={!platformId || busy} onClick={syncCategories} startIcon={<Iconify icon="solar:download-bold" />}>
                 Tạo chuyên mục còn thiếu
-              </Button>
-              <Button variant="contained" color="warning" disabled={!platformId || busy} onClick={syncAll} startIcon={<Iconify icon="solar:refresh-circle-bold" />}>
-                Đồng bộ toàn bộ
               </Button>
             </Stack>
           </Stack>

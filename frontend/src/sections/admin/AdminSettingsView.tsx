@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 // next
 import NextLink from 'next/link';
 // @mui
-import { Alert, Box, Button, Card, CardHeader, CircularProgress, Container, Link, Stack, TextField, Typography } from '@mui/material';
+import { Alert, AlertTitle, Box, Button, Card, CardHeader, CircularProgress, Container, Link, Stack, TextField, Typography } from '@mui/material';
 // auth
 import RoleBasedGuard from '../../auth/RoleBasedGuard';
 // routes
@@ -33,14 +33,17 @@ const FIELDS: { key: string; label: string; help?: string; multiline?: boolean }
   { key: 'working_hours', label: 'Giờ làm việc' },
   { key: 'footer_about', label: 'Giới thiệu ở Footer', multiline: true },
   { key: 'copyright_text', label: 'Dòng bản quyền (Footer)' },
-  // ── Mã nguồn / Theme: kết nối Google Drive (service account) ──
+];
+
+// ── Mã nguồn / Theme: kết nối Google Drive (service account) ──
+const DRIVE_FIELDS: { key: string; label: string; help?: string; multiline?: boolean }[] = [
   {
     key: 'google_service_account_json',
-    label: 'Google Drive — Service Account JSON',
-    help: 'Dán toàn bộ nội dung JSON của service account. Sau đó share folder Drive chứa file cho email "client_email" trong JSON này.',
+    label: 'Service Account JSON',
+    help: 'Dán toàn bộ nội dung file JSON của service account.',
     multiline: true,
   },
-  { key: 'source_drive_folder_id', label: 'Drive — Folder ID (tuỳ chọn)', help: 'ID folder gốc chứa mã nguồn (để tham chiếu).' },
+  { key: 'source_drive_folder_id', label: 'Folder ID (tuỳ chọn)', help: 'ID folder gốc chứa mã nguồn (để tham chiếu).' },
   { key: 'source_download_expiry_minutes', label: 'Link tải hết hạn sau (phút)', help: 'Mặc định 60. Link tải dùng một lần và hết hạn sau số phút này.' },
 ];
 
@@ -64,7 +67,7 @@ export default function AdminSettingsView() {
     setSaving(true);
     try {
       // Chỉ gửi các key có trong form để tránh ghi đè cấu hình khác.
-      const keys = FIELDS.map((f) => f.key);
+      const keys = [...FIELDS, ...DRIVE_FIELDS].map((f) => f.key);
       const payload = Object.fromEntries(keys.map((k) => [k, values[k] ?? '']));
       await axiosInstance.patch('/api/admin/settings', payload);
       enqueueSnackbar('Đã lưu cấu hình');
@@ -98,6 +101,35 @@ export default function AdminSettingsView() {
                     helperText={f.help}
                     multiline={f.multiline}
                     minRows={f.multiline ? 2 : undefined}
+                    value={values[f.key] ?? ''}
+                    onChange={(e) => set(f.key, e.target.value)}
+                  />
+                ))}
+              </Stack>
+            </Card>
+
+            <Card>
+              <CardHeader
+                title="Mã nguồn / Theme — Google Drive"
+                subheader="File mã nguồn được lưu trên Drive và stream qua server (ẩn link thật)."
+              />
+              <Stack spacing={2.5} sx={{ p: 3 }}>
+                <Alert severity="info">
+                  <AlertTitle>Cách lấy Service Account & liên kết Drive</AlertTitle>
+                  1. Vào <Link href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console</Link> → tạo project.<br />
+                  2. <b>APIs &amp; Services → Library</b> → bật <b>Google Drive API</b>.<br />
+                  3. <b>APIs &amp; Services → Credentials → Create credentials → Service account</b> → tạo xong vào tab <b>Keys → Add key → JSON</b> để tải file JSON.<br />
+                  4. Mở file JSON, dán toàn bộ nội dung vào ô bên dưới.<br />
+                  5. Mở email <code>client_email</code> trong JSON, rồi <b>chia sẻ folder Drive</b> chứa file mã nguồn cho email đó (quyền Viewer).<br />
+                  6. Trong sản phẩm mã nguồn → tab <b>Phiên bản</b>, dán <b>File ID</b> của từng file (lấy từ URL Drive).
+                </Alert>
+                {DRIVE_FIELDS.map((f) => (
+                  <TextField
+                    key={f.key}
+                    label={f.label}
+                    helperText={f.help}
+                    multiline={f.multiline}
+                    minRows={f.multiline ? 4 : undefined}
                     value={values[f.key] ?? ''}
                     onChange={(e) => set(f.key, e.target.value)}
                   />
