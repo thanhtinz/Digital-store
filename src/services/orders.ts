@@ -63,6 +63,15 @@ export async function autoDeliver(orderId: number): Promise<void> {
 
   if (!order || order.status !== 'paid') return;
 
+  // Mã nguồn/theme: cấp license + lượt tải (idempotent); có thể tự chuyển
+  // đơn sang 'completed' nếu mọi mục đều là mã nguồn (giao tức thì).
+  try {
+    const { issueSourceForOrder } = await import('./source');
+    await issueSourceForOrder(orderId);
+  } catch {
+    /* không chặn giao hàng phần còn lại */
+  }
+
   // Multi-item order
   if (order.items.length > 0) {
     for (const item of order.items) {
