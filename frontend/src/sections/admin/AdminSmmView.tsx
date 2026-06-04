@@ -542,13 +542,31 @@ function CatalogTab() {
             </Stack>
             <Stack direction="row" flexWrap="wrap" gap={1}>
               {list.map((c) => (
-                <Chip
+                <Stack
                   key={c.id}
-                  label={c.name}
-                  onClick={() => setEditCat({ id: c.id, name: c.name })}
-                  onDelete={() => setToDelete({ kind: 'category', id: c.id, name: c.name })}
-                  variant="soft"
-                />
+                  direction="row"
+                  alignItems="center"
+                  spacing={0.25}
+                  sx={{ pl: 1.5, pr: 0.25, py: 0.25, borderRadius: 1, bgcolor: 'background.neutral' }}
+                >
+                  <Typography variant="body2" sx={{ mr: 0.5 }}>
+                    {c.name}
+                  </Typography>
+                  <Tooltip title="Sửa chuyên mục">
+                    <IconButton size="small" onClick={() => setEditCat({ id: c.id, name: c.name })}>
+                      <Iconify icon="solar:pen-bold" width={16} />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Xoá">
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={() => setToDelete({ kind: 'category', id: c.id, name: c.name })}
+                    >
+                      <Iconify icon="solar:trash-bin-trash-bold" width={16} />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
               ))}
               {!list.length && (
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
