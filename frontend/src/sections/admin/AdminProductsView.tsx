@@ -155,7 +155,13 @@ export default function AdminProductsView() {
                         {p.isFeatured && <Label color="warning" variant="soft">Nổi bật</Label>}
                       </Stack>
                     </TableCell>
-                    <TableCell>{p.category?.name || '—'}</TableCell>
+                    <TableCell>
+                      {p.category?.name || (
+                        <Typography component="span" variant="caption" sx={{ color: 'error.main', fontWeight: 700 }}>
+                          ⚠catId={String(p.categoryId ?? 'null')}
+                        </Typography>
+                      )}
+                    </TableCell>
                     <TableCell>{minPrice(p) ? fCurrency(minPrice(p)) : '—'}</TableCell>
                     <TableCell>
                       <Label color={p.isActive ? 'success' : 'default'} variant="soft">
