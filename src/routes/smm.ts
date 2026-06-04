@@ -649,8 +649,26 @@ router.get('/providers', requireStaffOrAdmin, async (_req: Request, res: Respons
     where: { providerType: 'smm_panel' },
     orderBy: { id: 'desc' },
   });
-  // Ẩn api_key
-  res.json(items.map((p: any) => ({ ...p, apiKey: p.apiKey ? '••••••••' : '' })));
+  // Thống kê theo nguồn: số dịch vụ, số đơn, doanh thu, vốn, lãi.
+  const [svcCounts, orderAgg] = await Promise.all([
+    prisma.smmService.groupBy({ by: ['apiProviderId'], _count: { _all: true } }).catch(() => [] as any[]),
+    prisma.smmOrder.groupBy({ by: ['apiProviderId'], _count: { _all: true }, _sum: { charge: true } }).catch(() => [] as any[]),
+  ]);
+  const svcMap: Record<number, number> = {};
+  (svcCounts as any[]).forEach((s) => { if (s.apiProviderId != null) svcMap[s.apiProviderId] = s._count._all; });
+  const ordMap: Record<number, any> = {};
+  (orderAgg as any[]).forEach((o) => { if (o.apiProviderId != null) ordMap[o.apiProviderId] = o; });
+  res.json(
+    items.map((p: any) => ({
+      ...p,
+      apiKey: p.apiKey ? '••••••••' : '',
+      stats: {
+        services: svcMap[p.id] || 0,
+        orders: ordMap[p.id]?._count?._all || 0,
+        revenue: Number(ordMap[p.id]?._sum?.charge || 0),
+      },
+    }))
+  );
 });
 
 router.post('/providers', requireStaffOrAdmin, async (req: Request, res: Response) => {

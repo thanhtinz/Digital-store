@@ -234,6 +234,7 @@ function ProvidersTab() {
               <TableCell>Base URL</TableCell>
               <TableCell>Markup</TableCell>
               <TableCell>Tỷ giá</TableCell>
+              <TableCell>Thống kê</TableCell>
               <TableCell>Trạng thái</TableCell>
               <TableCell align="right">Thao tác</TableCell>
             </TableRow>
@@ -245,6 +246,11 @@ function ProvidersTab() {
                 <TableCell sx={{ color: 'text.secondary', fontSize: 13 }}>{p.baseUrl}</TableCell>
                 <TableCell>{Number((p.settings || {}).price_markup) || 0}%</TableCell>
                 <TableCell>{Number((p.settings || {}).exchange_rate) || 1}</TableCell>
+                <TableCell sx={{ fontSize: 13, whiteSpace: 'nowrap' }}>
+                  {(p.stats?.services || 0)} DV · {(p.stats?.orders || 0)} đơn
+                  <br />
+                  <span style={{ color: '#637381' }}>DT: {fCurrency(p.stats?.revenue || 0)}</span>
+                </TableCell>
                 <TableCell>
                   <Label color={p.isActive ? 'success' : 'default'}>{p.isActive ? 'Bật' : 'Tắt'}</Label>
                 </TableCell>
@@ -265,7 +271,7 @@ function ProvidersTab() {
             ))}
             {!rows.length && (
               <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 6, color: 'text.secondary' }}>
+                <TableCell colSpan={7} align="center" sx={{ py: 6, color: 'text.secondary' }}>
                   Chưa có nhà cung cấp
                 </TableCell>
               </TableRow>
