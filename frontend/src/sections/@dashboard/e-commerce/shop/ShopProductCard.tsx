@@ -106,7 +106,7 @@ export default function ShopProductCard({ product }: Props) {
           <Iconify icon={wishlisted ? 'solar:heart-bold' : 'solar:heart-linear'} sx={{ color: wishlisted ? 'error.main' : 'text.secondary' }} />
         </IconButton>
 
-        <Image alt={name} src={cover} ratio="1/1" sx={{ borderRadius: 1.5 }} />
+        <Image alt={name} src={cover} ratio="4/3" sx={{ borderRadius: 1.5 }} />
       </Box>
 
       <Stack spacing={1} sx={{ p: 2 }}>
