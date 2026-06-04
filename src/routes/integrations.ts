@@ -8,7 +8,7 @@ import { Router, Request, Response } from 'express';
 import axios from 'axios';
 import prisma from '../db';
 import { requireAdmin, requireStaffOrAdmin } from '../middleware/auth';
-import { getProvider, getTopupProvider } from '../services/providers';
+import { getProvider, getTopupProvider, getPremiumProvider } from '../services/providers';
 import {
   AI_PROVIDERS, AI_CONFIG_KEY, getAiConfig, saveAiConfig,
   callProvider, buildMessages, maskKey,
@@ -127,11 +127,13 @@ router.get('/api-providers/:id/remote-products', requireStaffOrAdmin, async (req
   try {
     const provider = await prisma.apiProvider.findUnique({ where: { id: parseInt(req.params.id) } });
     if (!provider) { res.status(404).json({ detail: 'Không tìm thấy nguồn' }); return; }
-    if (provider.providerType !== 'topup_game') {
-      res.status(400).json({ detail: 'Chỉ hỗ trợ nguồn loại Nạp game (topup_game)' });
+    if (!['topup_game', 'account_premium'].includes(provider.providerType)) {
+      res.status(400).json({ detail: 'Chỉ hỗ trợ nguồn loại Nạp game hoặc Tài khoản Premium' });
       return;
     }
-    const products = await getTopupProvider(provider).getProducts(req.query.category_id as string | undefined);
+    const adapter: any =
+      provider.providerType === 'account_premium' ? getPremiumProvider(provider) : getTopupProvider(provider);
+    const products = await adapter.getProducts(req.query.category_id as string | undefined);
     res.json(products);
   } catch (e: any) {
     res.status(502).json({ detail: `Lỗi gọi nguồn: ${e.message}` });

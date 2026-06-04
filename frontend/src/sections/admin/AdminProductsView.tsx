@@ -254,7 +254,7 @@ function PackagesDialog({ product, onClose, onChanged }: { product: any; onClose
     if (product) {
       axiosInstance
         .get('/api/api-providers')
-        .then((r) => setApiProviders((r.data || []).filter((p: any) => p.provider_type === 'topup_game' && p.is_active)))
+        .then((r) => setApiProviders((r.data || []).filter((p: any) => ['topup_game', 'account_premium'].includes(p.provider_type) && p.is_active)))
         .catch(() => {});
     }
   }, [product]);

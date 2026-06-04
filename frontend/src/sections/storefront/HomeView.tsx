@@ -96,9 +96,20 @@ function TopupCard({ product }: { product: any }) {
   const p = product;
   const slug = p.code || p.slug || p.id;
   const packages: any[] = p.packages || [];
+  // Tag giao hàng: ưu tiên theo loại topup (uid = Giao nhanh, login = Đặt hàng);
+  // nếu không có topupType thì suy từ kiểu giao hàng của gói.
   const isAuto = packages.some(
     (pk: any) => pk.isStockManaged || ['stock', 'api'].includes(String(pk.deliveryType))
   );
+  const topupType: string = p.topupType || '';
+  const fast = topupType ? topupType === 'uid' : isAuto;
+  const tagLabel = topupType
+    ? topupType === 'uid'
+      ? 'Giao nhanh'
+      : 'Đặt hàng'
+    : isAuto
+    ? 'Giao ngay'
+    : 'Đặt hàng';
   const rating = Number(p.rating ?? p.totalRating) || 0;
   const ratingCount = Number(p.ratingCount) || 0;
   const sold = Number(p.soldCount ?? p.sold) || 0;
@@ -132,11 +143,11 @@ function TopupCard({ product }: { product: any }) {
             direction="row"
             alignItems="center"
             spacing={0.5}
-            sx={{ mt: 0.5, color: isAuto ? 'success.main' : 'info.main' }}
+            sx={{ mt: 0.5, color: fast ? 'success.main' : 'info.main' }}
           >
             <Iconify icon="mdi:truck-fast-outline" width={18} />
             <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              {isAuto ? 'Giao ngay' : 'Đặt hàng'}
+              {tagLabel}
             </Typography>
           </Stack>
           {(rating > 0 || sold > 0) && (

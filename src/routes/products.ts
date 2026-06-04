@@ -3,7 +3,15 @@ import slugify from 'slugify';
 import prisma from '../db';
 import { requireAdmin, requireStaffOrAdmin, optionalUser, requireUser } from '../middleware/auth';
 import { money } from '../services/orders';
-import { getTopupProvider } from '../services/providers';
+import { getTopupProvider, getPremiumProvider } from '../services/providers';
+
+// Adapter có khả năng browse sản phẩm để import (topup_game | account_premium).
+function getCatalogAdapter(provider: any) {
+  if (provider.providerType === 'account_premium') {
+    return getPremiumProvider({ baseUrl: provider.baseUrl, apiKey: provider.apiKey, apiSecret: provider.apiSecret });
+  }
+  return getTopupProvider({ baseUrl: provider.baseUrl, apiKey: provider.apiKey });
+}
 
 const router = Router();
 
@@ -529,13 +537,14 @@ router.post('/admin/:productId/import-packages', requireStaffOrAdmin, async (req
     }
     const provider = await prisma.apiProvider.findUnique({ where: { id: Number(api_provider_id) } });
     if (!provider) { res.status(404).json({ detail: 'Không tìm thấy nhà cung cấp' }); return; }
-    const tp = getTopupProvider({ baseUrl: provider.baseUrl, apiKey: provider.apiKey });
-    const remotes = await tp.getProducts(String(external_product_id));
+    const adapter: any = getCatalogAdapter(provider);
+    const remotes = await adapter.getProducts(String(external_product_id));
     const remote = remotes[0];
     if (!remote) { res.status(404).json({ detail: 'Không tìm thấy sản phẩm nguồn' }); return; }
     const mk = auto_markup ? Number(markup_percent) || 0 : 0;
     const applyMarkup = (p: number) => (auto_markup ? Math.round(p * (1 + mk / 100)) : p);
-    const fields = await tp.getFormFields(String(external_product_id));
+    // Topup: field chung theo category; Premium: field theo từng plan.
+    const sharedFields = adapter.getFormFields ? await adapter.getFormFields(String(external_product_id)) : [];
     const existing = await prisma.productPackage.findMany({ where: { productId }, select: { externalPlanId: true } });
     const have = new Set(existing.map((x: any) => x.externalPlanId).filter(Boolean));
     let created = 0;
@@ -556,8 +565,9 @@ router.post('/admin/:productId/import-packages', requireStaffOrAdmin, async (req
           sortOrder: created,
         },
       });
-      for (let i = 0; i < fields.length; i++) {
-        const f = fields[i];
+      const planFields: any[] = plan.fields?.length ? plan.fields : sharedFields;
+      for (let i = 0; i < planFields.length; i++) {
+        const f = planFields[i];
         await prisma.packageField.create({
           data: {
             packageId: pkg.id,
@@ -592,8 +602,7 @@ router.post('/admin/:productId/sync-prices', requireStaffOrAdmin, async (req: Re
       if (!provider) continue;
       const key = `${provider.id}:${pkg.externalProductId}`;
       if (!cache[key]) {
-        const remotes = await getTopupProvider({ baseUrl: provider.baseUrl, apiKey: provider.apiKey })
-          .getProducts(String(pkg.externalProductId));
+        const remotes = await getCatalogAdapter(provider).getProducts(String(pkg.externalProductId));
         cache[key] = remotes[0]?.plans || [];
       }
       const plan = cache[key].find((pl: any) => String(pl.id) === String(pkg.externalPlanId));

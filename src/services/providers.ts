@@ -159,6 +159,7 @@ export interface RemotePlan {
   price: number;
   sale_price: number | null;
   in_stock: boolean;
+  fields?: RemoteFormField[]; // premium: field theo từng plan
 }
 export interface RemoteProduct {
   id: string;
@@ -249,4 +250,78 @@ export function getProvider(provider: { providerType: string; baseUrl: string; a
 /** Adapter cho nguồn topup_game (browse sản phẩm để map khi tạo gói API). */
 export function getTopupProvider(provider: { baseUrl: string; apiKey: string }) {
   return new TopupGameProvider(provider.baseUrl, provider.apiKey);
+}
+
+// ──────────────────────────────────────────────────────────────
+// Account Premium (ShopKey / CMSNT): X-API-Key + X-API-Secret, base {domain}/api/v1
+// Port từ src Python api/providers/account_premium.py
+// ──────────────────────────────────────────────────────────────
+export class AccountPremiumProvider {
+  constructor(private baseUrl: string, private apiKey: string, private apiSecret?: string | null) {}
+
+  private headers() {
+    const h: Record<string, string> = { 'X-API-Key': this.apiKey, 'Content-Type': 'application/json' };
+    if (this.apiSecret) h['X-API-Secret'] = this.apiSecret;
+    return h;
+  }
+  private url(path: string) {
+    return `${this.baseUrl.replace(/\/$/, '')}/api/v1${path}`;
+  }
+  private async get(path: string, params?: Record<string, any>) {
+    const r = await axios.get(this.url(path), { headers: this.headers(), params, timeout: TIMEOUT });
+    const data = r.data || {};
+    if (data.success === false) throw new Error(data.message || 'API error');
+    return data.data ?? data;
+  }
+
+  async getBalance(): Promise<ProviderBalance> {
+    const data = await this.get('/account/balance');
+    const bal = data.balance ?? data;
+    return {
+      amount: Number(bal.current ?? bal.balance ?? 0),
+      currency: bal.currency || 'VND',
+      formatted: bal.formatted || '',
+    };
+  }
+
+  /** Lấy toàn bộ sản phẩm (phân trang), mỗi sản phẩm kèm plans + fields. */
+  async getProducts(productId?: string): Promise<RemoteProduct[]> {
+    const out: RemoteProduct[] = [];
+    let page = 1;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const data = await this.get('/products/list', { page, limit: 100 });
+      const products = data.products || [];
+      for (const p of products) {
+        out.push({
+          id: String(p.id ?? ''),
+          name: p.name || '',
+          slug: p.slug || '',
+          image: p.image || '',
+          plans: (p.plans || []).map((pl: any) => ({
+            id: String(pl.id ?? ''),
+            name: pl.name || '',
+            price: Number(pl.final_price ?? pl.price ?? 0),
+            sale_price: pl.sale_price != null ? Number(pl.sale_price) : null,
+            in_stock: pl.in_stock !== false,
+            fields: (pl.fields || []).map((f: any) => ({
+              key: f.key || f.field_name || '',
+              label: f.label || f.field_name || '',
+              type: f.type === 'SELECT' ? 'select' : f.type || 'text',
+              required: f.required !== false,
+              options: (f.options || []).map((o: any) => o.label || o.value || o),
+            })),
+          })),
+        });
+      }
+      if (!data.pagination?.has_more) break;
+      page += 1;
+      if (page > 50) break;
+    }
+    return productId ? out.filter((p) => String(p.id) === String(productId)) : out;
+  }
+}
+
+export function getPremiumProvider(provider: { baseUrl: string; apiKey: string; apiSecret?: string | null }) {
+  return new AccountPremiumProvider(provider.baseUrl, provider.apiKey, provider.apiSecret);
 }
