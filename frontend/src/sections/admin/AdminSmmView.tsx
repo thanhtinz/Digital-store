@@ -784,10 +784,18 @@ function ServicesTab() {
       err(e);
     }
   };
+  const [roundForm, setRoundForm] = useState<{ unit: number; mode: string; ending9: boolean } | null>(null);
   const roundPrices = async () => {
+    if (!roundForm) return;
     try {
-      const r = await axiosInstance.post('/api/smm/services/round-prices', { ids: selected, unit: 1000 });
+      const r = await axiosInstance.post('/api/smm/services/round-prices', {
+        ids: selected,
+        unit: roundForm.unit,
+        mode: roundForm.mode,
+        ending9: roundForm.ending9,
+      });
       ok(`Đã làm tròn ${r.data?.updated ?? 0}/${r.data?.total ?? 0} giá`);
+      setRoundForm(null);
       load();
     } catch (e) {
       err(e);
@@ -821,10 +829,16 @@ function ServicesTab() {
           <Button size="small" variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => setSvcForm({ ...SVC_EMPTY })}>
             Thêm dịch vụ
           </Button>
-          <Tooltip title="Làm tròn giá bán về bội số 1.000đ gần nhất">
+          <Tooltip title="Làm tròn giá bán (nhiều kiểu: lên/gần nhất/xuống, theo đơn vị)">
             <span>
-              <Button size="small" variant="soft" disabled={!selected.length} startIcon={<Iconify icon="solar:tag-price-bold" />} onClick={roundPrices}>
-                Làm tròn 1k
+              <Button
+                size="small"
+                variant="soft"
+                disabled={!selected.length}
+                startIcon={<Iconify icon="solar:tag-price-bold" />}
+                onClick={() => setRoundForm({ unit: 1000, mode: 'round', ending9: false })}
+              >
+                Làm tròn giá
               </Button>
             </span>
           </Tooltip>
@@ -1107,6 +1121,63 @@ function ServicesTab() {
         </Button>
         <Button variant="contained" disabled={!svcForm?.categoryId || !svcForm?.name.trim()} onClick={saveSvc}>
           Lưu dịch vụ
+        </Button>
+      </DialogActions>
+    </Dialog>
+
+    {/* Làm tròn giá - nhiều kiểu */}
+    <Dialog open={!!roundForm} onClose={() => setRoundForm(null)} fullWidth maxWidth="xs">
+      <DialogTitle>Làm tròn giá ({selected.length} dịch vụ)</DialogTitle>
+      {roundForm && (
+        <DialogContent>
+          <Stack spacing={2.5} sx={{ pt: 1 }}>
+            <TextField
+              select
+              fullWidth
+              label="Cách làm tròn"
+              value={roundForm.mode}
+              onChange={(e) => setRoundForm({ ...roundForm, mode: e.target.value })}
+            >
+              <MenuItem value="ceil">Làm tròn LÊN (không giảm giá)</MenuItem>
+              <MenuItem value="round">Gần nhất</MenuItem>
+              <MenuItem value="floor">Làm tròn XUỐNG</MenuItem>
+            </TextField>
+            <TextField
+              select
+              fullWidth
+              label="Đơn vị làm tròn"
+              value={roundForm.unit}
+              onChange={(e) => setRoundForm({ ...roundForm, unit: Number(e.target.value) })}
+            >
+              {[100, 500, 1000, 5000, 10000].map((u) => (
+                <MenuItem key={u} value={u}>
+                  {fCurrency(u)}
+                </MenuItem>
+              ))}
+            </TextField>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={roundForm.ending9}
+                  onChange={(e) => setRoundForm({ ...roundForm, ending9: e.target.checked })}
+                />
+              }
+              label="Giá tâm lý (kết thúc 9, vd 12.999)"
+            />
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              Ví dụ với 12.480đ: LÊN→{fCurrency(Math.ceil(12480 / roundForm.unit) * roundForm.unit - (roundForm.ending9 ? 1 : 0))} ·
+              Gần nhất→{fCurrency(Math.round(12480 / roundForm.unit) * roundForm.unit - (roundForm.ending9 ? 1 : 0))} ·
+              XUỐNG→{fCurrency(Math.floor(12480 / roundForm.unit) * roundForm.unit - (roundForm.ending9 ? 1 : 0))}
+            </Typography>
+          </Stack>
+        </DialogContent>
+      )}
+      <DialogActions>
+        <Button color="inherit" onClick={() => setRoundForm(null)}>
+          Huỷ
+        </Button>
+        <Button variant="contained" onClick={roundPrices}>
+          Áp dụng
         </Button>
       </DialogActions>
     </Dialog>

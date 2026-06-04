@@ -1098,23 +1098,35 @@ router.post('/services/bulk-delete', requireStaffOrAdmin, async (req: Request, r
   }
 });
 
-/** Làm tròn giá bán theo bội số `unit` (mặc định 1000), quy tắc HALF_UP. */
+/**
+ * Làm tròn giá bán cho các dịch vụ đã chọn.
+ * body: { ids:number[], unit?:number (mặc định 1000), mode?: 'ceil'|'round'|'floor' (mặc định 'round'), ending9?:boolean }
+ * - mode 'ceil'  : làm tròn LÊN bội số unit (không bao giờ giảm giá).
+ * - mode 'round' : làm tròn về bội số gần nhất (HALF_UP).
+ * - mode 'floor' : làm tròn XUỐNG bội số unit.
+ * - ending9      : sau khi làm tròn, trừ 1 để giá kết thúc 9 (vd 13.000 -> 12.999) khi >= unit.
+ */
 router.post('/services/round-prices', requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const ids = (req.body.ids || []).map((x: any) => parseInt(x)).filter((n: number) => Number.isFinite(n));
     const unit = Math.max(1, parseInt(req.body.unit) || 1000);
+    const mode: string = ['ceil', 'round', 'floor'].includes(req.body.mode) ? req.body.mode : 'round';
+    const ending9 = !!req.body.ending9;
     if (!ids.length) { res.status(400).json({ detail: 'ids required' }); return; }
     const rows = await prisma.smmService.findMany({ where: { id: { in: ids } } });
     let changed = 0;
     for (const s of rows) {
       if (s.rate == null) continue;
-      const newVal = Math.round(s.rate / unit) * unit; // HALF_UP
+      const q = s.rate / unit;
+      let newVal = (mode === 'ceil' ? Math.ceil(q) : mode === 'floor' ? Math.floor(q) : Math.round(q)) * unit;
+      if (ending9 && newVal >= unit) newVal -= 1; // giá tâm lý: ...999
+      if (newVal < 0) newVal = 0;
       if (s.rate !== newVal) {
         await prisma.smmService.update({ where: { id: s.id }, data: { rate: newVal } });
         changed += 1;
       }
     }
-    res.json({ ok: true, updated: changed, total: rows.length, unit });
+    res.json({ ok: true, updated: changed, total: rows.length, unit, mode, ending9 });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
   }
