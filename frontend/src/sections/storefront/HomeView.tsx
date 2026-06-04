@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 // next
 import NextLink from 'next/link';
 // @mui
@@ -8,6 +8,7 @@ import {
   Card,
   Chip,
   Container,
+  IconButton,
   Link,
   Stack,
   Tab,
@@ -230,9 +231,10 @@ function SourceCard({ product }: { product: any }) {
           component={NextLink}
           href={detail}
           color="inherit"
-          variant="subtitle2"
+          variant="subtitle1"
           noWrap
           title={p.name}
+          sx={{ fontWeight: 700 }}
         >
           {p.name}
         </Link>
@@ -248,6 +250,60 @@ function SourceCard({ product }: { product: any }) {
         </Box>
       </Stack>
     </Card>
+  );
+}
+
+// Carousel cuộn ngang cho Mã nguồn: mobile 1 card/màn hình, có nút qua lại.
+function SourceCarousel({ products }: { products: any[] }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const scroll = (dir: number) => {
+    const el = ref.current;
+    if (el) el.scrollBy({ left: dir * el.clientWidth * 0.9, behavior: 'smooth' });
+  };
+  const navBtn = (side: 'left' | 'right') => ({
+    position: 'absolute' as const,
+    top: '38%',
+    [side]: { xs: 4, md: -16 },
+    zIndex: 2,
+    display: { xs: 'none', sm: 'flex' },
+    bgcolor: 'background.paper',
+    boxShadow: (theme: any) => theme.customShadows.z8,
+    '&:hover': { bgcolor: 'background.paper' },
+  });
+  return (
+    <Box sx={{ position: 'relative' }}>
+      <Box
+        ref={ref}
+        sx={{
+          display: 'flex',
+          gap: 2,
+          overflowX: 'auto',
+          scrollSnapType: 'x mandatory',
+          pb: 1,
+          scrollbarWidth: 'none',
+          '&::-webkit-scrollbar': { display: 'none' },
+        }}
+      >
+        {products.map((p: any) => (
+          <Box
+            key={p.id}
+            sx={{
+              flex: '0 0 auto',
+              scrollSnapAlign: 'start',
+              width: { xs: '100%', sm: '47%', md: '31.5%' },
+            }}
+          >
+            <SourceCard product={p} />
+          </Box>
+        ))}
+      </Box>
+      <IconButton onClick={() => scroll(-1)} size="small" sx={navBtn('left')}>
+        <Iconify icon="eva:arrow-ios-back-fill" />
+      </IconButton>
+      <IconButton onClick={() => scroll(1)} size="small" sx={navBtn('right')}>
+        <Iconify icon="eva:arrow-ios-forward-fill" />
+      </IconButton>
+    </Box>
   );
 }
 
@@ -316,7 +372,7 @@ export default function HomeView() {
           axiosInstance.get('/api/products', { params: { limit: 8, sort: 'newest' } }),
           axiosInstance.get('/api/products', { params: { type: 'game', limit: 12 } }),
           axiosInstance.get('/api/products', { params: { type: 'giftcard', limit: 60 } }),
-          axiosInstance.get('/api/products', { params: { type: 'source', limit: 8 } }),
+          axiosInstance.get('/api/products', { params: { type: 'source', limit: 10 } }),
           axiosInstance.get('/api/smm/catalog'),
           axiosInstance.get('/api/flash-sales/active'),
           axiosInstance.get('/api/banners'),
@@ -507,19 +563,7 @@ export default function HomeView() {
           <Typography variant="body2" sx={{ color: 'text.secondary', mt: -2, mb: 2 }}>
             Source code, theme, template — có demo trực tiếp, tải về kèm license & cập nhật.
           </Typography>
-          <Box
-            display="grid"
-            gap={2}
-            gridTemplateColumns={{
-              xs: '1fr',
-              sm: 'repeat(2, 1fr)',
-              md: 'repeat(3, 1fr)',
-            }}
-          >
-            {source.map((p: any) => (
-              <SourceCard key={p.id} product={p} />
-            ))}
-          </Box>
+          <SourceCarousel products={source} />
         </>
       )}
 

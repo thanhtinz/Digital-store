@@ -91,8 +91,75 @@ export default function SourceDetailView({ product, cart, onAddCart, onGotoStep 
       </Stack>
     ) : null;
 
+  // Tab "Mô tả": mô tả + thông số kỹ thuật + khu vực tải bằng license (gộp chung).
+  const descriptionTab = (
+    <Stack spacing={4}>
+      {product.description && <Markdown children={product.description} />}
+
+      <Box>
+        <Typography variant="h6" sx={{ mb: 1 }}>Thông số kỹ thuật</Typography>
+        {!!tech.length && (
+          <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mb: 1.5 }}>
+            {tech.map((t) => (
+              <Chip key={t} size="small" label={t} variant="soft" color="primary" />
+            ))}
+          </Stack>
+        )}
+        <Divider sx={{ mb: 1 }} />
+        <SpecRow label="Ngôn ngữ" value={meta.language} />
+        <SpecRow label="Phiên bản mới nhất" value={latest ? `v${latest.version}` : null} />
+        <SpecRow label="Cập nhật" value={latest?.releasedAt ? fDateTime(latest.releasedAt) : null} />
+        <SpecRow label="Dung lượng" value={latest?.fileSize} />
+        <SpecRow label="Tương thích" value={meta.compatibility} />
+        <SpecRow
+          label="Tài liệu"
+          value={meta.documentationUrl ? <Link href={meta.documentationUrl} target="_blank" rel="noopener">Xem tài liệu</Link> : null}
+        />
+      </Box>
+
+      <Box>
+        <Typography variant="h6" sx={{ mb: 0.5 }}>Tải mã nguồn</Typography>
+        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1.5 }}>
+          Đã mua? Nhập license key để lấy link tải. Link dùng một lần và sẽ hết hạn — bạn cũng có thể vào{' '}
+          <Link href="/dashboard/downloads">Tải xuống của tôi</Link>.
+        </Typography>
+        <Stack direction="row" spacing={1} sx={{ maxWidth: 480 }}>
+          <TextField
+            size="small"
+            fullWidth
+            placeholder="VD: A1B2-C3D4-E5F6-7G8H"
+            value={licenseKey}
+            onChange={(e) => setLicenseKey(e.target.value)}
+          />
+          <Button variant="contained" onClick={redeem} disabled={redeeming || !licenseKey.trim()}>
+            Lấy link
+          </Button>
+        </Stack>
+        {redeemMsg && (
+          <Alert severity={redeemMsg.type} sx={{ mt: 1.5, maxWidth: 480 }}>
+            {redeemMsg.text}
+            {redeemMsg.url && (
+              <Box sx={{ mt: 1 }}>
+                <Button size="small" variant="contained" href={redeemMsg.url} startIcon={<Iconify icon="solar:download-bold" />}>
+                  Tải xuống
+                </Button>
+              </Box>
+            )}
+            {redeemMsg.type === 'error' && /hết lượt|ticket/i.test(redeemMsg.text) && (
+              <Box sx={{ mt: 1 }}>
+                <Button size="small" href="/dashboard/support" startIcon={<Iconify icon="solar:ticket-bold" />}>
+                  Tạo ticket hỗ trợ
+                </Button>
+              </Box>
+            )}
+          </Alert>
+        )}
+      </Box>
+    </Stack>
+  );
+
   const TABS = [
-    { value: 'description', label: 'Mô tả', component: <Markdown children={product.description} /> },
+    { value: 'description', label: 'Mô tả', component: descriptionTab },
     {
       value: 'changelog',
       label: `Changelog (${versions.length})`,
@@ -157,72 +224,10 @@ export default function SourceDetailView({ product, cart, onAddCart, onGotoStep 
               Xem demo trực tiếp
             </Button>
           )}
-
-          {/* Bảng thông số */}
-          <Card sx={{ p: 3, mt: 3 }}>
-            <Typography variant="h6" sx={{ mb: 1 }}>Thông số kỹ thuật</Typography>
-            {!!tech.length && (
-              <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mb: 1.5 }}>
-                {tech.map((t) => (
-                  <Chip key={t} size="small" label={t} variant="soft" color="primary" />
-                ))}
-              </Stack>
-            )}
-            <Divider sx={{ mb: 1 }} />
-            <SpecRow label="Ngôn ngữ" value={meta.language} />
-            <SpecRow label="Phiên bản mới nhất" value={latest ? `v${latest.version}` : null} />
-            <SpecRow label="Cập nhật" value={latest?.releasedAt ? fDateTime(latest.releasedAt) : null} />
-            <SpecRow label="Dung lượng" value={latest?.fileSize} />
-            <SpecRow label="Tương thích" value={meta.compatibility} />
-            <SpecRow
-              label="Tài liệu"
-              value={meta.documentationUrl ? <Link href={meta.documentationUrl} target="_blank" rel="noopener">Xem tài liệu</Link> : null}
-            />
-          </Card>
         </Grid>
 
         <Grid item xs={12} md={6} lg={5}>
           <ProductDetailsSummary product={product} cart={cart} onAddCart={onAddCart} onGotoStep={onGotoStep} />
-
-          {/* Đã sở hữu → nhập license key lấy link tải */}
-          <Card sx={{ p: 3, mt: 3 }}>
-            <Typography variant="subtitle1" sx={{ mb: 0.5 }}>Đã mua? Nhập license key để tải</Typography>
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-              Link tải dùng một lần và sẽ hết hạn. Bạn cũng có thể vào{' '}
-              <Link href="/dashboard/downloads">Tải xuống của tôi</Link>.
-            </Typography>
-            <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
-              <TextField
-                size="small"
-                fullWidth
-                placeholder="VD: A1B2-C3D4-E5F6-7G8H"
-                value={licenseKey}
-                onChange={(e) => setLicenseKey(e.target.value)}
-              />
-              <Button variant="contained" onClick={redeem} disabled={redeeming || !licenseKey.trim()}>
-                Lấy link
-              </Button>
-            </Stack>
-            {redeemMsg && (
-              <Alert severity={redeemMsg.type} sx={{ mt: 1.5 }}>
-                {redeemMsg.text}
-                {redeemMsg.url && (
-                  <Box sx={{ mt: 1 }}>
-                    <Button size="small" variant="contained" href={redeemMsg.url} startIcon={<Iconify icon="solar:download-bold" />}>
-                      Tải xuống
-                    </Button>
-                  </Box>
-                )}
-                {redeemMsg.type === 'error' && /hết lượt|ticket/i.test(redeemMsg.text) && (
-                  <Box sx={{ mt: 1 }}>
-                    <Button size="small" href="/dashboard/support" startIcon={<Iconify icon="solar:ticket-bold" />}>
-                      Tạo ticket hỗ trợ
-                    </Button>
-                  </Box>
-                )}
-              </Alert>
-            )}
-          </Card>
         </Grid>
       </Grid>
 
