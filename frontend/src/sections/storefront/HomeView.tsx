@@ -23,7 +23,6 @@ import { IProduct } from '../../@types/product';
 // components
 import { paramCase } from 'change-case';
 import Image from '../../components/image';
-import Label from '../../components/label';
 import Iconify from '../../components/iconify';
 // sections
 import { ShopProductList } from '../@dashboard/e-commerce/shop';
@@ -92,37 +91,74 @@ function SectionHead({
 
 // ----------------------------------------------------------------------
 
-// Card game cho slider Topup (ảnh + badge UID/Login + server).
+// Card ngang cho Topup (logo + tên + tag giao hàng + số sao + đã bán).
 function TopupCard({ product }: { product: any }) {
   const p = product;
   const slug = p.code || p.slug || p.id;
+  const packages: any[] = p.packages || [];
+  const isAuto = packages.some(
+    (pk: any) => pk.isStockManaged || ['stock', 'api'].includes(String(pk.deliveryType))
+  );
+  const rating = Number(p.rating ?? p.totalRating) || 0;
+  const ratingCount = Number(p.ratingCount) || 0;
+  const sold = Number(p.soldCount ?? p.sold) || 0;
   return (
     <Link
       component={NextLink}
       href={PATH_DASHBOARD.eCommerce.view(slug)}
       color="inherit"
       underline="none"
-      sx={{ flex: '0 0 auto', width: { xs: 150, sm: 168 }, scrollSnapAlign: 'start' }}
     >
-      <Card sx={{ overflow: 'hidden' }}>
-        <Box sx={{ position: 'relative' }}>
-          <Image src={p.cover || p.imageUrl} ratio="1/1" alt={p.name} />
-          <Stack direction="row" sx={{ position: 'absolute', top: 8, left: 8, flexWrap: 'wrap', gap: 0.5 }}>
-            {p.topupType && (
-              <Label color="warning" variant="filled" sx={{ textTransform: 'none' }}>
-                {p.topupType === 'uid' ? 'UID' : 'Login'}
-              </Label>
-            )}
-            {p.serverRegion && (
-              <Label color="info" variant="filled" sx={{ textTransform: 'none' }}>
-                {p.serverRegion === 'vietnam' ? 'VN' : 'Global'}
-              </Label>
-            )}
+      <Card
+        sx={{
+          p: 1.5,
+          display: 'flex',
+          gap: 2,
+          alignItems: 'center',
+          transition: (theme) => theme.transitions.create('box-shadow'),
+          '&:hover': { boxShadow: (theme) => theme.customShadows.z16 },
+        }}
+      >
+        <Image
+          src={p.cover || p.imageUrl}
+          alt={p.name}
+          sx={{ width: 72, height: 72, borderRadius: 1.5, flexShrink: 0 }}
+        />
+        <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+          <Typography variant="subtitle1" noWrap title={p.name}>
+            {p.name}
+          </Typography>
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={0.5}
+            sx={{ mt: 0.5, color: isAuto ? 'success.main' : 'info.main' }}
+          >
+            <Iconify icon="mdi:truck-fast-outline" width={18} />
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              {isAuto ? 'Giao ngay' : 'Đặt hàng'}
+            </Typography>
           </Stack>
+          {(rating > 0 || sold > 0) && (
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={1.5}
+              sx={{ mt: 0.5, color: 'text.secondary', typography: 'caption' }}
+            >
+              {rating > 0 && (
+                <Stack direction="row" alignItems="center" spacing={0.25}>
+                  <Iconify icon="solar:star-bold" width={14} sx={{ color: 'warning.main' }} />
+                  <span>
+                    {rating}
+                    {ratingCount ? ` (${ratingCount})` : ''}
+                  </span>
+                </Stack>
+              )}
+              {sold > 0 && <span>Đã bán {sold}</span>}
+            </Stack>
+          )}
         </Box>
-        <Typography variant="subtitle2" noWrap sx={{ p: 1.5 }} title={p.name}>
-          {p.name}
-        </Typography>
       </Card>
     </Link>
   );
@@ -336,7 +372,7 @@ export default function HomeView() {
         </>
       )}
 
-      {/* TOPUP GAME — slider */}
+      {/* TOPUP GAME — lưới card ngang */}
       {topup.length > 0 && (
         <>
           <SectionHead
@@ -345,15 +381,9 @@ export default function HomeView() {
             viewAllLabel={t('view_all')}
           />
           <Box
-            sx={{
-              display: 'flex',
-              gap: 2,
-              overflowX: 'auto',
-              pb: 1.5,
-              scrollSnapType: 'x mandatory',
-              '&::-webkit-scrollbar': { height: 6 },
-              '&::-webkit-scrollbar-thumb': { borderRadius: 3, bgcolor: 'divider' },
-            }}
+            display="grid"
+            gap={2}
+            gridTemplateColumns={{ xs: '1fr', sm: 'repeat(2, 1fr)' }}
           >
             {topup.map((p: any) => (
               <TopupCard key={p.id} product={p} />

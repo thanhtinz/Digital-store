@@ -66,6 +66,10 @@ function adaptProduct(p: any): any {
     createdAt: p.created_at ?? p.createdAt ?? new Date().toISOString(),
     category: p.category?.name ?? p.category ?? '',
     gender: p.gender ?? '',
+    // Giữ rating/sold đúng tên backend để card (ShopProductCard, Topup) hiển thị sao + đã bán.
+    rating: p.rating ?? p.totalRating ?? 0,
+    ratingCount: p.ratingCount ?? p.review_count ?? p.totalReview ?? 0,
+    soldCount: p.soldCount ?? p.sold ?? 0,
     // giữ nguyên packages gốc để trang chi tiết tự render gói
     packages: p.packages ?? [],
     // giữ sản phẩm liên quan (đã adapt) cho trang chi tiết
