@@ -47,8 +47,8 @@ router.get('/my', requireUser, async (req: Request, res: Response) => {
         skip: (page - 1) * limit,
         take: limit,
         include: {
-          package: { include: { product: true } },
-          items: { include: { package: { include: { product: true } } } },
+          package: { include: { product: { include: { category: true } } } },
+          items: { include: { package: { include: { product: { include: { category: true } } } } } },
         },
       }),
     ]);
@@ -66,8 +66,8 @@ router.get('/my/:order_code', requireUser, async (req: Request, res: Response) =
     const order = await prisma.order.findFirst({
       where: { orderCode: req.params.order_code, userId: user.user_id.toString() },
       include: {
-        package: { include: { product: true } },
-        items: { include: { package: { include: { product: true } } } },
+        package: { include: { product: { include: { category: true } } } },
+        items: { include: { package: { include: { product: { include: { category: true } } } } } },
       },
     });
     if (!order) { res.status(404).json({ detail: 'Không tìm thấy đơn hàng' }); return; }
@@ -265,8 +265,8 @@ router.post(['/', '/create'], requireUser, async (req: Request, res: Response) =
     const result = await prisma.order.findUnique({
       where: { id: order.id },
       include: {
-        package: { include: { product: true } },
-        items: { include: { package: { include: { product: true } } } },
+        package: { include: { product: { include: { category: true } } } },
+        items: { include: { package: { include: { product: { include: { category: true } } } } } },
       },
     });
 
@@ -351,8 +351,8 @@ router.get('/admin/all', requireStaffOrAdmin, async (req: Request, res: Response
         skip: (page - 1) * limit,
         take: limit,
         include: {
-          package: { include: { product: true } },
-          items: { include: { package: { include: { product: true } } } },
+          package: { include: { product: { include: { category: true } } } },
+          items: { include: { package: { include: { product: { include: { category: true } } } } } },
         },
       }),
     ]);

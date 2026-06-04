@@ -11,6 +11,7 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  MenuItem,
   Stack,
   Table,
   TableBody,
@@ -18,6 +19,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -42,7 +44,16 @@ type Order = {
   created_at?: string;
   createdAt?: string;
   user_email?: string;
+  productType?: string;
 };
+
+// Loại sản phẩm (khớp productType danh mục) — dùng cho bộ lọc đơn hàng.
+const PRODUCT_TYPES = [
+  { value: 'premium', label: 'Tài khoản Premium' },
+  { value: 'game', label: 'Nạp game (Topup)' },
+  { value: 'giftcard', label: 'Giftcard' },
+  { value: 'source', label: 'Mã nguồn / Theme' },
+];
 
 const STATUS_COLOR: Record<string, any> = {
   completed: 'success',
@@ -62,6 +73,7 @@ export default function AdminOrdersView() {
   const [licOrder, setLicOrder] = useState<Order | null>(null);
   const [licenses, setLicenses] = useState<any[]>([]);
   const [licLoading, setLicLoading] = useState(false);
+  const [typeFilter, setTypeFilter] = useState('all'); // lọc theo loại sản phẩm
 
   const openLicenses = (o: Order) => {
     setLicOrder(o);
@@ -96,11 +108,30 @@ export default function AdminOrdersView() {
   const total = (o: Order) => o.total_amount ?? o.totalAmount ?? 0;
   const date = (o: Order) => o.created_at || o.createdAt || '';
 
+  const visibleOrders = orders.filter(
+    (o) => typeFilter === 'all' || (o.productType || 'premium') === typeFilter
+  );
+
   return (
     <Container sx={{ pb: 6 }} maxWidth="lg">
-      <Typography variant="h4" sx={{ my: 3 }}>
-        Đơn hàng
-      </Typography>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ my: 3 }}>
+        <Typography variant="h4">Đơn hàng</Typography>
+        <TextField
+          select
+          size="small"
+          label="Loại"
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+          sx={{ minWidth: 180 }}
+        >
+          <MenuItem value="all">Tất cả loại</MenuItem>
+          {PRODUCT_TYPES.map((t) => (
+            <MenuItem key={t.value} value={t.value}>
+              {t.label}
+            </MenuItem>
+          ))}
+        </TextField>
+      </Stack>
 
       <Card>
         {loading ? (
@@ -121,7 +152,7 @@ export default function AdminOrdersView() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {orders.map((o) => (
+                {visibleOrders.map((o) => (
                   <TableRow key={o.id} hover>
                     <TableCell>
                       <Typography variant="subtitle2">{code(o)}</Typography>
@@ -143,10 +174,10 @@ export default function AdminOrdersView() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {!orders.length && (
+                {!visibleOrders.length && (
                   <TableRow>
                     <TableCell colSpan={6} align="center" sx={{ py: 6, color: 'text.secondary' }}>
-                      Không có đơn hàng
+                      {orders.length ? 'Không có đơn thuộc loại này' : 'Không có đơn hàng'}
                     </TableCell>
                   </TableRow>
                 )}

@@ -15,6 +15,24 @@ function getCatalogAdapter(provider: any) {
 
 const router = Router();
 
+// Source/theme: giá được đặt TRỰC TIẾP trên sản phẩm, admin không quản lý gói thủ công.
+// Hệ thống tự duy trì DUY NHẤT 1 gói ẩn để giữ nguyên luồng mua hàng + cấp license.
+async function syncSourcePackage(productId: number, productName: string, price: number, originalPrice: number | null) {
+  const existing = await prisma.productPackage.findFirst({ where: { productId }, orderBy: { id: 'asc' } });
+  const data = {
+    name: productName,
+    price,
+    originalPrice: originalPrice && originalPrice > 0 ? originalPrice : null,
+    deliveryType: 'manual',
+    isActive: true,
+  };
+  if (existing) {
+    await prisma.productPackage.update({ where: { id: existing.id }, data });
+  } else {
+    await prisma.productPackage.create({ data: { productId, sortOrder: 0, ...data } });
+  }
+}
+
 // ── Đăng ký "báo có hàng lại" cho 1 gói đang hết hàng ──
 router.post('/stock-alert', requireUser, async (req: Request, res: Response) => {
   try {
@@ -243,7 +261,7 @@ router.get('/:slug', optionalUser, async (req: Request, res: Response) => {
 router.post(['/admin', '/'], requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
     const { name, category_id, description, notes, image_url, images, is_featured, is_active, sort_order,
-      topup_type, server_region, source_meta } = req.body;
+      topup_type, server_region, source_meta, source_price, source_original_price } = req.body;
     if (!name) { res.status(422).json({ detail: 'Tên sản phẩm không được để trống' }); return; }
     const slug = slugify(name, { lower: true, strict: true });
     const product = await prisma.product.create({
@@ -262,6 +280,11 @@ router.post(['/admin', '/'], requireStaffOrAdmin, async (req: Request, res: Resp
       },
       include: { category: true },
     });
+    // Source: tạo sẵn gói ẩn từ giá nhập trực tiếp trên sản phẩm.
+    if (product.category?.productType === 'source' && source_price !== undefined) {
+      await syncSourcePackage(product.id, product.name, Number(source_price) || 0,
+        source_original_price != null ? Number(source_original_price) : null);
+    }
     res.status(201).json(serializeProduct(product));
   } catch (e: any) {
     if (e.code === 'P2002') {
@@ -297,6 +320,11 @@ router.patch(['/admin/:id', '/:id'], requireStaffOrAdmin, async (req: Request, r
       data.sourceMeta = req.body.source_meta && typeof req.body.source_meta === 'object' ? req.body.source_meta : null;
     }
     const product = await prisma.product.update({ where: { id }, data, include: { category: true } });
+    // Source: đồng bộ gói ẩn theo giá nhập trực tiếp (không cần quản lý gói thủ công).
+    if (product.category?.productType === 'source' && req.body.source_price !== undefined) {
+      await syncSourcePackage(product.id, product.name, Number(req.body.source_price) || 0,
+        req.body.source_original_price != null ? Number(req.body.source_original_price) : null);
+    }
     res.json(serializeProduct(product));
   } catch (e: any) {
     res.status(500).json({ detail: e.message });

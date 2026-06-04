@@ -353,12 +353,20 @@ export function orderToDict(order: any): Record<string, any> {
     packageId: item.packageId,
     productName: item.productNameSnapshot || item.package?.product?.name,
     packageName: item.packageNameSnapshot || item.package?.name,
+    productType: item.package?.product?.category?.productType || 'premium',
     quantity: item.quantity,
     unitPrice: money(item.unitPrice),
     lineTotal: money(item.lineTotal),
     status: item.status,
     deliveryData: item.deliveryData,
   }));
+
+  // Loại sản phẩm của đơn (để lọc ở admin): ưu tiên item, fallback gói đơn lẻ.
+  const productType =
+    items.find((i: any) => i.productType && i.productType !== 'premium')?.productType ||
+    order.package?.product?.category?.productType ||
+    items[0]?.productType ||
+    'premium';
 
   return {
     id: order.id,
@@ -369,6 +377,7 @@ export function orderToDict(order: any): Record<string, any> {
     packageName: order.package?.name,
     productName: order.package?.product?.name,
     productImg: order.package?.product?.imageUrl,
+    productType,
     quantity: order.quantity,
     subtotalAmount: money(order.subtotalAmount),
     discountAmount: money(order.discountAmount),

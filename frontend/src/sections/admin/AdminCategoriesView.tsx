@@ -8,6 +8,7 @@ import {
   CircularProgress,
   Container,
   IconButton,
+  MenuItem,
   Stack,
   Table,
   TableBody,
@@ -15,6 +16,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
   Typography,
 } from '@mui/material';
 // utils
@@ -58,6 +60,7 @@ export default function AdminCategoriesView() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<EditState | null>(null);
   const [toDelete, setToDelete] = useState<Category | null>(null);
+  const [typeFilter, setTypeFilter] = useState('all'); // lọc theo loại sản phẩm
 
   const load = () => {
     setLoading(true);
@@ -73,8 +76,9 @@ export default function AdminCategoriesView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Danh mục gốc (cấp 1) + map con theo parentId.
-  const roots = cats.filter((c) => !c.parentId);
+  // Danh mục gốc (cấp 1) + map con theo parentId, áp dụng lọc theo loại.
+  const matchType = (c: Category) => typeFilter === 'all' || (c.productType || 'premium') === typeFilter;
+  const roots = cats.filter((c) => !c.parentId && matchType(c));
   const childrenOf = (id: number) => cats.filter((c) => c.parentId === id);
 
   const openCreate = (parentId?: number, productType?: string) =>
@@ -160,9 +164,26 @@ export default function AdminCategoriesView() {
     <Container sx={{ pb: 6 }} maxWidth="lg">
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ my: 3 }}>
         <Typography variant="h4">Danh mục</Typography>
-        <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => openCreate()}>
-          Thêm danh mục
-        </Button>
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          <TextField
+            select
+            size="small"
+            label="Loại"
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            sx={{ minWidth: 180 }}
+          >
+            <MenuItem value="all">Tất cả loại</MenuItem>
+            {PRODUCT_TYPES.map((t) => (
+              <MenuItem key={t.value} value={t.value}>
+                {t.label}
+              </MenuItem>
+            ))}
+          </TextField>
+          <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => openCreate()}>
+            Thêm danh mục
+          </Button>
+        </Stack>
       </Stack>
 
       <Card>

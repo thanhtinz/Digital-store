@@ -51,9 +51,18 @@ type Product = {
   isFeatured: boolean;
   categoryId?: number | null;
   category?: { id: number; name: string } | null;
+  productType?: string;
   packages?: Pkg[];
 };
 type Category = { id: number; name: string };
+
+// Loại sản phẩm (khớp với productType của danh mục) — dùng cho bộ lọc.
+const PRODUCT_TYPES = [
+  { value: 'premium', label: 'Tài khoản Premium' },
+  { value: 'game', label: 'Nạp game (Topup)' },
+  { value: 'giftcard', label: 'Giftcard' },
+  { value: 'source', label: 'Mã nguồn / Theme' },
+];
 
 function minPrice(p: Product) {
   const prices = (p.packages || []).map((x) => x.price).filter((n) => n > 0);
@@ -69,6 +78,7 @@ export default function AdminProductsView() {
   const [editing, setEditing] = useState<Product | 'new' | null>(null);
   const [toDelete, setToDelete] = useState<Product | null>(null);
   const [pkgFor, setPkgFor] = useState<Product | null>(null);
+  const [typeFilter, setTypeFilter] = useState('all'); // lọc theo loại sản phẩm
 
   const load = () => {
     setLoading(true);
@@ -102,6 +112,10 @@ export default function AdminProductsView() {
     }
   };
 
+  const visibleProducts = products.filter(
+    (p) => typeFilter === 'all' || (p.productType || 'premium') === typeFilter
+  );
+
   // Trang form đầy đủ (tạo/sửa) — thay cho popup cũ.
   if (editing) {
     return (
@@ -123,9 +137,26 @@ export default function AdminProductsView() {
     <Container sx={{ pb: 6 }} maxWidth="lg">
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ my: 3 }}>
         <Typography variant="h4">Sản phẩm</Typography>
-        <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => setEditing('new')}>
-          Thêm sản phẩm
-        </Button>
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          <TextField
+            select
+            size="small"
+            label="Loại"
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            sx={{ minWidth: 180 }}
+          >
+            <MenuItem value="all">Tất cả loại</MenuItem>
+            {PRODUCT_TYPES.map((t) => (
+              <MenuItem key={t.value} value={t.value}>
+                {t.label}
+              </MenuItem>
+            ))}
+          </TextField>
+          <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => setEditing('new')}>
+            Thêm sản phẩm
+          </Button>
+        </Stack>
       </Stack>
 
       <Card>
@@ -146,7 +177,7 @@ export default function AdminProductsView() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {products.map((p) => (
+                {visibleProducts.map((p) => (
                   <TableRow key={p.id} hover>
                     <TableCell>
                       <Stack direction="row" alignItems="center" spacing={1.5}>
@@ -165,11 +196,14 @@ export default function AdminProductsView() {
                       </Label>
                     </TableCell>
                     <TableCell align="right">
-                      <Tooltip title="Quản lý gói & giá">
-                        <IconButton color="primary" onClick={() => setPkgFor(p)}>
-                          <Iconify icon="solar:box-minimalistic-bold" />
-                        </IconButton>
-                      </Tooltip>
+                      {/* Source: giá đặt trực tiếp trong form, không quản lý gói thủ công. */}
+                      {p.productType !== 'source' && (
+                        <Tooltip title="Quản lý gói & giá">
+                          <IconButton color="primary" onClick={() => setPkgFor(p)}>
+                            <Iconify icon="solar:box-minimalistic-bold" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                       <IconButton onClick={() => setEditing(p)}>
                         <Iconify icon="solar:pen-bold" />
                       </IconButton>
@@ -179,10 +213,10 @@ export default function AdminProductsView() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {!products.length && (
+                {!visibleProducts.length && (
                   <TableRow>
                     <TableCell colSpan={5} align="center" sx={{ py: 6, color: 'text.secondary' }}>
-                      Chưa có sản phẩm
+                      {products.length ? 'Không có sản phẩm thuộc loại này' : 'Chưa có sản phẩm'}
                     </TableCell>
                   </TableRow>
                 )}

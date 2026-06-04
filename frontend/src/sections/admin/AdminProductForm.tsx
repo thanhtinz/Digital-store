@@ -97,6 +97,9 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
   const [srcDoc, setSrcDoc] = useState<string>(sm0.documentationUrl || '');
   const [srcReq, setSrcReq] = useState<string>(sm0.requirements || '');
   const [srcCompat, setSrcCompat] = useState<string>(sm0.compatibility || '');
+  // Giá source đặt TRỰC TIẾP trên sản phẩm (không quản lý gói). Lấy từ gói ẩn nếu đã có.
+  const [srcPrice, setSrcPrice] = useState<number>(Number(current?.packages?.[0]?.price) || 0);
+  const [srcOrigPrice, setSrcOrigPrice] = useState<number>(Number(current?.packages?.[0]?.originalPrice) || 0);
 
   // Preselect đúng danh mục + tag của sản phẩm đang sửa (khi mở/đổi sản phẩm).
   useEffect(() => {
@@ -110,6 +113,8 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
     setSrcDoc(sm.documentationUrl || '');
     setSrcReq(sm.requirements || '');
     setSrcCompat(sm.compatibility || '');
+    setSrcPrice(Number(current?.packages?.[0]?.price) || 0);
+    setSrcOrigPrice(Number(current?.packages?.[0]?.originalPrice) || 0);
   }, [current]);
 
   // Danh mục đang chọn có phải loại Game không -> hiện ô Loại topup/Server.
@@ -199,6 +204,9 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
             compatibility: srcCompat || '',
           }
         : undefined,
+      // Giá source đặt trực tiếp -> backend tự đồng bộ gói ẩn (source không phụ thuộc gói).
+      source_price: isSourceCat ? Number(srcPrice) || 0 : undefined,
+      source_original_price: isSourceCat ? Number(srcOrigPrice) || null : undefined,
     };
     try {
       const res = isEdit
@@ -280,6 +288,23 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
                 Thông tin mã nguồn / theme
               </Typography>
               <Stack spacing={2}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                  <TextField
+                    type="number"
+                    label="Giá bán (VNĐ)"
+                    value={srcPrice}
+                    onChange={(e) => setSrcPrice(Number(e.target.value))}
+                    fullWidth
+                    helperText="Source bán theo giá này — không cần tạo gói."
+                  />
+                  <TextField
+                    type="number"
+                    label="Giá gốc (gạch ngang, tuỳ chọn)"
+                    value={srcOrigPrice}
+                    onChange={(e) => setSrcOrigPrice(Number(e.target.value))}
+                    fullWidth
+                  />
+                </Stack>
                 <TextField label="Link demo trực tiếp" value={srcDemo} onChange={(e) => setSrcDemo(e.target.value)} fullWidth placeholder="https://demo.example.com" />
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                   <TextField label="Công nghệ (phẩy ngăn cách)" value={srcTech} onChange={(e) => setSrcTech(e.target.value)} fullWidth placeholder="React, Next.js, MUI" />
