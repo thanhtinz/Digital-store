@@ -34,7 +34,7 @@ import { GalleryField } from './ImageUploadField';
 //  - Có marker "form v2 · <buildId>" để xác nhận ngay bản frontend mới đã chạy.
 // ----------------------------------------------------------------------
 
-type Category = { id: number; name: string };
+type Category = { id: number; name: string; productType?: string };
 
 type Props = {
   current?: any | null; // sản phẩm đang sửa (null = tạo mới)
@@ -84,10 +84,20 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
     };
   }, []);
 
-  // Preselect đúng danh mục của sản phẩm đang sửa (khi mở/đổi sản phẩm).
+  // ── Tag theo type: topup (uid/login) + server (chỉ dùng cho danh mục Game) ──
+  const [topupType, setTopupType] = useState<string>(current?.topupType || '');
+  const [serverRegion, setServerRegion] = useState<string>(current?.serverRegion || '');
+
+  // Preselect đúng danh mục + tag của sản phẩm đang sửa (khi mở/đổi sản phẩm).
   useEffect(() => {
     setCategoryId(current?.categoryId ? String(current.categoryId) : '');
+    setTopupType(current?.topupType || '');
+    setServerRegion(current?.serverRegion || '');
   }, [current]);
+
+  // Danh mục đang chọn có phải loại Game không -> hiện ô Loại topup/Server.
+  const selectedCat = cats.find((c) => String(c.id) === categoryId);
+  const isGameCat = (selectedCat as any)?.productType === 'game';
 
   // ── Các field còn lại qua RHF ─────────────────────────────────────────
   const ProductSchema = Yup.object().shape({
@@ -157,6 +167,9 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
       category_id: categoryId ? Number(categoryId) : null,
       is_featured: data.is_featured,
       is_active: data.is_active,
+      // Tag game (chỉ gửi khi danh mục là Game; ngược lại để trống).
+      topup_type: isGameCat ? topupType || null : null,
+      server_region: isGameCat ? serverRegion || null : null,
     };
     try {
       const res = isEdit
@@ -256,6 +269,34 @@ export default function AdminProductForm({ current, categories, onBack, onSaved 
                   <Typography variant="caption" sx={{ color: 'warning.main' }}>
                     Chưa có danh mục nào. Hãy tạo danh mục ở mục “Danh mục” trước.
                   </Typography>
+                )}
+
+                {/* Tag game: chỉ hiện khi danh mục là loại Game */}
+                {isGameCat && (
+                  <>
+                    <TextField
+                      select
+                      fullWidth
+                      label="Loại topup"
+                      value={topupType}
+                      onChange={(e) => setTopupType(e.target.value)}
+                    >
+                      <MenuItem value="">— Không —</MenuItem>
+                      <MenuItem value="uid">Nạp qua UID</MenuItem>
+                      <MenuItem value="login">Đăng nhập tài khoản</MenuItem>
+                    </TextField>
+                    <TextField
+                      select
+                      fullWidth
+                      label="Server / Khu vực"
+                      value={serverRegion}
+                      onChange={(e) => setServerRegion(e.target.value)}
+                    >
+                      <MenuItem value="">— Không —</MenuItem>
+                      <MenuItem value="vietnam">🇻🇳 Việt Nam</MenuItem>
+                      <MenuItem value="global">🌐 Quốc tế</MenuItem>
+                    </TextField>
+                  </>
                 )}
               </Stack>
             </Card>

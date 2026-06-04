@@ -214,8 +214,8 @@ router.get('/:slug', optionalUser, async (req: Request, res: Response) => {
 // ── Admin: tạo sản phẩm ───────────────────────────────
 router.post(['/admin', '/'], requireStaffOrAdmin, async (req: Request, res: Response) => {
   try {
-    const { name, category_id, description, notes, image_url, images, is_featured, is_active, sort_order } = req.body;
-    console.log('[SAVE-PRODUCT][create] category_id nhận =', JSON.stringify(category_id), 'kiểu:', typeof category_id, '-> categoryId =', category_id ? Number(category_id) : null);
+    const { name, category_id, description, notes, image_url, images, is_featured, is_active, sort_order,
+      topup_type, server_region } = req.body;
     if (!name) { res.status(422).json({ detail: 'Tên sản phẩm không được để trống' }); return; }
     const slug = slugify(name, { lower: true, strict: true });
     const product = await prisma.product.create({
@@ -228,13 +228,13 @@ router.post(['/admin', '/'], requireStaffOrAdmin, async (req: Request, res: Resp
         isFeatured: is_featured || false,
         isActive: is_active !== false,
         sortOrder: sort_order || 0,
+        topupType: topup_type || null,
+        serverRegion: server_region || null,
       },
       include: { category: true },
     });
-    console.log('[SAVE-PRODUCT][create] ĐÃ LƯU id =', product.id, 'categoryId =', product.categoryId, 'category =', product.category?.name ?? null);
     res.status(201).json(serializeProduct(product));
   } catch (e: any) {
-    console.error('[SAVE-PRODUCT][create] LỖI:', e?.code || '', e?.message);
     if (e.code === 'P2002') {
       res.status(400).json({ detail: 'Slug đã tồn tại' });
     } else {
@@ -248,7 +248,7 @@ router.patch(['/admin/:id', '/:id'], requireStaffOrAdmin, async (req: Request, r
   try {
     const id = parseInt(req.params.id);
     const data: any = {};
-    const fields = ['name', 'description', 'notes', 'image_url', 'is_featured', 'is_active', 'sort_order', 'category_id'];
+    const fields = ['name', 'description', 'notes', 'image_url', 'is_featured', 'is_active', 'sort_order', 'category_id', 'topup_type', 'server_region'];
     for (const f of fields) {
       if (req.body[f] !== undefined) {
         const key = f.replace(/_([a-z])/g, (_, l) => l.toUpperCase());
@@ -257,18 +257,16 @@ router.patch(['/admin/:id', '/:id'], requireStaffOrAdmin, async (req: Request, r
         if (f === 'category_id') val = val ? Number(val) : null;
         else if (f === 'sort_order') val = Number(val) || 0;
         else if (f === 'is_featured' || f === 'is_active') val = !!val;
+        else if (f === 'topup_type' || f === 'server_region') val = val || null;
         data[key] = val;
       }
     }
     if (req.body.images !== undefined) {
       data.images = Array.isArray(req.body.images) ? req.body.images : null;
     }
-    console.log('[SAVE-PRODUCT][update] id =', id, '| category_id body =', JSON.stringify(req.body.category_id), 'kiểu:', typeof req.body.category_id, '| data.categoryId =', JSON.stringify(data.categoryId), '| có key categoryId?', 'categoryId' in data);
     const product = await prisma.product.update({ where: { id }, data, include: { category: true } });
-    console.log('[SAVE-PRODUCT][update] ĐÃ LƯU id =', product.id, 'categoryId =', product.categoryId, 'category =', product.category?.name ?? null);
     res.json(serializeProduct(product));
   } catch (e: any) {
-    console.error('[SAVE-PRODUCT][update] LỖI:', e?.code || '', e?.message);
     res.status(500).json({ detail: e.message });
   }
 });
