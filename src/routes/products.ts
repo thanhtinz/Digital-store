@@ -205,6 +205,25 @@ router.get('/:slug', optionalUser, async (req: Request, res: Response) => {
     });
     if (!product) { res.status(404).json({ detail: 'Không tìm thấy sản phẩm' }); return; }
 
+    // Tổng hợp đánh giá trên TOÀN BỘ review hiển thị (không chỉ 10 cái include ở trên):
+    // trung bình, tổng số, phân bố sao 1..5 — cho biểu đồ đánh giá.
+    const grouped = await prisma.review.groupBy({
+      by: ['rating'],
+      where: { productId: product.id, isVisible: true },
+      _count: { _all: true },
+    });
+    const distribution = [1, 2, 3, 4, 5].map((star) => ({
+      star,
+      count: grouped.find((g: any) => g.rating === star)?._count._all || 0,
+    }));
+    const totalReviews = distribution.reduce((a, d) => a + d.count, 0);
+    const sumReviews = distribution.reduce((a, d) => a + d.star * d.count, 0);
+    (product as any)._reviewAgg = {
+      total: totalReviews,
+      average: totalReviews ? Math.round((sumReviews / totalReviews) * 10) / 10 : 0,
+      distribution,
+    };
+
     // Đính kèm sản phẩm liên quan (cùng danh mục) để frontend hiển thị mục "Sản phẩm liên quan"
     const related = await prisma.product.findMany({
       where: { isActive: true, id: { not: product.id }, ...(product.categoryId ? { categoryId: product.categoryId } : {}) },
@@ -468,10 +487,14 @@ router.post('/admin/bulk-delete', requireAdmin, async (req: Request, res: Respon
 // ── Helper ─────────────────────────────────────────────
 function serializeProduct(p: any, detailed = false): Record<string, any> {
   const revs = p.reviews || [];
-  const ratingCount = revs.length;
-  const ratingAvg = ratingCount
-    ? Math.round((revs.reduce((a: number, r: any) => a + (r.rating || 0), 0) / ratingCount) * 10) / 10
-    : 0;
+  const agg = p._reviewAgg;
+  // Ưu tiên tổng hợp chính xác (toàn bộ review); fallback về số review đính kèm.
+  const ratingCount = agg ? agg.total : revs.length;
+  const ratingAvg = agg
+    ? agg.average
+    : ratingCount
+      ? Math.round((revs.reduce((a: number, r: any) => a + (r.rating || 0), 0) / ratingCount) * 10) / 10
+      : 0;
   const packages = (p.packages || []).map((pkg: any) => {
     const flashSale = pkg.flashSales?.[0];
     return {
@@ -519,7 +542,22 @@ function serializeProduct(p: any, detailed = false): Record<string, any> {
     rating: ratingAvg,
     ratingCount,
     soldCount: p._soldCount || 0,
-    reviews: detailed ? (p.reviews || []) : undefined,
+    // Phân bố sao [{star,count}] cho biểu đồ đánh giá (trang chi tiết).
+    ratingDistribution: agg ? agg.distribution : undefined,
+    reviews: detailed
+      ? (p.reviews || []).map((r: any) => ({
+          id: r.id,
+          userName: r.userName,
+          rating: r.rating,
+          comment: r.comment,
+          images: Array.isArray(r.images) ? r.images : [],
+          helpfulCount: Math.max(0, r.helpfulCount || 0),
+          isVerified: !!r.isVerified,
+          adminReply: r.adminReply || null,
+          adminReplyAt: r.adminReplyAt ? r.adminReplyAt.toISOString() : null,
+          createdAt: r.createdAt?.toISOString(),
+        }))
+      : undefined,
     createdAt: p.createdAt?.toISOString(),
   };
 }

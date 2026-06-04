@@ -226,14 +226,20 @@ function normalizeProduct(raw: any) {
     avatarUrl: r.avatarUrl || '',
     comment: r.comment || '',
     rating: r.rating || 0,
-    isPurchased: r.isVerified ?? true,
-    helpful: r.helpfulCount ?? r.helpful_count ?? 0,
+    isPurchased: r.isPurchased ?? r.isVerified ?? false,
+    helpful: r.helpfulCount ?? r.helpful_count ?? r.helpful ?? 0,
     images: Array.isArray(r.images) ? r.images : [],
-    postedAt: r.createdAt || r.created_at || new Date().toISOString(),
+    adminReply: r.adminReply ?? r.admin_reply ?? null,
+    adminReplyAt: r.adminReplyAt ?? r.admin_reply_at ?? null,
+    postedAt: r.createdAt || r.created_at || r.postedAt || new Date().toISOString(),
   }));
-  // Phân bố sao 1..5 cho biểu đồ đánh giá.
+  // Phân bố sao 1..5: ưu tiên dữ liệu tổng hợp từ backend (toàn bộ review),
+  // fallback đếm trên các review đính kèm nếu backend chưa trả.
+  const dist: any[] = Array.isArray(raw.ratingDistribution) ? raw.ratingDistribution : [];
   const ratings = [1, 2, 3, 4, 5].map((star) => {
-    const count = rawReviews.filter((r: any) => Math.round(r.rating || 0) === star).length;
+    const count = dist.length
+      ? dist.find((d: any) => d.star === star)?.count || 0
+      : rawReviews.filter((r: any) => Math.round(r.rating || 0) === star).length;
     return { name: `${star} Star`, starCount: count, reviewCount: count };
   });
   return {

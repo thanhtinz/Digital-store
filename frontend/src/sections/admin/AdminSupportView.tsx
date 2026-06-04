@@ -246,6 +246,9 @@ function ReviewsTab() {
   const [loading, setLoading] = useState(true);
   const [visible, setVisible] = useState('');
   const [toDelete, setToDelete] = useState<any>(null);
+  const [replyTo, setReplyTo] = useState<any>(null);
+  const [replyText, setReplyText] = useState('');
+  const [savingReply, setSavingReply] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -277,6 +280,30 @@ function ReviewsTab() {
       setToDelete(null);
     }
   };
+  const openReply = (rv: any) => {
+    setReplyTo(rv);
+    setReplyText(rv.admin_reply || '');
+  };
+  const saveReply = async () => {
+    if (!replyTo) return;
+    setSavingReply(true);
+    try {
+      const r = await axiosInstance.patch(`/api/admin/reviews/${replyTo.id}`, { admin_reply: replyText });
+      setRows((rs) =>
+        rs.map((x) =>
+          x.id === replyTo.id
+            ? { ...x, admin_reply: r.data?.admin_reply ?? null, admin_reply_at: r.data?.admin_reply_at ?? null }
+            : x
+        )
+      );
+      ok(replyText.trim() ? 'Đã lưu phản hồi' : 'Đã gỡ phản hồi');
+      setReplyTo(null);
+    } catch (e) {
+      err(e);
+    } finally {
+      setSavingReply(false);
+    }
+  };
 
   return (
     <Card>
@@ -299,6 +326,7 @@ function ReviewsTab() {
                 <TableCell>Đánh giá</TableCell>
                 <TableCell sx={{ maxWidth: 320 }}>Nội dung</TableCell>
                 <TableCell align="center">Hiện</TableCell>
+                <TableCell align="center">Trả lời</TableCell>
                 <TableCell align="right">Xoá</TableCell>
               </TableRow>
             </TableHead>
@@ -320,6 +348,11 @@ function ReviewsTab() {
                   <TableCell align="center">
                     <Switch checked={rv.is_visible} onChange={() => toggle(rv)} size="small" />
                   </TableCell>
+                  <TableCell align="center">
+                    <IconButton color={rv.admin_reply ? 'primary' : 'default'} onClick={() => openReply(rv)}>
+                      <Iconify icon={rv.admin_reply ? 'solar:chat-round-check-bold' : 'solar:chat-round-line-linear'} />
+                    </IconButton>
+                  </TableCell>
                   <TableCell align="right">
                     <IconButton color="error" onClick={() => setToDelete(rv)}>
                       <Iconify icon="solar:trash-bin-trash-bold" />
@@ -329,7 +362,7 @@ function ReviewsTab() {
               ))}
               {!rows.length && (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 6, color: 'text.secondary' }}>
+                  <TableCell colSpan={7} align="center" sx={{ py: 6, color: 'text.secondary' }}>
                     Chưa có đánh giá
                   </TableCell>
                 </TableRow>
@@ -350,6 +383,39 @@ function ReviewsTab() {
           </Button>
         }
       />
+
+      <Dialog open={!!replyTo} onClose={() => setReplyTo(null)} fullWidth maxWidth="sm">
+        <DialogTitle>Phản hồi đánh giá</DialogTitle>
+        <DialogContent dividers>
+          {replyTo && (
+            <Stack spacing={1.5}>
+              <Box sx={{ p: 1.5, bgcolor: 'background.neutral', borderRadius: 1 }}>
+                <Rating value={replyTo.rating} readOnly size="small" />
+                <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                  {replyTo.comment || '—'}
+                </Typography>
+              </Box>
+              <TextField
+                fullWidth
+                multiline
+                minRows={3}
+                label="Phản hồi của cửa hàng"
+                placeholder="Nhập phản hồi công khai cho khách… (để trống để gỡ)"
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+              />
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button color="inherit" onClick={() => setReplyTo(null)}>
+            Huỷ
+          </Button>
+          <Button variant="contained" disabled={savingReply} onClick={saveReply}>
+            Lưu
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Card>
   );
 }

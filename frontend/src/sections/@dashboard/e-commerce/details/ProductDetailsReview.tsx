@@ -107,7 +107,7 @@ export default function ProductDetailsReview({ product }: Props) {
 
       <Divider />
 
-      <ProductDetailsReviewList reviews={product.reviews} />
+      <ProductDetailsReviewList reviews={product.reviews} productId={(product as any).id} />
 
       <ProductDetailsReviewNewDialog
         open={openReview}

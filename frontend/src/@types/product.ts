@@ -9,6 +9,8 @@ export type IProductReview = {
   isPurchased: boolean;
   helpful: number;
   images?: string[];
+  adminReply?: string | null;
+  adminReplyAt?: Date | string | number | null;
   postedAt: Date | string | number;
 };
 
