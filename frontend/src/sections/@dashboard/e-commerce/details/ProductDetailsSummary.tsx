@@ -49,6 +49,7 @@ type Props = {
   cart: ICheckoutCartItem[];
   onAddCart: (cartItem: ICheckoutCartItem) => void;
   onGotoStep: (step: number) => void;
+  hideTitle?: boolean; // ẩn tên/badge/rating khi trang đã có header riêng (game/giftcard)
 };
 
 export default function ProductDetailsSummary({
@@ -56,6 +57,7 @@ export default function ProductDetailsSummary({
   product,
   onAddCart,
   onGotoStep,
+  hideTitle = false,
   ...other
 }: Props) {
   const { push } = useRouter();
@@ -230,40 +232,44 @@ export default function ProductDetailsSummary({
             {inStock ? tp('in_stock') : tp('out_of_stock')}
           </Label>
 
-          <Typography variant="h5">{name}</Typography>
+          {!hideTitle && (
+            <>
+              <Typography variant="h5">{name}</Typography>
 
-          {(isGame || isGiftcard) && (
-            <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
-              {isGame && (
-                <Label variant="filled" color="warning">
-                  TOP UP
-                </Label>
+              {(isGame || isGiftcard) && (
+                <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
+                  {isGame && (
+                    <Label variant="filled" color="warning">
+                      TOP UP
+                    </Label>
+                  )}
+                  {isGiftcard && (
+                    <Label variant="filled" color="info">
+                      GIFT CARD
+                    </Label>
+                  )}
+                  {isGame && topupType && (
+                    <Label variant="soft" color="default" startIcon={<Iconify icon={topupType === 'uid' ? 'solar:user-id-bold' : 'solar:login-3-bold'} />}>
+                      {topupType === 'uid' ? 'UID' : 'Đăng nhập'}
+                    </Label>
+                  )}
+                  {isGame && serverRegion && (
+                    <Label variant="soft" color="default">
+                      {serverRegion === 'vietnam' ? '🇻🇳 Việt Nam' : '🌐 Global'}
+                    </Label>
+                  )}
+                </Stack>
               )}
-              {isGiftcard && (
-                <Label variant="filled" color="info">
-                  GIFT CARD
-                </Label>
-              )}
-              {isGame && topupType && (
-                <Label variant="soft" color="default" startIcon={<Iconify icon={topupType === 'uid' ? 'solar:user-id-bold' : 'solar:login-3-bold'} />}>
-                  {topupType === 'uid' ? 'UID' : 'Đăng nhập'}
-                </Label>
-              )}
-              {isGame && serverRegion && (
-                <Label variant="soft" color="default">
-                  {serverRegion === 'vietnam' ? '🇻🇳 Việt Nam' : '🌐 Global'}
-                </Label>
-              )}
-            </Stack>
+
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Rating value={totalRating} precision={0.1} readOnly />
+
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  ({fShortenNumber(totalReview)} {tp('reviews')})
+                </Typography>
+              </Stack>
+            </>
           )}
-
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Rating value={totalRating} precision={0.1} readOnly />
-
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              ({fShortenNumber(totalReview)} {tp('reviews')})
-            </Typography>
-          </Stack>
 
           <Typography variant="h4">
             {!hasPackages && priceSale && (

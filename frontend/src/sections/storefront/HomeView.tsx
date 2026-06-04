@@ -110,7 +110,7 @@ export default function HomeView() {
     async function load() {
       const [trendingRes, newestRes, topupRes, giftcardRes, flashRes, bannerRes, blogRes] =
         await Promise.allSettled([
-          axiosInstance.get('/api/products/trending', { params: { limit: 8 } }),
+          axiosInstance.get('/api/products', { params: { featured: 'true', limit: 8 } }),
           axiosInstance.get('/api/products', { params: { limit: 8, sort: 'newest' } }),
           axiosInstance.get('/api/products', { params: { type: 'game', limit: 12 } }),
           axiosInstance.get('/api/products', { params: { type: 'giftcard', limit: 12 } }),
