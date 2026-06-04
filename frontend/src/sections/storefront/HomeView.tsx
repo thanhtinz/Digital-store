@@ -593,7 +593,14 @@ export default function HomeView() {
             if (slug && !catsMap.has(slug)) catsMap.set(slug, p.category?.name || 'Khác');
           });
           const cats = Array.from(catsMap.entries()).map(([slug, name]) => ({ slug, name }));
-          const active = catsMap.has(gcTab) ? gcTab : cats[0]?.slug || '';
+          // Đếm sản phẩm theo danh mục để mặc định mở tab CÓ sản phẩm (tránh tab trống).
+          const counts = new Map<string, number>();
+          giftcard.forEach((p: any) => {
+            const s = p.category?.slug || '';
+            if (s) counts.set(s, (counts.get(s) || 0) + 1);
+          });
+          const firstWithProducts = cats.find((c) => (counts.get(c.slug) || 0) > 0)?.slug;
+          const active = catsMap.has(gcTab) ? gcTab : firstWithProducts || cats[0]?.slug || '';
           const list = giftcard.filter((p: any) => (p.category?.slug || '') === active);
           return (
             <>
@@ -602,7 +609,7 @@ export default function HomeView() {
                 viewAllHref={`${PATH_DASHBOARD.eCommerce.shop}?type=giftcard`}
                 viewAllLabel={t('view_all')}
               />
-              {cats.length > 1 && (
+              {cats.length >= 1 && (
                 <Tabs
                   value={active}
                   onChange={(_e, v) => setGcTab(v)}
