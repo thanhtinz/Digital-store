@@ -40,7 +40,6 @@ import Iconify from '../../components/iconify';
 import ConfirmDialog from '../../components/confirm-dialog';
 import ImageUploadField from './ImageUploadField';
 import Editor from '../../components/editor';
-import useResponsive from '../../hooks/useResponsive';
 import { useSnackbar } from '../../components/snackbar';
 
 // ----------------------------------------------------------------------
@@ -723,7 +722,6 @@ function ServicesTab() {
   const [providers, setProviders] = useState<any[]>([]);
   const [remoteSvcs, setRemoteSvcs] = useState<any[]>([]);
   const [loadingRemote, setLoadingRemote] = useState(false);
-  const isMobile = useResponsive('down', 'sm');
   const limit = 50;
 
   useEffect(() => {
@@ -895,45 +893,6 @@ function ServicesTab() {
 
       {loading ? (
         <Loading />
-      ) : isMobile ? (
-        <Stack spacing={1.25} sx={{ p: 1.5 }}>
-          {data.items.map((s) => (
-            <Card key={s.id} variant="outlined" sx={{ p: 1.5 }}>
-              <Stack direction="row" alignItems="flex-start" spacing={1}>
-                <Checkbox sx={{ mt: -0.75, ml: -0.75 }} checked={selected.includes(s.id)} onChange={() => toggle(s.id)} />
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="subtitle2">{s.name}</Typography>
-                  <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block', mb: 1 }}>
-                    #{s.id} · {s.category?.platform?.name || '—'} / {s.category?.name || '—'}
-                  </Typography>
-                  <Stack direction="row" flexWrap="wrap" gap={0.75}>
-                    <Chip size="small" variant="soft" label={`Bán: ${fCurrency(s.rate)}`} />
-                    <Chip size="small" variant="soft" label={`Vốn: ${fCurrency(s.costRate)}`} />
-                    <Chip
-                      size="small"
-                      variant="soft"
-                      color="info"
-                      label={`Min/Max: ${s.minQuantity ?? 1} / ${s.maxQuantity ?? 10000}`}
-                    />
-                  </Stack>
-                </Box>
-                <Stack alignItems="flex-end" spacing={0.5} sx={{ flexShrink: 0 }}>
-                  <Label color={s.isActive ? 'success' : 'default'} onClick={() => toggleActive(s)} sx={{ cursor: 'pointer' }}>
-                    {s.isActive ? 'Bật' : 'Tắt'}
-                  </Label>
-                  <IconButton size="small" onClick={() => editService(s)}>
-                    <Iconify icon="solar:pen-bold" width={18} />
-                  </IconButton>
-                </Stack>
-              </Stack>
-            </Card>
-          ))}
-          {!data.items.length && (
-            <Typography align="center" sx={{ py: 6, color: 'text.secondary' }}>
-              Chưa có dịch vụ. Dùng tab “Import từ nguồn”.
-            </Typography>
-          )}
-        </Stack>
       ) : (
         <TableContainer>
           <Table size="small">
