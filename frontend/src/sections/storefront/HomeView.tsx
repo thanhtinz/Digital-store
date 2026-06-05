@@ -579,9 +579,18 @@ export default function HomeView() {
         (() => {
           // Tabs = TẤT CẢ danh mục type giftcard đang bật (theo cấu hình admin),
           // kèm danh mục xuất hiện ở sản phẩm (phòng khi chưa load kịp categories).
-          // Khớp theo ID danh mục (luôn tồn tại) thay vì slug — vì slug trong DB có thể null/rỗng
-          // khiến sản phẩm không bao giờ khớp với tab.
+          // Khớp theo ID danh mục (luôn tồn tại) thay vì slug — vì slug trong DB có thể null/rỗng.
           const keyOf = (c: any) => String(c?.id ?? c?.slug ?? c?.name ?? '');
+          // Sản phẩm có thể nằm trong DANH MỤC CON của 1 danh mục giftcard → khớp tab theo cả
+          // id danh mục lẫn id danh mục cha (parentId), để gộp đúng vào tab cha thay vì tách tab riêng.
+          const tabKeyForProduct = (p: any, keys: Set<string>): string => {
+            if (!p?.category) return '';
+            const own = keyOf(p.category);
+            if (keys.has(own)) return own;
+            const parent = p.category?.parentId != null ? String(p.category.parentId) : '';
+            if (parent && keys.has(parent)) return parent;
+            return own; // không khớp tab cấu hình nào → dùng chính danh mục của SP
+          };
           const catsMap = new Map<string, string>();
           categories
             .filter(
@@ -590,22 +599,27 @@ export default function HomeView() {
                 (c.productType ?? c.product_type) === 'giftcard'
             )
             .forEach((c: any) => catsMap.set(keyOf(c), c.name || c.slug || 'Khác'));
+          const configKeys = new Set(catsMap.keys());
           giftcard.forEach((p: any) => {
             if (!p.category) return;
-            const k = keyOf(p.category);
-            if (!catsMap.has(k)) catsMap.set(k, p.category?.name || 'Khác');
+            // Chỉ thêm tab riêng cho SP khi nó KHÔNG thuộc tab cấu hình nào (kể cả qua cha).
+            if (tabKeyForProduct(p, configKeys) === keyOf(p.category) && !configKeys.has(keyOf(p.category))) {
+              const k = keyOf(p.category);
+              if (!catsMap.has(k)) catsMap.set(k, p.category?.name || 'Khác');
+            }
           });
           const cats = Array.from(catsMap.entries()).map(([key, name]) => ({ key, name }));
-          // Đếm sản phẩm theo danh mục để mặc định mở tab CÓ sản phẩm (tránh tab trống).
+          const allKeys = new Set(catsMap.keys());
+          // Đếm sản phẩm theo tab để mặc định mở tab CÓ sản phẩm (tránh tab trống).
           const counts = new Map<string, number>();
           giftcard.forEach((p: any) => {
             if (!p.category) return;
-            const k = keyOf(p.category);
+            const k = tabKeyForProduct(p, allKeys);
             counts.set(k, (counts.get(k) || 0) + 1);
           });
           const firstWithProducts = cats.find((c) => (counts.get(c.key) || 0) > 0)?.key;
           const active = catsMap.has(gcTab) ? gcTab : firstWithProducts || cats[0]?.key || '';
-          const list = giftcard.filter((p: any) => p.category && keyOf(p.category) === active);
+          const list = giftcard.filter((p: any) => p.category && tabKeyForProduct(p, allKeys) === active);
           return (
             <>
               <SectionHead
