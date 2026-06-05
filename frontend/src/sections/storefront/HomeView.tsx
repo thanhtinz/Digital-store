@@ -627,6 +627,9 @@ export default function HomeView() {
                 viewAllHref={`${PATH_DASHBOARD.eCommerce.shop}?type=giftcard`}
                 viewAllLabel={t('view_all')}
               />
+              <Typography variant="caption" sx={{ display: 'block', color: 'error.main', whiteSpace: 'pre-wrap', mb: 1 }}>
+                {`[debug] tabs=${JSON.stringify(cats)}\nsp=${JSON.stringify(giftcard.map((p: any) => ({ name: p.name, cat: p.category })))}`}
+              </Typography>
               {cats.length >= 1 && (
                 <Tabs
                   value={active}
