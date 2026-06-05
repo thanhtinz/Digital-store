@@ -85,7 +85,7 @@ export default function MyDownloadsView() {
         <Typography variant="subtitle2" sx={{ mb: 1 }}>
           Có license key? Nhập để lấy link tải
         </Typography>
-        <Stack direction="row" spacing={1}>
+        <Stack direction="row" spacing={1} alignItems="stretch">
           <TextField
             size="small"
             fullWidth
@@ -97,6 +97,7 @@ export default function MyDownloadsView() {
             variant="contained"
             disabled={!manualKey.trim() || busy === manualKey.trim()}
             onClick={() => redeem(manualKey.trim())}
+            sx={{ flexShrink: 0, whiteSpace: 'nowrap', px: 2.5 }}
           >
             Lấy link
           </Button>

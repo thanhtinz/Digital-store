@@ -44,6 +44,8 @@ function adaptProduct(p: any): any {
     productType: p.productType ?? p.category?.productType ?? 'premium',
     topupType: p.topupType ?? p.topup_type ?? null,
     serverRegion: p.serverRegion ?? p.server_region ?? null,
+    // Giữ thông tin mã nguồn (techStack, ngôn ngữ, demo, tài liệu…) cho trang chi tiết source.
+    sourceMeta: p.sourceMeta ?? p.source_meta ?? null,
     cover: image,
     images,
     name: p.name ?? '',
