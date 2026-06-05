@@ -37,6 +37,20 @@ router.get(['/categories', '/categories/all'], async (_req: Request, res: Respon
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       include: { children: true },
     });
+    // Tự backfill slug bị null/rỗng (dữ liệu cũ) để điều hướng & khớp tab hoạt động đúng.
+    const missing = cats.filter((c) => !c.slug || !c.slug.trim());
+    if (missing.length) {
+      const used = new Set(cats.map((c) => c.slug).filter(Boolean));
+      for (const c of missing) {
+        const base = slugify(c.name || `cat-${c.id}`, { lower: true, strict: true }) || `cat-${c.id}`;
+        let slug = base;
+        if (used.has(slug)) slug = `${base}-${c.id}`;
+        while (used.has(slug)) slug = `${base}-${c.id}-${Math.random().toString(36).slice(2, 6)}`;
+        used.add(slug);
+        c.slug = slug;
+        await prisma.category.update({ where: { id: c.id }, data: { slug } });
+      }
+    }
     res.json(cats);
   } catch (e: any) {
     res.status(500).json({ detail: e.message });

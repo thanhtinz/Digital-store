@@ -579,29 +579,33 @@ export default function HomeView() {
         (() => {
           // Tabs = TẤT CẢ danh mục type giftcard đang bật (theo cấu hình admin),
           // kèm danh mục xuất hiện ở sản phẩm (phòng khi chưa load kịp categories).
+          // Khớp theo ID danh mục (luôn tồn tại) thay vì slug — vì slug trong DB có thể null/rỗng
+          // khiến sản phẩm không bao giờ khớp với tab.
+          const keyOf = (c: any) => String(c?.id ?? c?.slug ?? c?.name ?? '');
           const catsMap = new Map<string, string>();
           categories
             .filter(
               (c: any) =>
-                c.slug &&
                 (c.isActive ?? c.is_active ?? true) &&
                 (c.productType ?? c.product_type) === 'giftcard'
             )
-            .forEach((c: any) => catsMap.set(c.slug, c.name || c.slug));
+            .forEach((c: any) => catsMap.set(keyOf(c), c.name || c.slug || 'Khác'));
           giftcard.forEach((p: any) => {
-            const slug = p.category?.slug || '';
-            if (slug && !catsMap.has(slug)) catsMap.set(slug, p.category?.name || 'Khác');
+            if (!p.category) return;
+            const k = keyOf(p.category);
+            if (!catsMap.has(k)) catsMap.set(k, p.category?.name || 'Khác');
           });
-          const cats = Array.from(catsMap.entries()).map(([slug, name]) => ({ slug, name }));
+          const cats = Array.from(catsMap.entries()).map(([key, name]) => ({ key, name }));
           // Đếm sản phẩm theo danh mục để mặc định mở tab CÓ sản phẩm (tránh tab trống).
           const counts = new Map<string, number>();
           giftcard.forEach((p: any) => {
-            const s = p.category?.slug || '';
-            if (s) counts.set(s, (counts.get(s) || 0) + 1);
+            if (!p.category) return;
+            const k = keyOf(p.category);
+            counts.set(k, (counts.get(k) || 0) + 1);
           });
-          const firstWithProducts = cats.find((c) => (counts.get(c.slug) || 0) > 0)?.slug;
-          const active = catsMap.has(gcTab) ? gcTab : firstWithProducts || cats[0]?.slug || '';
-          const list = giftcard.filter((p: any) => (p.category?.slug || '') === active);
+          const firstWithProducts = cats.find((c) => (counts.get(c.key) || 0) > 0)?.key;
+          const active = catsMap.has(gcTab) ? gcTab : firstWithProducts || cats[0]?.key || '';
+          const list = giftcard.filter((p: any) => p.category && keyOf(p.category) === active);
           return (
             <>
               <SectionHead
@@ -618,7 +622,7 @@ export default function HomeView() {
                   sx={{ mb: 2 }}
                 >
                   {cats.map((c) => (
-                    <Tab key={c.slug} value={c.slug} label={c.name} />
+                    <Tab key={c.key} value={c.key} label={c.name} />
                   ))}
                 </Tabs>
               )}
@@ -638,7 +642,6 @@ export default function HomeView() {
               {list.length === 0 && (
                 <Typography variant="body2" sx={{ color: 'text.secondary', py: 3 }}>
                   Chưa có sản phẩm trong danh mục này.
-                  {` [debug: sp giftcard tải về=${giftcard.length}, danh mục=${cats.length}, tab=${active}, slugs sp=${Array.from(new Set(giftcard.map((p: any) => p.category?.slug || 'null'))).join(',') || '∅'}]`}
                 </Typography>
               )}
             </>
