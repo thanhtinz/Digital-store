@@ -23,7 +23,6 @@ import axiosInstance from '../../utils/axios';
 import { fCurrency } from '../../utils/formatNumber';
 // components
 import Label from '../../components/label';
-import Iconify from '../../components/iconify';
 import EmptyContent from '../../components/empty-content';
 
 // ----------------------------------------------------------------------
@@ -62,10 +61,9 @@ export default function WalletHistoryView() {
 
   return (
     <Container sx={{ pt: { xs: 3, md: 5 }, pb: 8 }}>
-      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 4 }}>
-        <Iconify icon="solar:wallet-bold" width={28} sx={{ color: 'primary.main' }} />
-        <Typography variant="h4">{t('title')}</Typography>
-      </Stack>
+      <Typography variant="h4" sx={{ mb: 3 }}>
+        {t('title')}
+      </Typography>
 
       {!isAuthenticated ? (
         <EmptyContent title={t('login_required')} img="/assets/illustrations/illustration_empty_cart.svg" />

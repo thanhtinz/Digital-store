@@ -46,12 +46,8 @@ export default function CardChargeView() {
   const t = (k: string) => `${translate(`card_charge_page.${k}`)}`;
   return (
     <Container sx={{ pt: { xs: 3, md: 5 }, pb: 8 }}>
-      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1 }}>
-        <Iconify icon="solar:smartphone-bold" width={28} sx={{ color: 'primary.main' }} />
-        <Typography variant="h4">{t('title')}</Typography>
-      </Stack>
-      <Typography variant="body2" sx={{ color: 'text.secondary', mb: 4 }}>
-        {t('subtitle')}
+      <Typography variant="h4" sx={{ mb: 3 }}>
+        {t('title')}
       </Typography>
       <CardChargePanel />
     </Container>

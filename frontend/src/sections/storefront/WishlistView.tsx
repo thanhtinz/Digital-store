@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 // next
 import NextLink from 'next/link';
 // @mui
-import { Box, Button, Container, Stack, Typography } from '@mui/material';
+import { Box, Button, Container, Typography } from '@mui/material';
 // auth
 import { useAuthContext } from '../../auth/useAuthContext';
 // routes
@@ -46,15 +46,9 @@ export default function WishlistView() {
 
   return (
     <Container sx={{ pt: { xs: 3, md: 5 }, pb: 8 }}>
-      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 4 }}>
-        <Iconify icon="solar:heart-bold" width={28} sx={{ color: 'error.main' }} />
-        <Typography variant="h4">{t('title')}</Typography>
-        {!loading && products.length > 0 && (
-          <Typography variant="subtitle1" sx={{ color: 'text.secondary' }}>
-            ({products.length})
-          </Typography>
-        )}
-      </Stack>
+      <Typography variant="h4" sx={{ mb: 3 }}>
+        {t('title')}
+      </Typography>
 
       {!isAuthenticated ? (
         <EmptyContent title={t('login_required')} img="/assets/illustrations/illustration_empty_cart.svg" />
