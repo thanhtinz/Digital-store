@@ -142,7 +142,7 @@ const DEPARTMENTS = [
   { value: 'custom', label: 'Khác' },
 ];
 
-function TelegramTab() {
+export function TelegramTab() {
   const { ok, err } = useSnack();
   const base = useAppBaseUrl();
   const [rows, setRows] = useState<any[]>([]);
@@ -380,7 +380,7 @@ const MAIL_MODES = [
   { value: 'brevo', label: 'Brevo / Sendinblue (API)' },
 ];
 
-function EmailTab() {
+export function EmailTab() {
   const { ok, err } = useSnack();
   const [cfg, setCfg] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -616,7 +616,7 @@ function EmailTab() {
 // ----------------------------------------------------------------------
 // PAYMENT (SePay)
 
-function PaymentTab() {
+export function PaymentTab() {
   const { ok, err } = useSnack();
   const [cfg, setCfg] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -759,7 +759,7 @@ function PaymentTab() {
 // ----------------------------------------------------------------------
 // AI
 
-function AiTab() {
+export function AiTab() {
   const { ok, err } = useSnack();
   const [cfg, setCfg] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -868,7 +868,7 @@ const PROVIDER_EMPTY = {
   rates_json: '',
 };
 
-function ProvidersTab() {
+export function ProvidersTab() {
   const { ok, err } = useSnack();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1088,7 +1088,7 @@ function ProvidersTab() {
 // ----------------------------------------------------------------------
 // OAUTH
 
-function OAuthTab() {
+export function OAuthTab() {
   const { ok, err } = useSnack();
   const base = useAppBaseUrl();
   const [cfg, setCfg] = useState<Record<string, any>>({});
