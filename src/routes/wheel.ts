@@ -188,6 +188,35 @@ router.post('/spin', requireUser, async (req: Request, res: Response) => {
   }
 });
 
+// Lịch sử CHUNG: các lượt trúng gần đây của mọi người (ẩn bớt thông tin).
+function maskName(name?: string | null, email?: string | null): string {
+  const base = (name && name.trim()) || (email ? email.split('@')[0] : '') || 'Khách';
+  if (base.length <= 2) return `${base[0] || 'K'}***`;
+  return `${base.slice(0, 2)}${'*'.repeat(Math.max(2, base.length - 3))}${base.slice(-1)}`;
+}
+
+router.get('/recent', requireUser, async (_req: Request, res: Response) => {
+  try {
+    const spins = await prisma.wheelSpin.findMany({
+      where: { type: { not: 'none' } }, // chỉ hiện lượt trúng (bỏ "chúc may mắn")
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+      include: { user: { select: { email: true, displayName: true } } },
+    });
+    res.json({
+      items: spins.map((s: any) => ({
+        id: s.id,
+        user: maskName(s.user?.displayName, s.user?.email),
+        prize_label: s.prizeLabel,
+        type: s.type,
+        created_at: s.createdAt,
+      })),
+    });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
 router.get('/history', requireUser, async (req: Request, res: Response) => {
   try {
     const payload = (req as any).user;
