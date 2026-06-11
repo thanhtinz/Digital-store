@@ -8,6 +8,8 @@ import { Stack, Card } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 // @types
 import { IUserAccountChangePassword } from '../../../../@types/user';
+// locales
+import { useLocales } from '../../../../locales';
 // components
 import Iconify from '../../../../components/iconify';
 import { useSnackbar } from '../../../../components/snackbar';
@@ -19,13 +21,15 @@ type FormValuesProps = IUserAccountChangePassword;
 
 export default function AccountChangePassword() {
   const { enqueueSnackbar } = useSnackbar();
+  const { translate } = useLocales();
+  const t = (k: string) => `${translate(`auth.${k}`)}`;
 
   const ChangePassWordSchema = Yup.object().shape({
-    oldPassword: Yup.string().required('Old Password is required'),
+    oldPassword: Yup.string().required(t('old_password_required')),
     newPassword: Yup.string()
-      .min(6, 'Password must be at least 6 characters')
-      .required('New Password is required'),
-    confirmNewPassword: Yup.string().oneOf([Yup.ref('newPassword'), null], 'Passwords must match'),
+      .min(6, t('password_min_6'))
+      .required(t('new_password_required')),
+    confirmNewPassword: Yup.string().oneOf([Yup.ref('newPassword'), null], t('passwords_must_match')),
   });
 
   const defaultValues = {
@@ -52,7 +56,7 @@ export default function AccountChangePassword() {
         new_password: data.newPassword,
       });
       reset();
-      enqueueSnackbar('Đổi mật khẩu thành công!');
+      enqueueSnackbar(t('change_password_success'));
     } catch (error) {
       console.error(error);
     }
@@ -62,24 +66,23 @@ export default function AccountChangePassword() {
     <FormProvider methods={methods} onSubmit={handleSubmit(onSubmit)}>
       <Card>
         <Stack spacing={3} alignItems="flex-end" sx={{ p: 3 }}>
-          <RHFTextField name="oldPassword" type="password" label="Old Password" />
+          <RHFTextField name="oldPassword" type="password" label={t('old_password')} />
 
           <RHFTextField
             name="newPassword"
             type="password"
-            label="New Password"
+            label={t('new_password')}
             helperText={
               <Stack component="span" direction="row" alignItems="center">
-                <Iconify icon="eva:info-fill" width={16} sx={{ mr: 0.5 }} /> Password must be
-                minimum 6+
+                <Iconify icon="eva:info-fill" width={16} sx={{ mr: 0.5 }} /> {t('password_min_6')}
               </Stack>
             }
           />
 
-          <RHFTextField name="confirmNewPassword" type="password" label="Confirm New Password" />
+          <RHFTextField name="confirmNewPassword" type="password" label={t('confirm_password')} />
 
           <LoadingButton type="submit" variant="contained" loading={isSubmitting}>
-            Save Changes
+            {t('save_changes')}
           </LoadingButton>
         </Stack>
       </Card>

@@ -1,10 +1,13 @@
 // next
 import Head from 'next/head';
 import NextLink from 'next/link';
+import { useRouter } from 'next/router';
 // @mui
 import { Link, Typography } from '@mui/material';
 // routes
 import { PATH_AUTH } from '../../routes/paths';
+// locales
+import { useLocales } from '../../locales';
 // layouts
 import CompactLayout from '../../layouts/compact';
 // components
@@ -21,21 +24,25 @@ ResetPasswordPage.getLayout = (page: React.ReactElement) => <CompactLayout>{page
 // ----------------------------------------------------------------------
 
 export default function ResetPasswordPage() {
+  const router = useRouter();
+  const { translate } = useLocales();
+  const t = (k: string) => `${translate(`auth.${k}`)}`;
+  const hasToken = typeof router.query.token === 'string' && !!router.query.token;
+
   return (
     <>
       <Head>
-        <title> Reset Password | Digital Store</title>
+        <title> {hasToken ? t('reset_title') : t('forgot_title')} | Digital Store</title>
       </Head>
 
       <PasswordIcon sx={{ mb: 5, height: 96 }} />
 
       <Typography variant="h3" paragraph>
-        Forgot your password?
+        {hasToken ? t('reset_title') : t('forgot_title')}
       </Typography>
 
       <Typography sx={{ color: 'text.secondary', mb: 5 }}>
-        Please enter the email address associated with your account and We will email you a link to
-        reset your password.
+        {hasToken ? t('reset_desc') : t('forgot_desc')}
       </Typography>
 
       <AuthResetPasswordForm />
@@ -53,7 +60,7 @@ export default function ResetPasswordPage() {
         }}
       >
         <Iconify icon="eva:chevron-left-fill" width={16} />
-        Return to sign in
+        {t('return_signin')}
       </Link>
     </>
   );
