@@ -17,6 +17,7 @@ import { ICheckoutCartItem } from '../../../../@types/product';
 import DashboardLayout from '../../../../layouts/dashboard';
 // components
 import Markdown from '../../../../components/markdown';
+import ProductQuestions from '../../../../sections/@dashboard/e-commerce/details/ProductQuestions';
 import CustomBreadcrumbs from '../../../../components/custom-breadcrumbs';
 import { useSettingsContext } from '../../../../components/settings';
 import { SkeletonProductDetails } from '../../../../components/skeleton';
@@ -112,6 +113,11 @@ export default function EcommerceProductDetailsPage() {
       label: `Đánh giá (${product ? product.reviews.length : 0})`,
       component: product ? <ProductDetailsReview product={product} /> : null,
     },
+    {
+      value: 'qa',
+      label: 'Hỏi & Đáp',
+      component: product ? <ProductQuestions productId={(product as any).id} /> : null,
+    },
   ];
 
   return (
@@ -147,6 +153,12 @@ export default function EcommerceProductDetailsPage() {
               </Typography>
               <Divider />
               <ProductDetailsReview product={product} />
+            </Card>
+
+            <Card sx={{ mt: 4 }}>
+              <Typography variant="h6" sx={{ p: 3, pb: 1 }}>Hỏi & Đáp</Typography>
+              <Divider />
+              <ProductQuestions productId={(product as any).id} />
             </Card>
 
             <ProductGridSection
