@@ -38,6 +38,7 @@ export const DRIVE_FIELDS: { key: string; label: string; help?: string; multilin
 
 export const LIVECHAT_PROVIDERS = [
   { value: 'builtin', label: 'Chat nội bộ (nút nổi → trang hỗ trợ)' },
+  { value: 'live2d', label: 'Trợ lý ảo Live2D + AI (anime)' },
   { value: 'tawkto', label: 'Tawk.to' },
   { value: 'crisp', label: 'Crisp' },
   { value: 'messenger', label: 'Facebook Messenger' },
@@ -48,6 +49,8 @@ export const LIVECHAT_PROVIDERS = [
 export const LIVECHAT_KEYS = [
   'livechat_enabled', 'livechat_provider', 'livechat_tawkto_id', 'livechat_crisp_id',
   'livechat_messenger_page_id', 'livechat_messenger_color', 'livechat_zalo_oa_id', 'livechat_custom_code',
+  // Trợ lý ảo Live2D
+  'live2d_model_url', 'live2d_scale', 'assistant_greeting', 'assistant_tips', 'assistant_system_prompt',
 ];
 
 export const SECURITY_KEYS = ['require_email_verification', 'entitlement_reminder_days'];
