@@ -14,7 +14,6 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import AppLoader from '../../components/app-loader';
 // auth
 import { useAuthContext } from '../../auth/useAuthContext';
 // locales
@@ -117,7 +116,7 @@ export default function WalletHistoryView() {
         <EmptyContent title={t('login_required')} img="/assets/illustrations/illustration_empty_cart.svg" />
       ) : loading ? (
         <Stack alignItems="center" sx={{ py: 8 }}>
-          <AppLoader />
+          <CircularProgress />
         </Stack>
       ) : !items.length ? (
         <EmptyContent title={t('empty')} img="/assets/illustrations/illustration_empty_content.svg" />

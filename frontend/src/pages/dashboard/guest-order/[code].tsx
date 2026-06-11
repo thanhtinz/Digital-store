@@ -4,7 +4,6 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 // @mui
 import { Alert, Box, Card, Container, Divider, Stack, Typography, CircularProgress } from '@mui/material';
-import AppLoader from '../../../components/app-loader';
 // layouts
 import DashboardLayout from '../../../layouts/dashboard';
 // utils
@@ -60,7 +59,7 @@ export default function GuestOrderPage() {
         <Typography variant="h4" sx={{ mb: 3 }}>Thanh toán đơn hàng</Typography>
 
         {loading ? (
-          <Box sx={{ display: 'grid', placeItems: 'center', py: 8 }}><AppLoader /></Box>
+          <Box sx={{ display: 'grid', placeItems: 'center', py: 8 }}><CircularProgress /></Box>
         ) : done ? (
           <Card sx={{ p: 4, textAlign: 'center' }}>
             <Typography variant="h5" color="success.main" gutterBottom>✅ Thanh toán thành công</Typography>
