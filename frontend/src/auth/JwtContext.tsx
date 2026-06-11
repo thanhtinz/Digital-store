@@ -160,6 +160,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         user,
       },
     });
+    return response.data;
   }, []);
 
   // REGISTER

@@ -16,6 +16,7 @@ import { useAuthContext } from '../../auth/useAuthContext';
 import { useLocales } from '../../locales';
 // components
 import Iconify from '../../components/iconify';
+import { useSnackbar } from '../../components/snackbar';
 import FormProvider, { RHFTextField } from '../../components/hook-form';
 
 // ----------------------------------------------------------------------
@@ -29,6 +30,7 @@ type FormValuesProps = {
 export default function AuthLoginForm() {
   const { login } = useAuthContext();
   const { translate } = useLocales();
+  const { enqueueSnackbar } = useSnackbar();
   const t = (k: string) => `${translate(`auth.${k}`)}`;
 
   const [showPassword, setShowPassword] = useState(false);
@@ -57,7 +59,14 @@ export default function AuthLoginForm() {
 
   const onSubmit = async (data: FormValuesProps) => {
     try {
-      await login(data.email, data.password);
+      const res: any = await login(data.email, data.password);
+      // Bảo trì: user thường vẫn đăng nhập được nhưng nhận cảnh báo.
+      if (res?.maintenance?.on) {
+        enqueueSnackbar(res.maintenance.message || 'Hệ thống đang bảo trì, một số chức năng tạm thời bị giới hạn.', {
+          variant: 'warning',
+          autoHideDuration: 8000,
+        });
+      }
     } catch (error) {
       console.error(error);
       reset();

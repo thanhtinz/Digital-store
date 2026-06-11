@@ -106,20 +106,17 @@ router.post('/login', authRateLimit, async (req: Request, res: Response) => {
     }
     const adminUser = await prisma.adminUser.findUnique({ where: { email } });
     const role = adminUser?.role || 'user';
-    // Bảo trì: chỉ staff/admin được đăng nhập
-    if (!isStaffRole(role)) {
-      const maint = await getMaintenance();
-      if (maint.on) {
-        res.status(503).json({ detail: maint.message || MAINTENANCE_DEFAULT_MSG, maintenance: true });
-        return;
-      }
-    }
+    // Bảo trì: VẪN cho đăng nhập. Nếu là user thường thì báo cờ maintenance để
+    // frontend hiện toast cảnh báo (các trang khác sẽ tự hiện trang bảo trì).
+    const maint = await getMaintenance();
+    const maintenanceForUser = maint.on && !isStaffRole(role);
     const sid = await createSession(user.id, req);
     const token = signToken({ user_id: user.id, email: user.email, display_name: user.displayName, role, sid });
     res.json({
       access_token: token,
       token, // alias cho frontend (auth-pages.js đọc data.token)
       token_type: 'bearer',
+      maintenance: maintenanceForUser ? { on: true, message: maint.message || MAINTENANCE_DEFAULT_MSG } : { on: false },
       user: { id: user.id, email: user.email, display_name: user.displayName, avatar_url: user.avatarUrl, balance: user.balance, role, email_verified: user.emailVerified },
     });
   } catch (e: any) {
@@ -320,13 +317,9 @@ router.get('/google/callback', async (req: Request, res: Response) => {
     const { email, name, picture } = userResp.data;
 
     let user = await prisma.user.findUnique({ where: { email } });
-    // Bảo trì: chặn đăng ký/đăng nhập user thường qua OAuth (staff/admin vẫn được)
+    // Bảo trì: vẫn cho đăng nhập qua OAuth (trang bảo trì sẽ tự chặn hiển thị với user thường).
     const adminUser = await prisma.adminUser.findUnique({ where: { email } });
     const role = adminUser?.role || 'user';
-    if (!isStaffRole(role)) {
-      const maint = await getMaintenance();
-      if (maint.on) { res.redirect(`${baseUrl}/login?error=maintenance`); return; }
-    }
     if (!user) {
       user = await prisma.user.create({ data: { email, displayName: name, avatarUrl: picture, provider: 'google', emailVerified: true } });
       notifyNewUser(user.id).catch(() => {});
