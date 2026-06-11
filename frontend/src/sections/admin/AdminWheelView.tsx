@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 // @mui
 import {
   Box, Button, Card, Container, Dialog, DialogActions, DialogContent, DialogTitle,
-  IconButton, MenuItem, Stack, Switch, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography, Alert,
+  IconButton, MenuItem, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography, Alert,
 } from '@mui/material';
 // auth
 import RoleBasedGuard from '../../auth/RoleBasedGuard';
@@ -12,6 +12,7 @@ import axiosInstance from '../../utils/axios';
 import Label from '../../components/label';
 import Iconify from '../../components/iconify';
 import { useSnackbar } from '../../components/snackbar';
+import ResponsiveDialog from '../../components/responsive-dialog';
 import AdminPageHeader from './AdminPageHeader';
 
 // ----------------------------------------------------------------------
@@ -122,7 +123,7 @@ export default function AdminWheelView() {
                 <Switch checked={!!cfg.enabled} onChange={(e) => saveCfg({ enabled: e.target.checked })} />
                 <Typography variant="body2">Bật vòng quay trên client</Typography>
               </Stack>
-              <Stack direction="row" spacing={2}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                 <TextField type="number" label="Số ô trên ảnh" size="small" fullWidth value={cfg.segments ?? 0}
                   onChange={(e) => setCfg({ ...cfg, segments: Number(e.target.value) })} onBlur={() => saveCfg({ segments: cfg.segments })}
                   helperText="Khớp số ô trên ảnh vòng quay" />
@@ -140,7 +141,8 @@ export default function AdminWheelView() {
         </Card>
 
         <Card>
-          <Table>
+          <TableContainer sx={{ overflowX: 'auto' }}>
+          <Table sx={{ minWidth: 720 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Nhãn</TableCell>
@@ -181,9 +183,10 @@ export default function AdminWheelView() {
               )}
             </TableBody>
           </Table>
+          </TableContainer>
         </Card>
 
-        <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
+        <ResponsiveDialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
           <DialogTitle>{editId ? 'Sửa phần thưởng' : 'Thêm phần thưởng'}</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ mt: 1 }}>
@@ -245,7 +248,7 @@ export default function AdminWheelView() {
             <Button onClick={() => setOpen(false)}>Huỷ</Button>
             <Button variant="contained" onClick={save}>Lưu</Button>
           </DialogActions>
-        </Dialog>
+        </ResponsiveDialog>
       </Container>
     </RoleBasedGuard>
   );

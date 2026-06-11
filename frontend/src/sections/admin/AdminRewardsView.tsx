@@ -18,6 +18,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   Tabs,
@@ -324,7 +325,8 @@ function RewardsTab() {
           Thêm phần thưởng
         </Button>
       </Stack>
-      <Table>
+      <TableContainer sx={{ overflowX: 'auto' }}>
+      <Table sx={{ minWidth: 720 }}>
         <TableHead>
           <TableRow>
             <TableCell>Phần thưởng</TableCell>
@@ -379,6 +381,7 @@ function RewardsTab() {
           )}
         </TableBody>
       </Table>
+      </TableContainer>
 
       <Dialog open={!!form} onClose={() => setForm(null)} fullWidth maxWidth="sm">
         <DialogTitle>{form?.id ? 'Sửa phần thưởng' : 'Thêm phần thưởng'}</DialogTitle>
