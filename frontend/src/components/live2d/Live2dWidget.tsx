@@ -28,6 +28,20 @@ const MODEL_CDN_BASE = 'https://cdn.jsdelivr.net/gh/AzharRizkiZ/Live2D-Model@mai
 // Model mặc định (Asuna - SAO) — admin có thể đổi.
 const DEFAULT_MODEL = `${MODEL_CDN_BASE}/SAO/asuna/asuna_01/asuna_01.model.json`;
 
+// Câu vu vơ khi chạm/tương tác với nhân vật (KHÔNG mở chat).
+const INTERACTIONS = [
+  'Hí hí, đừng chọc mình mà~ 😳',
+  'Bạn cần mình tư vấn mua tài khoản không nè? 💖',
+  'Bấm vào biểu tượng chat để nói chuyện với mình nha! 💬',
+  'Hôm nay shop có nhiều ưu đãi lắm đó~ ✨',
+  'Mình luôn ở đây nếu bạn cần giúp đỡ nha! 🥰',
+  'Ưi~ nhột quá à! 🙈',
+  'Bạn muốn xem vòng quay may mắn không? 🎡',
+  'Mua sắm vui vẻ nha bạn ơi! 🛍️',
+  'Có gì thắc mắc cứ hỏi mình nhé! 😊',
+  'Chúc bạn một ngày thật tuyệt vời! 🌟',
+];
+
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
     if (typeof document === 'undefined') return reject();
@@ -68,12 +82,15 @@ export default function Live2dWidget() {
   const appRef = useRef<any>(null);
   const modelRef = useRef<any>(null);
   const mouthTimer = useRef<any>(null);
+  const bubbleTimer = useRef<any>(null);
   const tickerFnRef = useRef<any>(null);
+  const interactRef = useRef<() => void>(() => {});
   const utterRef = useRef<any[]>([]); // giữ ref utterance chống bị GC (Chrome cắt giữa chừng)
   const keepAlive = useRef<any>(null);
   const [live2dReady, setLive2dReady] = useState(false);
 
   const [open, setOpen] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const [bubble, setBubble] = useState<string>('');
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
@@ -124,8 +141,8 @@ export default function Live2dWidget() {
         const fn = () => { if (speakingRef.current) setMouth(mouthRef.current); };
         PIXI.Ticker.shared.add(fn);
         tickerFnRef.current = fn;
-        // chạm vào nhân vật -> mở chat
-        model.on('hit', () => setOpen((o) => !o));
+        // chạm vào nhân vật -> chỉ tương tác (đổi động tác + nói câu vu vơ), KHÔNG mở chat
+        model.on('hit', () => interactRef.current());
       } catch {
         /* tải Live2D thất bại -> dùng avatar fallback */
       }
@@ -189,6 +206,37 @@ export default function Live2dWidget() {
     setMouth(0);
   };
 
+  // ── Tương tác: chạm nhân vật -> đổi động tác + nói câu vu vơ (KHÔNG mở chat) ──
+  const playRandomMotion = () => {
+    const m = modelRef.current;
+    if (!m) return;
+    try {
+      const mm = m.internalModel?.motionManager;
+      const defs = mm?.definitions || mm?.motionGroups || {};
+      const groups = Object.keys(defs || {});
+      if (groups.length) {
+        // ưu tiên nhóm chạm thân nếu có
+        const prefer = groups.find((g) => /tap|body|touch|click|flick/i.test(g));
+        m.motion(prefer || groups[Math.floor(Math.random() * groups.length)]);
+      }
+      const exps = m.internalModel?.settings?.expressions;
+      if (Array.isArray(exps) && exps.length) m.expression(Math.floor(Math.random() * exps.length));
+    } catch { /* noop */ }
+  };
+
+  const popBubble = (text: string, ms = 5000) => {
+    if (openRef.current) return;
+    setBubble(text);
+    clearTimeout(bubbleTimer.current);
+    bubbleTimer.current = setTimeout(() => setBubble((b) => (b === text ? '' : b)), ms);
+  };
+
+  const interact = () => {
+    playRandomMotion();
+    popBubble(INTERACTIONS[Math.floor(Math.random() * INTERACTIONS.length)]);
+  };
+  useEffect(() => { interactRef.current = interact; });
+
   // ── Đọc bằng TTS (chia câu + chống Chrome cắt giữa chừng) ──
   const speak = (text: string) => {
     try {
@@ -245,6 +293,20 @@ export default function Live2dWidget() {
     }
   };
 
+  // Đã ẩn -> chỉ hiện nút nhỏ để gọi trợ lý quay lại.
+  if (hidden) {
+    return (
+      <Box sx={{ position: 'fixed', right: { xs: 12, md: 24 }, bottom: { xs: 12, md: 24 }, zIndex: (t) => t.zIndex.speedDial }}>
+        <IconButton
+          onClick={() => setHidden(false)}
+          sx={{ bgcolor: 'primary.main', color: 'common.white', boxShadow: 6, '&:hover': { bgcolor: 'primary.dark' } }}
+        >
+          <Iconify icon="solar:user-heart-rounded-bold" width={26} />
+        </IconButton>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ position: 'fixed', right: { xs: 12, md: 24 }, bottom: { xs: 12, md: 24 }, zIndex: (t) => t.zIndex.speedDial }}>
       {/* Bong bóng thoại */}
@@ -299,21 +361,57 @@ export default function Live2dWidget() {
         </Paper>
       </Fade>
 
-      {/* Nhân vật */}
-      <Box sx={{ position: 'relative', cursor: 'pointer' }} onClick={() => setOpen((o) => !o)}>
-        {modelUrl ? (
-          <canvas ref={canvasRef} width={220} height={300} style={{ width: 160, height: 220, display: live2dReady ? 'block' : 'none' }} />
-        ) : null}
-        {(!modelUrl || !live2dReady) && (
-          <Box
-            sx={{
-              width: 72, height: 72, borderRadius: '50%', display: 'grid', placeItems: 'center',
-              bgcolor: 'primary.main', color: 'common.white', boxShadow: 6,
-            }}
+      {/* Nhân vật + thanh công cụ nổi */}
+      <Box sx={{ position: 'relative', '&:hover .live2d-toolbar': { opacity: 1, pointerEvents: 'auto' } }}>
+        {/* Thanh công cụ: chat / đổi động tác / ẩn */}
+        <Stack
+          className="live2d-toolbar"
+          direction="column"
+          spacing={0.5}
+          sx={{
+            position: 'absolute', left: -8, bottom: 8, transform: 'translateX(-100%)',
+            opacity: { xs: 1, md: 0 }, pointerEvents: { xs: 'auto', md: 'none' }, transition: 'opacity .2s',
+          }}
+        >
+          <IconButton
+            size="small" title="Trò chuyện với trợ lý"
+            onClick={() => setOpen((o) => !o)}
+            sx={{ bgcolor: 'primary.main', color: 'common.white', boxShadow: 3, '&:hover': { bgcolor: 'primary.dark' } }}
           >
-            <Iconify icon="solar:user-heart-rounded-bold" width={36} />
-          </Box>
-        )}
+            <Iconify icon="solar:chat-round-dots-bold" width={18} />
+          </IconButton>
+          <IconButton
+            size="small" title="Đổi động tác"
+            onClick={interact}
+            sx={{ bgcolor: 'background.paper', boxShadow: 3, '&:hover': { bgcolor: 'background.neutral' } }}
+          >
+            <Iconify icon="solar:magic-stick-3-bold" width={18} />
+          </IconButton>
+          <IconButton
+            size="small" title="Ẩn trợ lý"
+            onClick={() => { setOpen(false); setHidden(true); }}
+            sx={{ bgcolor: 'background.paper', boxShadow: 3, '&:hover': { bgcolor: 'background.neutral' } }}
+          >
+            <Iconify icon="solar:eye-closed-bold" width={18} />
+          </IconButton>
+        </Stack>
+
+        {/* Chạm vào nhân vật -> chỉ tương tác (không mở chat) */}
+        <Box sx={{ position: 'relative', cursor: 'pointer' }} onClick={interact}>
+          {modelUrl ? (
+            <canvas ref={canvasRef} width={220} height={300} style={{ width: 160, height: 220, display: live2dReady ? 'block' : 'none' }} />
+          ) : null}
+          {(!modelUrl || !live2dReady) && (
+            <Box
+              sx={{
+                width: 72, height: 72, borderRadius: '50%', display: 'grid', placeItems: 'center',
+                bgcolor: 'primary.main', color: 'common.white', boxShadow: 6,
+              }}
+            >
+              <Iconify icon="solar:user-heart-rounded-bold" width={36} />
+            </Box>
+          )}
+        </Box>
       </Box>
     </Box>
   );
