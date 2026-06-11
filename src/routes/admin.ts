@@ -183,7 +183,9 @@ router.get('/settings', async (_req: Request, res: Response) => {
       // Ảnh loading toàn site
       'loading_image',
       // Trợ lý ảo Live2D
-      'live2d_model_url', 'live2d_scale', 'assistant_greeting', 'assistant_tips'];
+      'live2d_model_url', 'live2d_scale', 'assistant_greeting', 'assistant_tips',
+      // Giao diện & hiệu ứng
+      'click_effect', 'season_effect', 'nav_bg_image'];
     const configs = await prisma.siteConfig.findMany({ where: { key: { in: publicKeys } } });
     const map = Object.fromEntries(configs.map((c: { key: string; value: string | null }) => [c.key, c.value]));
     res.json(await withPublicFlags(map));

@@ -69,6 +69,8 @@ export default function Live2dWidget() {
   const modelRef = useRef<any>(null);
   const mouthTimer = useRef<any>(null);
   const tickerFnRef = useRef<any>(null);
+  const utterRef = useRef<any[]>([]); // giữ ref utterance chống bị GC (Chrome cắt giữa chừng)
+  const keepAlive = useRef<any>(null);
   const [live2dReady, setLive2dReady] = useState(false);
 
   const [open, setOpen] = useState(false);
@@ -187,21 +189,33 @@ export default function Live2dWidget() {
     setMouth(0);
   };
 
-  // ── Đọc bằng TTS ──
+  // ── Đọc bằng TTS (chia câu + chống Chrome cắt giữa chừng) ──
   const speak = (text: string) => {
     try {
       const synth = window.speechSynthesis;
       if (!synth) return;
       synth.cancel();
-      const u = new SpeechSynthesisUtterance(text);
+      clearInterval(keepAlive.current);
       const vi = synth.getVoices().find((v) => /vi|vietnam/i.test(v.lang) || /vi/i.test(v.name));
-      if (vi) u.voice = vi;
-      u.lang = vi?.lang || 'vi-VN';
-      u.rate = 1; u.pitch = 1.1;
-      u.onstart = () => startLipSync();
-      u.onend = () => stopLipSync();
-      u.onerror = () => stopLipSync();
-      synth.speak(u);
+      // Tách thành câu ngắn -> tránh lỗi Chrome dừng sau ~15s với câu dài.
+      const chunks = (text.match(/[^.!?…\n]+[.!?…]*/g) || [text]).map((s) => s.trim()).filter(Boolean);
+      utterRef.current = [];
+      chunks.forEach((chunk, idx) => {
+        const u = new SpeechSynthesisUtterance(chunk);
+        if (vi) u.voice = vi;
+        u.lang = vi?.lang || 'vi-VN';
+        u.rate = 1; u.pitch = 1.1;
+        if (idx === 0) u.onstart = () => startLipSync();
+        if (idx === chunks.length - 1) u.onend = () => { stopLipSync(); clearInterval(keepAlive.current); };
+        u.onerror = () => { stopLipSync(); clearInterval(keepAlive.current); };
+        utterRef.current.push(u); // giữ tham chiếu chống GC
+        synth.speak(u);
+      });
+      // Keep-alive: định kỳ pause/resume để Chrome không tự dừng.
+      keepAlive.current = setInterval(() => {
+        if (!synth.speaking) { clearInterval(keepAlive.current); return; }
+        try { synth.pause(); synth.resume(); } catch { /* noop */ }
+      }, 8000);
     } catch { /* noop */ }
   };
 
