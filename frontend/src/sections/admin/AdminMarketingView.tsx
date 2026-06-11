@@ -84,7 +84,7 @@ const Loading = () => (
 // ----------------------------------------------------------------------
 // BANNERS
 
-function BannersTab() {
+export function BannersTab() {
   const { ok, err } = useSnack();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -203,7 +203,7 @@ function toLocalInput(d: Date) {
   return new Date(d.getTime() - off * 60000).toISOString().slice(0, 16);
 }
 
-function FlashTab() {
+export function FlashTab() {
   const { ok, err } = useSnack();
   const [rows, setRows] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -401,7 +401,7 @@ const GIFT_EMPTY = {
   allowed_rank_ids: [] as number[],
 };
 
-function GiftTab() {
+export function GiftTab() {
   const { ok, err } = useSnack();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -624,7 +624,7 @@ function GiftTab() {
 const ANNOUNCE_TYPES = ['info', 'success', 'warning', 'error'];
 const ANNOUNCE_EMPTY = { id: 0, title: '', content: '', type: 'info', sort_order: 0, is_active: true };
 
-function AnnounceTab() {
+export function AnnounceTab() {
   const { ok, err } = useSnack();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
