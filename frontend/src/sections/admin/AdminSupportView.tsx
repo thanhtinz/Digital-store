@@ -81,7 +81,7 @@ const TICKET_STATUS = ['open', 'answered', 'pending', 'resolved', 'closed'];
 const ticketColor = (s: string): any =>
   ({ open: 'warning', answered: 'info', pending: 'default', resolved: 'success', closed: 'default' }[s] || 'default');
 
-function TicketsTab() {
+export function TicketsTab() {
   const { ok, err } = useSnack();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -247,7 +247,7 @@ function TicketsTab() {
 // ----------------------------------------------------------------------
 // REVIEWS
 
-function ReviewsTab() {
+export function ReviewsTab() {
   const { ok, err } = useSnack();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
