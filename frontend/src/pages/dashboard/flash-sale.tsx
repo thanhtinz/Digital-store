@@ -83,27 +83,9 @@ export default function FlashSalePage() {
       </Head>
 
       <Container sx={{ pb: 6 }}>
-        <Stack direction="row" alignItems="center" spacing={1.5} sx={{ my: 3 }}>
-          <Box
-            sx={{
-              width: 48,
-              height: 48,
-              display: 'grid',
-              placeItems: 'center',
-              borderRadius: 1.5,
-              color: 'error.main',
-              bgcolor: (theme) => alpha(theme.palette.error.main, 0.12),
-            }}
-          >
-            <Iconify icon="solar:bolt-bold" width={28} />
-          </Box>
-          <Box>
-            <Typography variant="h4">{t('title')}</Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              {t('subtitle')}
-            </Typography>
-          </Box>
-        </Stack>
+        <Typography variant="h4" sx={{ my: 3 }}>
+          {t('title')}
+        </Typography>
 
         {isEmpty ? (
           <EmptyContent
