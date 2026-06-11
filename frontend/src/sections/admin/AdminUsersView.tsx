@@ -5,6 +5,7 @@ import {
   DialogTitle, IconButton, MenuItem, Stack, Switch, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, TextField, Tooltip, Typography,
 } from '@mui/material';
+import AppLoader from '../../components/app-loader';
 import { LoadingButton } from '@mui/lab';
 // utils
 import axiosInstance from '../../utils/axios';
@@ -135,7 +136,7 @@ export default function AdminUsersView() {
 
       <Card>
         {loading ? (
-          <Stack alignItems="center" sx={{ py: 8 }}><CircularProgress /></Stack>
+          <Stack alignItems="center" sx={{ py: 8 }}><AppLoader /></Stack>
         ) : (
           <TableContainer sx={{ overflowX: 'auto' }}>
             <Table sx={{ minWidth: 820 }}>

@@ -26,6 +26,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import AppLoader from '../../components/app-loader';
 // auth
 import { useAuthContext } from '../../auth/useAuthContext';
 // locales
@@ -154,7 +155,7 @@ export default function AffiliateView() {
         <EmptyContent title={t('login_required')} img="/assets/illustrations/illustration_empty_cart.svg" />
       ) : loading ? (
         <Stack alignItems="center" sx={{ py: 8 }}>
-          <CircularProgress />
+          <AppLoader />
         </Stack>
       ) : !data?.registered ? (
         <Card sx={{ p: 5, textAlign: 'center' }}>

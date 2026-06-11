@@ -25,6 +25,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import AppLoader from '../../components/app-loader';
 // utils
 import axiosInstance from '../../utils/axios';
 import { fCurrency } from '../../utils/formatNumber';
@@ -41,7 +42,7 @@ import ImageUploadField from './ImageUploadField';
 
 const Loading = () => (
   <Stack alignItems="center" sx={{ py: 8 }}>
-    <CircularProgress />
+    <AppLoader />
   </Stack>
 );
 

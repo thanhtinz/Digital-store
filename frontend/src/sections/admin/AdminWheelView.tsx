@@ -27,7 +27,7 @@ const TYPES = [
 ];
 
 const empty = {
-  label: '', type: 'points', value: 0, voucher_code: '', weight: 1, color: '#00AB55', stock: -1,
+  label: '', type: 'points', value: 0, voucher_code: '', weight: 10, color: '#00AB55', stock: -1,
   is_active: true, sort_order: 0, image_url: '', segment_index: 0, package_id: '',
   giftcode_type: 'percent', giftcode_value: '', giftcode_min_order: '', giftcode_max_discount: '',
   giftcode_expiry_days: '', giftcode_prefix: 'LUCKY',
@@ -180,8 +180,7 @@ export default function AdminWheelView() {
                 <TableCell>Nhãn</TableCell>
                 <TableCell>Loại</TableCell>
                 <TableCell align="right">Giá trị</TableCell>
-                <TableCell align="right">Trọng số</TableCell>
-                <TableCell align="right">% nhận</TableCell>
+                <TableCell align="right">Tỉ lệ trúng</TableCell>
                 <TableCell align="right">Kho</TableCell>
                 <TableCell align="right">Đã trúng</TableCell>
                 <TableCell align="center">Trạng thái</TableCell>
@@ -199,7 +198,6 @@ export default function AdminWheelView() {
                   </TableCell>
                   <TableCell>{TYPES.find((t) => t.value === p.type)?.label}</TableCell>
                   <TableCell align="right">{p.type === 'voucher' ? p.voucher_code : p.value}</TableCell>
-                  <TableCell align="right">{p.weight}</TableCell>
                   <TableCell align="right">{pctOf(p)}%</TableCell>
                   <TableCell align="right">{p.stock < 0 ? '∞' : p.stock}</TableCell>
                   <TableCell align="right">{p.won_count}</TableCell>
@@ -213,7 +211,7 @@ export default function AdminWheelView() {
                 </TableRow>
               ))}
               {items.length === 0 && (
-                <TableRow><TableCell colSpan={9} align="center" sx={{ py: 4, color: 'text.secondary' }}>Chưa có phần thưởng</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} align="center" sx={{ py: 4, color: 'text.secondary' }}>Chưa có phần thưởng</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
@@ -270,9 +268,9 @@ export default function AdminWheelView() {
               )}
               <Stack direction="row" spacing={2}>
                 <TextField
-                  type="number" label="Trọng số (xác suất)" value={form.weight}
+                  type="number" label="Tỉ lệ trúng (%)" value={form.weight}
                   onChange={(e) => setForm({ ...form, weight: e.target.value })} fullWidth
-                  helperText={`≈ ${livePct}% cơ hội trúng (so với các ô đang bật)`}
+                  helperText={`Hệ thống tự chuẩn hoá tổng về 100%. Thực tế ≈ ${livePct}%`}
                 />
                 <TextField type="number" label="Kho (-1 = ∞)" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} fullWidth />
               </Stack>
