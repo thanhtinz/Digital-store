@@ -90,13 +90,39 @@ export default function AdminWheelView() {
   };
   const remove = async (id: number) => { await axiosInstance.delete(`/api/wheel/admin/prizes/${id}`).catch(() => {}); load(); };
 
+  const reset = async () => {
+    // eslint-disable-next-line no-alert
+    if (!window.confirm('Reset toàn bộ vòng quay? Sẽ xoá hết lịch sử quay và đưa số lượt đã trúng về 0.')) return;
+    try {
+      await axiosInstance.post('/api/wheel/admin/reset');
+      enqueueSnackbar('Đã reset vòng quay');
+      load(); loadHistory();
+    } catch (e: any) {
+      enqueueSnackbar(e?.detail || 'Reset thất bại', { variant: 'error' });
+    }
+  };
+
+  // Tổng trọng số phần thưởng đang bật -> tính % thực tế mỗi ô.
+  const totalWeight = items.filter((p) => p.is_active).reduce((s, p) => s + Math.max(1, Number(p.weight) || 1), 0) || 1;
+  const pctOf = (p: any) => (p.is_active ? ((Math.max(1, Number(p.weight) || 1) / totalWeight) * 100).toFixed(1) : '0');
+
+  // % ước lượng cho phần thưởng đang tạo/sửa trong dialog.
+  const formWeight = Math.max(1, Number(form.weight) || 1);
+  const othersWeight = items
+    .filter((p) => p.is_active && p.id !== editId)
+    .reduce((s, p) => s + Math.max(1, Number(p.weight) || 1), 0);
+  const livePct = ((formWeight / (othersWeight + formWeight)) * 100).toFixed(1);
+
   return (
     <RoleBasedGuard hasContent roles={['admin', 'superadmin']}>
       <Container sx={{ pb: 6 }}>
         <AdminPageHeader
         title="Vòng quay may mắn"
         action={
-          <><Button variant="contained" onClick={openNew} startIcon={<Iconify icon="eva:plus-fill" />}>Thêm phần thưởng</Button></>
+          <Stack direction="row" spacing={1}>
+            <Button color="error" variant="outlined" onClick={reset} startIcon={<Iconify icon="solar:restart-bold" />}>Reset</Button>
+            <Button variant="contained" onClick={openNew} startIcon={<Iconify icon="eva:plus-fill" />}>Thêm phần thưởng</Button>
+          </Stack>
         }
       />
 
@@ -155,6 +181,7 @@ export default function AdminWheelView() {
                 <TableCell>Loại</TableCell>
                 <TableCell align="right">Giá trị</TableCell>
                 <TableCell align="right">Trọng số</TableCell>
+                <TableCell align="right">% nhận</TableCell>
                 <TableCell align="right">Kho</TableCell>
                 <TableCell align="right">Đã trúng</TableCell>
                 <TableCell align="center">Trạng thái</TableCell>
@@ -173,6 +200,7 @@ export default function AdminWheelView() {
                   <TableCell>{TYPES.find((t) => t.value === p.type)?.label}</TableCell>
                   <TableCell align="right">{p.type === 'voucher' ? p.voucher_code : p.value}</TableCell>
                   <TableCell align="right">{p.weight}</TableCell>
+                  <TableCell align="right">{pctOf(p)}%</TableCell>
                   <TableCell align="right">{p.stock < 0 ? '∞' : p.stock}</TableCell>
                   <TableCell align="right">{p.won_count}</TableCell>
                   <TableCell align="center">
@@ -185,7 +213,7 @@ export default function AdminWheelView() {
                 </TableRow>
               ))}
               {items.length === 0 && (
-                <TableRow><TableCell colSpan={8} align="center" sx={{ py: 4, color: 'text.secondary' }}>Chưa có phần thưởng</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} align="center" sx={{ py: 4, color: 'text.secondary' }}>Chưa có phần thưởng</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
@@ -241,7 +269,11 @@ export default function AdminWheelView() {
                 <TextField type="number" label="Giá trị (điểm/đ)" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} />
               )}
               <Stack direction="row" spacing={2}>
-                <TextField type="number" label="Trọng số (xác suất)" value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} fullWidth />
+                <TextField
+                  type="number" label="Trọng số (xác suất)" value={form.weight}
+                  onChange={(e) => setForm({ ...form, weight: e.target.value })} fullWidth
+                  helperText={`≈ ${livePct}% cơ hội trúng (so với các ô đang bật)`}
+                />
                 <TextField type="number" label="Kho (-1 = ∞)" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} fullWidth />
               </Stack>
               <Stack direction="row" spacing={2}>

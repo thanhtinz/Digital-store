@@ -328,6 +328,17 @@ router.delete('/admin/prizes/:id', requireAdmin, async (req: Request, res: Respo
   }
 });
 
+// Reset toàn bộ: xoá lịch sử quay + đưa số lượt đã trúng của mọi phần thưởng về 0.
+router.post('/admin/reset', requireAdmin, async (_req: Request, res: Response) => {
+  try {
+    const del = await prisma.wheelSpin.deleteMany({});
+    await prisma.wheelPrize.updateMany({ data: { wonCount: 0 } });
+    res.json({ ok: true, deleted: del.count });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
 // ── Admin: lịch sử lượt quay (mọi user) ───────────────
 router.get('/admin/history', requireAdmin, async (req: Request, res: Response) => {
   try {
