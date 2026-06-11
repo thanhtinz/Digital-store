@@ -372,9 +372,13 @@ function TelegramTab() {
 // EMAIL (mail nâng cao: relay / SMTP / direct + DKIM/DNS)
 
 const MAIL_MODES = [
-  { value: 'relay', label: 'Relay (mặc định, không cần cấu hình)' },
-  { value: 'smtp', label: 'SMTP (máy chủ riêng)' },
-  { value: 'direct', label: 'Direct (gửi trực tiếp + DKIM)' },
+  { value: 'relay', label: 'SMTP (máy chủ riêng / Gmail / Zoho…)' },
+  { value: 'direct', label: 'Server mail riêng (Direct + DKIM)' },
+  { value: 'resend', label: 'Resend (API)' },
+  { value: 'sendgrid', label: 'SendGrid (API)' },
+  { value: 'mailgun', label: 'Mailgun (API)' },
+  { value: 'postmark', label: 'Postmark (API)' },
+  { value: 'brevo', label: 'Brevo / Sendinblue (API)' },
 ];
 
 function EmailTab() {
@@ -405,8 +409,17 @@ function EmailTab() {
         mail_smtp_user: cfg.mail_smtp_user,
         mail_dkim_domain: cfg.mail_dkim_domain,
         mail_dkim_selector: cfg.mail_dkim_selector,
+        mail_mailgun_domain: cfg.mail_mailgun_domain,
+        mail_mailgun_region: cfg.mail_mailgun_region,
       };
-      if (cfg.mail_smtp_pass && cfg.mail_smtp_pass !== '••••••••') payload.mail_smtp_pass = cfg.mail_smtp_pass;
+      // Secret: chỉ gửi khi người dùng nhập mới (khác placeholder).
+      const secretKeys = [
+        'mail_smtp_pass', 'mail_resend_api_key', 'mail_sendgrid_api_key',
+        'mail_mailgun_api_key', 'mail_postmark_token', 'mail_brevo_api_key',
+      ];
+      secretKeys.forEach((k) => {
+        if (cfg[k] && cfg[k] !== '••••••••') payload[k] = cfg[k];
+      });
       await axiosInstance.put('/api/admin/mail/config', payload);
       ok('Đã lưu cấu hình mail');
     } catch (e) {
@@ -451,7 +464,8 @@ function EmailTab() {
   };
 
   if (loading || !cfg) return <Loading />;
-  const mode = cfg.mail_mode || 'relay';
+  // 'smtp' (giá trị cũ) coi như 'relay' để khớp danh sách chế độ.
+  const mode = cfg.mail_mode === 'smtp' ? 'relay' : cfg.mail_mode || 'relay';
   return (
     <Stack spacing={3} sx={{ maxWidth: 640 }}>
       <Card>
@@ -460,9 +474,9 @@ function EmailTab() {
           <Stack spacing={2.5}>
             <Alert severity="info">
               <AlertTitle>Hướng dẫn cấu hình email</AlertTitle>
-              <b>Relay:</b> dùng dịch vụ gửi mail (Resend/SendGrid…) qua API key — đơn giản, ít vào spam.<br />
-              <b>SMTP (máy chủ riêng):</b> nhập host/port/user/pass của nhà cung cấp mail.<br />
-              <b>Direct:</b> server tự gửi — cần thêm bản ghi DNS (DKIM/SPF) bên dưới.<br />
+              <b>SMTP:</b> nhập host/port/user/pass của nhà cung cấp mail (Gmail, Zoho, cPanel…).<br />
+              <b>Server mail riêng (Direct):</b> server tự gửi — cần thêm bản ghi DNS (DKIM/SPF) bên dưới.<br />
+              <b>Resend / SendGrid / Mailgun / Postmark / Brevo:</b> dịch vụ bên thứ 3 qua API key — đơn giản, ít vào spam.<br />
               Nhập xong bấm <b>Lưu</b> rồi dùng ô <b>Gửi test</b> để kiểm tra.
             </Alert>
             <TextField select label="Chế độ gửi" value={mode} onChange={(e) => setCfg({ ...cfg, mail_mode: e.target.value })}>
@@ -475,7 +489,7 @@ function EmailTab() {
             <TextField label="Email gửi (From)" value={cfg.mail_from_email || ''} onChange={(e) => setCfg({ ...cfg, mail_from_email: e.target.value })} />
             <TextField label="Tên hiển thị (From name)" value={cfg.mail_from_name || ''} onChange={(e) => setCfg({ ...cfg, mail_from_name: e.target.value })} />
 
-            {mode === 'smtp' && (
+            {mode === 'relay' && (
               <>
                 <Divider>SMTP</Divider>
                 <Alert severity="info">
@@ -489,6 +503,51 @@ function EmailTab() {
                 <TextField label="SMTP port" value={cfg.mail_smtp_port || ''} onChange={(e) => setCfg({ ...cfg, mail_smtp_port: e.target.value })} />
                 <TextField label="SMTP user" value={cfg.mail_smtp_user || ''} onChange={(e) => setCfg({ ...cfg, mail_smtp_user: e.target.value })} />
                 <TextField label="SMTP password" type="password" placeholder={cfg.mail_smtp_pass === '••••••••' ? '•••••••• (đã lưu)' : ''} onChange={(e) => setCfg({ ...cfg, mail_smtp_pass: e.target.value })} />
+              </>
+            )}
+
+            {mode === 'resend' && (
+              <>
+                <Divider>Resend</Divider>
+                <Alert severity="info">Lấy API key tại <b>resend.com</b> → API Keys. Nhớ xác minh domain gửi.</Alert>
+                <TextField label="Resend API key" type="password" placeholder={cfg.mail_resend_api_key === '••••••••' ? '•••••••• (đã lưu)' : 're_...'} onChange={(e) => setCfg({ ...cfg, mail_resend_api_key: e.target.value })} />
+              </>
+            )}
+
+            {mode === 'sendgrid' && (
+              <>
+                <Divider>SendGrid</Divider>
+                <Alert severity="info">Lấy API key tại <b>app.sendgrid.com</b> → Settings → API Keys. Cần xác minh Sender/Domain.</Alert>
+                <TextField label="SendGrid API key" type="password" placeholder={cfg.mail_sendgrid_api_key === '••••••••' ? '•••••••• (đã lưu)' : 'SG....'} onChange={(e) => setCfg({ ...cfg, mail_sendgrid_api_key: e.target.value })} />
+              </>
+            )}
+
+            {mode === 'mailgun' && (
+              <>
+                <Divider>Mailgun</Divider>
+                <Alert severity="info">Lấy API key + domain tại <b>app.mailgun.com</b>. Chọn region khớp tài khoản (US/EU).</Alert>
+                <TextField label="Mailgun API key" type="password" placeholder={cfg.mail_mailgun_api_key === '••••••••' ? '•••••••• (đã lưu)' : 'key-...'} onChange={(e) => setCfg({ ...cfg, mail_mailgun_api_key: e.target.value })} />
+                <TextField label="Mailgun domain" value={cfg.mail_mailgun_domain || ''} placeholder="mg.yourdomain.com" onChange={(e) => setCfg({ ...cfg, mail_mailgun_domain: e.target.value })} />
+                <TextField select label="Region" value={cfg.mail_mailgun_region || 'us'} onChange={(e) => setCfg({ ...cfg, mail_mailgun_region: e.target.value })}>
+                  <MenuItem value="us">US (api.mailgun.net)</MenuItem>
+                  <MenuItem value="eu">EU (api.eu.mailgun.net)</MenuItem>
+                </TextField>
+              </>
+            )}
+
+            {mode === 'postmark' && (
+              <>
+                <Divider>Postmark</Divider>
+                <Alert severity="info">Lấy <b>Server Token</b> tại postmarkapp.com → Servers → API Tokens. Cần xác minh Sender Signature.</Alert>
+                <TextField label="Postmark Server Token" type="password" placeholder={cfg.mail_postmark_token === '••••••••' ? '•••••••• (đã lưu)' : ''} onChange={(e) => setCfg({ ...cfg, mail_postmark_token: e.target.value })} />
+              </>
+            )}
+
+            {mode === 'brevo' && (
+              <>
+                <Divider>Brevo</Divider>
+                <Alert severity="info">Lấy API key (v3) tại <b>app.brevo.com</b> → SMTP & API → API Keys.</Alert>
+                <TextField label="Brevo API key" type="password" placeholder={cfg.mail_brevo_api_key === '••••••••' ? '•••••••• (đã lưu)' : 'xkeysib-...'} onChange={(e) => setCfg({ ...cfg, mail_brevo_api_key: e.target.value })} />
               </>
             )}
 

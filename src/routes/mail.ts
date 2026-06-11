@@ -18,13 +18,22 @@ const MAIL_KEYS = [
   'mail_mode', 'mail_from_email', 'mail_from_name',
   'mail_smtp_host', 'mail_smtp_port', 'mail_smtp_user', 'mail_smtp_pass',
   'mail_dkim_domain', 'mail_dkim_selector', 'mail_dkim_private_key',
+  'mail_resend_api_key', 'mail_sendgrid_api_key',
+  'mail_mailgun_api_key', 'mail_mailgun_domain', 'mail_mailgun_region',
+  'mail_postmark_token', 'mail_brevo_api_key',
 ];
 
-const SECRET_KEYS = ['mail_smtp_pass', 'mail_dkim_private_key'];
+// Các key bí mật: GET trả placeholder, PUT bỏ qua nếu vẫn là placeholder.
+const SECRET_KEYS = [
+  'mail_smtp_pass', 'mail_dkim_private_key',
+  'mail_resend_api_key', 'mail_sendgrid_api_key', 'mail_mailgun_api_key',
+  'mail_postmark_token', 'mail_brevo_api_key',
+];
 
 router.get('/config', requireAdmin, async (_req: Request, res: Response) => {
   const rows = await prisma.siteConfig.findMany({ where: { key: { in: MAIL_KEYS } } });
   const m: Record<string, string> = Object.fromEntries(rows.map((c: any) => [c.key, c.value || '']));
+  const mask = (k: string) => (m[k] ? '••••••••' : '');
   res.json({
     mail_mode: m['mail_mode'] || 'relay',
     mail_from_email: m['mail_from_email'] || '',
@@ -32,10 +41,18 @@ router.get('/config', requireAdmin, async (_req: Request, res: Response) => {
     mail_smtp_host: m['mail_smtp_host'] || '',
     mail_smtp_port: m['mail_smtp_port'] || '587',
     mail_smtp_user: m['mail_smtp_user'] || '',
-    mail_smtp_pass: m['mail_smtp_pass'] ? '••••••••' : '',
+    mail_smtp_pass: mask('mail_smtp_pass'),
     mail_dkim_domain: m['mail_dkim_domain'] || '',
     mail_dkim_selector: m['mail_dkim_selector'] || 'default',
     mail_dkim_private_key_set: !!m['mail_dkim_private_key'],
+    // Nhà cung cấp bên thứ 3 (secret -> mask)
+    mail_resend_api_key: mask('mail_resend_api_key'),
+    mail_sendgrid_api_key: mask('mail_sendgrid_api_key'),
+    mail_mailgun_api_key: mask('mail_mailgun_api_key'),
+    mail_mailgun_domain: m['mail_mailgun_domain'] || '',
+    mail_mailgun_region: m['mail_mailgun_region'] || 'us',
+    mail_postmark_token: mask('mail_postmark_token'),
+    mail_brevo_api_key: mask('mail_brevo_api_key'),
   });
 });
 
