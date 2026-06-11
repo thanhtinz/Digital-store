@@ -1,24 +1,14 @@
 // next
-import Head from 'next/head';
-// layouts
-import AdminLayout from '../../../layouts/dashboard/AdminLayout';
-// sections
-import AdminIntegrationsView from '../../../sections/admin/AdminIntegrationsView';
+import { useEffect } from 'react';
+import { useRouter } from 'next/router';
+// routes
+import { PATH_DASHBOARD } from '../../../routes/paths';
 
-// ----------------------------------------------------------------------
-
-AdminIntegrationsPage.getLayout = (page: React.ReactElement) => <AdminLayout>{page}</AdminLayout>;
-
-// ----------------------------------------------------------------------
-
-export default function AdminIntegrationsPage() {
-  return (
-    <>
-      <Head>
-        <title> Tích hợp | Quản trị</title>
-      </Head>
-
-      <AdminIntegrationsView />
-    </>
-  );
+// Tích hợp đã tách thành các trang riêng — chuyển hướng sang Thanh toán.
+export default function AdminIntegrationsRedirect() {
+  const { replace } = useRouter();
+  useEffect(() => {
+    replace(PATH_DASHBOARD.admin.intPayment);
+  }, [replace]);
+  return null;
 }
