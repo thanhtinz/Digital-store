@@ -40,8 +40,14 @@ export const JWT_SECRET = resolveJwtSecret();
 
 // Cache jti đã thu hồi (đăng xuất từ xa) để tránh truy vấn DB mỗi request.
 const revokedJtis = new Set<string>();
+// Cache jti đã xác thực gần đây (positive cache) -> không truy vấn DB mỗi request.
+const validatedJtis = new Map<string, number>();
+const VALIDATE_TTL_MS = 5 * 60 * 1000;
 export function markJtiRevoked(jti: string): void {
-  if (jti) revokedJtis.add(jti);
+  if (jti) {
+    revokedJtis.add(jti);
+    validatedJtis.delete(jti);
+  }
 }
 
 export async function requireUser(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -60,15 +66,20 @@ export async function requireUser(req: Request, res: Response, next: NextFunctio
         res.status(401).json({ detail: 'Phiên đã bị đăng xuất' });
         return;
       }
-      try {
-        const sess = await prisma.userSession.findUnique({ where: { jti: sid } });
-        if (sess?.revokedAt) {
-          revokedJtis.add(sid);
-          res.status(401).json({ detail: 'Phiên đã bị đăng xuất' });
-          return;
+      // Bỏ qua truy vấn DB nếu đã xác thực trong TTL gần đây.
+      const seen = validatedJtis.get(sid);
+      if (!seen || Date.now() - seen > VALIDATE_TTL_MS) {
+        try {
+          const sess = await prisma.userSession.findUnique({ where: { jti: sid } });
+          if (sess?.revokedAt) {
+            revokedJtis.add(sid);
+            res.status(401).json({ detail: 'Phiên đã bị đăng xuất' });
+            return;
+          }
+          validatedJtis.set(sid, Date.now());
+        } catch {
+          /* DB lỗi -> fail-open, vẫn cho qua dựa trên token hợp lệ */
         }
-      } catch {
-        /* DB lỗi -> fail-open, vẫn cho qua dựa trên token hợp lệ */
       }
     }
     (req as any).user = payload;

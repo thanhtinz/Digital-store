@@ -36,6 +36,7 @@ export default function AccountPopover() {
     { label: t('account'), linkTo: PATH_DASHBOARD.myAccount },
     { label: t('orders'), linkTo: PATH_DASHBOARD.orders.root },
     { label: 'Tải xuống của tôi', linkTo: PATH_DASHBOARD.downloads },
+    { label: 'Gói đang dùng', linkTo: PATH_DASHBOARD.subscriptions },
     { label: t('wishlist'), linkTo: PATH_DASHBOARD.wishlist },
     { label: t('affiliate'), linkTo: PATH_DASHBOARD.affiliate },
     { label: t('topup'), linkTo: PATH_DASHBOARD.wallet.topup },
