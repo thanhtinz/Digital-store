@@ -510,6 +510,8 @@ const vn = {
     load_failed: `Không tải được danh sách`,
   },
   product_page: {
+    package_duration: `Thời gian sử dụng`,
+
     status: `Tình trạng`,
     sku: `Mã sản phẩm`,
     category: `Danh mục`,

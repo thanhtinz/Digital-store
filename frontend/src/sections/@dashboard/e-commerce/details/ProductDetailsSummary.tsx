@@ -348,12 +348,12 @@ export default function ProductDetailsSummary({
 
         {hasPackages ? (
           <Stack spacing={1.5}>
-            <Typography variant="subtitle2">{tp('package')}</Typography>
+            <Typography variant="subtitle2">{tp('package_duration')}</Typography>
             <TextField
               select
               fullWidth
               size="small"
-              label={tp('package')}
+              label={tp('package_duration')}
               value={values.packageId || ''}
               onChange={(e) => {
                 const pkg = packages.find((p: any) => String(p.id) === e.target.value);

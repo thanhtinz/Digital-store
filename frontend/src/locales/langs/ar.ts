@@ -510,6 +510,8 @@ const ar = {
     load_failed: `فشل تحميل القائمة`,
   },
   product_page: {
+    package_duration: `مدة الاستخدام`,
+
     status: `الحالة`,
     sku: `رمز المنتج`,
     category: `الفئة`,

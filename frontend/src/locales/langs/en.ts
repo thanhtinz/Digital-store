@@ -510,6 +510,8 @@ const en = {
     load_failed: `Failed to load list`,
   },
   product_page: {
+    package_duration: `Usage duration`,
+
     status: `Status`,
     sku: `Product code`,
     category: `Category`,

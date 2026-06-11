@@ -510,6 +510,8 @@ const cn = {
     load_failed: `加载列表失败`,
   },
   product_page: {
+    package_duration: `使用时长`,
+
     status: `状态`,
     sku: `产品编号`,
     category: `分类`,

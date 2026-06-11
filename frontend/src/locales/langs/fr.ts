@@ -510,6 +510,8 @@ const fr = {
     load_failed: `Échec du chargement`,
   },
   product_page: {
+    package_duration: `Durée d'utilisation`,
+
     status: `Statut`,
     sku: `Code produit`,
     category: `Catégorie`,
