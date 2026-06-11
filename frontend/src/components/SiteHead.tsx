@@ -21,12 +21,11 @@ export default function SiteHead() {
 
     const apply = () => {
       const cur = document.title || '';
-      // Chỉ can thiệp khi tiêu đề còn thương hiệu template hoặc rỗng,
-      // tránh đè lên tiêu đề đã đặt đúng (vd trang sản phẩm).
-      if (!cur || /minimal/i.test(cur)) {
-        const left = cur.includes('|') ? cur.split('|')[0].trim() : '';
-        document.title = left ? `${left} | ${siteName}` : siteName;
-      }
+      // Chuẩn hoá MỌI tiêu đề về dạng "Tên trang | Tên web" để đồng nhất toàn site
+      // (thay các hậu tố cứng như "Digital Store" / "Quản trị" / "Minimal").
+      const left = cur.includes('|') ? cur.split('|')[0].trim() : cur.trim();
+      const desired = left ? `${left} | ${siteName}` : siteName;
+      if (cur !== desired) document.title = desired;
 
       let meta = document.querySelector('meta[name="description"]');
       const curDesc = meta?.getAttribute('content') || '';
