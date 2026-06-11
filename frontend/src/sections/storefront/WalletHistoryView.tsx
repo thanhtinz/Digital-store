@@ -23,7 +23,9 @@ import axiosInstance from '../../utils/axios';
 import { fCurrency } from '../../utils/formatNumber';
 // components
 import Label from '../../components/label';
+import Iconify from '../../components/iconify';
 import EmptyContent from '../../components/empty-content';
+import { useSnackbar } from '../../components/snackbar';
 
 // ----------------------------------------------------------------------
 
@@ -33,7 +35,42 @@ const statusColor = (s: string): any =>
 export default function WalletHistoryView() {
   const { isAuthenticated } = useAuthContext();
   const { translate } = useLocales();
+  const { enqueueSnackbar } = useSnackbar();
   const t = (k: string) => `${translate(`wallet_history_page.${k}`)}`;
+  const [exporting, setExporting] = useState(false);
+
+  // Xuất toàn bộ lịch sử ra file CSV (mở được bằng Excel).
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const r = await axiosInstance.get('/api/balance/history', { params: { page: 1, limit: 1000 } });
+      const rows = r.data?.items || [];
+      const header = ['Thời gian', 'Loại', 'Mô tả', 'Số tiền', 'Số dư sau', 'Trạng thái'];
+      const esc = (v: any) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+      const lines = rows.map((it: any) =>
+        [
+          it.createdAt ? new Date(it.createdAt).toLocaleString('vi-VN') : '',
+          it.type,
+          it.description || '',
+          it.amount,
+          it.balanceAfter,
+          it.status,
+        ].map(esc).join(',')
+      );
+      const csv = '﻿' + [header.map(esc).join(','), ...lines].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `lich-su-vi-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      enqueueSnackbar(e?.detail || 'Xuất thất bại', { variant: 'error' });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const [items, setItems] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
@@ -61,9 +98,19 @@ export default function WalletHistoryView() {
 
   return (
     <Container sx={{ pt: { xs: 3, md: 5 }, pb: 8 }}>
-      <Typography variant="h4" sx={{ mb: 3 }}>
-        {t('title')}
-      </Typography>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+        <Typography variant="h4">{t('title')}</Typography>
+        {isAuthenticated && items.length > 0 && (
+          <Button
+            variant="outlined"
+            startIcon={<Iconify icon="solar:file-download-bold" />}
+            onClick={exportCsv}
+            disabled={exporting}
+          >
+            Xuất CSV
+          </Button>
+        )}
+      </Stack>
 
       {!isAuthenticated ? (
         <EmptyContent title={t('login_required')} img="/assets/illustrations/illustration_empty_cart.svg" />

@@ -33,6 +33,9 @@ import AccountChangePassword from '../@dashboard/user/account/AccountChangePassw
 //
 import LoyaltyCard from './LoyaltyCard';
 import TwoFactorCard from './TwoFactorCard';
+import BadgesCard from './BadgesCard';
+import SessionsCard from './SessionsCard';
+import AccountNotificationsCard from './AccountNotificationsCard';
 import { orderStatusColor, orderStatusKey } from './orderStatus';
 
 // ----------------------------------------------------------------------
@@ -286,6 +289,9 @@ export default function ProfileView() {
 
           {/* Thẻ điểm thưởng (ẩn nếu tắt) */}
           <LoyaltyCard />
+
+          {/* Huy hiệu thành viên (ẩn nếu chưa có) */}
+          <BadgesCard />
         </Grid>
 
         {/* CỘT PHẢI */}
@@ -299,6 +305,8 @@ export default function ProfileView() {
               <Stack spacing={3}>
                 <TwoFactorCard />
                 <AccountChangePassword />
+                <AccountNotificationsCard />
+                <SessionsCard />
               </Stack>
             </Box>
 

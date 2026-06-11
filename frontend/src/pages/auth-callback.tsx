@@ -10,6 +10,8 @@ import { setSession } from '../auth/utils';
 import { PATH_AFTER_LOGIN } from '../config-global';
 // routes
 import { PATH_AUTH } from '../routes/paths';
+// utils
+import axiosInstance from '../utils/axios';
 // components
 import LoadingScreen from '../components/loading-screen';
 
@@ -17,13 +19,22 @@ import LoadingScreen from '../components/loading-screen';
 
 // Trang nhận token sau khi backend hoàn tất luồng OAuth (Google/GitHub/...).
 // Backend redirect về: /auth-callback?token=<JWT>
+// Cũng xử lý xác minh email: /auth-callback?verify=<token>
 export default function AuthCallbackPage() {
   const router = useRouter();
 
   useEffect(() => {
     if (!router.isReady) return;
 
-    const { token, error } = router.query;
+    const { token, error, verify } = router.query;
+
+    // Xác minh email
+    if (verify && typeof verify === 'string') {
+      axiosInstance
+        .post('/api/auth/verify-email', { token: verify })
+        .finally(() => router.replace(`${PATH_AUTH.login}?verified=1`));
+      return;
+    }
 
     if (error || !token || typeof token !== 'string') {
       router.replace(`${PATH_AUTH.login}?error=oauth_failed`);
