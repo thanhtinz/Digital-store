@@ -33,11 +33,12 @@ export default function ToggleButton({ notDefault, open, onToggle }: Props) {
     <Box
       sx={{
         p: 0.5,
-        right: 24,
-        bottom: 24,
+        right: 0,
+        top: '50%',
+        transform: 'translateY(-50%)',
         zIndex: 999,
         position: 'fixed',
-        borderRadius: '50%',
+        borderRadius: '50% 0 0 50%',
         boxShadow: `-12px 12px 32px -4px ${alpha(
           theme.palette.mode === 'light' ? theme.palette.grey[600] : theme.palette.common.black,
           0.36
