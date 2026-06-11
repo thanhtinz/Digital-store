@@ -12,6 +12,7 @@ import { fCurrency } from '../../utils/formatNumber';
 // components
 import Iconify from '../../components/iconify';
 import { useSnackbar } from '../../components/snackbar';
+import AdminPageHeader from './AdminPageHeader';
 
 // ----------------------------------------------------------------------
 
@@ -66,13 +67,15 @@ export default function AdminRanksView() {
   return (
     <RoleBasedGuard hasContent roles={['admin', 'superadmin']}>
       <Container sx={{ pb: 6 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ my: 3 }}>
-          <Typography variant="h4">Cấp bậc thành viên</Typography>
-          <Stack direction="row" spacing={1}>
-            <Button variant="outlined" onClick={recompute} startIcon={<Iconify icon="solar:refresh-bold" />}>Rà soát</Button>
-            <Button variant="contained" onClick={openNew} startIcon={<Iconify icon="eva:plus-fill" />}>Thêm hạng</Button>
-          </Stack>
-        </Stack>
+        <AdminPageHeader
+          title="Cấp bậc thành viên"
+          action={
+            <Stack direction="row" spacing={1}>
+              <Button variant="outlined" onClick={recompute} startIcon={<Iconify icon="solar:refresh-bold" />}>Rà soát</Button>
+              <Button variant="contained" onClick={openNew} startIcon={<Iconify icon="eva:plus-fill" />}>Thêm hạng</Button>
+            </Stack>
+          }
+        />
 
         <Grid container spacing={2}>
           {items.map((r) => (

@@ -12,6 +12,7 @@ import axiosInstance from '../../utils/axios';
 import Label from '../../components/label';
 import Iconify from '../../components/iconify';
 import { useSnackbar } from '../../components/snackbar';
+import AdminPageHeader from './AdminPageHeader';
 
 // ----------------------------------------------------------------------
 
@@ -88,10 +89,12 @@ export default function AdminWheelView() {
   return (
     <RoleBasedGuard hasContent roles={['admin', 'superadmin']}>
       <Container sx={{ pb: 6 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ my: 3 }}>
-          <Typography variant="h4">Vòng quay may mắn</Typography>
-          <Button variant="contained" onClick={openNew} startIcon={<Iconify icon="eva:plus-fill" />}>Thêm phần thưởng</Button>
-        </Stack>
+        <AdminPageHeader
+        title="Vòng quay may mắn"
+        action={
+          <><Button variant="contained" onClick={openNew} startIcon={<Iconify icon="eva:plus-fill" />}>Thêm phần thưởng</Button></>
+        }
+      />
 
         {/* Cấu hình vòng quay + ảnh tải lên */}
         <Card sx={{ p: 3, mb: 3 }}>

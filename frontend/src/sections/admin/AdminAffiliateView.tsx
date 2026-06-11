@@ -32,6 +32,7 @@ import { fCurrency } from '../../utils/formatNumber';
 import Label from '../../components/label';
 import Iconify from '../../components/iconify';
 import { useSnackbar } from '../../components/snackbar';
+import AdminPageHeader from './AdminPageHeader';
 
 // ----------------------------------------------------------------------
 
@@ -52,9 +53,7 @@ export default function AdminAffiliateView() {
   const [tab, setTab] = useState('partners');
   return (
     <Container maxWidth="lg" sx={{ pb: 8 }}>
-      <Typography variant="h4" sx={{ my: 3 }}>
-        Giới thiệu bạn bè (Affiliate)
-      </Typography>
+      <AdminPageHeader title="Giới thiệu bạn bè (Affiliate)" />
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
         <Tab value="partners" label="Cộng tác viên" icon={<Iconify icon="solar:users-group-rounded-bold" />} iconPosition="start" />
         <Tab value="withdrawals" label="Duyệt rút tiền" icon={<Iconify icon="solar:wallet-money-bold" />} iconPosition="start" />

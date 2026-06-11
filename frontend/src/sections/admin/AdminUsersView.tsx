@@ -27,6 +27,7 @@ import { fDate } from '../../utils/formatTime';
 import Label from '../../components/label';
 import Iconify from '../../components/iconify';
 import { useSnackbar } from '../../components/snackbar';
+import AdminPageHeader from './AdminPageHeader';
 
 // ----------------------------------------------------------------------
 
@@ -90,24 +91,21 @@ export default function AdminUsersView() {
 
   return (
     <Container sx={{ pb: 6 }} maxWidth="lg">
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        alignItems={{ sm: 'center' }}
-        justifyContent="space-between"
-        sx={{ my: 3, gap: 2 }}
-      >
-        <Typography variant="h4">Người dùng</Typography>
-        <TextField
-          size="small"
-          placeholder="Tìm theo email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && load(search)}
-          InputProps={{
-            startAdornment: <Iconify icon="eva:search-fill" sx={{ mr: 1, color: 'text.disabled' }} />,
-          }}
-        />
-      </Stack>
+      <AdminPageHeader
+        title="Người dùng"
+        action={
+          <TextField
+            size="small"
+            placeholder="Tìm theo email..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && load(search)}
+            InputProps={{
+              startAdornment: <Iconify icon="eva:search-fill" sx={{ mr: 1, color: 'text.disabled' }} />,
+            }}
+          />
+        }
+      />
 
       <Card>
         {loading ? (

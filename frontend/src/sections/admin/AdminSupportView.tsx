@@ -34,6 +34,7 @@ import Label from '../../components/label';
 import Iconify from '../../components/iconify';
 import ConfirmDialog from '../../components/confirm-dialog';
 import { useSnackbar } from '../../components/snackbar';
+import AdminPageHeader from './AdminPageHeader';
 
 // ----------------------------------------------------------------------
 
@@ -54,9 +55,7 @@ export default function AdminSupportView() {
   const [tab, setTab] = useState('tickets');
   return (
     <Container maxWidth="lg" sx={{ pb: 8 }}>
-      <Typography variant="h4" sx={{ my: 3 }}>
-        Hỗ trợ & Đánh giá
-      </Typography>
+      <AdminPageHeader title="Hỗ trợ & Đánh giá" />
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
         <Tab value="tickets" label="Ticket hỗ trợ" icon={<Iconify icon="solar:chat-round-dots-bold" />} iconPosition="start" />
         <Tab value="reviews" label="Đánh giá" icon={<Iconify icon="solar:star-bold" />} iconPosition="start" />

@@ -6,7 +6,7 @@ import AuthGuard from '../../auth/AuthGuard';
 import RoleBasedGuard from '../../auth/RoleBasedGuard';
 //
 import Main from './Main';
-import Header from './header';
+import AdminHeader from './header/AdminHeader';
 import AdminNavVertical from './nav/AdminNavVertical';
 
 // ----------------------------------------------------------------------
@@ -23,7 +23,7 @@ export default function AdminLayout({ children }: Props) {
   return (
     <AuthGuard>
       <RoleBasedGuard hasContent roles={['admin', 'superadmin', 'staff']}>
-        <Header onOpenNav={() => setOpen(true)} />
+        <AdminHeader onOpenNav={() => setOpen(true)} />
 
         <Box sx={{ display: { lg: 'flex' }, minHeight: { lg: 1 } }}>
           <AdminNavVertical openNav={open} onCloseNav={() => setOpen(false)} />

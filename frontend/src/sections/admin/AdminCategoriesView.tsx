@@ -27,6 +27,7 @@ import Iconify from '../../components/iconify';
 import ConfirmDialog from '../../components/confirm-dialog';
 import AdminCategoryForm from './AdminCategoryForm';
 import { useSnackbar } from '../../components/snackbar';
+import AdminPageHeader from './AdminPageHeader';
 
 // ----------------------------------------------------------------------
 
@@ -162,12 +163,14 @@ export default function AdminCategoriesView() {
 
   return (
     <Container sx={{ pb: 6 }} maxWidth="lg">
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ my: 3 }}>
-        <Typography variant="h4">Danh mục</Typography>
-        <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => openCreate()}>
+      <AdminPageHeader
+        title="Danh mục"
+        action={
+          <><Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => openCreate()}>
           Thêm danh mục
-        </Button>
-      </Stack>
+        </Button></>
+        }
+      />
 
       <Tabs
         value={typeFilter}

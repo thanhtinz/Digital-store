@@ -46,6 +46,7 @@ import Label from '../../components/label';
 import Iconify from '../../components/iconify';
 import ConfirmDialog from '../../components/confirm-dialog';
 import { useSnackbar } from '../../components/snackbar';
+import AdminPageHeader from './AdminPageHeader';
 
 // ----------------------------------------------------------------------
 
@@ -109,9 +110,7 @@ export default function AdminIntegrationsView() {
   const [tab, setTab] = useState('telegram');
   return (
     <Container maxWidth="lg" sx={{ pb: 8 }}>
-      <Typography variant="h4" sx={{ my: 3 }}>
-        Tích hợp
-      </Typography>
+      <AdminPageHeader title="Tích hợp" />
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }} variant="scrollable" scrollButtons="auto">
         <Tab value="telegram" label="Telegram Bot" icon={<Iconify icon="solar:bell-bing-bold" />} iconPosition="start" />
         <Tab value="email" label="Email / SMTP" icon={<Iconify icon="solar:letter-bold" />} iconPosition="start" />

@@ -42,6 +42,7 @@ import ConfirmDialog from '../../components/confirm-dialog';
 import ImageUploadField from './ImageUploadField';
 import Editor from '../../components/editor';
 import { useSnackbar } from '../../components/snackbar';
+import AdminPageHeader from './AdminPageHeader';
 
 // ----------------------------------------------------------------------
 
@@ -71,9 +72,7 @@ export default function AdminSmmView() {
 
   return (
     <Container maxWidth="lg" sx={{ pb: 8 }}>
-      <Typography variant="h4" sx={{ my: 3 }}>
-        SMM Panel
-      </Typography>
+      <AdminPageHeader title="SMM Panel" />
 
       <Tabs value={tab} onChange={(_, v) => changeTab(v)} sx={{ mb: 3 }} variant="scrollable" scrollButtons="auto">
         {TABS.map((t) => (

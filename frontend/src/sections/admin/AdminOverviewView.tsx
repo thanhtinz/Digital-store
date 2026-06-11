@@ -16,6 +16,7 @@ import axiosInstance from '../../utils/axios';
 import { fCurrency, fNumber } from '../../utils/formatNumber';
 // components
 import Iconify from '../../components/iconify';
+import AdminPageHeader from './AdminPageHeader';
 
 // ApexChart cần window -> tắt SSR.
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
@@ -110,9 +111,7 @@ export default function AdminOverviewView() {
   return (
     <RoleBasedGuard hasContent roles={['admin', 'superadmin', 'staff']}>
       <Container sx={{ pb: 6 }}>
-        <Typography variant="h4" sx={{ my: 3 }}>
-          Tổng quan quản trị
-        </Typography>
+        <AdminPageHeader title="Tổng quan" />
 
         {error && (
           <Typography color="error" sx={{ mb: 2 }}>
