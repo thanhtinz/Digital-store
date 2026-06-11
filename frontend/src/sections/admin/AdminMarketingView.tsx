@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 // @mui
 import {
+  Autocomplete,
   Box,
   Button,
   Card,
@@ -395,6 +396,10 @@ const GIFT_EMPTY = {
   is_public: false,
   is_active: true,
   description: '',
+  scope_type: 'all',
+  scope_ids: [] as number[],
+  payment_scope: 'all',
+  allowed_rank_ids: [] as number[],
 };
 
 function GiftTab() {
@@ -403,6 +408,10 @@ function GiftTab() {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<typeof GIFT_EMPTY | null>(null);
   const [toDelete, setToDelete] = useState<any>(null);
+  // Dữ liệu cho bộ chọn phạm vi.
+  const [products, setProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [ranks, setRanks] = useState<any[]>([]);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -410,6 +419,11 @@ function GiftTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => load(), [load]);
+  useEffect(() => {
+    axiosInstance.get('/api/products', { params: { limit: 300 } }).then((r) => setProducts(r.data?.products || r.data?.items || [])).catch(() => {});
+    axiosInstance.get('/api/categories').then((r) => setCategories(Array.isArray(r.data) ? r.data : r.data?.items || [])).catch(() => {});
+    axiosInstance.get('/api/admin/ranks').then((r) => setRanks(r.data?.items || [])).catch(() => {});
+  }, []);
 
   const create = async () => {
     if (!form) return;
@@ -430,6 +444,10 @@ function GiftTab() {
         is_public: form.is_public,
         is_active: form.is_active,
         description: form.description,
+        scope_type: form.scope_type,
+        scope_ids: form.scope_type === 'all' ? [] : form.scope_ids,
+        payment_scope: form.payment_scope,
+        allowed_rank_ids: form.allowed_rank_ids,
       });
       ok('Đã tạo mã');
       setForm(null);
@@ -525,6 +543,50 @@ function GiftTab() {
               </Stack>
               <TextField label="Hết hạn" type="datetime-local" value={form.expires_at} onChange={(e) => setForm({ ...form, expires_at: e.target.value })} InputLabelProps={{ shrink: true }} />
               <TextField label="Mô tả" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+
+              {/* Phạm vi áp dụng */}
+              <Stack direction="row" spacing={2}>
+                <TextField select fullWidth label="Áp dụng cho" value={form.scope_type} onChange={(e) => setForm({ ...form, scope_type: e.target.value, scope_ids: [] })}>
+                  <MenuItem value="all">Tất cả sản phẩm/dịch vụ</MenuItem>
+                  <MenuItem value="product">Sản phẩm chỉ định</MenuItem>
+                  <MenuItem value="category">Theo danh mục</MenuItem>
+                </TextField>
+                <TextField select fullWidth label="Cơ chế thanh toán" value={form.payment_scope} onChange={(e) => setForm({ ...form, payment_scope: e.target.value })}>
+                  <MenuItem value="all">Mọi hình thức</MenuItem>
+                  <MenuItem value="wallet">Số dư ví</MenuItem>
+                  <MenuItem value="sepay">Chuyển khoản VietQR</MenuItem>
+                </TextField>
+              </Stack>
+
+              {form.scope_type === 'product' && (
+                <Autocomplete
+                  multiple size="small" options={products}
+                  getOptionLabel={(o: any) => o.name || ''}
+                  value={products.filter((p: any) => form.scope_ids.includes(Number(p.id)))}
+                  onChange={(_, v) => setForm({ ...form, scope_ids: v.map((x: any) => Number(x.id)) })}
+                  renderInput={(p) => <TextField {...p} label="Chọn sản phẩm" />}
+                />
+              )}
+              {form.scope_type === 'category' && (
+                <Autocomplete
+                  multiple size="small" options={categories}
+                  getOptionLabel={(o: any) => o.name || ''}
+                  value={categories.filter((c: any) => form.scope_ids.includes(Number(c.id)))}
+                  onChange={(_, v) => setForm({ ...form, scope_ids: v.map((x: any) => Number(x.id)) })}
+                  renderInput={(p) => <TextField {...p} label="Chọn danh mục" />}
+                />
+              )}
+
+              {ranks.length > 0 && (
+                <Autocomplete
+                  multiple size="small" options={ranks}
+                  getOptionLabel={(o: any) => o.name || ''}
+                  value={ranks.filter((r: any) => form.allowed_rank_ids.includes(Number(r.id)))}
+                  onChange={(_, v) => setForm({ ...form, allowed_rank_ids: v.map((x: any) => Number(x.id)) })}
+                  renderInput={(p) => <TextField {...p} label="Hạng được nhận (trống = mọi hạng)" />}
+                />
+              )}
+
               <Stack direction="row" spacing={2}>
                 <FormControlLabel control={<Checkbox checked={form.is_public} onChange={(e) => setForm({ ...form, is_public: e.target.checked })} />} label="Công khai" />
                 <FormControlLabel control={<Checkbox checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />} label="Kích hoạt" />
