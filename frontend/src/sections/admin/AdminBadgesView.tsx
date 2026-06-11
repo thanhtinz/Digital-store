@@ -14,6 +14,7 @@ import Iconify from '../../components/iconify';
 import { useSnackbar } from '../../components/snackbar';
 import ResponsiveDialog from '../../components/responsive-dialog';
 import AdminPageHeader from './AdminPageHeader';
+import FeatureToggle from './FeatureToggle';
 
 // ----------------------------------------------------------------------
 
@@ -70,6 +71,13 @@ export default function AdminBadgesView() {
               <Button variant="contained" onClick={openNew} startIcon={<Iconify icon="eva:plus-fill" />}>Thêm</Button>
             </Stack>
           }
+        />
+
+        <FeatureToggle
+          flag="badges"
+          label="Huy hiệu thành viên"
+          description="Hiển thị huy hiệu trên hồ sơ khách hàng."
+          icon="solar:medal-ribbon-bold-duotone"
         />
 
         <Grid container spacing={2}>

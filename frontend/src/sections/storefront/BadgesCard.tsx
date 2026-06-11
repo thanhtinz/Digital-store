@@ -3,24 +3,30 @@ import { useEffect, useState } from 'react';
 import { Box, Card, Stack, Tooltip, Typography } from '@mui/material';
 // utils
 import axiosInstance from '../../utils/axios';
+// hooks
+import useSiteSettings from '../../hooks/useSiteSettings';
 // components
 import Iconify from '../../components/iconify';
 
 // ----------------------------------------------------------------------
 
 export default function BadgesCard() {
+  const settings = useSiteSettings();
+  const enabled = settings?.features?.badges !== false; // mặc định bật
   const [items, setItems] = useState<any[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    if (!enabled) return;
     axiosInstance
       .get('/api/badges/me')
       .then((r) => setItems(r.data?.items || []))
       .catch(() => {})
       .finally(() => setLoaded(true));
-  }, []);
+  }, [enabled]);
 
-  // Ẩn thẻ khi chưa có huy hiệu nào (tránh chiếm chỗ trống).
+  // Ẩn khi tính năng tắt hoặc chưa có huy hiệu nào.
+  if (!enabled) return null;
   if (loaded && items.length === 0) return null;
 
   return (

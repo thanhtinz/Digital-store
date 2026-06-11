@@ -33,6 +33,7 @@ import Label from '../../components/label';
 import Iconify from '../../components/iconify';
 import { useSnackbar } from '../../components/snackbar';
 import AdminPageHeader from './AdminPageHeader';
+import FeatureToggle from './FeatureToggle';
 
 // ----------------------------------------------------------------------
 
@@ -54,6 +55,13 @@ export default function AdminAffiliateView() {
   return (
     <Container maxWidth="lg" sx={{ pb: 8 }}>
       <AdminPageHeader title="Giới thiệu bạn bè (Affiliate)" />
+
+        <FeatureToggle
+          flag="affiliate"
+          label="Affiliate"
+          description="Cho phép khách tham gia tiếp thị liên kết."
+          icon="solar:users-group-rounded-bold-duotone"
+        />
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
         <Tab value="partners" label="Cộng tác viên" icon={<Iconify icon="solar:users-group-rounded-bold" />} iconPosition="start" />
         <Tab value="withdrawals" label="Duyệt rút tiền" icon={<Iconify icon="solar:wallet-money-bold" />} iconPosition="start" />

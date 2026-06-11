@@ -103,6 +103,18 @@ export default function AdminProductsView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Bật/tắt nhanh sản phẩm ngay tại danh sách.
+  const toggleActive = async (p: any) => {
+    const next = !p.isActive;
+    setProducts((list) => list.map((x) => (x.id === p.id ? { ...x, isActive: next } : x)));
+    try {
+      await axiosInstance.patch(`/api/products/admin/${p.id}`, { is_active: next });
+    } catch (e: any) {
+      setProducts((list) => list.map((x) => (x.id === p.id ? { ...x, isActive: !next } : x)));
+      enqueueSnackbar(e?.detail || 'Cập nhật thất bại', { variant: 'error' });
+    }
+  };
+
   const remove = async () => {
     if (!toDelete) return;
     try {
@@ -193,9 +205,12 @@ export default function AdminProductsView() {
                     <TableCell>{p.category?.name || '—'}</TableCell>
                     <TableCell>{minPrice(p) ? fCurrency(minPrice(p)) : '—'}</TableCell>
                     <TableCell>
-                      <Label color={p.isActive ? 'success' : 'default'} variant="soft">
-                        {p.isActive ? 'Đang bán' : 'Ẩn'}
-                      </Label>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Switch size="small" checked={p.isActive} onChange={() => toggleActive(p)} />
+                        <Label color={p.isActive ? 'success' : 'default'} variant="soft">
+                          {p.isActive ? 'Đang bán' : 'Ẩn'}
+                        </Label>
+                      </Stack>
                     </TableCell>
                     <TableCell align="right">
                       {/* Source: giá đặt trực tiếp trong form, không quản lý gói thủ công. */}

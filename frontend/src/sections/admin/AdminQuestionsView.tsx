@@ -13,6 +13,7 @@ import Label from '../../components/label';
 import Iconify from '../../components/iconify';
 import { useSnackbar } from '../../components/snackbar';
 import AdminPageHeader from './AdminPageHeader';
+import FeatureToggle from './FeatureToggle';
 
 // ----------------------------------------------------------------------
 
@@ -62,6 +63,13 @@ export default function AdminQuestionsView() {
     <RoleBasedGuard hasContent roles={['admin', 'superadmin', 'staff']}>
       <Container sx={{ pb: 6 }}>
         <AdminPageHeader title="Hỏi & Đáp sản phẩm" />
+
+        <FeatureToggle
+          flag="product_qa"
+          label="Hỏi & Đáp sản phẩm"
+          description="Cho phép khách đặt câu hỏi ở trang sản phẩm."
+          icon="solar:chat-round-question-bold-duotone"
+        />
 
         <Tabs value={filter} onChange={(_, v) => setFilter(v)} sx={{ mb: 3 }}>
           <Tab value="all" label="Tất cả" />

@@ -14,6 +14,7 @@ import Iconify from '../../components/iconify';
 import { useSnackbar } from '../../components/snackbar';
 import ResponsiveDialog from '../../components/responsive-dialog';
 import AdminPageHeader from './AdminPageHeader';
+import FeatureToggle from './FeatureToggle';
 
 // ----------------------------------------------------------------------
 
@@ -97,6 +98,13 @@ export default function AdminWheelView() {
         }
       />
 
+        <FeatureToggle
+          configKey="wheel_enabled"
+          label="Vòng quay may mắn"
+          description="Hiển thị vòng quay cho khách trên cửa hàng."
+          icon="solar:wheel-bold-duotone"
+        />
+
         {/* Cấu hình vòng quay + ảnh tải lên */}
         <Card sx={{ p: 3, mb: 3 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>Cấu hình vòng quay</Typography>
@@ -119,10 +127,6 @@ export default function AdminWheelView() {
               </Button>
             </Box>
             <Stack spacing={2} sx={{ flexGrow: 1 }}>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Switch checked={!!cfg.enabled} onChange={(e) => saveCfg({ enabled: e.target.checked })} />
-                <Typography variant="body2">Bật vòng quay trên client</Typography>
-              </Stack>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                 <TextField type="number" label="Số ô trên ảnh" size="small" fullWidth value={cfg.segments ?? 0}
                   onChange={(e) => setCfg({ ...cfg, segments: Number(e.target.value) })} onBlur={() => saveCfg({ segments: cfg.segments })}

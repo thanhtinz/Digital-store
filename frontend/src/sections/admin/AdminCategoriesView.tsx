@@ -9,6 +9,7 @@ import {
   Container,
   IconButton,
   Stack,
+  Switch,
   Tab,
   Table,
   TableBody,
@@ -86,6 +87,18 @@ export default function AdminCategoriesView() {
     setEditing({ current: null, presetParentId: parentId, presetProductType: productType });
   const openEdit = (c: Category) => setEditing({ current: c });
 
+  // Bật/tắt nhanh danh mục ngay tại danh sách.
+  const toggleActive = async (c: Category) => {
+    const next = !c.isActive;
+    setCats((list) => list.map((x) => (x.id === c.id ? { ...x, isActive: next } : x)));
+    try {
+      await axiosInstance.patch(`/api/categories/${c.id}`, { is_active: next });
+    } catch (e: any) {
+      setCats((list) => list.map((x) => (x.id === c.id ? { ...x, isActive: !next } : x)));
+      enqueueSnackbar(e?.detail || 'Cập nhật thất bại', { variant: 'error' });
+    }
+  };
+
   const remove = async () => {
     if (!toDelete) return;
     try {
@@ -122,9 +135,12 @@ export default function AdminCategoriesView() {
       </TableCell>
       <TableCell>{c.sortOrder}</TableCell>
       <TableCell>
-        <Label color={c.isActive ? 'success' : 'default'} variant="soft">
-          {c.isActive ? 'Hiện' : 'Ẩn'}
-        </Label>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Switch size="small" checked={c.isActive} onChange={() => toggleActive(c)} />
+          <Label color={c.isActive ? 'success' : 'default'} variant="soft">
+            {c.isActive ? 'Hiện' : 'Ẩn'}
+          </Label>
+        </Stack>
       </TableCell>
       <TableCell align="right">
         {!child && (

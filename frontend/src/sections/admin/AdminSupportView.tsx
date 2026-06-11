@@ -35,6 +35,7 @@ import Iconify from '../../components/iconify';
 import ConfirmDialog from '../../components/confirm-dialog';
 import { useSnackbar } from '../../components/snackbar';
 import AdminPageHeader from './AdminPageHeader';
+import FeatureToggle from './FeatureToggle';
 
 // ----------------------------------------------------------------------
 
@@ -56,6 +57,13 @@ export default function AdminSupportView() {
   return (
     <Container maxWidth="lg" sx={{ pb: 8 }}>
       <AdminPageHeader title="Hỗ trợ & Đánh giá" />
+
+        <FeatureToggle
+          flag="support"
+          label="Hỗ trợ / Ticket"
+          description="Cho phép khách tạo ticket hỗ trợ."
+          icon="solar:headphones-round-bold-duotone"
+        />
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
         <Tab value="tickets" label="Ticket hỗ trợ" icon={<Iconify icon="solar:chat-round-dots-bold" />} iconPosition="start" />
         <Tab value="reviews" label="Đánh giá" icon={<Iconify icon="solar:star-bold" />} iconPosition="start" />
