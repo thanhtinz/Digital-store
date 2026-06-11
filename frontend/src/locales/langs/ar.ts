@@ -57,6 +57,8 @@ const ar = {
   item_by_roles: `عنصر حسب الأدوار`,
   only_admin_can_see_this_item: `يمكن للمسؤول فقط رؤية هذا العنصر`,
   nav: {
+    flash_sale: `تخفيضات سريعة`,
+
     rewards: `المكافآت`,
     affiliate: `التسويق`,
     wallet_history: `سجل المحفظة`,
@@ -185,6 +187,15 @@ const ar = {
     role_admin: `مدير`,
     role_collaborator: `متعاون`,
     role_agency: `وكالة`,
+  },
+  flash_sale_page: {
+    title: `تخفيضات سريعة`,
+    subtitle: `عروض لفترة محدودة — سارع قبل النفاد!`,
+    empty: `لا توجد تخفيضات سريعة حالياً.`,
+    happening: `جارية الآن`,
+    upcoming: `قادمة`,
+    sold: `تم البيع`,
+    starts_soon: `تبدأ قريباً`,
   },
   home: {
     view_all: `عرض الكل`,

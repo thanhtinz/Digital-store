@@ -57,6 +57,8 @@ const en = {
   item_by_roles: `item by roles`,
   only_admin_can_see_this_item: `Only admin can see this item`,
   nav: {
+    flash_sale: `Flash Sale`,
+
     rewards: `Rewards`,
     affiliate: `Affiliate`,
     wallet_history: `Wallet history`,
@@ -185,6 +187,15 @@ const en = {
     role_admin: `Administrator`,
     role_collaborator: `Collaborator`,
     role_agency: `Agency`,
+  },
+  flash_sale_page: {
+    title: `Flash Sale`,
+    subtitle: `Limited-time deals — grab them before they're gone!`,
+    empty: `No flash sales available right now.`,
+    happening: `Happening now`,
+    upcoming: `Upcoming`,
+    sold: `Sold`,
+    starts_soon: `Starting soon`,
   },
   home: {
     view_all: `View all`,

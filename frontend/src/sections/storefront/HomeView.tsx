@@ -480,7 +480,7 @@ export default function HomeView() {
         <>
           <SectionHead
             title={t('flash_sale')}
-            viewAllHref={PATH_DASHBOARD.eCommerce.shop}
+            viewAllHref={PATH_DASHBOARD.flashSale}
             viewAllLabel={t('view_all')}
           />
           <Box

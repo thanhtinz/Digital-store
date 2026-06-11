@@ -57,6 +57,8 @@ const vn = {
   item_by_roles: `mục theo vai trò`,
   only_admin_can_see_this_item: `Chỉ có quản trị viên mới có thể nhìn thấy mục này`,
   nav: {
+    flash_sale: `Flash Sale`,
+
     rewards: `Điểm thưởng`,
     affiliate: `Affiliate`,
     wallet_history: `Lịch sử ví`,
@@ -185,6 +187,15 @@ const vn = {
     role_admin: `Quản trị viên`,
     role_collaborator: `Cộng tác viên`,
     role_agency: `Đại lý`,
+  },
+  flash_sale_page: {
+    title: `Flash Sale`,
+    subtitle: `Ưu đãi có hạn — nhanh tay kẻo lỡ!`,
+    empty: `Hiện chưa có chương trình Flash Sale nào.`,
+    happening: `Đang diễn ra`,
+    upcoming: `Sắp diễn ra`,
+    sold: `Đã bán`,
+    starts_soon: `Sắp bắt đầu`,
   },
   home: {
     view_all: `Xem tất cả`,

@@ -57,6 +57,8 @@ const fr = {
   item_by_roles: `élément par rôles`,
   only_admin_can_see_this_item: `seul l'administrateur peut voir cet élément`,
   nav: {
+    flash_sale: `Vente flash`,
+
     rewards: `Récompenses`,
     affiliate: `Affiliation`,
     wallet_history: `Historique`,
@@ -185,6 +187,15 @@ const fr = {
     role_admin: `Administrateur`,
     role_collaborator: `Collaborateur`,
     role_agency: `Agence`,
+  },
+  flash_sale_page: {
+    title: `Vente flash`,
+    subtitle: `Offres limitées — dépêchez-vous !`,
+    empty: `Aucune vente flash pour le moment.`,
+    happening: `En cours`,
+    upcoming: `À venir`,
+    sold: `Vendu`,
+    starts_soon: `Bientôt`,
   },
   home: {
     view_all: `Voir tout`,

@@ -213,6 +213,7 @@ export function useNavConfig() {
   // Mỗi tính năng coi như BẬT trừ khi admin đặt false tường minh.
   const on = (k: string) => features[k] !== false;
   const supportItems = [
+    ...(on('flash_sales') ? [{ title: t('flash_sale'), path: PATH_DASHBOARD.flashSale, icon: ICONS.label }] : []),
     ...(on('offers') ? [{ title: t('offers'), path: PATH_DASHBOARD.offers, icon: ICONS.label }] : []),
     ...(rewardsEnabled ? [{ title: t('rewards'), path: PATH_DASHBOARD.rewards, icon: ICONS.banking }] : []),
     ...(on('blog') ? [{ title: t('blog'), path: PATH_DASHBOARD.blog.posts, icon: ICONS.blog }] : []),

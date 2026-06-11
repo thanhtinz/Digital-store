@@ -57,6 +57,8 @@ const cn = {
   item_by_roles: `按角色逐项`,
   only_admin_can_see_this_item: `只有管理员可以看到这个项目`,
   nav: {
+    flash_sale: `限时抢购`,
+
     rewards: `积分奖励`,
     affiliate: `推广`,
     wallet_history: `钱包记录`,
@@ -185,6 +187,15 @@ const cn = {
     role_admin: `管理员`,
     role_collaborator: `合作者`,
     role_agency: `代理`,
+  },
+  flash_sale_page: {
+    title: `限时抢购`,
+    subtitle: `限时优惠 — 手快有手慢无！`,
+    empty: `暂无限时抢购活动。`,
+    happening: `正在进行`,
+    upcoming: `即将开始`,
+    sold: `已售`,
+    starts_soon: `即将开始`,
   },
   home: {
     view_all: `查看全部`,

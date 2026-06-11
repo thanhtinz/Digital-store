@@ -95,6 +95,7 @@ export const PATH_DASHBOARD = {
   },
   support: path(ROOTS_DASHBOARD, '/support'),
   offers: path(ROOTS_DASHBOARD, '/offers'),
+  flashSale: path(ROOTS_DASHBOARD, '/flash-sale'),
   rewards: path(ROOTS_DASHBOARD, '/rewards'),
   user: {
     root: path(ROOTS_DASHBOARD, '/user'),
