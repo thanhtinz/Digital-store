@@ -39,6 +39,7 @@ import ConfirmDialog from '../../components/confirm-dialog';
 import { useSnackbar } from '../../components/snackbar';
 import AdminProductForm from './AdminProductForm';
 import ImageUploadField from './ImageUploadField';
+import RankPriceEditor from './RankPriceEditor';
 
 // ----------------------------------------------------------------------
 
@@ -592,6 +593,14 @@ function PackagesDialog({ product, onClose, onChanged }: { product: any; onClose
                 control={<Switch checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />}
                 label="Đang bán"
               />
+
+              {form.id ? (
+                <RankPriceEditor packageId={form.id} basePrice={Number(form.price) || 0} />
+              ) : (
+                <Typography variant="caption" color="text.disabled">
+                  Lưu gói trước để cấu hình giá theo cấp bậc.
+                </Typography>
+              )}
 
               {form.delivery_type === 'api' && (
                 <>
