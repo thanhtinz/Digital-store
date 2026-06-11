@@ -1,6 +1,5 @@
 // @mui
 import { Alert, Box, Card, CircularProgress, Container, FormControlLabel, MenuItem, Stack, Switch, TextField } from '@mui/material';
-import AppLoader from '../../components/app-loader';
 import { LoadingButton } from '@mui/lab';
 // auth
 import RoleBasedGuard from '../../auth/RoleBasedGuard';
@@ -20,7 +19,7 @@ export default function AdminLivechatView() {
         <AdminPageHeader title="Live chat" links={[{ name: 'Cài đặt' }]} />
 
         {loading ? (
-          <Box sx={{ display: 'grid', placeItems: 'center', py: 8 }}><AppLoader /></Box>
+          <Box sx={{ display: 'grid', placeItems: 'center', py: 8 }}><CircularProgress /></Box>
         ) : (
           <Card sx={{ maxWidth: 720 }}>
             <Stack spacing={2.5} sx={{ p: 3 }}>
