@@ -241,6 +241,11 @@ const en = {
     role_collaborator: `Collaborator`,
     role_agency: `Agency`,
   },
+  notfound_page: {
+    title: `Sorry, page not found!`,
+    message: `The page you are looking for doesn’t exist or has been moved. Please check the URL.`,
+    button: `Go to Home`,
+  },
   flash_sale_page: {
     title: `Flash Sale`,
     subtitle: `Limited-time deals — grab them before they're gone!`,

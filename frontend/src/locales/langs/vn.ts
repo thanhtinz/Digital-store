@@ -240,6 +240,11 @@ const vn = {
     role_collaborator: `Cộng tác viên`,
     role_agency: `Đại lý`,
   },
+  notfound_page: {
+    title: `Rất tiếc, không tìm thấy trang!`,
+    message: `Có thể bạn gõ sai địa chỉ, hoặc trang đã bị xoá/di chuyển. Hãy kiểm tra lại đường dẫn.`,
+    button: `Về trang chủ`,
+  },
   flash_sale_page: {
     title: `Flash Sale`,
     subtitle: `Ưu đãi có hạn — nhanh tay kẻo lỡ!`,
