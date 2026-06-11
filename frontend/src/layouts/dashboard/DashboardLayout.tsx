@@ -8,6 +8,7 @@ import useCartSync from '../../hooks/useCartSync';
 import AuthGuard from '../../auth/AuthGuard';
 // components
 import { useSettingsContext } from '../../components/settings';
+import LiveChatWidget from '../../components/live-chat';
 //
 import Main from './Main';
 import Header from './header';
@@ -98,8 +99,18 @@ export default function DashboardLayout({ children, disableGuard = false }: Prop
   };
 
   if (disableGuard) {
-    return renderContent();
+    return (
+      <>
+        {renderContent()}
+        <LiveChatWidget />
+      </>
+    );
   }
 
-  return <AuthGuard> {renderContent()} </AuthGuard>;
+  return (
+    <AuthGuard>
+      {renderContent()}
+      <LiveChatWidget />
+    </AuthGuard>
+  );
 }

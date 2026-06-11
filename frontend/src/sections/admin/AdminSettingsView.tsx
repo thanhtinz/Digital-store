@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 // next
 import NextLink from 'next/link';
 // @mui
-import { Alert, AlertTitle, Box, Button, Card, CardHeader, CircularProgress, Container, Divider, FormControlLabel, Link, Stack, Switch, TextField, Typography } from '@mui/material';
+import { Alert, AlertTitle, Box, Button, Card, CardHeader, CircularProgress, Container, Divider, FormControlLabel, Link, MenuItem, Stack, Switch, TextField, Typography } from '@mui/material';
 // auth
 import RoleBasedGuard from '../../auth/RoleBasedGuard';
 // routes
@@ -45,6 +45,21 @@ const DRIVE_FIELDS: { key: string; label: string; help?: string; multiline?: boo
   },
   { key: 'source_drive_folder_id', label: 'Folder ID (tuỳ chọn)', help: 'ID folder gốc chứa mã nguồn (để tham chiếu).' },
   { key: 'source_download_expiry_minutes', label: 'Link tải hết hạn sau (phút)', help: 'Mặc định 60. Link tải dùng một lần và hết hạn sau số phút này.' },
+];
+
+// ── Live chat: nguồn + tham số ──
+const LIVECHAT_PROVIDERS = [
+  { value: 'builtin', label: 'Chat nội bộ (nút nổi → trang hỗ trợ)' },
+  { value: 'tawkto', label: 'Tawk.to' },
+  { value: 'crisp', label: 'Crisp' },
+  { value: 'messenger', label: 'Facebook Messenger' },
+  { value: 'zalo', label: 'Zalo OA' },
+  { value: 'custom', label: 'Mã nhúng tuỳ chỉnh' },
+];
+
+const LIVECHAT_KEYS = [
+  'livechat_enabled', 'livechat_provider', 'livechat_tawkto_id', 'livechat_crisp_id',
+  'livechat_messenger_page_id', 'livechat_messenger_color', 'livechat_zalo_oa_id', 'livechat_custom_code',
 ];
 
 // ── Bật/tắt tính năng của web (lưu trong settings_features JSON) ──
@@ -97,7 +112,7 @@ export default function AdminSettingsView() {
     setSaving(true);
     try {
       // Chỉ gửi các key có trong form để tránh ghi đè cấu hình khác.
-      const keys = [...FIELDS, ...DRIVE_FIELDS].map((f) => f.key);
+      const keys = [...FIELDS.map((f) => f.key), ...DRIVE_FIELDS.map((f) => f.key), ...LIVECHAT_KEYS];
       const payload: Record<string, string> = Object.fromEntries(keys.map((k) => [k, values[k] ?? '']));
       // Lưu cờ tính năng dưới dạng JSON (giữ nguyên các key khác như maintenance).
       payload.settings_features = JSON.stringify(features);
@@ -188,6 +203,98 @@ export default function AdminSettingsView() {
                     setFeatures((p) => ({ ...p, maintenance_message: e.target.value }))
                   }
                 />
+              </Stack>
+            </Card>
+
+            <Card>
+              <CardHeader
+                title="Live chat"
+                subheader="Hiển thị widget hỗ trợ ở góc trang client. Hỗ trợ nhiều nguồn."
+              />
+              <Stack spacing={2.5} sx={{ p: 3 }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={values.livechat_enabled === '1' || values.livechat_enabled === 'true'}
+                      onChange={(e) => set('livechat_enabled', e.target.checked ? '1' : '0')}
+                    />
+                  }
+                  label="Bật live chat trên client"
+                />
+
+                <TextField
+                  select
+                  label="Nguồn live chat"
+                  value={values.livechat_provider || 'builtin'}
+                  onChange={(e) => set('livechat_provider', e.target.value)}
+                >
+                  {LIVECHAT_PROVIDERS.map((p) => (
+                    <MenuItem key={p.value} value={p.value}>
+                      {p.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+
+                {(values.livechat_provider || 'builtin') === 'builtin' && (
+                  <Alert severity="info">
+                    Hiện nút chat nổi ở góc phải, bấm vào sẽ mở trang hỗ trợ/chat nội bộ của hệ thống.
+                  </Alert>
+                )}
+
+                {values.livechat_provider === 'tawkto' && (
+                  <TextField
+                    label="Tawk.to Property/Widget ID"
+                    helperText="Dạng PROPERTY_ID/WIDGET_ID (lấy từ Tawk.to → Administration → Chat Widget → mã nhúng)."
+                    value={values.livechat_tawkto_id || ''}
+                    onChange={(e) => set('livechat_tawkto_id', e.target.value)}
+                  />
+                )}
+
+                {values.livechat_provider === 'crisp' && (
+                  <TextField
+                    label="Crisp Website ID"
+                    helperText="Crisp → Settings → Website Settings → Setup instructions (CRISP_WEBSITE_ID)."
+                    value={values.livechat_crisp_id || ''}
+                    onChange={(e) => set('livechat_crisp_id', e.target.value)}
+                  />
+                )}
+
+                {values.livechat_provider === 'messenger' && (
+                  <>
+                    <TextField
+                      label="Facebook Page ID"
+                      helperText="ID trang Facebook. Cần thêm domain website vào whitelist trong cài đặt trang."
+                      value={values.livechat_messenger_page_id || ''}
+                      onChange={(e) => set('livechat_messenger_page_id', e.target.value)}
+                    />
+                    <TextField
+                      label="Màu chủ đạo (tuỳ chọn)"
+                      placeholder="#1877F2"
+                      value={values.livechat_messenger_color || ''}
+                      onChange={(e) => set('livechat_messenger_color', e.target.value)}
+                    />
+                  </>
+                )}
+
+                {values.livechat_provider === 'zalo' && (
+                  <TextField
+                    label="Zalo OA ID"
+                    helperText="ID Official Account Zalo (Zalo OA → Quản lý → Widget chat)."
+                    value={values.livechat_zalo_oa_id || ''}
+                    onChange={(e) => set('livechat_zalo_oa_id', e.target.value)}
+                  />
+                )}
+
+                {values.livechat_provider === 'custom' && (
+                  <TextField
+                    label="Mã nhúng tuỳ chỉnh (HTML/script)"
+                    multiline
+                    minRows={4}
+                    helperText="Dán nguyên đoạn mã nhúng của nhà cung cấp live chat bất kỳ."
+                    value={values.livechat_custom_code || ''}
+                    onChange={(e) => set('livechat_custom_code', e.target.value)}
+                  />
+                )}
               </Stack>
             </Card>
 

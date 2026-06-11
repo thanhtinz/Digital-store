@@ -164,7 +164,10 @@ router.delete(['/banners/:id', '/banners/admin/:id'], requireStaffOrAdmin, async
 
 router.get('/settings', async (_req: Request, res: Response) => {
   try {
-    const publicKeys = ['site_name', 'site_logo', 'site_description', 'currency', 'tax_rate', 'home_categories', 'contact_email', 'hotline', 'zalo', 'facebook', 'address', 'working_hours', 'copyright_text', 'footer_about', 'youtube', 'tiktok', 'telegram', 'instagram'];
+    const publicKeys = ['site_name', 'site_logo', 'site_description', 'currency', 'tax_rate', 'home_categories', 'contact_email', 'hotline', 'zalo', 'facebook', 'address', 'working_hours', 'copyright_text', 'footer_about', 'youtube', 'tiktok', 'telegram', 'instagram',
+      // Live chat (widget hiển thị ở client)
+      'livechat_enabled', 'livechat_provider', 'livechat_tawkto_id', 'livechat_crisp_id',
+      'livechat_messenger_page_id', 'livechat_messenger_color', 'livechat_zalo_oa_id', 'livechat_custom_code'];
     const configs = await prisma.siteConfig.findMany({ where: { key: { in: publicKeys } } });
     const map = Object.fromEntries(configs.map((c: { key: string; value: string | null }) => [c.key, c.value]));
     res.json(await withPublicFlags(map));
