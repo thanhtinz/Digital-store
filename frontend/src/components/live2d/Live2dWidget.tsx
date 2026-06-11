@@ -68,6 +68,7 @@ export default function Live2dWidget() {
   const appRef = useRef<any>(null);
   const modelRef = useRef<any>(null);
   const mouthTimer = useRef<any>(null);
+  const tickerFnRef = useRef<any>(null);
   const [live2dReady, setLive2dReady] = useState(false);
 
   const [open, setOpen] = useState(false);
@@ -76,6 +77,14 @@ export default function Live2dWidget() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
+
+  // Ref đồng bộ trạng thái cho các vòng lặp/ticker (tránh đóng băng giá trị cũ).
+  const openRef = useRef(open);
+  const sendingRef = useRef(sending);
+  const speakingRef = useRef(false);
+  const mouthRef = useRef(0);
+  useEffect(() => { openRef.current = open; }, [open]);
+  useEffect(() => { sendingRef.current = sending; }, [sending]);
 
   // ── Live2D init ──
   useEffect(() => {
@@ -108,6 +117,11 @@ export default function Live2dWidget() {
         app.stage.addChild(model);
         modelRef.current = model;
         setLive2dReady(true);
+        // Áp giá trị miệng MỖI FRAME sau khi model tự update (model auto-update đăng ký
+        // trên Ticker.shared trước, callback này thêm sau -> chạy sau -> không bị reset).
+        const fn = () => { if (speakingRef.current) setMouth(mouthRef.current); };
+        PIXI.Ticker.shared.add(fn);
+        tickerFnRef.current = fn;
         // chạm vào nhân vật -> mở chat
         model.on('hit', () => setOpen((o) => !o));
       } catch {
@@ -116,44 +130,60 @@ export default function Live2dWidget() {
     })();
     return () => {
       cancelled = true;
+      try {
+        const PIXI = (window as any).PIXI;
+        if (tickerFnRef.current && PIXI?.Ticker?.shared) PIXI.Ticker.shared.remove(tickerFnRef.current);
+      } catch { /* noop */ }
       try { appRef.current?.destroy(true); } catch { /* noop */ }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modelUrl]);
 
-  // ── Lời chào + tip ngẫu nhiên ──
+  // ── Chào 1 lần; sau đó CHỈ luân phiên lời thoại (tips) nếu có ──
   useEffect(() => {
-    const t0 = setTimeout(() => setBubble(greeting), 1500);
-    let i = 0;
-    const iv = setInterval(() => {
-      if (open || sending) return;
-      if (tips.length) {
-        setBubble(tips[i % tips.length]);
-        i += 1;
-        setTimeout(() => setBubble((b) => (b === tips[(i - 1) % tips.length] ? '' : b)), 6000);
-      }
-    }, 20000);
-    return () => { clearTimeout(t0); clearInterval(iv); };
+    let hideT: any;
+    const showOnce = (text: string) => {
+      if (openRef.current || sendingRef.current) return;
+      setBubble(text);
+      clearTimeout(hideT);
+      hideT = setTimeout(() => setBubble(''), 6000);
+    };
+    const greetT = setTimeout(() => showOnce(greeting), 1500); // chào đúng 1 lần
+    let iv: any;
+    if (tips.length) {
+      let i = 0;
+      iv = setInterval(() => { showOnce(tips[i % tips.length]); i += 1; }, 16000);
+    }
+    return () => { clearTimeout(greetT); clearTimeout(hideT); if (iv) clearInterval(iv); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [greeting, tips.length, open]);
+  }, [greeting, tips.join('|')]);
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, open]);
 
-  // ── Nhép miệng theo trạng thái nói ──
-  const setMouth = (v: number) => {
+  // ── Nhép miệng (hỗ trợ cả Cubism 2 & 4) ──
+  function setMouth(v: number) {
     try {
       const core = modelRef.current?.internalModel?.coreModel;
-      core?.setParameterValueById?.('ParamMouthOpenY', v);
+      if (!core) return;
+      if (typeof core.setParameterValueById === 'function') {
+        core.setParameterValueById('ParamMouthOpenY', v); // Cubism 4
+      } else if (typeof core.setParamFloat === 'function') {
+        core.setParamFloat('PARAM_MOUTH_OPEN_Y', v);       // Cubism 2
+      }
     } catch { /* noop */ }
-  };
+  }
   const startLipSync = () => {
     stopLipSync();
-    mouthTimer.current = setInterval(() => setMouth(Math.random() * 0.8 + 0.1), 120);
+    speakingRef.current = true;
+    // Cập nhật biên độ miệng; ticker sẽ áp giá trị mỗi frame.
+    mouthTimer.current = setInterval(() => { mouthRef.current = Math.random() * 0.8 + 0.15; }, 110);
   };
   const stopLipSync = () => {
     if (mouthTimer.current) { clearInterval(mouthTimer.current); mouthTimer.current = null; }
+    speakingRef.current = false;
+    mouthRef.current = 0;
     setMouth(0);
   };
 
