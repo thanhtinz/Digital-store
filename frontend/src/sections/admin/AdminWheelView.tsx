@@ -4,12 +4,8 @@ import {
   Box, Button, Card, Container, Dialog, DialogActions, DialogContent, DialogTitle,
   IconButton, MenuItem, Stack, Switch, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography, Alert,
 } from '@mui/material';
-// next
-import NextLink from 'next/link';
 // auth
 import RoleBasedGuard from '../../auth/RoleBasedGuard';
-// routes
-import { PATH_DASHBOARD } from '../../routes/paths';
 // utils
 import axiosInstance from '../../utils/axios';
 // components
@@ -22,11 +18,17 @@ import { useSnackbar } from '../../components/snackbar';
 const TYPES = [
   { value: 'points', label: 'Điểm thưởng' },
   { value: 'balance', label: 'Số dư (đ)' },
-  { value: 'voucher', label: 'Mã giảm giá' },
+  { value: 'voucher', label: 'Mã giảm giá (tự sinh)' },
+  { value: 'product', label: 'Sản phẩm (giao tự động)' },
   { value: 'none', label: 'Chúc may mắn (trượt)' },
 ];
 
-const empty = { label: '', type: 'points', value: 0, voucher_code: '', weight: 1, color: '#00AB55', stock: -1, is_active: true, sort_order: 0 };
+const empty = {
+  label: '', type: 'points', value: 0, voucher_code: '', weight: 1, color: '#00AB55', stock: -1,
+  is_active: true, sort_order: 0, image_url: '', segment_index: 0, package_id: '',
+  giftcode_type: 'percent', giftcode_value: '', giftcode_min_order: '', giftcode_max_discount: '',
+  giftcode_expiry_days: '', giftcode_prefix: 'LUCKY',
+};
 
 export default function AdminWheelView() {
   const { enqueueSnackbar } = useSnackbar();
@@ -34,13 +36,41 @@ export default function AdminWheelView() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<any>(empty);
   const [editId, setEditId] = useState<number | null>(null);
+  const [cfg, setCfg] = useState<any>({ enabled: false, cost_points: 0, free_daily: 0, image_url: '', segments: 0 });
 
   const load = () => axiosInstance.get('/api/wheel/admin/prizes').then((r) => setItems(r.data?.items || [])).catch(() => {});
-  useEffect(() => { load(); }, []);
+  const loadCfg = () => axiosInstance.get('/api/wheel/admin/config').then((r) => setCfg(r.data || {})).catch(() => {});
+  useEffect(() => { load(); loadCfg(); }, []);
+
+  const saveCfg = async (patch: any) => {
+    const next = { ...cfg, ...patch };
+    setCfg(next);
+    try { await axiosInstance.post('/api/wheel/admin/config', next); enqueueSnackbar('Đã lưu cấu hình'); }
+    catch (e: any) { enqueueSnackbar(e?.detail || 'Lưu thất bại', { variant: 'error' }); }
+  };
+
+  const uploadWheelImage = async (file: File) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const r = await axiosInstance.post('/api/banners/admin/upload-image', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const url = r.data?.url || r.data?.image_url || (r.data?.id ? `/api/images/${r.data.id}` : '');
+      if (url) await saveCfg({ image_url: url });
+    } catch (e: any) {
+      enqueueSnackbar(e?.detail || 'Tải ảnh thất bại', { variant: 'error' });
+    }
+  };
 
   const openNew = () => { setForm(empty); setEditId(null); setOpen(true); };
   const openEdit = (p: any) => {
-    setForm({ label: p.label, type: p.type, value: p.value, voucher_code: p.voucher_code || '', weight: p.weight, color: p.color, stock: p.stock, is_active: p.is_active, sort_order: p.sort_order });
+    setForm({
+      label: p.label, type: p.type, value: p.value, voucher_code: p.voucher_code || '', weight: p.weight,
+      color: p.color, stock: p.stock, is_active: p.is_active, sort_order: p.sort_order,
+      image_url: p.image_url || '', segment_index: p.segment_index || 0, package_id: p.package_id || '',
+      giftcode_type: p.giftcode_type || 'percent', giftcode_value: p.giftcode_value ?? '',
+      giftcode_min_order: p.giftcode_min_order ?? '', giftcode_max_discount: p.giftcode_max_discount ?? '',
+      giftcode_expiry_days: p.giftcode_expiry_days ?? '', giftcode_prefix: p.giftcode_prefix || 'LUCKY',
+    });
     setEditId(p.id); setOpen(true);
   };
 
@@ -63,10 +93,48 @@ export default function AdminWheelView() {
           <Button variant="contained" onClick={openNew} startIcon={<Iconify icon="eva:plus-fill" />}>Thêm phần thưởng</Button>
         </Stack>
 
-        <Alert severity="info" sx={{ mb: 2 }}>
-          Bật/tắt vòng quay và cấu hình phí, lượt miễn phí ở{' '}
-          <NextLink href={PATH_DASHBOARD.admin.settings} style={{ fontWeight: 600 }}>Cài đặt cửa hàng</NextLink>.
-        </Alert>
+        {/* Cấu hình vòng quay + ảnh tải lên */}
+        <Card sx={{ p: 3, mb: 3 }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>Cấu hình vòng quay</Typography>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
+            <Box sx={{ textAlign: 'center' }}>
+              <Box
+                sx={{
+                  width: 160, height: 160, borderRadius: '50%', mx: 'auto', mb: 1, border: '4px solid #fff',
+                  boxShadow: '0 4px 16px rgba(0,0,0,.2)', bgcolor: 'background.neutral',
+                  backgroundImage: cfg.image_url ? `url(${cfg.image_url})` : undefined,
+                  backgroundSize: 'cover', backgroundPosition: 'center',
+                  display: 'grid', placeItems: 'center',
+                }}
+              >
+                {!cfg.image_url && <Iconify icon="solar:gallery-bold" width={36} sx={{ color: 'text.disabled' }} />}
+              </Box>
+              <Button component="label" size="small" startIcon={<Iconify icon="solar:upload-bold" />}>
+                Tải ảnh vòng quay
+                <input hidden type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && uploadWheelImage(e.target.files[0])} />
+              </Button>
+            </Box>
+            <Stack spacing={2} sx={{ flexGrow: 1 }}>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Switch checked={!!cfg.enabled} onChange={(e) => saveCfg({ enabled: e.target.checked })} />
+                <Typography variant="body2">Bật vòng quay trên client</Typography>
+              </Stack>
+              <Stack direction="row" spacing={2}>
+                <TextField type="number" label="Số ô trên ảnh" size="small" fullWidth value={cfg.segments ?? 0}
+                  onChange={(e) => setCfg({ ...cfg, segments: Number(e.target.value) })} onBlur={() => saveCfg({ segments: cfg.segments })}
+                  helperText="Khớp số ô trên ảnh vòng quay" />
+                <TextField type="number" label="Phí/lượt (điểm)" size="small" fullWidth value={cfg.cost_points ?? 0}
+                  onChange={(e) => setCfg({ ...cfg, cost_points: Number(e.target.value) })} onBlur={() => saveCfg({ cost_points: cfg.cost_points })} />
+                <TextField type="number" label="Lượt free/ngày" size="small" fullWidth value={cfg.free_daily ?? 0}
+                  onChange={(e) => setCfg({ ...cfg, free_daily: Number(e.target.value) })} onBlur={() => saveCfg({ free_daily: cfg.free_daily })} />
+              </Stack>
+              <Alert severity="info">
+                Tải ảnh vòng quay, đặt <b>số ô</b> đúng bằng số phần trên ảnh, rồi với mỗi phần thưởng đặt
+                <b> vị trí ô</b> (0 = ô trên cùng, tăng theo chiều kim đồng hồ) để khớp với ảnh.
+              </Alert>
+            </Stack>
+          </Stack>
+        </Card>
 
         <Card>
           <Table>
@@ -120,11 +188,9 @@ export default function AdminWheelView() {
               <TextField select label="Loại" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
                 {TYPES.map((t) => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
               </TextField>
-              {form.type === 'voucher' ? (
-                <TextField label="Mã giảm giá trao khi trúng" value={form.voucher_code} onChange={(e) => setForm({ ...form, voucher_code: e.target.value })} />
-              ) : form.type !== 'none' ? (
+              {(form.type === 'points' || form.type === 'balance') && (
                 <TextField type="number" label="Giá trị (điểm/đ)" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} />
-              ) : null}
+              )}
               <Stack direction="row" spacing={2}>
                 <TextField type="number" label="Trọng số (xác suất)" value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} fullWidth />
                 <TextField type="number" label="Kho (-1 = ∞)" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} fullWidth />
@@ -132,7 +198,40 @@ export default function AdminWheelView() {
               <Stack direction="row" spacing={2}>
                 <TextField type="color" label="Màu" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} sx={{ width: 90 }} />
                 <TextField type="number" label="Thứ tự" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: e.target.value })} fullWidth />
+                <TextField type="number" label="Vị trí ô trên ảnh" value={form.segment_index} onChange={(e) => setForm({ ...form, segment_index: e.target.value })} fullWidth
+                  helperText="0 = ô trên cùng" />
               </Stack>
+
+              {form.type === 'product' && (
+                <TextField type="number" label="ID gói sản phẩm (package_id)" value={form.package_id}
+                  onChange={(e) => setForm({ ...form, package_id: e.target.value })}
+                  helperText="Trúng sẽ tự tạo đơn giá 0 + giao gói này. Lấy ID gói ở trang Sản phẩm." />
+              )}
+
+              {form.type === 'voucher' && (
+                <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'background.neutral' }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1.5 }}>Giftcode tự sinh khi trúng</Typography>
+                  <Stack spacing={2}>
+                    <Stack direction="row" spacing={2}>
+                      <TextField select size="small" label="Loại" value={form.giftcode_type} onChange={(e) => setForm({ ...form, giftcode_type: e.target.value })} sx={{ minWidth: 130 }}>
+                        <MenuItem value="percent">Giảm %</MenuItem>
+                        <MenuItem value="amount">Giảm tiền</MenuItem>
+                      </TextField>
+                      <TextField size="small" type="number" label="Giá trị" fullWidth value={form.giftcode_value} onChange={(e) => setForm({ ...form, giftcode_value: e.target.value })} />
+                    </Stack>
+                    <Stack direction="row" spacing={2}>
+                      <TextField size="small" type="number" label="Đơn tối thiểu" fullWidth value={form.giftcode_min_order} onChange={(e) => setForm({ ...form, giftcode_min_order: e.target.value })} />
+                      <TextField size="small" type="number" label="Giảm tối đa" fullWidth value={form.giftcode_max_discount} onChange={(e) => setForm({ ...form, giftcode_max_discount: e.target.value })} />
+                    </Stack>
+                    <Stack direction="row" spacing={2}>
+                      <TextField size="small" type="number" label="Hết hạn sau (ngày)" fullWidth value={form.giftcode_expiry_days} onChange={(e) => setForm({ ...form, giftcode_expiry_days: e.target.value })} />
+                      <TextField size="small" label="Tiền tố mã" fullWidth value={form.giftcode_prefix} onChange={(e) => setForm({ ...form, giftcode_prefix: e.target.value })} />
+                    </Stack>
+                    <TextField size="small" label="Hoặc mã cố định (bỏ trống nếu tự sinh)" value={form.voucher_code} onChange={(e) => setForm({ ...form, voucher_code: e.target.value })} />
+                  </Stack>
+                </Box>
+              )}
+
               <Stack direction="row" alignItems="center">
                 <Switch checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />
                 <Typography variant="body2">Đang bật</Typography>
