@@ -1,5 +1,6 @@
+import { useEffect } from 'react';
 // form
-import { Controller, useFormContext } from 'react-hook-form';
+import { Controller, useFormContext, useWatch } from 'react-hook-form';
 // @mui
 import { alpha } from '@mui/material/styles';
 import {
@@ -28,7 +29,7 @@ import { RHFRadioGroup, RHFSlider } from '../../../../components/hook-form';
 
 // ----------------------------------------------------------------------
 
-export type CategoryOption = { label: string; value: string };
+export type CategoryOption = { label: string; value: string; productType?: string };
 
 export const FILTER_RATING_OPTIONS = ['up4Star', 'up3Star', 'up2Star', 'up1Star'];
 
@@ -59,12 +60,33 @@ export default function ShopFilterDrawer({
   maxPrice,
   onResetFilter,
 }: Props) {
-  const { control } = useFormContext();
+  const { control, setValue } = useFormContext();
   const { translate } = useLocales();
   const t = (k: string) => `${translate(`shop_page.${k}`)}`;
 
-  const options = [{ label: t('all'), value: 'All' }, ...categories];
+  // Loại sản phẩm đang chọn -> lọc danh mục tương ứng bên dưới.
+  const selectedType = useWatch({ control, name: 'productType' });
+  const selectedCategory = useWatch({ control, name: 'category' });
+
+  const filteredCategories =
+    selectedType && selectedType !== 'All'
+      ? categories.filter((c) => !c.productType || c.productType === selectedType)
+      : categories;
+
+  const options = [{ label: t('all'), value: 'All' }, ...filteredCategories];
   const typeOptions = [{ label: t('all'), value: 'All' }, ...PRODUCT_TYPE_VALUES];
+
+  // Đổi loại sản phẩm mà danh mục đang chọn không còn thuộc loại đó -> reset về "Tất cả".
+  useEffect(() => {
+    if (
+      selectedCategory &&
+      selectedCategory !== 'All' &&
+      !filteredCategories.some((c) => c.value === selectedCategory)
+    ) {
+      setValue('category', 'All');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedType]);
 
   // Mốc giá cho slider (chia 4 nhãn).
   const step = Math.max(1000, Math.round(maxPrice / 100 / 1000) * 1000);

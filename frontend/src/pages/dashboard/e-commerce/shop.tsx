@@ -51,14 +51,22 @@ export default function EcommerceShopPage() {
 
   const [openFilter, setOpenFilter] = useState(false);
 
-  // Danh mục thật cho bộ lọc (thay cho các filter quần áo của template).
-  const [categories, setCategories] = useState<{ label: string; value: string }[]>([]);
+  // Danh mục thật cho bộ lọc (kèm loại sản phẩm để lọc danh mục theo loại).
+  const [categories, setCategories] = useState<
+    { label: string; value: string; productType?: string }[]
+  >([]);
   useEffect(() => {
     axiosInstance
       .get('/api/categories')
       .then((r) => {
         const list = Array.isArray(r.data) ? r.data : [];
-        setCategories(list.map((c: any) => ({ label: c.name, value: c.slug })));
+        setCategories(
+          list.map((c: any) => ({
+            label: c.name,
+            value: c.slug,
+            productType: c.productType || c.product_type || 'premium',
+          }))
+        );
       })
       .catch(() => {});
   }, []);
