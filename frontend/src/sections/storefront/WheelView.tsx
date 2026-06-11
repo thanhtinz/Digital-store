@@ -68,7 +68,10 @@ export default function WheelView() {
         ? (prizes.find((p) => p.id === prize?.id)?.segment_index ?? 0)
         : prizes.findIndex((p) => p.id === prize?.id);
       const idx = slot >= 0 ? slot : 0;
-      const target = 360 * 6 + (360 - (idx * seg + seg / 2));
+      // Ảnh tải lên: ô 0 căn giữa đỉnh (kim) -> không cộng nửa ô.
+      // Conic-gradient: mỗi ô bắt đầu từ đỉnh -> tâm ô lệch nửa ô.
+      const centerOffset = useImage ? 0 : seg / 2;
+      const target = 360 * 6 + (360 - (idx * seg + centerOffset));
       setAngle((prev) => prev - (prev % 360) + target);
       setTimeout(() => {
         setSpinning(false);
