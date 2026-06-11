@@ -40,10 +40,12 @@ export default function AdminWheelView() {
   const [form, setForm] = useState<any>(empty);
   const [editId, setEditId] = useState<number | null>(null);
   const [cfg, setCfg] = useState<any>({ enabled: false, cost_points: 0, free_daily: 0, image_url: '', segments: 0 });
+  const [history, setHistory] = useState<any[]>([]);
 
   const load = () => axiosInstance.get('/api/wheel/admin/prizes').then((r) => setItems(r.data?.items || [])).catch(() => {});
   const loadCfg = () => axiosInstance.get('/api/wheel/admin/config').then((r) => setCfg(r.data || {})).catch(() => {});
-  useEffect(() => { load(); loadCfg(); }, []);
+  const loadHistory = () => axiosInstance.get('/api/wheel/admin/history', { params: { limit: 100 } }).then((r) => setHistory(r.data?.items || [])).catch(() => {});
+  useEffect(() => { load(); loadCfg(); loadHistory(); }, []);
 
   const saveCfg = async (patch: any) => {
     const next = { ...cfg, ...patch };
@@ -187,6 +189,43 @@ export default function AdminWheelView() {
               )}
             </TableBody>
           </Table>
+          </TableContainer>
+        </Card>
+
+        {/* Lịch sử lượt quay */}
+        <Card sx={{ mt: 3 }}>
+          <Typography variant="h6" sx={{ p: 3, pb: 1 }}>Lịch sử quay gần đây</Typography>
+          <TableContainer sx={{ overflowX: 'auto' }}>
+            <Table sx={{ minWidth: 720 }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Người chơi</TableCell>
+                  <TableCell>Phần thưởng</TableCell>
+                  <TableCell>Loại</TableCell>
+                  <TableCell align="right">Giá trị / Mã</TableCell>
+                  <TableCell align="right">Phí (điểm)</TableCell>
+                  <TableCell align="right">Thời gian</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {history.map((h) => (
+                  <TableRow key={h.id} hover>
+                    <TableCell>
+                      <Typography variant="body2" noWrap>{h.user_name || h.user_email}</Typography>
+                      {h.user_name && <Typography variant="caption" color="text.secondary" noWrap>{h.user_email}</Typography>}
+                    </TableCell>
+                    <TableCell>{h.prize_label}</TableCell>
+                    <TableCell><Label variant="soft">{TYPES.find((t) => t.value === h.type)?.label || h.type}</Label></TableCell>
+                    <TableCell align="right">{h.type === 'voucher' ? (h.giftcode || '—') : h.value || '—'}</TableCell>
+                    <TableCell align="right">{h.cost_points || 0}</TableCell>
+                    <TableCell align="right">{new Date(h.created_at).toLocaleString('vi-VN')}</TableCell>
+                  </TableRow>
+                ))}
+                {history.length === 0 && (
+                  <TableRow><TableCell colSpan={6} align="center" sx={{ py: 4, color: 'text.secondary' }}>Chưa có lượt quay nào</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
           </TableContainer>
         </Card>
 
