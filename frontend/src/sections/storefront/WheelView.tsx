@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 // @mui
 import { LoadingButton } from '@mui/lab';
-import { Box, Card, Container, Stack, Typography, Divider } from '@mui/material';
+import { Box, Button, Card, Container, Stack, Typography, Divider, Dialog, DialogContent } from '@mui/material';
 // utils
 import axiosInstance from '../../utils/axios';
 // auth
@@ -12,7 +12,7 @@ import { useSnackbar } from '../../components/snackbar';
 
 // ----------------------------------------------------------------------
 
-type Prize = { id: number; label: string; color: string; type: string };
+type Prize = { id: number; label: string; color: string; type: string; segment_index?: number; image_url?: string };
 type Config = {
   enabled: boolean;
   cost_points: number;
@@ -20,6 +20,8 @@ type Config = {
   free_left: number;
   my_points: number;
   can_spin: boolean;
+  image_url?: string;
+  segments?: number;
   prizes: Prize[];
 };
 
@@ -30,6 +32,7 @@ export default function WheelView() {
   const [history, setHistory] = useState<any[]>([]);
   const [spinning, setSpinning] = useState(false);
   const [angle, setAngle] = useState(0);
+  const [result, setResult] = useState<any>(null);
   const wheelRef = useRef<HTMLDivElement>(null);
 
   const load = () => {
@@ -42,9 +45,12 @@ export default function WheelView() {
   }, [isAuthenticated]);
 
   const prizes = cfg?.prizes || [];
-  const seg = prizes.length ? 360 / prizes.length : 0;
+  // Vòng quay ảnh tải lên: số ô theo cấu hình segments; nếu không, theo số phần thưởng.
+  const useImage = !!cfg?.image_url;
+  const segCount = useImage ? (cfg?.segments || prizes.length || 1) : (prizes.length || 1);
+  const seg = 360 / segCount;
 
-  // Vẽ vòng quay bằng conic-gradient.
+  // Vẽ vòng quay bằng conic-gradient (khi không dùng ảnh).
   const gradient = prizes.length
     ? `conic-gradient(${prizes
         .map((p, i) => `${p.color} ${i * seg}deg ${(i + 1) * seg}deg`)
@@ -57,27 +63,27 @@ export default function WheelView() {
     try {
       const r = await axiosInstance.post('/api/wheel/spin');
       const prize = r.data?.prize;
-      const idx = prizes.findIndex((p) => p.id === prize?.id);
-      // Quay nhiều vòng + dừng ở giữa ô trúng (kim ở đỉnh = 0deg/360).
-      const target = idx >= 0 ? 360 * 6 + (360 - (idx * seg + seg / 2)) : 360 * 6;
+      // Vị trí ô trúng: ảnh -> segment_index của phần thưởng; gradient -> chỉ số trong danh sách.
+      const slot = useImage
+        ? (prizes.find((p) => p.id === prize?.id)?.segment_index ?? 0)
+        : prizes.findIndex((p) => p.id === prize?.id);
+      const idx = slot >= 0 ? slot : 0;
+      const target = 360 * 6 + (360 - (idx * seg + seg / 2));
       setAngle((prev) => prev - (prev % 360) + target);
       setTimeout(() => {
         setSpinning(false);
-        if (prize) {
-          if (prize.type === 'voucher' && prize.voucher_code) {
-            enqueueSnackbar(`🎉 Trúng ${prize.label}! Mã: ${prize.voucher_code}`, { variant: 'success' });
-          } else if (prize.type === 'none') {
-            enqueueSnackbar('Chúc bạn may mắn lần sau!');
-          } else {
-            enqueueSnackbar(`🎉 Bạn trúng: ${prize.label}`, { variant: 'success' });
-          }
-        }
+        if (prize) setResult(prize);
         load();
       }, 4200);
     } catch (e: any) {
       setSpinning(false);
       enqueueSnackbar(e?.detail || e?.message || 'Quay thất bại', { variant: 'error' });
     }
+  };
+
+  const copyCode = (code: string) => {
+    navigator.clipboard?.writeText(code);
+    enqueueSnackbar(`Đã sao chép mã ${code}`);
   };
 
   if (!isAuthenticated) {
@@ -122,7 +128,9 @@ export default function WheelView() {
                 ref={wheelRef}
                 sx={{
                   width: 320, height: 320, borderRadius: '50%', maxWidth: '100%',
-                  background: gradient,
+                  ...(useImage
+                    ? { backgroundImage: `url(${cfg.image_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                    : { background: gradient }),
                   border: '8px solid #fff',
                   boxShadow: '0 8px 24px rgba(0,0,0,.25)',
                   transition: spinning ? 'transform 4s cubic-bezier(.17,.67,.32,1.34)' : 'none',
@@ -130,7 +138,7 @@ export default function WheelView() {
                   position: 'relative',
                 }}
               >
-                {prizes.map((p, i) => (
+                {!useImage && prizes.map((p, i) => (
                   <Typography
                     key={p.id}
                     variant="caption"
@@ -189,6 +197,42 @@ export default function WheelView() {
           )}
         </Stack>
       )}
+
+      {/* Kết quả quay */}
+      <Dialog open={!!result} onClose={() => setResult(null)} maxWidth="xs" fullWidth>
+        <DialogContent sx={{ textAlign: 'center', py: 4 }}>
+          {result && (
+            <>
+              <Typography sx={{ fontSize: 56 }}>{result.type === 'none' ? '🍀' : '🎉'}</Typography>
+              <Typography variant="h5" sx={{ mt: 1 }}>
+                {result.type === 'none' ? 'Chúc bạn may mắn lần sau!' : `Bạn trúng: ${result.label}`}
+              </Typography>
+              {result.type === 'balance' && (
+                <Typography color="success.main" sx={{ mt: 1 }}>Đã cộng {result.value?.toLocaleString('vi-VN')}đ vào ví.</Typography>
+              )}
+              {result.type === 'points' && (
+                <Typography color="success.main" sx={{ mt: 1 }}>Đã cộng {result.value} điểm.</Typography>
+              )}
+              {result.type === 'product' && (
+                <Typography color="text.secondary" sx={{ mt: 1 }}>Phần thưởng sản phẩm sẽ xuất hiện trong đơn hàng của bạn.</Typography>
+              )}
+              {result.type === 'voucher' && result.voucher_code && (
+                <Box sx={{ mt: 2 }}>
+                  <Box sx={{ p: 1.5, border: '1px dashed', borderColor: 'divider', borderRadius: 1, mb: 1 }}>
+                    <Typography variant="h6" sx={{ letterSpacing: 1 }}>{result.voucher_code}</Typography>
+                  </Box>
+                  <Button variant="outlined" startIcon={<Iconify icon="solar:copy-bold" />} onClick={() => copyCode(result.voucher_code)}>
+                    Sao chép mã
+                  </Button>
+                </Box>
+              )}
+              <Box sx={{ mt: 3 }}>
+                <Button variant="contained" onClick={() => setResult(null)}>Đóng</Button>
+              </Box>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </Container>
   );
 }
