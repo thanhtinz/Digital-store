@@ -9,6 +9,8 @@ import { signToken, requireUser, requireAdmin, JWT_SECRET } from '../middleware/
 import { authRateLimit } from '../middleware/rateLimit';
 import { notifyNewUser } from '../services/telegram';
 import { getMaintenance, isStaffRole } from '../services/features';
+import { createSession } from '../services/session';
+import { markJtiRevoked } from '../middleware/auth';
 
 const MAINTENANCE_DEFAULT_MSG = 'Hệ thống đang bảo trì. Vui lòng quay lại sau.';
 import * as otplib from 'otplib';
@@ -20,6 +22,25 @@ const router = Router();
 
 // Upload avatar: ảnh giữ trong bộ nhớ, nén bằng sharp rồi lưu DB.
 const uploadAvatar = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
+
+// Lấy URL gốc của site (ưu tiên cấu hình admin → env).
+async function getSiteUrl(): Promise<string> {
+  const cfg = await prisma.siteConfig.findFirst({ where: { key: 'app_base_url' } });
+  return (cfg?.value || process.env.APP_BASE_URL || '').replace(/\/$/, '');
+}
+
+// Gửi email xác minh tài khoản.
+async function sendVerificationEmail(email: string, token: string): Promise<void> {
+  const siteUrl = await getSiteUrl();
+  const link = `${siteUrl}/auth-callback?verify=${token}`;
+  await sendMail({
+    to: email,
+    subject: 'Xác minh email tài khoản',
+    html: `<p>Chào mừng bạn! Vui lòng bấm vào liên kết sau để xác minh email:</p>
+           <p><a href="${link}">${link}</a></p>
+           <p>Nếu bạn không tạo tài khoản này, hãy bỏ qua email.</p>`,
+  });
+}
 
 // ── Register ───────────────────────────────────────────
 router.post('/register', authRateLimit, async (req: Request, res: Response) => {
@@ -41,12 +62,21 @@ router.post('/register', authRateLimit, async (req: Request, res: Response) => {
       return;
     }
     const hash = await bcrypt.hash(password, 12);
+    const verifyToken = crypto.randomBytes(24).toString('hex');
     const user = await prisma.user.create({
-      data: { email, passwordHash: hash, displayName: display_name || email.split('@')[0] },
+      data: {
+        email,
+        passwordHash: hash,
+        displayName: display_name || email.split('@')[0],
+        emailVerifyToken: verifyToken,
+      },
     });
-    const token = signToken({ user_id: user.id, email: user.email, display_name: user.displayName });
+    // Gửi email xác minh (không chặn luồng đăng ký nếu lỗi).
+    sendVerificationEmail(user.email, verifyToken).catch(() => {});
+    const sid = await createSession(user.id, req);
+    const token = signToken({ user_id: user.id, email: user.email, display_name: user.displayName, sid });
     notifyNewUser(user.id).catch(() => {}); // Telegram thông báo
-    res.json({ access_token: token, token, token_type: 'bearer', user: { id: user.id, email: user.email, display_name: user.displayName } });
+    res.json({ access_token: token, token, token_type: 'bearer', user: { id: user.id, email: user.email, display_name: user.displayName, email_verified: false } });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
   }
@@ -84,12 +114,13 @@ router.post('/login', authRateLimit, async (req: Request, res: Response) => {
         return;
       }
     }
-    const token = signToken({ user_id: user.id, email: user.email, display_name: user.displayName, role });
+    const sid = await createSession(user.id, req);
+    const token = signToken({ user_id: user.id, email: user.email, display_name: user.displayName, role, sid });
     res.json({
       access_token: token,
       token, // alias cho frontend (auth-pages.js đọc data.token)
       token_type: 'bearer',
-      user: { id: user.id, email: user.email, display_name: user.displayName, avatar_url: user.avatarUrl, balance: user.balance, role },
+      user: { id: user.id, email: user.email, display_name: user.displayName, avatar_url: user.avatarUrl, balance: user.balance, role, email_verified: user.emailVerified },
     });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
@@ -126,7 +157,8 @@ router.post('/admin/login', authRateLimit, async (req: Request, res: Response) =
       res.status(403).json({ detail: 'Tài khoản này không có quyền truy cập quản trị' });
       return;
     }
-    const token = signToken({ user_id: user.id, email: user.email, display_name: user.displayName, role });
+    const sid = await createSession(user.id, req);
+    const token = signToken({ user_id: user.id, email: user.email, display_name: user.displayName, role, sid });
     res.json({
       access_token: token,
       token,
@@ -152,7 +184,9 @@ router.get('/me', requireUser, async (req: Request, res: Response) => {
       avatar_url: user.avatarUrl,
       language: (user as any).language || 'vn',
       balance: user.balance,
+      points: user.points,
       is_active: user.isActive,
+      email_verified: user.emailVerified,
       two_factor_enabled: !!user.twoFactorSecret,
       role: adminUser?.role || 'user',
       created_at: user.createdAt,
@@ -294,12 +328,13 @@ router.get('/google/callback', async (req: Request, res: Response) => {
       if (maint.on) { res.redirect(`${baseUrl}/login?error=maintenance`); return; }
     }
     if (!user) {
-      user = await prisma.user.create({ data: { email, displayName: name, avatarUrl: picture, provider: 'google' } });
+      user = await prisma.user.create({ data: { email, displayName: name, avatarUrl: picture, provider: 'google', emailVerified: true } });
       notifyNewUser(user.id).catch(() => {});
     } else {
-      user = await prisma.user.update({ where: { id: user.id }, data: { displayName: name, avatarUrl: picture } });
+      user = await prisma.user.update({ where: { id: user.id }, data: { displayName: name, avatarUrl: picture, emailVerified: true } });
     }
-    const token = signToken({ user_id: user.id, email: user.email, display_name: user.displayName, role });
+    const sid = await createSession(user.id, req);
+    const token = signToken({ user_id: user.id, email: user.email, display_name: user.displayName, role, sid });
     res.redirect(`${baseUrl}/auth-callback?token=${token}`);
   } catch (e: any) {
     res.redirect(`${process.env.APP_BASE_URL || ''}/login?error=oauth_failed`);
@@ -397,6 +432,98 @@ router.post('/reset-password', authRateLimit, async (req: Request, res: Response
     const hash = await bcrypt.hash(new_password, 12);
     await prisma.user.update({ where: { id: user.id }, data: { passwordHash: hash } });
     res.json({ ok: true, message: 'Mật khẩu đã được cập nhật. Vui lòng đăng nhập lại.' });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+// ── Email verification ─────────────────────────────────
+// Xác minh email bằng token gửi qua mail (đăng ký xong).
+router.post('/verify-email', async (req: Request, res: Response) => {
+  try {
+    const token = String(req.body?.token || '').trim();
+    if (!token) { res.status(400).json({ detail: 'Thiếu token' }); return; }
+    const user = await prisma.user.findFirst({ where: { emailVerifyToken: token } });
+    if (!user) { res.status(400).json({ detail: 'Liên kết không hợp lệ hoặc đã dùng' }); return; }
+    await prisma.user.update({ where: { id: user.id }, data: { emailVerified: true, emailVerifyToken: null } });
+    res.json({ ok: true, message: 'Email đã được xác minh' });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+// Gửi lại email xác minh (cho user đã đăng nhập).
+router.post('/resend-verification', requireUser, authRateLimit, async (req: Request, res: Response) => {
+  try {
+    const payload = (req as any).user;
+    const user = await prisma.user.findUnique({ where: { id: payload.user_id } });
+    if (!user) { res.status(404).json({ detail: 'User not found' }); return; }
+    if (user.emailVerified) { res.json({ ok: true, message: 'Email đã xác minh' }); return; }
+    const token = user.emailVerifyToken || crypto.randomBytes(24).toString('hex');
+    if (!user.emailVerifyToken) {
+      await prisma.user.update({ where: { id: user.id }, data: { emailVerifyToken: token } });
+    }
+    await sendVerificationEmail(user.email, token);
+    res.json({ ok: true, message: 'Đã gửi lại email xác minh' });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+// ── Quản lý phiên đăng nhập (thiết bị) ─────────────────
+router.get('/sessions', requireUser, async (req: Request, res: Response) => {
+  try {
+    const payload = (req as any).user;
+    const currentSid = payload.sid || null;
+    const sessions = await prisma.userSession.findMany({
+      where: { userId: payload.user_id, revokedAt: null },
+      orderBy: { lastSeenAt: 'desc' },
+      take: 50,
+    });
+    res.json({
+      sessions: sessions.map((s: any) => ({
+        id: s.id,
+        user_agent: s.userAgent,
+        ip_address: s.ipAddress,
+        last_seen_at: s.lastSeenAt,
+        created_at: s.createdAt,
+        current: s.jti === currentSid,
+      })),
+    });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+// Đăng xuất 1 phiên cụ thể (thu hồi token của thiết bị đó).
+router.post('/sessions/:id/revoke', requireUser, async (req: Request, res: Response) => {
+  try {
+    const payload = (req as any).user;
+    const id = parseInt(req.params.id, 10);
+    const sess = await prisma.userSession.findUnique({ where: { id } });
+    if (!sess || sess.userId !== payload.user_id) { res.status(404).json({ detail: 'Không tìm thấy phiên' }); return; }
+    await prisma.userSession.update({ where: { id }, data: { revokedAt: new Date() } });
+    markJtiRevoked(sess.jti);
+    res.json({ ok: true });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+// Đăng xuất tất cả thiết bị khác (giữ phiên hiện tại).
+router.post('/sessions/revoke-others', requireUser, async (req: Request, res: Response) => {
+  try {
+    const payload = (req as any).user;
+    const currentSid = payload.sid || '';
+    const others = await prisma.userSession.findMany({
+      where: { userId: payload.user_id, revokedAt: null, NOT: { jti: currentSid } },
+    });
+    await prisma.userSession.updateMany({
+      where: { userId: payload.user_id, revokedAt: null, NOT: { jti: currentSid } },
+      data: { revokedAt: new Date() },
+    });
+    others.forEach((s: any) => markJtiRevoked(s.jti));
+    res.json({ ok: true, revoked: others.length });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
   }

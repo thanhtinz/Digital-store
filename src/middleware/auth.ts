@@ -38,7 +38,13 @@ function resolveJwtSecret(): string {
 
 export const JWT_SECRET = resolveJwtSecret();
 
-export function requireUser(req: Request, res: Response, next: NextFunction): void {
+// Cache jti đã thu hồi (đăng xuất từ xa) để tránh truy vấn DB mỗi request.
+const revokedJtis = new Set<string>();
+export function markJtiRevoked(jti: string): void {
+  if (jti) revokedJtis.add(jti);
+}
+
+export async function requireUser(req: Request, res: Response, next: NextFunction): Promise<void> {
   const header = req.headers.authorization;
   if (!header?.startsWith('Bearer ')) {
     res.status(401).json({ detail: 'Not authenticated' });
@@ -47,6 +53,24 @@ export function requireUser(req: Request, res: Response, next: NextFunction): vo
   try {
     const token = header.slice(7);
     const payload = jwt.verify(token, JWT_SECRET) as JwtPayload;
+    // Đăng xuất từ xa: nếu token gắn sid và phiên đã bị thu hồi -> chặn.
+    const sid = (payload as any).sid as string | undefined;
+    if (sid) {
+      if (revokedJtis.has(sid)) {
+        res.status(401).json({ detail: 'Phiên đã bị đăng xuất' });
+        return;
+      }
+      try {
+        const sess = await prisma.userSession.findUnique({ where: { jti: sid } });
+        if (sess?.revokedAt) {
+          revokedJtis.add(sid);
+          res.status(401).json({ detail: 'Phiên đã bị đăng xuất' });
+          return;
+        }
+      } catch {
+        /* DB lỗi -> fail-open, vẫn cho qua dựa trên token hợp lệ */
+      }
+    }
     (req as any).user = payload;
     next();
   } catch {

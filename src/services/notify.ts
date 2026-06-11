@@ -3,6 +3,7 @@
  * An toàn: mọi lỗi đều nuốt để không ảnh hưởng luồng chính.
  */
 import prisma from '../db';
+import { sendPushToUser } from './push';
 
 export interface NotifyInput {
   type?: string;        // order | payment | points | system...
@@ -25,6 +26,8 @@ export async function createNotification(userId: number | string | null | undefi
         link: input.link || null,
       },
     });
+    // Đẩy web push song song (không chờ, không ném lỗi).
+    sendPushToUser(uid, { title: input.title, body: input.body, url: input.link || '/' }).catch(() => {});
   } catch {
     /* bỏ qua: thông báo không được phép làm hỏng nghiệp vụ chính */
   }
