@@ -12,6 +12,7 @@ import { fCurrency } from '../../utils/formatNumber';
 // components
 import Iconify from '../../components/iconify';
 import { useSnackbar } from '../../components/snackbar';
+import ResponsiveDialog from '../../components/responsive-dialog';
 import AdminPageHeader from './AdminPageHeader';
 
 // ----------------------------------------------------------------------
@@ -105,7 +106,7 @@ export default function AdminRanksView() {
           ))}
         </Grid>
 
-        <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
+        <ResponsiveDialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
           <DialogTitle>{editId ? 'Sửa hạng' : 'Thêm hạng'}</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ mt: 1 }}>
@@ -138,7 +139,7 @@ export default function AdminRanksView() {
             <Button onClick={() => setOpen(false)}>Huỷ</Button>
             <Button variant="contained" onClick={save} disabled={!form.name}>Lưu</Button>
           </DialogActions>
-        </Dialog>
+        </ResponsiveDialog>
       </Container>
     </RoleBasedGuard>
   );

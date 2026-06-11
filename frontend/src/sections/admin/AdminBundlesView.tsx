@@ -13,6 +13,7 @@ import { fCurrency } from '../../utils/formatNumber';
 import Label from '../../components/label';
 import Iconify from '../../components/iconify';
 import { useSnackbar } from '../../components/snackbar';
+import ResponsiveDialog from '../../components/responsive-dialog';
 import AdminPageHeader from './AdminPageHeader';
 
 // ----------------------------------------------------------------------
@@ -113,7 +114,7 @@ export default function AdminBundlesView() {
           ))}
         </Grid>
 
-        <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
+        <ResponsiveDialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
           <DialogTitle>{editId ? 'Sửa combo' : 'Thêm combo'}</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ mt: 1 }}>
@@ -164,7 +165,7 @@ export default function AdminBundlesView() {
             <Button onClick={() => setOpen(false)}>Huỷ</Button>
             <Button variant="contained" onClick={save} disabled={!form.name || form.items.length === 0}>Lưu</Button>
           </DialogActions>
-        </Dialog>
+        </ResponsiveDialog>
       </Container>
     </RoleBasedGuard>
   );

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 // next
 import NextLink from 'next/link';
+import { useRouter } from 'next/router';
 // @mui
-import { Alert, AlertTitle, Box, Button, Card, CardHeader, CircularProgress, Container, Divider, FormControlLabel, Link, MenuItem, Stack, Switch, TextField, Typography } from '@mui/material';
+import { Alert, AlertTitle, Box, Button, Card, CardHeader, CircularProgress, Container, Divider, FormControlLabel, Link, MenuItem, Stack, Switch, Tab, Tabs, TextField } from '@mui/material';
 // auth
 import RoleBasedGuard from '../../auth/RoleBasedGuard';
 // routes
@@ -83,8 +84,19 @@ const FEATURE_TOGGLES: { key: string; label: string; help?: string }[] = [
   { key: 'api_docs', label: 'Tài liệu API' },
 ];
 
+const SETTINGS_TABS = [
+  { value: 'general', label: 'Thông tin chung' },
+  { value: 'features', label: 'Tính năng & Vòng quay' },
+  { value: 'livechat', label: 'Live chat' },
+  { value: 'source', label: 'Mã nguồn / Drive' },
+];
+
 export default function AdminSettingsView() {
   const { enqueueSnackbar } = useSnackbar();
+  const { query, push } = useRouter();
+  const tab = (query.tab as string) || 'general';
+  const goTab = (v: string) =>
+    push(v === 'general' ? '/dashboard/admin/settings' : `/dashboard/admin/settings?tab=${v}`, undefined, { shallow: true });
   const [values, setValues] = useState<Record<string, string>>({});
   const [features, setFeatures] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
@@ -137,12 +149,19 @@ export default function AdminSettingsView() {
       <Container sx={{ pb: 6 }}>
         <AdminPageHeader title="Cài đặt cửa hàng" />
 
+        <Tabs value={tab} onChange={(_, v) => goTab(v)} variant="scrollable" scrollButtons="auto" sx={{ mb: 3 }}>
+          {SETTINGS_TABS.map((t) => (
+            <Tab key={t.value} value={t.value} label={t.label} />
+          ))}
+        </Tabs>
+
         {loading ? (
           <Box sx={{ display: 'grid', placeItems: 'center', py: 8 }}>
             <CircularProgress />
           </Box>
         ) : (
           <Stack spacing={3}>
+            {tab === 'general' && (
             <Card>
               <CardHeader title="Thông tin chung" />
               <Stack spacing={2.5} sx={{ p: 3 }}>
@@ -159,7 +178,10 @@ export default function AdminSettingsView() {
                 ))}
               </Stack>
             </Card>
+            )}
 
+            {tab === 'features' && (
+            <>
             <Card>
               <CardHeader
                 title="Tính năng của web"
@@ -264,7 +286,10 @@ export default function AdminSettingsView() {
                 </Alert>
               </Stack>
             </Card>
+            </>
+            )}
 
+            {tab === 'livechat' && (
             <Card>
               <CardHeader
                 title="Live chat"
@@ -356,7 +381,10 @@ export default function AdminSettingsView() {
                 )}
               </Stack>
             </Card>
+            )}
 
+            {tab === 'source' && (
+            <>
             <Card>
               <CardHeader
                 title="Mã nguồn / Theme — Google Drive"
@@ -385,6 +413,8 @@ export default function AdminSettingsView() {
                 ))}
               </Stack>
             </Card>
+            </>
+            )}
 
             <Alert severity="info">
               Cấu hình <b>Cổng thanh toán (SePay)</b>, <b>Email/SMTP</b>, <b>Telegram</b>, <b>OAuth</b> và{' '}

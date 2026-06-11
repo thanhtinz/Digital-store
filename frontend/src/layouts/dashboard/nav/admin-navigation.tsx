@@ -18,60 +18,88 @@ const ICONS = {
   label: icon('ic_label'),
   blog: icon('ic_blog'),
   external: icon('ic_external'),
+  menuItem: icon('ic_menu_item'),
+  analytics: icon('ic_analytics'),
+  chat: icon('ic_chat'),
 };
 
 // ----------------------------------------------------------------------
-// Menu RIÊNG cho khu quản trị (AdminLayout). Tách khỏi sidebar cửa hàng.
-// (Để tiếng Việt — sẽ đa ngôn ngữ sau nếu cần.)
+// Menu khu quản trị — gom theo nhóm, mỗi nhóm là 1 mục dropdown (children).
+// Tách khỏi sidebar cửa hàng. Tiếng Việt.
 
 export function useAdminNavConfig() {
   return [
     {
-      subheader: 'Quản trị',
+      subheader: 'Tổng quan',
       items: [
         { title: 'Tổng quan', path: PATH_DASHBOARD.admin.root, icon: ICONS.dashboard },
-        { title: 'Đơn hàng', path: PATH_DASHBOARD.admin.orders, icon: ICONS.cart },
-        { title: 'Người dùng', path: PATH_DASHBOARD.admin.users, icon: ICONS.user },
       ],
     },
     {
-      subheader: 'Cửa hàng',
+      subheader: 'Quản lý',
       items: [
-        { title: 'Sản phẩm', path: PATH_DASHBOARD.admin.products, icon: ICONS.ecommerce },
-        { title: 'Danh mục', path: PATH_DASHBOARD.admin.categories, icon: ICONS.label },
-        { title: 'SMM Panel', path: PATH_DASHBOARD.admin.smm, icon: ICONS.cart },
-        { title: 'Marketing', path: PATH_DASHBOARD.admin.marketing, icon: ICONS.blog },
-        { title: 'Blog', path: PATH_DASHBOARD.admin.blog, icon: ICONS.blog },
+        {
+          title: 'Cửa hàng',
+          path: PATH_DASHBOARD.admin.products,
+          icon: ICONS.ecommerce,
+          children: [
+            { title: 'Sản phẩm', path: PATH_DASHBOARD.admin.products },
+            { title: 'Danh mục', path: PATH_DASHBOARD.admin.categories },
+            { title: 'Gói combo', path: PATH_DASHBOARD.admin.bundles },
+            { title: 'SMM Panel', path: PATH_DASHBOARD.admin.smm },
+          ],
+        },
+        {
+          title: 'Đơn & Khách',
+          path: PATH_DASHBOARD.admin.orders,
+          icon: ICONS.cart,
+          children: [
+            { title: 'Đơn hàng', path: PATH_DASHBOARD.admin.orders },
+            { title: 'Người dùng', path: PATH_DASHBOARD.admin.users },
+            { title: 'Cấp bậc thành viên', path: PATH_DASHBOARD.admin.ranks },
+          ],
+        },
+        {
+          title: 'Marketing & Ưu đãi',
+          path: PATH_DASHBOARD.admin.marketing,
+          icon: ICONS.label,
+          children: [
+            { title: 'Banner / Mã / Flash', path: PATH_DASHBOARD.admin.marketing },
+            { title: 'Vòng quay may mắn', path: PATH_DASHBOARD.admin.wheel },
+            { title: 'Điểm thưởng', path: PATH_DASHBOARD.admin.rewards },
+            { title: 'Huy hiệu', path: PATH_DASHBOARD.admin.badges },
+          ],
+        },
+        {
+          title: 'Nội dung & Hỗ trợ',
+          path: PATH_DASHBOARD.admin.support,
+          icon: ICONS.chat,
+          children: [
+            { title: 'Hỗ trợ & Đánh giá', path: PATH_DASHBOARD.admin.support },
+            { title: 'Hỏi & Đáp', path: PATH_DASHBOARD.admin.questions },
+            { title: 'Blog', path: PATH_DASHBOARD.admin.blog },
+            { title: 'Giới thiệu bạn bè', path: PATH_DASHBOARD.admin.affiliate },
+          ],
+        },
       ],
     },
     {
-      subheader: 'Vận hành',
+      subheader: 'Hệ thống',
       items: [
-        { title: 'Hỗ trợ & Đánh giá', path: PATH_DASHBOARD.admin.support, icon: ICONS.banking },
-        { title: 'Hỏi & Đáp', path: PATH_DASHBOARD.admin.questions, icon: ICONS.blog },
-        { title: 'Giới thiệu bạn bè', path: PATH_DASHBOARD.admin.affiliate, icon: ICONS.user },
-        { title: 'Điểm thưởng', path: PATH_DASHBOARD.admin.rewards, icon: ICONS.label },
-      ],
-    },
-    {
-      subheader: 'Ưu đãi & Tương tác',
-      items: [
-        { title: 'Gói combo', path: PATH_DASHBOARD.admin.bundles, icon: ICONS.cart },
-        { title: 'Vòng quay may mắn', path: PATH_DASHBOARD.admin.wheel, icon: ICONS.label },
-        { title: 'Huy hiệu', path: PATH_DASHBOARD.admin.badges, icon: ICONS.user },
-        { title: 'Cấp bậc thành viên', path: PATH_DASHBOARD.admin.ranks, icon: ICONS.user },
-      ],
-    },
-    {
-      subheader: 'Cấu hình',
-      items: [
-        { title: 'Cài đặt cửa hàng', path: PATH_DASHBOARD.admin.settings, icon: ICONS.banking },
+        {
+          title: 'Cài đặt',
+          path: PATH_DASHBOARD.admin.settings,
+          icon: ICONS.banking,
+          children: [
+            { title: 'Thông tin chung', path: PATH_DASHBOARD.admin.settings },
+            { title: 'Tính năng & Vòng quay', path: PATH_DASHBOARD.admin.settingsFeatures },
+            { title: 'Live chat', path: PATH_DASHBOARD.admin.settingsLivechat },
+            { title: 'Mã nguồn / Drive', path: PATH_DASHBOARD.admin.settingsSource },
+          ],
+        },
         { title: 'Tích hợp', path: PATH_DASHBOARD.admin.integrations, icon: ICONS.external },
+        { title: 'Về cửa hàng', path: '/', icon: ICONS.menuItem },
       ],
-    },
-    {
-      subheader: 'Khác',
-      items: [{ title: 'Về cửa hàng', path: '/', icon: ICONS.external }],
     },
   ];
 }

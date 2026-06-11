@@ -12,6 +12,7 @@ import axiosInstance from '../../utils/axios';
 import Label from '../../components/label';
 import Iconify from '../../components/iconify';
 import { useSnackbar } from '../../components/snackbar';
+import ResponsiveDialog from '../../components/responsive-dialog';
 import AdminPageHeader from './AdminPageHeader';
 
 // ----------------------------------------------------------------------
@@ -94,7 +95,7 @@ export default function AdminBadgesView() {
           ))}
         </Grid>
 
-        <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
+        <ResponsiveDialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
           <DialogTitle>{editId ? 'Sửa huy hiệu' : 'Thêm huy hiệu'}</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ mt: 1 }}>
@@ -122,7 +123,7 @@ export default function AdminBadgesView() {
             <Button onClick={() => setOpen(false)}>Huỷ</Button>
             <Button variant="contained" onClick={save}>Lưu</Button>
           </DialogActions>
-        </Dialog>
+        </ResponsiveDialog>
       </Container>
     </RoleBasedGuard>
   );
