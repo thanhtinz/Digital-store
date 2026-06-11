@@ -8,6 +8,8 @@ import { Stack, IconButton, InputAdornment, Alert } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 // auth
 import { useAuthContext } from '../../auth/useAuthContext';
+// locales
+import { useLocales } from '../../locales';
 // components
 import Iconify from '../../components/iconify';
 import FormProvider, { RHFTextField } from '../../components/hook-form';
@@ -24,14 +26,16 @@ type FormValuesProps = {
 
 export default function AuthRegisterForm() {
   const { register } = useAuthContext();
+  const { translate } = useLocales();
+  const t = (k: string) => `${translate(`auth.${k}`)}`;
 
   const [showPassword, setShowPassword] = useState(false);
 
   const RegisterSchema = Yup.object().shape({
-    firstName: Yup.string().required('First name required'),
-    lastName: Yup.string().required('Last name required'),
-    email: Yup.string().required('Email is required').email('Email must be a valid email address'),
-    password: Yup.string().required('Password is required'),
+    firstName: Yup.string().required(t('first_name_required')),
+    lastName: Yup.string().required(t('last_name_required')),
+    email: Yup.string().required(t('email_required')).email(t('email_invalid')),
+    password: Yup.string().required(t('password_required')),
   });
 
   const defaultValues = {
@@ -74,15 +78,15 @@ export default function AuthRegisterForm() {
         {!!errors.afterSubmit && <Alert severity="error">{errors.afterSubmit.message}</Alert>}
 
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-          <RHFTextField name="firstName" label="First name" />
-          <RHFTextField name="lastName" label="Last name" />
+          <RHFTextField name="firstName" label={t('first_name')} />
+          <RHFTextField name="lastName" label={t('last_name')} />
         </Stack>
 
-        <RHFTextField name="email" label="Email address" />
+        <RHFTextField name="email" label={t('email')} />
 
         <RHFTextField
           name="password"
-          label="Password"
+          label={t('password')}
           type={showPassword ? 'text' : 'password'}
           InputProps={{
             endAdornment: (
@@ -111,7 +115,7 @@ export default function AuthRegisterForm() {
             },
           }}
         >
-          Create account
+          {t('create_account_btn')}
         </LoadingButton>
       </Stack>
     </FormProvider>

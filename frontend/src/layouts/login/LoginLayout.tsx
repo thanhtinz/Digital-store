@@ -1,5 +1,9 @@
 // @mui
 import { Typography, Stack } from '@mui/material';
+// hooks
+import useSiteSettings from '../../hooks/useSiteSettings';
+// locales
+import { useLocales } from '../../locales';
 // components
 import Logo from '../../components/logo';
 import Image from '../../components/image';
@@ -15,6 +19,10 @@ type Props = {
 };
 
 export default function LoginLayout({ children, illustration, title }: Props) {
+  const settings = useSiteSettings();
+  const { translate } = useLocales();
+  const siteLogo = settings?.site_logo;
+
   return (
     <StyledRoot>
       <Logo
@@ -28,16 +36,27 @@ export default function LoginLayout({ children, illustration, title }: Props) {
 
       <StyledSection>
         <Typography variant="h3" sx={{ mb: 10, maxWidth: 480, textAlign: 'center' }}>
-          {title || 'Hi, Welcome back'}
+          {title || `${translate('auth.welcome_back')}`}
         </Typography>
 
-        <Image
-          disabledEffect
-          visibleByDefault
-          alt="auth"
-          src={illustration || '/assets/illustrations/illustration_dashboard.png'}
-          sx={{ maxWidth: 720 }}
-        />
+        {/* Logo thương hiệu lấy từ backend (nếu có cấu hình), nếu không dùng ảnh minh hoạ mặc định. */}
+        {siteLogo ? (
+          <Image
+            disabledEffect
+            visibleByDefault
+            alt={settings?.site_name || 'logo'}
+            src={siteLogo}
+            sx={{ maxWidth: 200, mx: 'auto' }}
+          />
+        ) : (
+          <Image
+            disabledEffect
+            visibleByDefault
+            alt="auth"
+            src={illustration || '/assets/illustrations/illustration_dashboard.png'}
+            sx={{ maxWidth: 720 }}
+          />
+        )}
 
         <StyledSectionBg />
       </StyledSection>

@@ -4,6 +4,8 @@ import NextLink from 'next/link';
 import { Stack, Typography, Link } from '@mui/material';
 // hooks
 import useSiteSettings from '../../hooks/useSiteSettings';
+// locales
+import { useLocales } from '../../locales';
 // layouts
 import LoginLayout from '../../layouts/login';
 // routes
@@ -16,18 +18,20 @@ import AuthRegisterForm from './AuthRegisterForm';
 
 export default function Register() {
   const settings = useSiteSettings();
+  const { translate } = useLocales();
+  const t = (k: string) => `${translate(`auth.${k}`)}`;
   const siteName = settings.site_name || 'Digital Store';
 
   return (
-    <LoginLayout title={settings.site_description || `Chào mừng đến với ${siteName}`}>
+    <LoginLayout title={settings.site_description || `${t('welcome_to')} ${siteName}`}>
       <Stack spacing={2} sx={{ mb: 5, position: 'relative' }}>
-        <Typography variant="h4">Đăng ký tài khoản miễn phí.</Typography>
+        <Typography variant="h4">{t('register_title')}</Typography>
 
         <Stack direction="row" spacing={0.5}>
-          <Typography variant="body2"> Đã có tài khoản? </Typography>
+          <Typography variant="body2"> {t('have_account')} </Typography>
 
           <Link component={NextLink} href={PATH_AUTH.login} variant="subtitle2">
-            Đăng nhập
+            {t('sign_in')}
           </Link>
         </Stack>
       </Stack>
@@ -38,13 +42,13 @@ export default function Register() {
         component="div"
         sx={{ color: 'text.secondary', mt: 3, typography: 'caption', textAlign: 'center' }}
       >
-        {'Khi đăng ký, tôi đồng ý với '}
+        {`${t('agree_1')} `}
         <Link underline="always" color="text.primary">
-          Điều khoản dịch vụ
+          {t('terms')}
         </Link>
-        {' và '}
+        {` ${t('and')} `}
         <Link underline="always" color="text.primary">
-          Chính sách bảo mật
+          {t('privacy')}
         </Link>
         .
       </Typography>

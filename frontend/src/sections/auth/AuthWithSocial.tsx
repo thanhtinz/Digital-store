@@ -5,6 +5,8 @@ import { Divider, IconButton, Stack, Tooltip } from '@mui/material';
 import { HOST_API_KEY } from '../../config-global';
 // utils
 import axios from '../../utils/axios';
+// locales
+import { useLocales } from '../../locales';
 // components
 import Iconify from '../../components/iconify';
 
@@ -27,6 +29,7 @@ const PROVIDERS = [
 
 export default function AuthWithSocial() {
   const [config, setConfig] = useState<OAuthConfig | null>(null);
+  const { translate } = useLocales();
 
   useEffect(() => {
     let active = true;
@@ -67,7 +70,7 @@ export default function AuthWithSocial() {
           },
         }}
       >
-        OR
+        {`${translate('auth.or')}`}
       </Divider>
 
       <Stack direction="row" justifyContent="center" spacing={2}>

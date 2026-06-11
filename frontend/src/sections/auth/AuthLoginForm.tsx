@@ -12,6 +12,8 @@ import { LoadingButton } from '@mui/lab';
 import { PATH_AUTH } from '../../routes/paths';
 // auth
 import { useAuthContext } from '../../auth/useAuthContext';
+// locales
+import { useLocales } from '../../locales';
 // components
 import Iconify from '../../components/iconify';
 import FormProvider, { RHFTextField } from '../../components/hook-form';
@@ -26,12 +28,14 @@ type FormValuesProps = {
 
 export default function AuthLoginForm() {
   const { login } = useAuthContext();
+  const { translate } = useLocales();
+  const t = (k: string) => `${translate(`auth.${k}`)}`;
 
   const [showPassword, setShowPassword] = useState(false);
 
   const LoginSchema = Yup.object().shape({
-    email: Yup.string().required('Email is required').email('Email must be a valid email address'),
-    password: Yup.string().required('Password is required'),
+    email: Yup.string().required(t('email_required')).email(t('email_invalid')),
+    password: Yup.string().required(t('password_required')),
   });
 
   const defaultValues = {
@@ -69,11 +73,11 @@ export default function AuthLoginForm() {
       <Stack spacing={3}>
         {!!errors.afterSubmit && <Alert severity="error">{errors.afterSubmit.message}</Alert>}
 
-        <RHFTextField name="email" label="Email address" />
+        <RHFTextField name="email" label={t('email')} />
 
         <RHFTextField
           name="password"
-          label="Password"
+          label={t('password')}
           type={showPassword ? 'text' : 'password'}
           InputProps={{
             endAdornment: (
@@ -95,7 +99,7 @@ export default function AuthLoginForm() {
           color="inherit"
           underline="always"
         >
-          Forgot password?
+          {t('forgot_password')}
         </Link>
       </Stack>
 
@@ -115,7 +119,7 @@ export default function AuthLoginForm() {
           },
         }}
       >
-        Login
+        {t('login_btn')}
       </LoadingButton>
     </FormProvider>
   );

@@ -6,6 +6,8 @@ import { Tooltip, Stack, Typography, Link, Box } from '@mui/material';
 import { useAuthContext } from '../../auth/useAuthContext';
 // hooks
 import useSiteSettings from '../../hooks/useSiteSettings';
+// locales
+import { useLocales } from '../../locales';
 // layouts
 import LoginLayout from '../../layouts/login';
 // routes
@@ -19,18 +21,20 @@ import AuthWithSocial from './AuthWithSocial';
 export default function Login() {
   const { method } = useAuthContext();
   const settings = useSiteSettings();
+  const { translate } = useLocales();
+  const t = (k: string) => `${translate(`auth.${k}`)}`;
   const siteName = settings.site_name || 'Digital Store';
 
   return (
     <LoginLayout>
       <Stack spacing={2} sx={{ mb: 5, position: 'relative' }}>
-        <Typography variant="h4">Đăng nhập {siteName}</Typography>
+        <Typography variant="h4">{`${t('sign_in')} ${siteName}`}</Typography>
 
         <Stack direction="row" spacing={0.5}>
-          <Typography variant="body2">Chưa có tài khoản?</Typography>
+          <Typography variant="body2">{t('no_account')}</Typography>
 
           <Link component={NextLink} href={PATH_AUTH.register} variant="subtitle2">
-            Tạo tài khoản
+            {t('create_account')}
           </Link>
         </Stack>
 
