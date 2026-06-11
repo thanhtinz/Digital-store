@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 // @mui
 import { LoadingButton } from '@mui/lab';
 import { Box, Button, Card, Container, Stack, Typography, Divider, Dialog, DialogContent } from '@mui/material';
+import { keyframes } from '@mui/system';
 // utils
 import axiosInstance from '../../utils/axios';
 // auth
@@ -11,6 +12,11 @@ import Iconify from '../../components/iconify';
 import { useSnackbar } from '../../components/snackbar';
 
 // ----------------------------------------------------------------------
+
+const marquee = keyframes`
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+`;
 
 type Prize = { id: number; label: string; color: string; type: string; segment_index?: number; image_url?: string };
 type Config = {
@@ -184,52 +190,50 @@ export default function WheelView() {
             )}
           </Card>
 
-          <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' } }}>
-            {/* Lịch sử cá nhân */}
-            <Card sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>Lịch sử của bạn</Typography>
-              <Divider sx={{ mb: 1 }} />
-              {history.length === 0 ? (
-                <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>Bạn chưa quay lần nào.</Typography>
-              ) : (
-                <Stack divider={<Divider />}>
-                  {history.map((h) => (
-                    <Stack key={h.id} direction="row" justifyContent="space-between" alignItems="center" sx={{ py: 1 }}>
-                      <Typography variant="body2">{h.prize_label}{h.giftcode ? ` · ${h.giftcode}` : ''}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {new Date(h.created_at).toLocaleDateString('vi-VN')}
-                      </Typography>
-                    </Stack>
+          {/* Lịch sử chung — chữ chạy (marquee) */}
+          {recent.length > 0 && (
+            <Card sx={{ overflow: 'hidden', display: 'flex', alignItems: 'center', bgcolor: 'background.neutral' }}>
+              <Box sx={{ px: 2, py: 1.25, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'primary.main', color: 'common.white' }}>
+                <Iconify icon="solar:cup-star-bold" width={18} />
+                <Typography variant="caption" sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}>VỪA TRÚNG</Typography>
+              </Box>
+              <Box sx={{ overflow: 'hidden', flexGrow: 1, position: 'relative' }}>
+                <Box
+                  sx={{
+                    display: 'inline-flex', whiteSpace: 'nowrap', willChange: 'transform',
+                    animation: `${marquee} ${Math.max(20, recent.length * 4)}s linear infinite`,
+                    '&:hover': { animationPlayState: 'paused' },
+                  }}
+                >
+                  {[...recent, ...recent].map((h, i) => (
+                    <Typography key={i} component="span" variant="body2" sx={{ px: 2.5, py: 1.25 }}>
+                      🎉 <b>{h.user}</b> vừa trúng <b>{h.prize_label}</b>
+                    </Typography>
                   ))}
-                </Stack>
-              )}
+                </Box>
+              </Box>
             </Card>
+          )}
 
-            {/* Lịch sử chung */}
-            <Card sx={{ p: 3 }}>
-              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-                <Iconify icon="solar:users-group-rounded-bold" sx={{ color: 'primary.main' }} />
-                <Typography variant="h6">Người chơi vừa trúng</Typography>
+          {/* Lịch sử cá nhân */}
+          <Card sx={{ p: 3 }}>
+            <Typography variant="h6" sx={{ mb: 2 }}>Lịch sử của bạn</Typography>
+            <Divider sx={{ mb: 1 }} />
+            {history.length === 0 ? (
+              <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>Bạn chưa quay lần nào.</Typography>
+            ) : (
+              <Stack divider={<Divider />}>
+                {history.map((h) => (
+                  <Stack key={h.id} direction="row" justifyContent="space-between" alignItems="center" sx={{ py: 1 }}>
+                    <Typography variant="body2">{h.prize_label}{h.giftcode ? ` · ${h.giftcode}` : ''}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {new Date(h.created_at).toLocaleDateString('vi-VN')}
+                    </Typography>
+                  </Stack>
+                ))}
               </Stack>
-              <Divider sx={{ mb: 1 }} />
-              {recent.length === 0 ? (
-                <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>Chưa có ai trúng thưởng.</Typography>
-              ) : (
-                <Stack divider={<Divider />}>
-                  {recent.map((h) => (
-                    <Stack key={h.id} direction="row" justifyContent="space-between" alignItems="center" sx={{ py: 1 }}>
-                      <Typography variant="body2">
-                        <b>{h.user}</b> trúng {h.prize_label}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {new Date(h.created_at).toLocaleDateString('vi-VN')}
-                      </Typography>
-                    </Stack>
-                  ))}
-                </Stack>
-              )}
-            </Card>
-          </Box>
+            )}
+          </Card>
         </Stack>
       )}
 
