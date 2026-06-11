@@ -1,13 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 // @mui
+import { alpha } from '@mui/material/styles';
 import {
   Box,
   Button,
   Card,
-  CardContent,
   CardHeader,
   CircularProgress,
   Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Grid,
   IconButton,
   InputAdornment,
@@ -40,19 +44,6 @@ import { useSnackbar } from '../../components/snackbar';
 const statusColor = (s: string): any =>
   ({ paid: 'success', approved: 'success', pending: 'warning', rejected: 'error' }[s] || 'default');
 
-function StatCard({ label, value, color }: { label: string; value: string; color?: string }) {
-  return (
-    <Card sx={{ p: 2.5, textAlign: 'center', height: 1 }}>
-      <Typography variant="h4" sx={{ color: color || 'text.primary' }}>
-        {value}
-      </Typography>
-      <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
-        {label}
-      </Typography>
-    </Card>
-  );
-}
-
 export default function AffiliateView() {
   const { isAuthenticated } = useAuthContext();
   const { enqueueSnackbar } = useSnackbar();
@@ -63,6 +54,14 @@ export default function AffiliateView() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [amount, setAmount] = useState('');
+  const [openRedeem, setOpenRedeem] = useState(false);
+
+  // Bộ lọc lịch sử giao dịch
+  const [fDesc, setFDesc] = useState('');
+  const [fMin, setFMin] = useState('');
+  const [fMax, setFMax] = useState('');
+  const [fFrom, setFFrom] = useState('');
+  const [fTo, setFTo] = useState('');
 
   const load = () => {
     if (!isAuthenticated) {
@@ -103,6 +102,7 @@ export default function AffiliateView() {
       await axiosInstance.post('/api/balance/affiliate-withdraw', { amount: val });
       enqueueSnackbar(t('withdraw_sent'));
       setAmount('');
+      setOpenRedeem(false);
       load();
     } catch (e: any) {
       enqueueSnackbar(e?.detail || t('withdraw_failed'), { variant: 'error' });
@@ -111,17 +111,38 @@ export default function AffiliateView() {
     }
   };
 
-  const refLink =
-    data?.ref_code && typeof window !== 'undefined'
-      ? `${window.location.origin}/?ref=${data.ref_code}`
-      : '';
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  // Hai dạng link giới thiệu: theo mã (dễ nhớ) và theo ID (số).
+  const refLinkCode = data?.ref_code ? `${origin}/?ref=${data.ref_code}` : '';
+  const refLinkId = data?.id ? `${origin}/?aff=${data.id}` : '';
 
   const copy = (text: string) => {
+    if (!text) return;
     navigator.clipboard?.writeText(text);
     enqueueSnackbar(t('copied'));
   };
 
+  const referrals: any[] = data?.referrals || [];
   const available = data ? (data.total_earnings || 0) - (data.total_paid || 0) : 0;
+
+  // Lọc lịch sử ở client theo mô tả / khoảng tiền / khoảng ngày.
+  const filtered = useMemo(() => {
+    const min = fMin ? Number(fMin) : null;
+    const max = fMax ? Number(fMax) : null;
+    const from = fFrom ? new Date(fFrom).getTime() : null;
+    const to = fTo ? new Date(fTo).getTime() + 86400000 : null;
+    return referrals.filter((r) => {
+      const desc = `#${r.order_id}`;
+      if (fDesc && !desc.toLowerCase().includes(fDesc.toLowerCase())) return false;
+      const amt = Number(r.commission) || 0;
+      if (min != null && amt < min) return false;
+      if (max != null && amt > max) return false;
+      const ts = r.created_at ? new Date(r.created_at).getTime() : 0;
+      if (from != null && ts < from) return false;
+      if (to != null && ts >= to) return false;
+      return true;
+    });
+  }, [referrals, fDesc, fMin, fMax, fFrom, fTo]);
 
   return (
     <Container sx={{ pt: { xs: 3, md: 5 }, pb: 8 }}>
@@ -148,113 +169,136 @@ export default function AffiliateView() {
         </Card>
       ) : (
         <Stack spacing={3}>
-          {/* Mã & link giới thiệu */}
-          <Card sx={{ p: 2.5 }}>
-            <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label={t('ref_code')}
-                  value={data.ref_code}
-                  InputProps={{
-                    readOnly: true,
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <Tooltip title={t('copy')}>
-                          <IconButton onClick={() => copy(data.ref_code)}>
-                            <Iconify icon="solar:copy-bold" />
-                          </IconButton>
-                        </Tooltip>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
+          {/* ── Thông tin chương trình + link giới thiệu ── */}
+          <Card sx={{ p: { xs: 2.5, md: 3 } }}>
+            <Typography variant="h6">{t('info_title')}</Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1 }}>
+              {t('info_desc_1')}{' '}
+              <Box component="strong" sx={{ color: 'text.primary' }}>
+                {data.commission_rate || 0}%
+              </Box>{' '}
+              {t('info_desc_2')}
+            </Typography>
+
+            <Grid container spacing={2} sx={{ mt: 0.5 }}>
+              <Grid item xs={12} md={6}>
+                <RefLinkField label={`${t('ref_link')} 1`} value={refLinkCode} onCopy={copy} t={t} />
               </Grid>
-              <Grid item xs={12} md={8}>
-                <TextField
-                  fullWidth
-                  label={t('ref_link')}
-                  value={refLink}
-                  InputProps={{
-                    readOnly: true,
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <Tooltip title={t('copy')}>
-                          <IconButton onClick={() => copy(refLink)}>
-                            <Iconify icon="solar:copy-bold" />
-                          </IconButton>
-                        </Tooltip>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </Grid>
+              {refLinkId && (
+                <Grid item xs={12} md={6}>
+                  <RefLinkField label={`${t('ref_link')} 2`} value={refLinkId} onCopy={copy} t={t} />
+                </Grid>
+              )}
             </Grid>
           </Card>
 
-          {/* Thống kê */}
-          <Grid container spacing={2}>
-            <Grid item xs={6} md={3}>
-              <StatCard label={t('commission_rate')} value={`${data.commission_rate || 0}%`} />
-            </Grid>
-            <Grid item xs={6} md={3}>
-              <StatCard label={t('total_earnings')} value={fCurrency(data.total_earnings)} />
-            </Grid>
-            <Grid item xs={6} md={3}>
-              <StatCard label={t('available')} value={fCurrency(available)} color="#229A16" />
-            </Grid>
-            <Grid item xs={6} md={3}>
-              <StatCard label={t('total_paid')} value={fCurrency(data.total_paid)} />
-            </Grid>
-          </Grid>
-
-          {/* Rút hoa hồng */}
-          <Card sx={{ p: 2.5 }}>
+          {/* ── Quy đổi ── */}
+          <Card sx={{ p: { xs: 2.5, md: 3 } }}>
             <Typography variant="h6" sx={{ mb: 2 }}>
-              {t('withdraw')}
+              {t('redeem_title')}
             </Typography>
-            <Stack direction="row" spacing={2}>
-              <TextField
-                type="number"
-                label={t('withdraw_amount')}
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                sx={{ maxWidth: 260 }}
-              />
-              <Button variant="contained" disabled={busy} onClick={withdraw} startIcon={<Iconify icon="solar:wallet-money-bold" />}>
-                {t('withdraw_btn')}
-              </Button>
-            </Stack>
-            <Typography variant="caption" sx={{ color: 'text.secondary', mt: 1, display: 'block' }}>
-              {t('available')}: {fCurrency(available)}
-            </Typography>
+
+            <Grid container spacing={2} alignItems="stretch">
+              <Grid item xs={12} md={4}>
+                <Box
+                  sx={{
+                    p: 3,
+                    height: 1,
+                    borderRadius: 2,
+                    color: 'common.white',
+                    background: (theme) =>
+                      `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                  }}
+                >
+                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                    {t('total_received')}
+                  </Typography>
+                  <Typography variant="h3" sx={{ mt: 0.5 }}>
+                    {fCurrency(data.total_earnings)}
+                  </Typography>
+                </Box>
+              </Grid>
+
+              <Grid item xs={6} md={2.5}>
+                <StatBox label={t('total_referrals')} value={`${referrals.length} ${t('people')}`} />
+              </Grid>
+              <Grid item xs={6} md={2.5}>
+                <StatBox label={t('remaining')} value={fCurrency(available)} highlight />
+              </Grid>
+
+              <Grid item xs={12} md={3}>
+                <Stack justifyContent="center" sx={{ height: 1 }}>
+                  <Button
+                    fullWidth
+                    size="large"
+                    variant="contained"
+                    color="success"
+                    disabled={available <= 0}
+                    onClick={() => setOpenRedeem(true)}
+                    startIcon={<Iconify icon="solar:wallet-money-bold" />}
+                  >
+                    {t('redeem_btn')}
+                  </Button>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', mt: 1, textAlign: 'center' }}>
+                    {t('total_paid')}: {fCurrency(data.total_paid)}
+                  </Typography>
+                </Stack>
+              </Grid>
+            </Grid>
           </Card>
 
-          {/* Lịch sử giới thiệu */}
+          {/* ── Lịch sử giao dịch ── */}
           <Card>
-            <CardHeader title={t('referrals')} />
-            <CardContent sx={{ p: 0, mt: 2 }}>
-              {data.referrals?.length ? (
+            <CardHeader title={t('tx_history')} />
+            <Box sx={{ p: { xs: 2, md: 3 } }}>
+              <Stack
+                direction={{ xs: 'column', md: 'row' }}
+                spacing={1.5}
+                sx={{ mb: 2 }}
+                alignItems={{ md: 'center' }}
+              >
+                <TextField size="small" label={t('f_desc')} value={fDesc} onChange={(e) => setFDesc(e.target.value)} />
+                <TextField size="small" type="number" label={t('f_amount_from')} value={fMin} onChange={(e) => setFMin(e.target.value)} />
+                <TextField size="small" type="number" label={t('f_amount_to')} value={fMax} onChange={(e) => setFMax(e.target.value)} />
+                <TextField size="small" type="date" label={t('f_from_date')} InputLabelProps={{ shrink: true }} value={fFrom} onChange={(e) => setFFrom(e.target.value)} />
+                <TextField size="small" type="date" label={t('f_to_date')} InputLabelProps={{ shrink: true }} value={fTo} onChange={(e) => setFTo(e.target.value)} />
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  onClick={() => {
+                    setFDesc('');
+                    setFMin('');
+                    setFMax('');
+                    setFFrom('');
+                    setFTo('');
+                  }}
+                  startIcon={<Iconify icon="eva:refresh-fill" />}
+                >
+                  {t('f_reset')}
+                </Button>
+              </Stack>
+
+              {filtered.length ? (
                 <TableContainer>
                   <Table size="small">
                     <TableHead>
                       <TableRow>
-                        <TableCell>{t('date')}</TableCell>
-                        <TableCell>{t('order')}</TableCell>
-                        <TableCell align="right">{t('amount')}</TableCell>
-                        <TableCell align="right">{t('commission')}</TableCell>
+                        <TableCell>{t('col_time')}</TableCell>
+                        <TableCell>{t('col_desc')}</TableCell>
+                        <TableCell align="right">{t('col_amount')}</TableCell>
                         <TableCell align="center">{t('status')}</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {data.referrals.map((r: any) => (
+                      {filtered.map((r: any) => (
                         <TableRow key={r.id} hover>
-                          <TableCell sx={{ fontSize: 13 }}>
-                            {r.created_at ? new Date(r.created_at).toLocaleDateString('vi-VN') : '-'}
+                          <TableCell sx={{ fontSize: 13, whiteSpace: 'nowrap' }}>
+                            {r.created_at ? new Date(r.created_at).toLocaleString('vi-VN') : '-'}
                           </TableCell>
-                          <TableCell>#{r.order_id}</TableCell>
-                          <TableCell align="right">{fCurrency(r.order_amount)}</TableCell>
-                          <TableCell align="right" sx={{ color: 'success.main' }}>
+                          <TableCell>
+                            {t('commission_for_order')} #{r.order_id}
+                          </TableCell>
+                          <TableCell align="right" sx={{ color: 'success.main', fontWeight: 600, whiteSpace: 'nowrap' }}>
                             +{fCurrency(r.commission)}
                           </TableCell>
                           <TableCell align="center">
@@ -274,10 +318,96 @@ export default function AffiliateView() {
                   </Typography>
                 </Box>
               )}
-            </CardContent>
+            </Box>
           </Card>
         </Stack>
       )}
+
+      {/* Dialog Quy đổi */}
+      <Dialog open={openRedeem} onClose={() => setOpenRedeem(false)} fullWidth maxWidth="xs">
+        <DialogTitle>{t('redeem_title')}</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
+            {t('remaining')}: <strong>{fCurrency(available)}</strong>
+          </Typography>
+          <TextField
+            autoFocus
+            fullWidth
+            type="number"
+            label={t('withdraw_amount')}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            InputProps={{ endAdornment: <InputAdornment position="end">đ</InputAdornment> }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button color="inherit" onClick={() => setOpenRedeem(false)}>
+            {t('cancel')}
+          </Button>
+          <Button variant="contained" color="success" disabled={busy} onClick={withdraw}>
+            {t('redeem_btn')}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
+  );
+}
+
+// ----------------------------------------------------------------------
+
+function RefLinkField({
+  label,
+  value,
+  onCopy,
+  t,
+}: {
+  label: string;
+  value: string;
+  onCopy: (v: string) => void;
+  t: (k: string) => string;
+}) {
+  return (
+    <TextField
+      fullWidth
+      size="small"
+      label={label}
+      value={value}
+      InputProps={{
+        readOnly: true,
+        endAdornment: (
+          <InputAdornment position="end">
+            <Tooltip title={t('copy')}>
+              <IconButton onClick={() => onCopy(value)} edge="end">
+                <Iconify icon="solar:copy-bold" />
+              </IconButton>
+            </Tooltip>
+          </InputAdornment>
+        ),
+      }}
+    />
+  );
+}
+
+function StatBox({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+  return (
+    <Box
+      sx={{
+        p: 2,
+        height: 1,
+        borderRadius: 2,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        bgcolor: (theme) =>
+          highlight ? alpha(theme.palette.success.main, 0.12) : alpha(theme.palette.grey[500], 0.08),
+      }}
+    >
+      <Typography variant="h5" sx={{ color: highlight ? 'success.dark' : 'text.primary' }}>
+        {value}
+      </Typography>
+      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+        {label}
+      </Typography>
+    </Box>
   );
 }
