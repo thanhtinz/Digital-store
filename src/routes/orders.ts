@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../db';
 import { requireUser, requireAdmin, requireStaffOrAdmin } from '../middleware/auth';
-import { orderToDict, genOrderCode, applyCoupon, autoDeliver, money, refundOrderBalance, maybeSendGiftEmail } from '../services/orders';
+import { orderToDict, genOrderCode, applyCoupon, autoDeliver, money, refundOrderBalance, maybeSendGiftEmail, onOrderCompleted } from '../services/orders';
 import { issueSourceForOrder } from '../services/source';
 import { notifyNewOrder } from '../services/telegram';
 import { createNotification } from '../services/notify';
@@ -289,6 +289,132 @@ router.post(['/', '/create'], requireUser, async (req: Request, res: Response) =
   }
 });
 
+// ── Mua không cần đăng nhập (Guest checkout) ──────────
+// Khách nhập email → tạo đơn (thanh toán SePay) → nhận sản phẩm qua email.
+// Không hỗ trợ thanh toán bằng số dư / đổi điểm. userId = "guest:<email>".
+router.post('/guest', async (req: Request, res: Response) => {
+  try {
+    const { items, coupon_code, notes } = req.body;
+    const email = String(req.body.email || '').trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      res.status(422).json({ detail: 'Email không hợp lệ' });
+      return;
+    }
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      res.status(422).json({ detail: 'Cần ít nhất 1 sản phẩm' });
+      return;
+    }
+    // Nếu email đã có tài khoản → yêu cầu đăng nhập (tránh chiếm dụng).
+    const existed = await prisma.user.findUnique({ where: { email } });
+    if (existed) {
+      res.status(409).json({ detail: 'Email đã có tài khoản. Vui lòng đăng nhập để mua hàng.', need_login: true });
+      return;
+    }
+
+    const guestId = `guest:${email}`;
+    const packageIds = items.map((i: any) => i.package_id);
+    const packages = await prisma.productPackage.findMany({
+      where: { id: { in: packageIds }, isActive: true },
+      include: { product: true, flashSales: { where: { isActive: true, startsAt: { lte: new Date() }, endsAt: { gte: new Date() } } } },
+    });
+    const pkgMap = new Map<number, any>(packages.map((p: any) => [p.id, p] as [number, any]));
+
+    let subtotal = 0;
+    const orderItemsData: any[] = [];
+    for (const item of items) {
+      const pkg = pkgMap.get(item.package_id);
+      if (!pkg) { res.status(400).json({ detail: `Không tìm thấy gói ${item.package_id}` }); return; }
+      const qty = item.quantity || 1;
+      const flashSale = pkg.flashSales[0];
+      const unitPrice = flashSale ? money(flashSale.salePrice) : money(pkg.price);
+      const lineTotal = unitPrice * qty;
+      subtotal += lineTotal;
+      orderItemsData.push({
+        packageId: pkg.id,
+        productNameSnapshot: pkg.product?.name,
+        packageNameSnapshot: pkg.name,
+        productImgSnapshot: pkg.product?.imageUrl,
+        quantity: qty,
+        unitPrice,
+        lineTotal,
+        customFieldsData: item.custom_fields || null,
+      });
+    }
+
+    let discountAmount = 0;
+    let couponId: number | null = null;
+    if (coupon_code) {
+      const result = await applyCoupon(coupon_code, guestId, subtotal);
+      if (result) { discountAmount = result.discount; couponId = result.couponId; }
+    }
+
+    const taxConfig = await prisma.siteConfig.findUnique({ where: { key: 'tax_rate' } });
+    const taxRate = taxConfig ? parseFloat(taxConfig.value || '0') : 0;
+    const taxableAmount = subtotal - discountAmount;
+    const taxAmount = Math.round(taxableAmount * (taxRate / 100));
+    const totalAmount = Math.round(taxableAmount + taxAmount);
+
+    const orderCode = genOrderCode();
+    const isSingleItem = orderItemsData.length === 1;
+
+    const order = await prisma.$transaction(async (tx: any) => {
+      const newOrder = await tx.order.create({
+        data: {
+          orderCode,
+          userId: guestId,
+          userEmail: email,
+          packageId: isSingleItem ? orderItemsData[0].packageId : null,
+          quantity: isSingleItem ? orderItemsData[0].quantity : 1,
+          subtotalAmount: subtotal,
+          discountAmount,
+          taxAmount,
+          totalAmount,
+          couponCode: coupon_code || null,
+          status: 'pending',
+          paymentMethod: 'sepay',
+          customFieldsData: isSingleItem ? orderItemsData[0].customFieldsData : null,
+          notes: notes || null,
+          // Tái dùng pipeline gửi email "quà tặng" để giao key cho khách qua email.
+          isGift: true,
+          giftRecipientEmail: email,
+        },
+      });
+      if (orderItemsData.length > 1) {
+        await tx.orderItem.createMany({ data: orderItemsData.map((it) => ({ ...it, orderId: newOrder.id })) });
+      }
+      if (couponId) {
+        const c = await tx.giftCode.findUnique({ where: { id: couponId } });
+        if (c) {
+          if (c.usageLimit > 0) {
+            const ok = await tx.giftCode.updateMany({
+              where: { id: couponId, usageCount: { lt: c.usageLimit } },
+              data: { usageCount: { increment: 1 } },
+            });
+            if (ok.count === 0) throw new Error('COUPON_LIMIT');
+          } else {
+            await tx.giftCode.update({ where: { id: couponId }, data: { usageCount: { increment: 1 } } });
+          }
+          await tx.giftCodeUsage.create({ data: { codeId: couponId, userId: guestId } });
+        }
+      }
+      return newOrder;
+    });
+
+    const result = await prisma.order.findUnique({
+      where: { id: order.id },
+      include: {
+        package: { include: { product: { include: { category: true } } } },
+        items: { include: { package: { include: { product: { include: { category: true } } } } } },
+      },
+    });
+    notifyNewOrder(order.id).catch(() => {});
+    res.status(201).json(orderToDict(result!));
+  } catch (e: any) {
+    if (e?.message === 'COUPON_LIMIT') { res.status(400).json({ detail: 'Mã giảm giá đã hết lượt sử dụng' }); return; }
+    res.status(500).json({ detail: e.message });
+  }
+});
+
 // ── Hủy đơn hàng ──────────────────────────────────────
 router.post('/my/:order_code/cancel', requireUser, async (req: Request, res: Response) => {
   try {
@@ -400,6 +526,7 @@ router.patch('/admin/:order_code/status', requireStaffOrAdmin, async (req: Reque
       if (status === 'completed') {
         awardPointsForOrder(order.userId, money(order.totalAmount), order.orderCode).catch(() => {});
         maybeSendGiftEmail(order.id).catch(() => {});
+        onOrderCompleted(order.id, order.userId).catch(() => {});
       }
       // Hoàn điểm đã đổi khi đơn bị hủy / hoàn tiền / thất bại
       if (['cancelled', 'refunded', 'failed'].includes(status)) {
@@ -445,6 +572,7 @@ router.post('/admin/:order_code/deliver', requireStaffOrAdmin, async (req: Reque
     }).catch(() => {});
     sendOrderStatusEmail(order.userEmail, order.orderCode, 'completed');
     maybeSendGiftEmail(order.id).catch(() => {});
+    onOrderCompleted(order.id, order.userId).catch(() => {});
     res.json({ message: 'Đã giao hàng', status: updated.status });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });

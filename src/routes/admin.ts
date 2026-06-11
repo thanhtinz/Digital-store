@@ -167,7 +167,9 @@ router.get('/settings', async (_req: Request, res: Response) => {
     const publicKeys = ['site_name', 'site_logo', 'site_description', 'currency', 'tax_rate', 'home_categories', 'contact_email', 'hotline', 'zalo', 'facebook', 'address', 'working_hours', 'copyright_text', 'footer_about', 'youtube', 'tiktok', 'telegram', 'instagram',
       // Live chat (widget hiển thị ở client)
       'livechat_enabled', 'livechat_provider', 'livechat_tawkto_id', 'livechat_crisp_id',
-      'livechat_messenger_page_id', 'livechat_messenger_color', 'livechat_zalo_oa_id', 'livechat_custom_code'];
+      'livechat_messenger_page_id', 'livechat_messenger_color', 'livechat_zalo_oa_id', 'livechat_custom_code',
+      // Vòng quay may mắn + xác minh email (client cần biết để hiện UI)
+      'wheel_enabled', 'wheel_cost_points', 'wheel_free_daily', 'require_email_verification'];
     const configs = await prisma.siteConfig.findMany({ where: { key: { in: publicKeys } } });
     const map = Object.fromEntries(configs.map((c: { key: string; value: string | null }) => [c.key, c.value]));
     res.json(await withPublicFlags(map));
@@ -437,6 +439,45 @@ router.get('/admin/stats/overview', requireStaffOrAdmin, async (_req: Request, r
         .slice(0, 12);
     }
 
+    // Top sản phẩm theo doanh thu (dựa trên order item đã hoàn tất, 30 ngày)
+    const since30 = new Date(startOfDay.getTime() - 29 * 86400000);
+    let topProducts: Array<{ name: string; revenue: number; qty: number }> = [];
+    let topCustomers: Array<{ email: string; revenue: number; orders: number }> = [];
+    try {
+      const itemGroups = await prisma.orderItem.groupBy({
+        by: ['packageId'],
+        where: { status: { in: COMPLETED }, createdAt: { gte: since30 }, packageId: { not: null } },
+        _sum: { lineTotal: true, quantity: true },
+      });
+      const sorted = (itemGroups as any[])
+        .sort((a, b) => money(b._sum.lineTotal) - money(a._sum.lineTotal))
+        .slice(0, 8);
+      const pkgIds = sorted.map((g) => g.packageId).filter(Boolean);
+      const pkgs = pkgIds.length
+        ? await prisma.productPackage.findMany({ where: { id: { in: pkgIds } }, include: { product: true } })
+        : [];
+      const pmap: Record<number, any> = {};
+      for (const p of pkgs as any[]) pmap[p.id] = p;
+      topProducts = sorted.map((g) => ({
+        name: pmap[g.packageId]?.product?.name
+          ? `${pmap[g.packageId].product.name} - ${pmap[g.packageId].name}`
+          : `#${g.packageId}`,
+        revenue: money(g._sum.lineTotal),
+        qty: g._sum.quantity || 0,
+      }));
+
+      const custGroups = await prisma.order.groupBy({
+        by: ['userEmail'],
+        where: { status: { in: COMPLETED }, userEmail: { not: null } },
+        _sum: { totalAmount: true },
+        _count: { _all: true },
+      });
+      topCustomers = (custGroups as any[])
+        .sort((a, b) => money(b._sum.totalAmount) - money(a._sum.totalAmount))
+        .slice(0, 8)
+        .map((g) => ({ email: g.userEmail, revenue: money(g._sum.totalAmount), orders: g._count._all }));
+    } catch { /* group by có thể khác nhau theo DB — bỏ qua nếu lỗi */ }
+
     res.json({
       totals: {
         orders: totalOrders,
@@ -444,6 +485,8 @@ router.get('/admin/stats/overview', requireStaffOrAdmin, async (_req: Request, r
         products: totalProducts,
         new_users_month: newUsersMonth,
       },
+      top_products: topProducts,
+      top_customers: topCustomers,
       revenue: {
         total: money(revAll._sum.totalAmount),
         month: money(revMonth._sum.totalAmount),

@@ -79,6 +79,73 @@ async function tick(): Promise<void> {
   try { await processExpiredOrders(); } catch (e) { console.error('Expire orders error:', e); }
   // Auto-sync trạng thái đơn SMM API (throttle 5 phút)
   try { await maybeSyncSmmOrders(); } catch (e) { console.error('SMM auto-sync error:', e); }
+  // Nhắc gia hạn gói premium sắp hết hạn (throttle 1 giờ)
+  try { await maybeRemindEntitlements(); } catch (e) { console.error('Entitlement reminder error:', e); }
+}
+
+// ── Nhắc hết hạn gói premium ───────────────────────────
+let lastEntitlementRun = 0;
+async function maybeRemindEntitlements(): Promise<void> {
+  const now = Date.now();
+  if (now - lastEntitlementRun < 60 * 60 * 1000) return; // 1 giờ/lần
+  lastEntitlementRun = now;
+
+  const cfg = await prisma.siteConfig.findUnique({ where: { key: 'entitlement_reminder_days' } });
+  const days = cfg ? parseInt(cfg.value || '3', 10) : 3;
+  const reminderDays = Number.isFinite(days) && days > 0 ? days : 3;
+
+  const { createNotification } = await import('./notify');
+  const { sendMail } = await import('./mail');
+  const nowDate = new Date();
+  const soon = new Date(nowDate.getTime() + reminderDays * 86400000);
+
+  // 1) Sắp hết hạn → nhắc 1 lần
+  const expiringSoon = await prisma.userEntitlement.findMany({
+    where: { status: 'active', reminderSent: false, expiresAt: { gt: nowDate, lte: soon } },
+    take: 100,
+  });
+  for (const e of expiringSoon) {
+    try {
+      const left = Math.ceil((new Date(e.expiresAt).getTime() - nowDate.getTime()) / 86400000);
+      await prisma.userEntitlement.update({ where: { id: e.id }, data: { reminderSent: true } });
+      createNotification(e.userId, {
+        type: 'system',
+        title: `⏳ ${e.productName} sắp hết hạn`,
+        body: `Còn ${left} ngày. Gia hạn ngay để không gián đoạn sử dụng.`,
+        link: '/dashboard/subscriptions',
+      }).catch(() => {});
+      const user = await prisma.user.findUnique({ where: { id: e.userId } });
+      if (user?.email) {
+        sendMail({
+          to: user.email,
+          subject: `Gói ${e.productName} của bạn sắp hết hạn`,
+          html: `<p>Gói <b>${e.productName}${e.packageName ? ' - ' + e.packageName : ''}</b> sẽ hết hạn sau <b>${left} ngày</b> (${new Date(e.expiresAt).toLocaleDateString('vi-VN')}).</p>
+                 <p>Hãy gia hạn để tiếp tục sử dụng.</p>`,
+        }).catch(() => {});
+      }
+    } catch (err) {
+      console.error(`Entitlement remind ${e.id} failed:`, err);
+    }
+  }
+
+  // 2) Đã hết hạn → đánh dấu expired + thông báo 1 lần
+  const expired = await prisma.userEntitlement.findMany({
+    where: { status: 'active', expiresAt: { lte: nowDate } },
+    take: 100,
+  });
+  for (const e of expired) {
+    try {
+      await prisma.userEntitlement.update({ where: { id: e.id }, data: { status: 'expired', expiredNotified: true } });
+      createNotification(e.userId, {
+        type: 'system',
+        title: `❌ ${e.productName} đã hết hạn`,
+        body: 'Gia hạn ngay để tiếp tục sử dụng.',
+        link: '/dashboard/subscriptions',
+      }).catch(() => {});
+    } catch (err) {
+      console.error(`Entitlement expire ${e.id} failed:`, err);
+    }
+  }
 }
 
 // ── Tự hủy đơn chờ thanh toán quá hạn ──────────────────

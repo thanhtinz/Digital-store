@@ -10,6 +10,21 @@ export function money(val: Numeric): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+/**
+ * Side-effect khi đơn chuyển 'completed': tạo quyền sử dụng có hạn (entitlement)
+ * và rà soát trao huy hiệu cho user. An toàn, không ném lỗi.
+ */
+export async function onOrderCompleted(orderId: number, userId: string): Promise<void> {
+  try {
+    const { createEntitlementsForOrder } = await import('./entitlements');
+    await createEntitlementsForOrder(orderId);
+  } catch { /* bỏ qua */ }
+  try {
+    const { evaluateUserBadges } = await import('./badges');
+    await evaluateUserBadges(userId);
+  } catch { /* bỏ qua */ }
+}
+
 export function genOrderCode(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let code = '';
@@ -111,6 +126,7 @@ export async function autoDeliver(orderId: number): Promise<void> {
         const { awardPointsForOrder } = await import('./loyalty');
         awardPointsForOrder(order.userId, money(order.totalAmount), order.orderCode).catch(() => {});
         maybeSendGiftEmail(orderId).catch(() => {});
+        onOrderCompleted(orderId, order.userId).catch(() => {});
       }
     }
     return;
@@ -148,6 +164,7 @@ export async function autoDeliver(orderId: number): Promise<void> {
     const { awardPointsForOrder } = await import('./loyalty');
     awardPointsForOrder(order.userId, money(order.totalAmount), order.orderCode).catch(() => {});
     maybeSendGiftEmail(orderId).catch(() => {});
+    onOrderCompleted(orderId, order.userId).catch(() => {});
 
     // Cảnh báo hết hàng nếu tồn kho thấp (≤5)
     const remaining = await prisma.stockItem.count({ where: { packageId, isSold: false } });

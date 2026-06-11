@@ -192,6 +192,89 @@ router.get('/status/:order_code', requireUser, statusRateLimit, async (req: Requ
   }
 });
 
+// ── Guest checkout: thanh toán không cần đăng nhập ─────
+// Bảo mật: order_code (10 ký tự ngẫu nhiên) đóng vai trò khóa truy cập; chỉ
+// thao tác trên đơn có userId bắt đầu bằng "guest:".
+async function findGuestOrder(orderCode: string) {
+  const order = await prisma.order.findFirst({
+    where: { orderCode, userId: { startsWith: 'guest:' } },
+    include: {
+      package: { include: { product: true } },
+      items: { include: { package: { include: { product: true } } } },
+    },
+  });
+  return order;
+}
+
+router.post('/guest/create-link', paymentRateLimit, async (req: Request, res: Response) => {
+  try {
+    const { order_code } = req.body;
+    const cfg = await getSepayConfigFromDb();
+    if (!cfg.accountNumber || !cfg.bankCode) { res.status(503).json({ detail: 'Cổng thanh toán chưa được cấu hình' }); return; }
+    const order = await findGuestOrder(order_code);
+    if (!order || !['pending', 'pending_payment'].includes(order.status)) {
+      res.status(404).json({ detail: 'Không tìm thấy đơn hàng' });
+      return;
+    }
+    if (order.paymentLinkId && order.status === 'pending_payment') {
+      const amount = money(order.totalAmount);
+      const transferContent = order.paymentLinkId;
+      const qrCodeUrl = buildVietQrUrl({ bankCode: cfg.bankCode, accountNumber: cfg.accountNumber, amount, content: transferContent });
+      res.json({ orderCode: order.orderCode, transferContent, accountNumber: cfg.accountNumber, bankCode: cfg.bankCode, amount, qrCodeUrl, status: order.status, order: serializeOrderPayment(order) });
+      return;
+    }
+    const amount = money(order.totalAmount);
+    const info = await createSepayPayment(order.id, amount, order.orderCode);
+    res.json({ ...info, order: serializeOrderPayment(order) });
+  } catch (e: any) {
+    res.status(500).json({ detail: `SePay error: ${e.message}` });
+  }
+});
+
+router.get('/guest/checkout-data/:order_code', async (req: Request, res: Response) => {
+  try {
+    const order = await findGuestOrder(req.params.order_code);
+    if (!order) { res.status(404).json({ detail: 'Không tìm thấy đơn hàng' }); return; }
+    const cfg = await getSepayConfigFromDb();
+    const amount = money(order.totalAmount);
+    const transferContent = order.paymentLinkId || buildTransferContent(order.orderCode);
+    const qrCodeUrl = cfg.accountNumber && cfg.bankCode
+      ? buildVietQrUrl({ bankCode: cfg.bankCode, accountNumber: cfg.accountNumber, amount, content: transferContent })
+      : null;
+    const payload: Record<string, any> = serializeOrderPayment(order);
+    payload.sepay = { transferContent, accountNumber: cfg.accountNumber, bankCode: cfg.bankCode, amount, qrCodeUrl, status: order.status };
+    res.json(payload);
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+router.get('/guest/status/:order_code', statusRateLimit, async (req: Request, res: Response) => {
+  try {
+    const order = await findGuestOrder(req.params.order_code);
+    if (!order) { res.status(404).json({ detail: 'Không tìm thấy đơn hàng' }); return; }
+    const last = lastSepayCheck.get(order.orderCode) || 0;
+    const withinCooldown = Date.now() - last < SEPAY_CHECK_COOLDOWN_MS;
+    if (order.status === 'pending_payment' && order.paymentLinkId && !withinCooldown) {
+      lastSepayCheck.set(order.orderCode, Date.now());
+      const paid = await checkSepayTransaction(order.paymentLinkId);
+      if (paid) {
+        const now = new Date();
+        await prisma.order.update({ where: { id: order.id }, data: { status: 'paid', updatedAt: now } });
+        await prisma.orderItem.updateMany({ where: { orderId: order.id }, data: { status: 'paid', updatedAt: now } });
+        await autoDeliver(order.id);
+        const updated = await prisma.order.findUnique({ where: { id: order.id } });
+        // Khách nhận key qua email (pipeline isGift). Không trả deliveryData trực tiếp.
+        res.json({ orderCode: order.orderCode, status: updated?.status, emailed: updated?.status === 'completed' });
+        return;
+      }
+    }
+    res.json({ orderCode: order.orderCode, status: order.status, emailed: order.status === 'completed' });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
 // ── SePay Webhook ──────────────────────────────────────
 router.post('/webhook/sepay', webhookRateLimit, async (req: Request, res: Response) => {
   try {
