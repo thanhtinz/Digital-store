@@ -241,6 +241,11 @@ const cn = {
     role_collaborator: `合作者`,
     role_agency: `代理`,
   },
+  notfound_page: {
+    title: `抱歉，找不到页面！`,
+    message: `您访问的页面不存在或已被移动，请检查网址是否正确。`,
+    button: `返回首页`,
+  },
   flash_sale_page: {
     title: `限时抢购`,
     subtitle: `限时优惠 — 手快有手慢无！`,

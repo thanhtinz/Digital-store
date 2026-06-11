@@ -241,6 +241,11 @@ const fr = {
     role_collaborator: `Collaborateur`,
     role_agency: `Agence`,
   },
+  notfound_page: {
+    title: `Désolé, page introuvable !`,
+    message: `La page que vous cherchez n’existe pas ou a été déplacée. Vérifiez l’URL.`,
+    button: `Retour à l’accueil`,
+  },
   flash_sale_page: {
     title: `Vente flash`,
     subtitle: `Offres limitées — dépêchez-vous !`,

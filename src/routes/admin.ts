@@ -176,7 +176,10 @@ router.get('/settings', async (_req: Request, res: Response) => {
       'livechat_enabled', 'livechat_provider', 'livechat_tawkto_id', 'livechat_crisp_id',
       'livechat_messenger_page_id', 'livechat_messenger_color', 'livechat_zalo_oa_id', 'livechat_custom_code',
       // Vòng quay may mắn + xác minh email (client cần biết để hiện UI)
-      'wheel_enabled', 'wheel_cost_points', 'wheel_free_daily', 'require_email_verification'];
+      'wheel_enabled', 'wheel_cost_points', 'wheel_free_daily', 'require_email_verification',
+      // Tuỳ chỉnh trang 404 & trang chuyển hướng link
+      'notfound_title', 'notfound_message', 'notfound_image',
+      'redirect_title', 'redirect_message', 'redirect_warning', 'redirect_seconds'];
     const configs = await prisma.siteConfig.findMany({ where: { key: { in: publicKeys } } });
     const map = Object.fromEntries(configs.map((c: { key: string; value: string | null }) => [c.key, c.value]));
     res.json(await withPublicFlags(map));

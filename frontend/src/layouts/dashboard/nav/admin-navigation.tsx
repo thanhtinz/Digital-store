@@ -116,6 +116,7 @@ export function useAdminNavConfig() {
           ],
         },
         { title: 'Bảo trì', path: PATH_DASHBOARD.admin.maintenance, icon: ICONS.label },
+        { title: 'Trang tuỳ chỉnh (404, chuyển hướng)', path: PATH_DASHBOARD.admin.customPages, icon: ICONS.label },
         { title: 'Về cửa hàng', path: '/', icon: ICONS.menuItem },
       ],
     },

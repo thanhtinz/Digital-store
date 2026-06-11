@@ -4,6 +4,8 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 // @mui
 import { Alert, Box, Button, Card, Container, LinearProgress, Stack, Typography } from '@mui/material';
+// hooks
+import useSiteSettings from '../../hooks/useSiteSettings';
 // layouts
 import DashboardLayout from '../../layouts/dashboard';
 // components
@@ -13,13 +15,21 @@ import Iconify from '../../components/iconify';
 
 RedirectPage.getLayout = (page: React.ReactElement) => <DashboardLayout disableGuard>{page}</DashboardLayout>;
 
-const COUNTDOWN = 5;
-
 export default function RedirectPage() {
   const { query, isReady, back } = useRouter();
+  const settings = useSiteSettings();
   const rawUrl = (query.url as string) || '';
-  const [seconds, setSeconds] = useState(COUNTDOWN);
+  // Số giây đếm ngược (admin tuỳ chỉnh, mặc định 5).
+  const countdown = Number(settings?.redirect_seconds) > 0 ? Number(settings.redirect_seconds) : 5;
+  const [seconds, setSeconds] = useState(5);
   const [paused, setPaused] = useState(false);
+
+  // Đồng bộ số giây khi cấu hình admin tải xong.
+  useEffect(() => { setSeconds(countdown); }, [countdown]);
+
+  const rTitle = settings?.redirect_title || 'Bạn sắp rời khỏi website';
+  const rMessage = settings?.redirect_message || 'Bạn đang được chuyển đến một liên kết bên ngoài. Vui lòng kiểm tra địa chỉ trước khi tiếp tục.';
+  const rWarning = settings?.redirect_warning || 'Vì lý do an toàn, hãy cẩn trọng với các trang yêu cầu đăng nhập, thanh toán hoặc tải file lạ. Chúng tôi không chịu trách nhiệm về nội dung của trang bên ngoài.';
 
   // Giải mã + kiểm tra URL hợp lệ (chỉ http/https).
   const parsed = useMemo(() => {
@@ -56,9 +66,9 @@ export default function RedirectPage() {
             <Iconify icon="solar:link-bold-duotone" width={44} />
           </Box>
 
-          <Typography variant="h4" gutterBottom>Bạn sắp rời khỏi website</Typography>
-          <Typography color="text.secondary" sx={{ mb: 3 }}>
-            Bạn đang được chuyển đến một liên kết bên ngoài. Vui lòng kiểm tra địa chỉ trước khi tiếp tục.
+          <Typography variant="h4" gutterBottom>{rTitle}</Typography>
+          <Typography color="text.secondary" sx={{ mb: 3, whiteSpace: 'pre-line' }}>
+            {rMessage}
           </Typography>
 
           {!parsed ? (
@@ -75,15 +85,14 @@ export default function RedirectPage() {
                 </Typography>
               </Box>
 
-              <Alert severity="warning" sx={{ textAlign: 'left', mb: 3 }}>
-                Vì lý do an toàn, hãy cẩn trọng với các trang yêu cầu đăng nhập, thanh toán hoặc tải file lạ.
-                Chúng tôi không chịu trách nhiệm về nội dung của trang bên ngoài.
+              <Alert severity="warning" sx={{ textAlign: 'left', mb: 3, whiteSpace: 'pre-line' }}>
+                {rWarning}
               </Alert>
 
               <Box sx={{ mb: 2 }}>
                 <LinearProgress
                   variant="determinate"
-                  value={((COUNTDOWN - seconds) / COUNTDOWN) * 100}
+                  value={((countdown - seconds) / countdown) * 100}
                   color="warning"
                   sx={{ height: 6, borderRadius: 3 }}
                 />
