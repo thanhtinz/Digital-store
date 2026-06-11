@@ -13,6 +13,8 @@ import { useSettingsContext } from '../../components/settings';
 import LiveChatWidget from '../../components/live-chat';
 import ExternalLinkInterceptor from '../../components/external-redirect/ExternalLinkInterceptor';
 import MaintenanceScreen from '../../components/maintenance/MaintenanceScreen';
+import ClickEffect from '../../components/effects/ClickEffect';
+import SeasonEffect from '../../components/effects/SeasonEffect';
 //
 import Main from './Main';
 import Header from './header';
@@ -110,12 +112,20 @@ export default function DashboardLayout({ children, disableGuard = false }: Prop
     return <MaintenanceScreen config={settings.maintenance} />;
   }
 
+  const extras = (
+    <>
+      <LiveChatWidget />
+      <ExternalLinkInterceptor />
+      <ClickEffect />
+      <SeasonEffect />
+    </>
+  );
+
   if (disableGuard) {
     return (
       <>
         {renderContent()}
-        <LiveChatWidget />
-        <ExternalLinkInterceptor />
+        {extras}
       </>
     );
   }
@@ -123,8 +133,7 @@ export default function DashboardLayout({ children, disableGuard = false }: Prop
   return (
     <AuthGuard>
       {renderContent()}
-      <LiveChatWidget />
-      <ExternalLinkInterceptor />
+      {extras}
     </AuthGuard>
   );
 }

@@ -3,8 +3,10 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 // @mui
 import { Box, Stack, Drawer } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 // hooks
 import useResponsive from '../../../hooks/useResponsive';
+import useSiteSettings from '../../../hooks/useSiteSettings';
 // config
 import { NAV } from '../../../config-global';
 // components
@@ -25,10 +27,22 @@ type Props = {
 
 export default function NavVertical({ openNav, onCloseNav }: Props) {
   const { pathname } = useRouter();
+  const settings = useSiteSettings();
+  const navBg = settings?.nav_bg_image;
 
   const navData = useNavConfig();
 
   const isDesktop = useResponsive('up', 'lg');
+
+  // Ảnh nền menu + lớp phủ màu nền bán trong suốt -> chữ luôn rõ (tự căn độ rõ).
+  const bgSx = navBg
+    ? {
+        backgroundImage: (t: any) =>
+          `linear-gradient(${alpha(t.palette.background.default, 0.84)}, ${alpha(t.palette.background.default, 0.9)}), url(${navBg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }
+    : {};
 
   useEffect(() => {
     if (openNav) {
@@ -88,6 +102,7 @@ export default function NavVertical({ openNav, onCloseNav }: Props) {
               width: NAV.W_DASHBOARD,
               bgcolor: 'transparent',
               borderRightStyle: 'dashed',
+              ...bgSx,
             },
           }}
         >
@@ -103,6 +118,7 @@ export default function NavVertical({ openNav, onCloseNav }: Props) {
           PaperProps={{
             sx: {
               width: NAV.W_DASHBOARD,
+              ...bgSx,
             },
           }}
         >
