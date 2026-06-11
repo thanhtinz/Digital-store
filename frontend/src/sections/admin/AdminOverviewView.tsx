@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
 // next
 import NextLink from 'next/link';
+import dynamic from 'next/dynamic';
 // @mui
-import { Box, Card, Container, Grid, Stack, Typography } from '@mui/material';
+import {
+  Box, Card, CardHeader, Container, Divider, Grid, Stack, Table, TableBody, TableCell,
+  TableHead, TableRow, Typography,
+} from '@mui/material';
 // auth
 import RoleBasedGuard from '../../auth/RoleBasedGuard';
 // routes
@@ -12,6 +16,9 @@ import axiosInstance from '../../utils/axios';
 import { fCurrency, fNumber } from '../../utils/formatNumber';
 // components
 import Iconify from '../../components/iconify';
+
+// ApexChart cần window -> tắt SSR.
+const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 // ----------------------------------------------------------------------
 
@@ -74,6 +81,7 @@ const QUICK_LINKS = [
 
 export default function AdminOverviewView() {
   const [stats, setStats] = useState<Stats | null>(null);
+  const [overview, setOverview] = useState<any>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -81,7 +89,23 @@ export default function AdminOverviewView() {
       .get('/api/admin/stats')
       .then((r) => setStats(r.data))
       .catch((e) => setError(e?.detail || e?.message || 'Không tải được số liệu'));
+    axiosInstance
+      .get('/api/admin/stats/overview')
+      .then((r) => setOverview(r.data))
+      .catch(() => {});
   }, []);
+
+  const series = overview?.revenue_series || [];
+  const chartOptions: any = {
+    chart: { toolbar: { show: false }, zoom: { enabled: false } },
+    stroke: { curve: 'smooth', width: 3 },
+    fill: { type: 'gradient', gradient: { opacityFrom: 0.4, opacityTo: 0 } },
+    dataLabels: { enabled: false },
+    xaxis: { categories: series.map((s: any) => s.date.slice(5)), labels: { rotate: -45 } },
+    yaxis: { labels: { formatter: (v: number) => fNumber(v) } },
+    tooltip: { y: { formatter: (v: number) => fCurrency(v) } },
+    colors: ['#00AB55'],
+  };
 
   return (
     <RoleBasedGuard hasContent roles={['admin', 'superadmin', 'staff']}>
@@ -136,6 +160,79 @@ export default function AdminOverviewView() {
               icon="solar:box-bold-duotone"
               color="secondary"
             />
+          </Grid>
+        </Grid>
+
+        {/* Biểu đồ doanh thu 14 ngày */}
+        {series.length > 0 && (
+          <Card sx={{ mt: 3 }}>
+            <CardHeader title="Doanh thu 14 ngày gần nhất" />
+            <Box sx={{ p: 2 }}>
+              <ReactApexChart
+                type="area"
+                series={[{ name: 'Doanh thu', data: series.map((s: any) => Math.round(s.revenue)) }]}
+                options={chartOptions}
+                height={300}
+              />
+            </Box>
+          </Card>
+        )}
+
+        {/* Top sản phẩm + Top khách hàng */}
+        <Grid container spacing={3} sx={{ mt: 0.5 }}>
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardHeader title="Top sản phẩm (30 ngày)" />
+              <Divider />
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Sản phẩm</TableCell>
+                    <TableCell align="right">SL</TableCell>
+                    <TableCell align="right">Doanh thu</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {(overview?.top_products || []).map((p: any, i: number) => (
+                    <TableRow key={i} hover>
+                      <TableCell sx={{ maxWidth: 220 }}><Typography variant="body2" noWrap>{p.name}</Typography></TableCell>
+                      <TableCell align="right">{fNumber(p.qty)}</TableCell>
+                      <TableCell align="right">{fCurrency(p.revenue)}</TableCell>
+                    </TableRow>
+                  ))}
+                  {(!overview?.top_products || overview.top_products.length === 0) && (
+                    <TableRow><TableCell colSpan={3} align="center" sx={{ py: 3, color: 'text.secondary' }}>Chưa có dữ liệu</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardHeader title="Top khách hàng" />
+              <Divider />
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Email</TableCell>
+                    <TableCell align="right">Đơn</TableCell>
+                    <TableCell align="right">Chi tiêu</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {(overview?.top_customers || []).map((c: any, i: number) => (
+                    <TableRow key={i} hover>
+                      <TableCell sx={{ maxWidth: 220 }}><Typography variant="body2" noWrap>{c.email}</Typography></TableCell>
+                      <TableCell align="right">{fNumber(c.orders)}</TableCell>
+                      <TableCell align="right">{fCurrency(c.revenue)}</TableCell>
+                    </TableRow>
+                  ))}
+                  {(!overview?.top_customers || overview.top_customers.length === 0) && (
+                    <TableRow><TableCell colSpan={3} align="center" sx={{ py: 3, color: 'text.secondary' }}>Chưa có dữ liệu</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </Card>
           </Grid>
         </Grid>
 
