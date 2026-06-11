@@ -30,6 +30,11 @@ import mailRouter from './routes/mail';
 import userNotificationsRouter from './routes/userNotifications';
 import chatRouter from './routes/chat';
 import loyaltyRouter from './routes/loyalty';
+import accountRouter from './routes/account';
+import qaRouter from './routes/qa';
+import badgesRouter from './routes/badges';
+import wheelRouter from './routes/wheel';
+import bundlesRouter from './routes/bundles';
 import { startReportScheduler } from './services/scheduler';
 import { featureGate } from './services/features';
 
@@ -145,6 +150,11 @@ app.use('/api/admin/mail', mailRouter); // mail server config
 app.use('/api/notifications', userNotificationsRouter); // chuông thông báo user
 app.use('/api/chat', chatRouter); // live chat (user + admin)
 app.use('/api/loyalty', loyaltyRouter); // điểm thưởng
+app.use('/api/account', accountRouter); // push, phiên, entitlements
+app.use('/api', qaRouter);      // hỏi đáp sản phẩm
+app.use('/api', badgesRouter);  // huy hiệu thành viên
+app.use('/api/wheel', wheelRouter); // vòng quay may mắn
+app.use('/api', bundlesRouter); // gói combo / bundle
 
 // ── Uploaded images ────────────────────────────────────
 app.get('/api/images/:id', async (req, res) => {
