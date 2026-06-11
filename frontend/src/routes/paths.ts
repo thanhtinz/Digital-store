@@ -69,6 +69,7 @@ export const PATH_DASHBOARD = {
   admin: {
     root: path(ROOTS_DASHBOARD, '/admin'),
     settings: path(ROOTS_DASHBOARD, '/admin/settings'),
+    maintenance: path(ROOTS_DASHBOARD, '/admin/maintenance'),
     settingsLivechat: path(ROOTS_DASHBOARD, '/admin/settings?tab=livechat'),
     settingsFeatures: path(ROOTS_DASHBOARD, '/admin/settings?tab=features'),
     settingsSource: path(ROOTS_DASHBOARD, '/admin/settings?tab=source'),

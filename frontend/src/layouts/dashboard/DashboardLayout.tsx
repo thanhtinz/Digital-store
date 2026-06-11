@@ -4,12 +4,15 @@ import { Box } from '@mui/material';
 // hooks
 import useResponsive from '../../hooks/useResponsive';
 import useCartSync from '../../hooks/useCartSync';
+import useSiteSettings from '../../hooks/useSiteSettings';
 // auth
 import AuthGuard from '../../auth/AuthGuard';
+import { useAuthContext } from '../../auth/useAuthContext';
 // components
 import { useSettingsContext } from '../../components/settings';
 import LiveChatWidget from '../../components/live-chat';
 import ExternalLinkInterceptor from '../../components/external-redirect/ExternalLinkInterceptor';
+import MaintenanceScreen from '../../components/maintenance/MaintenanceScreen';
 //
 import Main from './Main';
 import Header from './header';
@@ -28,6 +31,8 @@ type Props = {
 
 export default function DashboardLayout({ children, disableGuard = false }: Props) {
   const { themeLayout } = useSettingsContext();
+  const settings = useSiteSettings();
+  const { user } = useAuthContext();
 
   useCartSync();
 
@@ -98,6 +103,12 @@ export default function DashboardLayout({ children, disableGuard = false }: Prop
       </>
     );
   };
+
+  // Bảo trì: chặn hiển thị cho khách (staff/admin vẫn xem được để kiểm tra).
+  const isStaff = ['admin', 'superadmin', 'staff'].includes((user as any)?.role);
+  if (settings?.maintenance?.on && !isStaff) {
+    return <MaintenanceScreen config={settings.maintenance} />;
+  }
 
   if (disableGuard) {
     return (

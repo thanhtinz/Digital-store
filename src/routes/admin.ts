@@ -16,13 +16,20 @@ const router = Router();
 /** Gắn thêm `features` (boolean) + `maintenance` ({on,message}) vào payload public. */
 async function withPublicFlags(map: Record<string, any>): Promise<Record<string, any>> {
   const f = await getFeatures();
-  const { maintenance, maintenance_message, ...features } = f;
+  const {
+    maintenance, maintenance_message, maintenance_title, maintenance_image,
+    maintenance_contact, maintenance_eta, ...features
+  } = f;
   return {
     ...map,
     features,
     maintenance: {
       on: maintenance === true || maintenance === '1' || maintenance === 'true',
-      message: String(maintenance_message || '').slice(0, 500),
+      title: String(maintenance_title || '').slice(0, 200),
+      message: String(maintenance_message || '').slice(0, 1000),
+      image: String(maintenance_image || ''),
+      contact: String(maintenance_contact || '').slice(0, 300),
+      eta: String(maintenance_eta || '').slice(0, 100),
     },
   };
 }
@@ -204,6 +211,27 @@ router.post('/admin/feature-flag', requireAdmin, async (req: Request, res: Respo
       create: { key: 'settings_features', value: JSON.stringify(obj) },
     });
     res.json({ ok: true, key, enabled });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+// Merge nhiều key vào settings_features (cờ bool + chuỗi). Dùng cho trang Bảo trì.
+router.post('/admin/feature-set', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const patch = req.body?.patch;
+    if (!patch || typeof patch !== 'object') { res.status(400).json({ detail: 'Thiếu patch' }); return; }
+    const row = await prisma.siteConfig.findUnique({ where: { key: 'settings_features' } });
+    let obj: Record<string, any> = {};
+    try { obj = row?.value ? JSON.parse(row.value) : {}; } catch { obj = {}; }
+    if (!obj || typeof obj !== 'object') obj = {};
+    Object.assign(obj, patch);
+    await prisma.siteConfig.upsert({
+      where: { key: 'settings_features' },
+      update: { value: JSON.stringify(obj) },
+      create: { key: 'settings_features', value: JSON.stringify(obj) },
+    });
+    res.json({ ok: true });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
   }
