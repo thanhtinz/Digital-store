@@ -1,24 +1,14 @@
 // next
-import Head from 'next/head';
-// layouts
-import AdminLayout from '../../../layouts/dashboard/AdminLayout';
-// sections
-import AdminMarketingView from '../../../sections/admin/AdminMarketingView';
+import { useEffect } from 'react';
+import { useRouter } from 'next/router';
+// routes
+import { PATH_DASHBOARD } from '../../../routes/paths';
 
-// ----------------------------------------------------------------------
-
-AdminMarketingPage.getLayout = (page: React.ReactElement) => <AdminLayout>{page}</AdminLayout>;
-
-// ----------------------------------------------------------------------
-
-export default function AdminMarketingPage() {
-  return (
-    <>
-      <Head>
-        <title> Marketing | Quản trị</title>
-      </Head>
-
-      <AdminMarketingView />
-    </>
-  );
+// Marketing đã tách thành các trang riêng — chuyển hướng sang Banner.
+export default function AdminMarketingRedirect() {
+  const { replace } = useRouter();
+  useEffect(() => {
+    replace(PATH_DASHBOARD.admin.banners);
+  }, [replace]);
+  return null;
 }

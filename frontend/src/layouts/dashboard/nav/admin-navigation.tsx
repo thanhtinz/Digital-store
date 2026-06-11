@@ -61,10 +61,13 @@ export function useAdminNavConfig() {
         },
         {
           title: 'Marketing & Ưu đãi',
-          path: PATH_DASHBOARD.admin.marketing,
+          path: PATH_DASHBOARD.admin.banners,
           icon: ICONS.label,
           children: [
-            { title: 'Banner / Mã / Flash', path: PATH_DASHBOARD.admin.marketing },
+            { title: 'Banner', path: PATH_DASHBOARD.admin.banners },
+            { title: 'Flash sale', path: PATH_DASHBOARD.admin.flashSales },
+            { title: 'Mã giảm giá', path: PATH_DASHBOARD.admin.giftCodes },
+            { title: 'Thông báo', path: PATH_DASHBOARD.admin.announcements },
             { title: 'Vòng quay may mắn', path: PATH_DASHBOARD.admin.wheel },
             { title: 'Điểm thưởng', path: PATH_DASHBOARD.admin.rewards },
             { title: 'Huy hiệu', path: PATH_DASHBOARD.admin.badges },
@@ -92,8 +95,9 @@ export function useAdminNavConfig() {
           icon: ICONS.banking,
           children: [
             { title: 'Thông tin chung', path: PATH_DASHBOARD.admin.settings },
-            { title: 'Tính năng & Vòng quay', path: PATH_DASHBOARD.admin.settingsFeatures },
+            { title: 'Tính năng của web', path: PATH_DASHBOARD.admin.settingsFeatures },
             { title: 'Live chat', path: PATH_DASHBOARD.admin.settingsLivechat },
+            { title: 'Bảo mật & Nhắc nhở', path: PATH_DASHBOARD.admin.settingsSecurity },
             { title: 'Mã nguồn / Drive', path: PATH_DASHBOARD.admin.settingsSource },
           ],
         },
