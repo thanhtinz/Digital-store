@@ -35,6 +35,7 @@ import qaRouter from './routes/qa';
 import badgesRouter from './routes/badges';
 import wheelRouter from './routes/wheel';
 import bundlesRouter from './routes/bundles';
+import ranksRouter from './routes/ranks';
 import { startReportScheduler } from './services/scheduler';
 import { featureGate } from './services/features';
 
@@ -155,6 +156,7 @@ app.use('/api', qaRouter);      // hỏi đáp sản phẩm
 app.use('/api', badgesRouter);  // huy hiệu thành viên
 app.use('/api/wheel', wheelRouter); // vòng quay may mắn
 app.use('/api', bundlesRouter); // gói combo / bundle
+app.use('/api', ranksRouter);   // cấp bậc thành viên
 
 // ── Uploaded images ────────────────────────────────────
 app.get('/api/images/:id', async (req, res) => {

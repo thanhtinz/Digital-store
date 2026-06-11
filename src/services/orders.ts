@@ -23,6 +23,17 @@ export async function onOrderCompleted(orderId: number, userId: string): Promise
     const { evaluateUserBadges } = await import('./badges');
     await evaluateUserBadges(userId);
   } catch { /* bỏ qua */ }
+  // Cộng dồn chi tiêu + xét lại cấp bậc (chỉ user thật).
+  try {
+    const order = await prisma.order.findUnique({ where: { id: orderId }, select: { totalAmount: true, userId: true } });
+    if (order) {
+      const uid = parseInt(order.userId, 10);
+      if (uid && String(uid) === order.userId) {
+        const { addUserSpend } = await import('./ranks');
+        await addUserSpend(uid, money(order.totalAmount));
+      }
+    }
+  } catch { /* bỏ qua */ }
 }
 
 export function genOrderCode(): string {
@@ -330,10 +341,17 @@ export async function refundOrderBalance(orderCode: string): Promise<void> {
 /**
  * Áp dụng mã giảm giá
  */
+export interface CouponContext {
+  packageIds?: number[];     // các gói trong giỏ -> kiểm tra scope sản phẩm/danh mục
+  paymentMethod?: string;    // balance | sepay ... -> kiểm tra paymentScope
+  userRankId?: number | null; // hạng user -> kiểm tra allowedRankIds
+}
+
 export async function applyCoupon(
   code: string,
   userId: string,
-  subtotal: number
+  subtotal: number,
+  ctx: CouponContext = {}
 ): Promise<{ discount: number; couponId: number } | null> {
   const now = new Date();
   const coupon = await prisma.giftCode.findUnique({ where: { code } });
@@ -342,6 +360,36 @@ export async function applyCoupon(
   if (coupon.expiresAt && coupon.expiresAt < now) return null;
   if (coupon.usageLimit > 0 && coupon.usageCount >= coupon.usageLimit) return null;
   if (money(coupon.minOrder) > subtotal) return null;
+
+  // Cơ chế thanh toán áp dụng (all | wallet | sepay).
+  const pScope = (coupon as any).paymentScope || 'all';
+  if (pScope !== 'all' && ctx.paymentMethod) {
+    const pm = ctx.paymentMethod === 'balance' ? 'wallet' : ctx.paymentMethod;
+    if (pScope !== pm) return null;
+  }
+
+  // Hạng user được phép dùng.
+  const allowedRanks = Array.isArray((coupon as any).allowedRankIds) ? (coupon as any).allowedRankIds : null;
+  if (allowedRanks && allowedRanks.length) {
+    if (!ctx.userRankId || !allowedRanks.map(Number).includes(Number(ctx.userRankId))) return null;
+  }
+
+  // Phạm vi sản phẩm/danh mục.
+  const scopeType = (coupon as any).scopeType || 'all';
+  const scopeIds = Array.isArray((coupon as any).scopeIds) ? (coupon as any).scopeIds.map(Number) : [];
+  if (scopeType !== 'all' && scopeIds.length && ctx.packageIds && ctx.packageIds.length) {
+    if (scopeType === 'product') {
+      const pkgs = await prisma.productPackage.findMany({ where: { id: { in: ctx.packageIds } }, select: { productId: true } });
+      const ok = pkgs.some((p: any) => scopeIds.includes(p.productId));
+      if (!ok) return null;
+    } else if (scopeType === 'category') {
+      const pkgs = await prisma.productPackage.findMany({
+        where: { id: { in: ctx.packageIds } }, select: { product: { select: { categoryId: true } } },
+      });
+      const ok = pkgs.some((p: any) => p.product?.categoryId && scopeIds.includes(p.product.categoryId));
+      if (!ok) return null;
+    }
+  }
 
   if (coupon.perUserLimit > 0) {
     const used = await prisma.giftCodeUsage.count({

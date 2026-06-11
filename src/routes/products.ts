@@ -257,6 +257,25 @@ router.get('/:slug', optionalUser, async (req: Request, res: Response) => {
     });
     const dict = serializeProduct(product, true);
     dict.related = related.map((r) => serializeProduct(r));
+
+    // Áp giá theo cấp bậc cho user đã đăng nhập (chỉ gói không có flash sale).
+    const viewer = (req as any).user;
+    if (viewer?.user_id && Array.isArray(dict.packages) && dict.packages.length) {
+      try {
+        const u = await prisma.user.findUnique({ where: { id: viewer.user_id }, select: { rankId: true } });
+        if (u?.rankId) {
+          const { priceMapForRank } = await import('../services/ranks');
+          const noFlash = dict.packages.filter((pk: any) => !pk.flashSale);
+          const pmap = await priceMapForRank(noFlash.map((pk: any) => ({ id: pk.id, price: pk.price })), u.rankId);
+          dict.packages = dict.packages.map((pk: any) => {
+            if (pk.flashSale) return pk;
+            const rp = pmap[pk.id];
+            if (rp != null && rp < pk.price) return { ...pk, rankBasePrice: pk.price, price: rp, rankDiscounted: true };
+            return pk;
+          });
+        }
+      } catch { /* bỏ qua */ }
+    }
     res.json(dict);
   } catch (e: any) {
     res.status(500).json({ detail: e.message });

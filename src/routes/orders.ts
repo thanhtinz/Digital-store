@@ -108,6 +108,10 @@ router.post(['/', '/create'], requireUser, async (req: Request, res: Response) =
 
     const pkgMap = new Map<number, any>(packages.map((p: any) => [p.id, p] as [number, any]));
 
+    // Cấp bậc của người mua -> áp giá theo hạng (nếu cấu hình).
+    const buyer = await prisma.user.findUnique({ where: { id: user.user_id }, select: { rankId: true } });
+    const { priceForRank } = await import('../services/ranks');
+
     let subtotal = 0;
     const orderItemsData: any[] = [];
 
@@ -119,7 +123,9 @@ router.post(['/', '/create'], requireUser, async (req: Request, res: Response) =
       }
       const qty = item.quantity || 1;
       const flashSale = pkg.flashSales[0];
-      const unitPrice = flashSale ? money(flashSale.salePrice) : money(pkg.price);
+      // Flash sale có hiệu lực thì ưu tiên giá flash; nếu không, áp giá theo hạng.
+      const baseUnit = flashSale ? money(flashSale.salePrice) : money(pkg.price);
+      const unitPrice = flashSale ? baseUnit : await priceForRank(pkg.id, baseUnit, buyer?.rankId);
       const lineTotal = unitPrice * qty;
       subtotal += lineTotal;
 
@@ -139,7 +145,11 @@ router.post(['/', '/create'], requireUser, async (req: Request, res: Response) =
     let discountAmount = 0;
     let couponId: number | null = null;
     if (coupon_code) {
-      const result = await applyCoupon(coupon_code, user.user_id.toString(), subtotal);
+      const result = await applyCoupon(coupon_code, user.user_id.toString(), subtotal, {
+        packageIds: items.map((i: any) => Number(i.package_id)),
+        paymentMethod: payment_method,
+        userRankId: buyer?.rankId,
+      });
       if (result) {
         discountAmount = result.discount;
         couponId = result.couponId;
@@ -440,8 +450,13 @@ router.post('/my/:order_code/cancel', requireUser, async (req: Request, res: Res
 router.post('/check-coupon', requireUser, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
-    const { coupon_code, subtotal } = req.body;
-    const result = await applyCoupon(coupon_code, user.user_id.toString(), subtotal || 0);
+    const { coupon_code, subtotal, package_ids, payment_method } = req.body;
+    const buyer = await prisma.user.findUnique({ where: { id: user.user_id }, select: { rankId: true } });
+    const result = await applyCoupon(coupon_code, user.user_id.toString(), subtotal || 0, {
+      packageIds: Array.isArray(package_ids) ? package_ids.map(Number) : undefined,
+      paymentMethod: payment_method,
+      userRankId: buyer?.rankId,
+    });
     if (!result) {
       res.status(400).json({ detail: 'Mã giảm giá không hợp lệ hoặc đã hết hạn' });
       return;
