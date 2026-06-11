@@ -10,18 +10,22 @@ import { Router, Request, Response } from 'express';
 import prisma from '../db';
 import { requireUser, requireAdmin } from '../middleware/auth';
 import { createNotification } from '../services/notify';
+import { generateUniqueGiftCode } from '../services/giftcode';
+import { genOrderCode, autoDeliver, money } from '../services/orders';
 
 const router = Router();
 
 async function getConfig() {
   const rows = await prisma.siteConfig.findMany({
-    where: { key: { in: ['wheel_enabled', 'wheel_cost_points', 'wheel_free_daily'] } },
+    where: { key: { in: ['wheel_enabled', 'wheel_cost_points', 'wheel_free_daily', 'wheel_image_url', 'wheel_segments'] } },
   });
   const m = Object.fromEntries(rows.map((r: any) => [r.key, r.value || '']));
   return {
     enabled: m['wheel_enabled'] === '1' || m['wheel_enabled'] === 'true',
     costPoints: parseInt(m['wheel_cost_points'] || '0', 10) || 0,
     freeDaily: parseInt(m['wheel_free_daily'] || '0', 10) || 0,
+    imageUrl: m['wheel_image_url'] || '',
+    segments: parseInt(m['wheel_segments'] || '0', 10) || 0,
   };
 }
 
@@ -50,7 +54,12 @@ router.get('/config', requireUser, async (req: Request, res: Response) => {
       free_left: freeLeft,
       my_points: user?.points || 0,
       can_spin: cfg.enabled && (freeLeft > 0 || (cfg.costPoints > 0 && (user?.points || 0) >= cfg.costPoints)),
-      prizes: prizes.map((p: any) => ({ id: p.id, label: p.label, color: p.color, type: p.type })),
+      image_url: cfg.imageUrl,
+      segments: cfg.segments,
+      prizes: prizes.map((p: any) => ({
+        id: p.id, label: p.label, color: p.color, type: p.type,
+        image_url: p.imageUrl, segment_index: p.segmentIndex,
+      })),
     });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
@@ -89,6 +98,24 @@ router.post('/spin', requireUser, async (req: Request, res: Response) => {
       if (r <= 0) { prize = p; break; }
     }
 
+    // Voucher: tự sinh mã theo cấu hình (hoặc dùng mã cố định nếu có).
+    let issuedCode: string | undefined;
+    if (prize.type === 'voucher') {
+      if (prize.giftcodeType && prize.giftcodeValue != null) {
+        issuedCode = await generateUniqueGiftCode({
+          discountType: prize.giftcodeType === 'amount' ? 'amount' : 'percent',
+          discountValue: Number(prize.giftcodeValue),
+          minOrder: prize.giftcodeMinOrder != null ? Number(prize.giftcodeMinOrder) : 0,
+          maxDiscount: prize.giftcodeMaxDiscount != null ? Number(prize.giftcodeMaxDiscount) : null,
+          expiryDays: prize.giftcodeExpiryDays != null ? Number(prize.giftcodeExpiryDays) : null,
+          prefix: prize.giftcodePrefix || 'LUCKY',
+          description: `Mã trúng vòng quay: ${prize.label}`,
+        });
+      } else if (prize.voucherCode) {
+        issuedCode = prize.voucherCode;
+      }
+    }
+
     // Áp dụng kết quả trong transaction.
     await prisma.$transaction(async (tx: any) => {
       if (cost > 0) {
@@ -117,9 +144,31 @@ router.post('/spin', requireUser, async (req: Request, res: Response) => {
       }
       await tx.wheelPrize.update({ where: { id: prize.id }, data: { wonCount: { increment: 1 } } });
       await tx.wheelSpin.create({
-        data: { userId: uid, prizeId: prize.id, prizeLabel: prize.label, type: prize.type, value: prize.value, costPoints: cost },
+        data: { userId: uid, prizeId: prize.id, prizeLabel: prize.label, type: prize.type, value: prize.value, costPoints: cost, giftcode: issuedCode || null },
       });
     });
+
+    // Sản phẩm: tạo đơn giá 0 đã thanh toán + tự giao (gói auto) / chờ admin (gói manual).
+    if (prize.type === 'product' && prize.packageId) {
+      try {
+        const pkg = await prisma.productPackage.findUnique({ where: { id: prize.packageId }, include: { product: true } });
+        if (pkg) {
+          const order = await prisma.order.create({
+            data: {
+              orderCode: genOrderCode(),
+              userId: String(uid),
+              userEmail: user.email,
+              packageId: pkg.id,
+              quantity: 1,
+              subtotalAmount: 0, discountAmount: 0, taxAmount: 0, totalAmount: 0,
+              status: 'paid', paymentMethod: 'reward',
+              notes: `Phần thưởng vòng quay: ${prize.label}`,
+            },
+          });
+          await autoDeliver(order.id);
+        }
+      } catch { /* không chặn kết quả quay */ }
+    }
 
     if (prize.type !== 'none') {
       createNotification(uid, { type: 'points', title: `🎉 Vòng quay: ${prize.label}`, link: '/dashboard/wheel' }).catch(() => {});
@@ -127,7 +176,11 @@ router.post('/spin', requireUser, async (req: Request, res: Response) => {
 
     res.json({
       ok: true,
-      prize: { id: prize.id, label: prize.label, type: prize.type, value: Number(prize.value || 0), voucher_code: prize.type === 'voucher' ? prize.voucherCode : undefined },
+      prize: {
+        id: prize.id, label: prize.label, type: prize.type, value: Number(prize.value || 0),
+        voucher_code: prize.type === 'voucher' ? issuedCode : undefined,
+        image_url: prize.imageUrl || undefined,
+      },
       used_free: useFree,
     });
   } catch (e: any) {
@@ -144,7 +197,7 @@ router.get('/history', requireUser, async (req: Request, res: Response) => {
     res.json({
       items: items.map((s: any) => ({
         id: s.id, prize_label: s.prizeLabel, type: s.type, value: Number(s.value || 0),
-        cost_points: s.costPoints, created_at: s.createdAt,
+        cost_points: s.costPoints, giftcode: s.giftcode, created_at: s.createdAt,
       })),
     });
   } catch (e: any) {
@@ -161,6 +214,11 @@ router.get('/admin/prizes', requireAdmin, async (_req: Request, res: Response) =
         id: p.id, label: p.label, type: p.type, value: Number(p.value || 0),
         voucher_code: p.voucherCode, weight: p.weight, color: p.color,
         stock: p.stock, won_count: p.wonCount, is_active: p.isActive, sort_order: p.sortOrder,
+        image_url: p.imageUrl, segment_index: p.segmentIndex, package_id: p.packageId,
+        giftcode_type: p.giftcodeType, giftcode_value: p.giftcodeValue != null ? Number(p.giftcodeValue) : null,
+        giftcode_min_order: p.giftcodeMinOrder != null ? Number(p.giftcodeMinOrder) : null,
+        giftcode_max_discount: p.giftcodeMaxDiscount != null ? Number(p.giftcodeMaxDiscount) : null,
+        giftcode_expiry_days: p.giftcodeExpiryDays, giftcode_prefix: p.giftcodePrefix,
       })),
     });
   } catch (e: any) {
@@ -183,6 +241,15 @@ router.post('/admin/prizes', requireAdmin, async (req: Request, res: Response) =
         stock: b.stock != null && b.stock !== '' ? Number(b.stock) : -1,
         isActive: b.is_active !== false,
         sortOrder: Number(b.sort_order) || 0,
+        imageUrl: b.image_url || null,
+        segmentIndex: Number(b.segment_index) || 0,
+        packageId: b.package_id ? Number(b.package_id) : null,
+        giftcodeType: b.giftcode_type || null,
+        giftcodeValue: b.giftcode_value != null && b.giftcode_value !== '' ? Number(b.giftcode_value) : null,
+        giftcodeMinOrder: b.giftcode_min_order != null && b.giftcode_min_order !== '' ? Number(b.giftcode_min_order) : null,
+        giftcodeMaxDiscount: b.giftcode_max_discount != null && b.giftcode_max_discount !== '' ? Number(b.giftcode_max_discount) : null,
+        giftcodeExpiryDays: b.giftcode_expiry_days != null && b.giftcode_expiry_days !== '' ? Number(b.giftcode_expiry_days) : null,
+        giftcodePrefix: b.giftcode_prefix || null,
       },
     });
     res.status(201).json({ id: created.id });
@@ -205,6 +272,15 @@ router.patch('/admin/prizes/:id', requireAdmin, async (req: Request, res: Respon
     if (b.stock !== undefined) data.stock = b.stock !== '' && b.stock != null ? Number(b.stock) : -1;
     if (b.is_active !== undefined) data.isActive = !!b.is_active;
     if (b.sort_order !== undefined) data.sortOrder = Number(b.sort_order) || 0;
+    if (b.image_url !== undefined) data.imageUrl = b.image_url || null;
+    if (b.segment_index !== undefined) data.segmentIndex = Number(b.segment_index) || 0;
+    if (b.package_id !== undefined) data.packageId = b.package_id ? Number(b.package_id) : null;
+    if (b.giftcode_type !== undefined) data.giftcodeType = b.giftcode_type || null;
+    if (b.giftcode_value !== undefined) data.giftcodeValue = b.giftcode_value !== '' && b.giftcode_value != null ? Number(b.giftcode_value) : null;
+    if (b.giftcode_min_order !== undefined) data.giftcodeMinOrder = b.giftcode_min_order !== '' && b.giftcode_min_order != null ? Number(b.giftcode_min_order) : null;
+    if (b.giftcode_max_discount !== undefined) data.giftcodeMaxDiscount = b.giftcode_max_discount !== '' && b.giftcode_max_discount != null ? Number(b.giftcode_max_discount) : null;
+    if (b.giftcode_expiry_days !== undefined) data.giftcodeExpiryDays = b.giftcode_expiry_days !== '' && b.giftcode_expiry_days != null ? Number(b.giftcode_expiry_days) : null;
+    if (b.giftcode_prefix !== undefined) data.giftcodePrefix = b.giftcode_prefix || null;
     await prisma.wheelPrize.update({ where: { id }, data });
     res.json({ ok: true });
   } catch (e: any) {
@@ -215,6 +291,45 @@ router.patch('/admin/prizes/:id', requireAdmin, async (req: Request, res: Respon
 router.delete('/admin/prizes/:id', requireAdmin, async (req: Request, res: Response) => {
   try {
     await prisma.wheelPrize.delete({ where: { id: parseInt(req.params.id, 10) } });
+    res.json({ ok: true });
+  } catch (e: any) {
+    res.status(400).json({ detail: e.message });
+  }
+});
+
+// ── Admin: cấu hình ảnh vòng quay + số ô ───────────────
+router.get('/admin/config', requireAdmin, async (_req: Request, res: Response) => {
+  try {
+    const rows = await prisma.siteConfig.findMany({
+      where: { key: { in: ['wheel_enabled', 'wheel_cost_points', 'wheel_free_daily', 'wheel_image_url', 'wheel_segments'] } },
+    });
+    const m = Object.fromEntries(rows.map((r: any) => [r.key, r.value || '']));
+    res.json({
+      enabled: m['wheel_enabled'] === '1' || m['wheel_enabled'] === 'true',
+      cost_points: parseInt(m['wheel_cost_points'] || '0', 10) || 0,
+      free_daily: parseInt(m['wheel_free_daily'] || '0', 10) || 0,
+      image_url: m['wheel_image_url'] || '',
+      segments: parseInt(m['wheel_segments'] || '0', 10) || 0,
+    });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+router.post('/admin/config', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const b = req.body || {};
+    const set: Record<string, string> = {};
+    if (b.enabled !== undefined) set['wheel_enabled'] = b.enabled ? '1' : '0';
+    if (b.cost_points !== undefined) set['wheel_cost_points'] = String(Number(b.cost_points) || 0);
+    if (b.free_daily !== undefined) set['wheel_free_daily'] = String(Number(b.free_daily) || 0);
+    if (b.image_url !== undefined) set['wheel_image_url'] = String(b.image_url || '');
+    if (b.segments !== undefined) set['wheel_segments'] = String(Number(b.segments) || 0);
+    await Promise.all(
+      Object.entries(set).map(([key, value]) =>
+        prisma.siteConfig.upsert({ where: { key }, update: { value }, create: { key, value } })
+      )
+    );
     res.json({ ok: true });
   } catch (e: any) {
     res.status(400).json({ detail: e.message });
