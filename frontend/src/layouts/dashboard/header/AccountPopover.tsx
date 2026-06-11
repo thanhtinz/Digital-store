@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 // next
 import { useRouter } from 'next/router';
 // @mui
@@ -10,11 +10,14 @@ import { PATH_DASHBOARD, PATH_AUTH } from '../../../routes/paths';
 import { useAuthContext } from '../../../auth/useAuthContext';
 // locales
 import { useLocales } from '../../../locales';
+// utils
+import axiosInstance from '../../../utils/axios';
 // components
 import Iconify from '../../../components/iconify';
 import { useSnackbar } from '../../../components/snackbar';
 import MenuPopover from '../../../components/menu-popover';
 import { IconButtonAnimate } from '../../../components/animate';
+import RankBadge from '../../../sections/storefront/RankBadge';
 
 // ----------------------------------------------------------------------
 
@@ -54,6 +57,15 @@ export default function AccountPopover() {
   const { enqueueSnackbar } = useSnackbar();
 
   const [openPopover, setOpenPopover] = useState<HTMLElement | null>(null);
+  const [myRank, setMyRank] = useState<any>(null);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      axiosInstance.get('/api/ranks/me').then((r) => setMyRank(r.data?.current || null)).catch(() => {});
+    } else {
+      setMyRank(null);
+    }
+  }, [isAuthenticated]);
 
   const handleOpenPopover = (event: React.MouseEvent<HTMLElement>) => {
     setOpenPopover(event.currentTarget);
@@ -132,6 +144,12 @@ export default function AccountPopover() {
               <Typography variant="body2" sx={{ color: 'text.secondary' }} noWrap>
                 {(user as any)?.email}
               </Typography>
+
+              {myRank && (
+                <Box sx={{ mt: 0.75 }}>
+                  <RankBadge rank={myRank} size="sm" />
+                </Box>
+              )}
             </Box>
 
             <Divider sx={{ borderStyle: 'dashed' }} />
