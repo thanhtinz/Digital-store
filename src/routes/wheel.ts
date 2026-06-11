@@ -297,6 +297,33 @@ router.delete('/admin/prizes/:id', requireAdmin, async (req: Request, res: Respo
   }
 });
 
+// ── Admin: lịch sử lượt quay (mọi user) ───────────────
+router.get('/admin/history', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const limit = Math.min(200, parseInt(String(req.query.limit || '100'), 10) || 100);
+    const spins = await prisma.wheelSpin.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      include: { user: { select: { email: true, displayName: true } } },
+    });
+    res.json({
+      items: spins.map((s: any) => ({
+        id: s.id,
+        user_email: s.user?.email || `#${s.userId}`,
+        user_name: s.user?.displayName || null,
+        prize_label: s.prizeLabel,
+        type: s.type,
+        value: Number(s.value || 0),
+        cost_points: s.costPoints,
+        giftcode: s.giftcode,
+        created_at: s.createdAt,
+      })),
+    });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
 // ── Admin: cấu hình ảnh vòng quay + số ô ───────────────
 router.get('/admin/config', requireAdmin, async (_req: Request, res: Response) => {
   try {
