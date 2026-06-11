@@ -190,9 +190,11 @@ router.post('/spin', requireUser, async (req: Request, res: Response) => {
 
 // Lịch sử CHUNG: các lượt trúng gần đây của mọi người (ẩn bớt thông tin).
 function maskName(name?: string | null, email?: string | null): string {
-  const base = (name && name.trim()) || (email ? email.split('@')[0] : '') || 'Khách';
-  if (base.length <= 2) return `${base[0] || 'K'}***`;
-  return `${base.slice(0, 2)}${'*'.repeat(Math.max(2, base.length - 3))}${base.slice(-1)}`;
+  let base = (name && name.trim()) || (email ? email.split('@')[0] : '') || 'Khách';
+  // Lấy từ đầu tiên cho gọn (vd "Thanh Tín" -> "Thanh").
+  base = base.split(/\s+/)[0];
+  if (base.length <= 4) return `${base}•••`;
+  return `${base.slice(0, 4)}•••`;
 }
 
 router.get('/recent', requireUser, async (_req: Request, res: Response) => {
