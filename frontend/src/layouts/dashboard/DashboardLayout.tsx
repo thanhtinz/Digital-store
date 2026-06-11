@@ -9,6 +9,7 @@ import AuthGuard from '../../auth/AuthGuard';
 // components
 import { useSettingsContext } from '../../components/settings';
 import LiveChatWidget from '../../components/live-chat';
+import ExternalLinkInterceptor from '../../components/external-redirect/ExternalLinkInterceptor';
 //
 import Main from './Main';
 import Header from './header';
@@ -103,6 +104,7 @@ export default function DashboardLayout({ children, disableGuard = false }: Prop
       <>
         {renderContent()}
         <LiveChatWidget />
+        <ExternalLinkInterceptor />
       </>
     );
   }
@@ -111,6 +113,7 @@ export default function DashboardLayout({ children, disableGuard = false }: Prop
     <AuthGuard>
       {renderContent()}
       <LiveChatWidget />
+      <ExternalLinkInterceptor />
     </AuthGuard>
   );
 }
