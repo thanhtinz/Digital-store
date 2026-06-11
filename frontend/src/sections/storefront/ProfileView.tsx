@@ -33,6 +33,7 @@ import AccountChangePassword from '../@dashboard/user/account/AccountChangePassw
 //
 import LoyaltyCard from './LoyaltyCard';
 import TwoFactorCard from './TwoFactorCard';
+import RankCard from './RankCard';
 import BadgesCard from './BadgesCard';
 import SessionsCard from './SessionsCard';
 import AccountNotificationsCard from './AccountNotificationsCard';
@@ -289,6 +290,9 @@ export default function ProfileView() {
 
           {/* Thẻ điểm thưởng (ẩn nếu tắt) */}
           <LoyaltyCard />
+
+          {/* Hạng thành viên (ẩn nếu chưa cấu hình) */}
+          <RankCard />
 
           {/* Huy hiệu thành viên (ẩn nếu chưa có) */}
           <BadgesCard />

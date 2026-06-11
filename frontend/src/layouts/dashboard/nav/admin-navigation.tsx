@@ -59,6 +59,7 @@ export function useAdminNavConfig() {
         { title: 'Gói combo', path: PATH_DASHBOARD.admin.bundles, icon: ICONS.cart },
         { title: 'Vòng quay may mắn', path: PATH_DASHBOARD.admin.wheel, icon: ICONS.label },
         { title: 'Huy hiệu', path: PATH_DASHBOARD.admin.badges, icon: ICONS.user },
+        { title: 'Cấp bậc thành viên', path: PATH_DASHBOARD.admin.ranks, icon: ICONS.user },
       ],
     },
     {
