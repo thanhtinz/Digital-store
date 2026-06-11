@@ -185,6 +185,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
     []
   );
 
+  // REFRESH USER (đồng bộ lại thông tin user, vd sau khi đổi avatar)
+  const refreshUser = useCallback(async () => {
+    const response = await axios.get('/api/auth/me');
+    const user = response.data.user || response.data;
+    dispatch({
+      type: Types.LOGIN,
+      payload: {
+        user,
+      },
+    });
+  }, []);
+
   // LOGOUT
   const logout = useCallback(() => {
     setSession(null);
@@ -205,8 +217,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       loginWithTwitter: () => {},
       register,
       logout,
+      refreshUser,
     }),
-    [state.isAuthenticated, state.isInitialized, state.user, login, logout, register]
+    [state.isAuthenticated, state.isInitialized, state.user, login, logout, register, refreshUser]
   );
 
   return <AuthContext.Provider value={memoizedValue}>{children}</AuthContext.Provider>;

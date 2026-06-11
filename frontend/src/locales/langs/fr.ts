@@ -78,6 +78,8 @@ const fr = {
     blog: `Blog`,
     guest: `Invité`,
     login_register: `Connexion / Inscription`,
+    login: `Connexion`,
+    register: `Inscription`,
     account: `Compte`,
     admin: `Administration`,
     admin_overview: `Aperçu`,
@@ -174,6 +176,10 @@ const fr = {
     placeholder: `Rechercher des produits...`,
   },
   account_page_extra: {
+    avatar_updated: `Avatar mis à jour`,
+    avatar_failed: `Échec de la mise à jour de l'avatar`,
+    avatar_invalid: `Veuillez choisir un fichier image valide`,
+
     default_name: `Compte`,
     role_user: `Utilisateur`,
     role_admin: `Administrateur`,

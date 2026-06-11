@@ -85,6 +85,8 @@ export function useNavConfig() {
   const [categories, setCategories] = useState<AnyCat[]>([]);
   const [topupProducts, setTopupProducts] = useState<AnyProduct[]>([]);
   const [giftcardProducts, setGiftcardProducts] = useState<AnyProduct[]>([]);
+  // Có nền tảng MXH (SMM) khả dụng hay không -> ẩn mục SMM nếu rỗng.
+  const [hasSmm, setHasSmm] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -93,6 +95,13 @@ export function useNavConfig() {
       .then((res) => {
         const list = Array.isArray(res.data) ? res.data : res.data?.items || [];
         if (alive) setCategories(list);
+      })
+      .catch(() => {});
+    axiosInstance
+      .get('/api/smm/catalog')
+      .then((res) => {
+        const list = Array.isArray(res.data) ? res.data : res.data?.items || [];
+        if (alive) setHasSmm(list.length > 0);
       })
       .catch(() => {});
     axiosInstance
@@ -170,17 +179,20 @@ export function useNavConfig() {
       children: sourceItems,
     });
   }
-  serviceItems.push({
-    title: t('social'),
-    path: PATH_DASHBOARD.smm.root,
-    icon: ICONS.external,
-    children: [
-      { title: t('order'), path: PATH_DASHBOARD.smm.order },
-      { title: t('service_list'), path: PATH_DASHBOARD.smm.services },
-      { title: t('orders'), path: PATH_DASHBOARD.smm.orders },
-      { title: t('warranty'), path: PATH_DASHBOARD.smm.warranty },
-    ],
-  });
+  // Chỉ hiện dịch vụ MXH (SMM) khi đã có nền tảng/dịch vụ khả dụng.
+  if (hasSmm) {
+    serviceItems.push({
+      title: t('social'),
+      path: PATH_DASHBOARD.smm.root,
+      icon: ICONS.external,
+      children: [
+        { title: t('order'), path: PATH_DASHBOARD.smm.order },
+        { title: t('service_list'), path: PATH_DASHBOARD.smm.services },
+        { title: t('orders'), path: PATH_DASHBOARD.smm.orders },
+        { title: t('warranty'), path: PATH_DASHBOARD.smm.warranty },
+      ],
+    });
+  }
 
   const support = {
     subheader: t('support'),
@@ -193,5 +205,10 @@ export function useNavConfig() {
   };
 
   // Admin có MENU RIÊNG (AdminLayout) — không nhồi vào sidebar cửa hàng nữa.
-  return [shopping, { subheader: t('services'), items: serviceItems }, support];
+  // Bỏ qua nhóm "Dịch vụ" nếu không có mục nào (tránh hiện tiêu đề rỗng).
+  return [
+    shopping,
+    ...(serviceItems.length ? [{ subheader: t('services'), items: serviceItems }] : []),
+    support,
+  ];
 }

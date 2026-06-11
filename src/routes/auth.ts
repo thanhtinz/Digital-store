@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import axios from 'axios';
+import multer from 'multer';
+import sharp from 'sharp';
 import prisma from '../db';
 import crypto from 'crypto';
 import { signToken, requireUser, requireAdmin, JWT_SECRET } from '../middleware/auth';
@@ -15,6 +17,9 @@ import jwt from 'jsonwebtoken';
 import { sendMail } from '../services/mail';
 
 const router = Router();
+
+// Upload avatar: ảnh giữ trong bộ nhớ, nén bằng sharp rồi lưu DB.
+const uploadAvatar = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
 
 // ── Register ───────────────────────────────────────────
 router.post('/register', authRateLimit, async (req: Request, res: Response) => {
@@ -167,6 +172,43 @@ router.patch('/me', requireUser, async (req: Request, res: Response) => {
       data: { ...(display_name && { displayName: display_name }), ...(avatar_url && { avatarUrl: avatar_url }) },
     });
     res.json({ id: user.id, email: user.email, display_name: user.displayName, avatar_url: user.avatarUrl });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+// ── Upload avatar ──────────────────────────────────────
+// Nhận file ảnh, nén về ảnh vuông 256px (webp), lưu vào uploaded_images,
+// cập nhật avatarUrl của user rồi trả về user mới.
+router.post('/me/avatar', requireUser, uploadAvatar.single('file'), async (req: Request, res: Response) => {
+  try {
+    const payload = (req as any).user;
+    const f = (req as any).file;
+    if (!f || !f.buffer) { res.status(400).json({ detail: 'Thiếu file ảnh' }); return; }
+
+    let data: Buffer = f.buffer;
+    let mime = f.mimetype || 'image/jpeg';
+    try {
+      data = await sharp(f.buffer)
+        .rotate()
+        .resize(256, 256, { fit: 'cover', position: 'centre' })
+        .webp({ quality: 82 })
+        .toBuffer();
+      mime = 'image/webp';
+    } catch {
+      data = f.buffer;
+      mime = f.mimetype || 'image/jpeg';
+    }
+
+    const img = await prisma.uploadedImage.create({
+      data: { filename: f.originalname || null, data, mimeType: mime },
+    });
+    const avatarUrl = `/api/images/${img.id}`;
+    const user = await prisma.user.update({
+      where: { id: payload.user_id },
+      data: { avatarUrl },
+    });
+    res.status(201).json({ id: user.id, email: user.email, display_name: user.displayName, avatar_url: user.avatarUrl });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
   }

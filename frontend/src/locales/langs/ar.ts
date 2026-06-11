@@ -78,6 +78,8 @@ const ar = {
     blog: `مدونة`,
     guest: `زائر`,
     login_register: `تسجيل الدخول / التسجيل`,
+    login: `تسجيل الدخول`,
+    register: `التسجيل`,
     account: `الحساب`,
     admin: `لوحة الإدارة`,
     admin_overview: `نظرة عامة`,
@@ -174,6 +176,10 @@ const ar = {
     placeholder: `ابحث عن المنتجات...`,
   },
   account_page_extra: {
+    avatar_updated: `تم تحديث الصورة الرمزية`,
+    avatar_failed: `فشل تحديث الصورة الرمزية`,
+    avatar_invalid: `الرجاء اختيار ملف صورة صالح`,
+
     default_name: `الحساب`,
     role_user: `مستخدم`,
     role_admin: `مدير`,

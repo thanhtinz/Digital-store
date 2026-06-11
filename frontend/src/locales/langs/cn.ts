@@ -78,6 +78,8 @@ const cn = {
     blog: `博客`,
     guest: `访客`,
     login_register: `登录 / 注册`,
+    login: `登录`,
+    register: `注册`,
     account: `账户`,
     admin: `管理后台`,
     admin_overview: `概览`,
@@ -174,6 +176,10 @@ const cn = {
     placeholder: `搜索商品...`,
   },
   account_page_extra: {
+    avatar_updated: `头像已更新`,
+    avatar_failed: `头像更新失败`,
+    avatar_invalid: `请选择有效的图片文件`,
+
     default_name: `账户`,
     role_user: `用户`,
     role_admin: `管理员`,

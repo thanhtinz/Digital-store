@@ -27,6 +27,7 @@ import { PATH_DASHBOARD } from '../../routes/paths';
 // components
 import Label from '../../components/label';
 import Iconify from '../../components/iconify';
+import { useSnackbar } from '../../components/snackbar';
 // sections (form đổi mật khẩu của Minimal)
 import AccountChangePassword from '../@dashboard/user/account/AccountChangePassword';
 //
@@ -64,8 +65,42 @@ type OrderLite = {
 // ----------------------------------------------------------------------
 
 export default function ProfileView() {
-  const { user } = useAuthContext();
+  const { user, refreshUser } = useAuthContext();
   const { translate } = useLocales();
+  const { enqueueSnackbar } = useSnackbar();
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const avatarUrl =
+    (user as any)?.avatar_url || (user as any)?.avatarUrl || (user as any)?.photoURL || '';
+
+  const handlePickAvatar = () => avatarInputRef.current?.click();
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // cho phép chọn lại cùng 1 file
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      enqueueSnackbar(`${translate('account_page_extra.avatar_invalid')}`, { variant: 'error' });
+      return;
+    }
+    const formData = new FormData();
+    formData.append('file', file);
+    setUploadingAvatar(true);
+    try {
+      await axiosInstance.post('/api/auth/me/avatar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      await refreshUser?.();
+      enqueueSnackbar(`${translate('account_page_extra.avatar_updated')}`);
+    } catch (err: any) {
+      enqueueSnackbar(err?.detail || err?.message || `${translate('account_page_extra.avatar_failed')}`, {
+        variant: 'error',
+      });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   // Nhãn loại/trạng thái giao dịch theo ngôn ngữ (fallback nếu thiếu key).
   const txLabel = (type: string) => {
@@ -150,18 +185,51 @@ export default function ProfileView() {
         <Grid item xs={12} md={4}>
           {/* Thẻ thông tin tài khoản */}
           <Card sx={{ p: 3, textAlign: 'center', mb: 3 }}>
-            <Avatar
-              sx={{
-                width: 96,
-                height: 96,
-                mx: 'auto',
-                mb: 2,
-                bgcolor: 'primary.lighter',
-                color: 'primary.main',
-              }}
-            >
-              <Iconify icon="solar:user-rounded-bold" width={56} />
-            </Avatar>
+            <Box sx={{ position: 'relative', width: 96, height: 96, mx: 'auto', mb: 2 }}>
+              <Avatar
+                src={avatarUrl || undefined}
+                sx={{
+                  width: 96,
+                  height: 96,
+                  bgcolor: 'primary.lighter',
+                  color: 'primary.main',
+                }}
+              >
+                <Iconify icon="solar:user-rounded-bold" width={56} />
+              </Avatar>
+
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={handleAvatarChange}
+              />
+
+              {/* Nút đổi avatar */}
+              <Box
+                onClick={uploadingAvatar ? undefined : handlePickAvatar}
+                sx={{
+                  position: 'absolute',
+                  right: 0,
+                  bottom: 0,
+                  width: 32,
+                  height: 32,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '50%',
+                  cursor: uploadingAvatar ? 'default' : 'pointer',
+                  color: 'common.white',
+                  bgcolor: 'primary.main',
+                  border: (t) => `solid 2px ${t.palette.background.paper}`,
+                  transition: (t) => t.transitions.create('opacity'),
+                  '&:hover': { opacity: 0.85 },
+                }}
+              >
+                <Iconify icon={uploadingAvatar ? 'eos-icons:loading' : 'solar:camera-bold'} width={18} />
+              </Box>
+            </Box>
 
             <Typography variant="h6" noWrap sx={{ px: 1 }}>
               {name}

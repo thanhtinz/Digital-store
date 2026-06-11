@@ -23,7 +23,7 @@ import { IconButtonAnimate } from '../../../components/animate';
 export default function AccountPopover() {
   const { replace, push } = useRouter();
 
-  const { user, logout } = useAuthContext();
+  const { user, logout, isAuthenticated } = useAuthContext();
 
   const { translate } = useLocales();
   // Viết hoa chữ cái đầu cho nhãn menu (một số key i18n đang viết thường).
@@ -109,41 +109,57 @@ export default function AccountPopover() {
       </IconButtonAnimate>
 
       <MenuPopover open={openPopover} onClose={handleClosePopover} sx={{ width: 200, p: 0 }}>
-        <Box sx={{ my: 1.5, px: 2.5 }}>
-          <Typography variant="subtitle2" noWrap>
-            {name}
-          </Typography>
-
-          <Typography variant="body2" sx={{ color: 'text.secondary' }} noWrap>
-            {(user as any)?.email}
-          </Typography>
-        </Box>
-
-        <Divider sx={{ borderStyle: 'dashed' }} />
-
-        <Stack sx={{ p: 1 }}>
-          {OPTIONS.map((option) => (
-            <MenuItem key={option.label} onClick={() => handleClickItem(option.linkTo)}>
-              {option.label}
+        {!isAuthenticated ? (
+          // Chưa đăng nhập: chỉ hiển thị Đăng nhập + Đăng ký.
+          <Stack sx={{ p: 1 }}>
+            <MenuItem onClick={() => handleClickItem(PATH_AUTH.login)}>
+              <Iconify icon="solar:login-3-bold" sx={{ mr: 1 }} />
+              {t('login')}
             </MenuItem>
-          ))}
-
-          {isAdmin && (
-            <MenuItem
-              onClick={() => handleClickItem(PATH_DASHBOARD.admin.root)}
-              sx={{ color: 'primary.main', fontWeight: 'fontWeightMedium' }}
-            >
-              <Iconify icon="solar:shield-user-bold" sx={{ mr: 1 }} />
-              {t('admin')}
+            <MenuItem onClick={() => handleClickItem(PATH_AUTH.register)}>
+              <Iconify icon="solar:user-plus-bold" sx={{ mr: 1 }} />
+              {t('register')}
             </MenuItem>
-          )}
-        </Stack>
+          </Stack>
+        ) : (
+          <>
+            <Box sx={{ my: 1.5, px: 2.5 }}>
+              <Typography variant="subtitle2" noWrap>
+                {name}
+              </Typography>
 
-        <Divider sx={{ borderStyle: 'dashed' }} />
+              <Typography variant="body2" sx={{ color: 'text.secondary' }} noWrap>
+                {(user as any)?.email}
+              </Typography>
+            </Box>
 
-        <MenuItem onClick={handleLogout} sx={{ m: 1 }}>
-          {t('logout')}
-        </MenuItem>
+            <Divider sx={{ borderStyle: 'dashed' }} />
+
+            <Stack sx={{ p: 1 }}>
+              {OPTIONS.map((option) => (
+                <MenuItem key={option.label} onClick={() => handleClickItem(option.linkTo)}>
+                  {option.label}
+                </MenuItem>
+              ))}
+
+              {isAdmin && (
+                <MenuItem
+                  onClick={() => handleClickItem(PATH_DASHBOARD.admin.root)}
+                  sx={{ color: 'primary.main', fontWeight: 'fontWeightMedium' }}
+                >
+                  <Iconify icon="solar:shield-user-bold" sx={{ mr: 1 }} />
+                  {t('admin')}
+                </MenuItem>
+              )}
+            </Stack>
+
+            <Divider sx={{ borderStyle: 'dashed' }} />
+
+            <MenuItem onClick={handleLogout} sx={{ m: 1 }}>
+              {t('logout')}
+            </MenuItem>
+          </>
+        )}
       </MenuPopover>
     </>
   );

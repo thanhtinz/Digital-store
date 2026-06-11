@@ -78,6 +78,8 @@ const vn = {
     blog: `blog`,
     guest: `Khách`,
     login_register: `Đăng nhập / Đăng ký`,
+    login: `Đăng nhập`,
+    register: `Đăng ký`,
     account: `Tài khoản`,
     admin: `Trang quản trị`,
     admin_overview: `Tổng quan`,
@@ -174,6 +176,10 @@ const vn = {
     placeholder: `Tìm sản phẩm...`,
   },
   account_page_extra: {
+    avatar_updated: `Đã cập nhật ảnh đại diện`,
+    avatar_failed: `Cập nhật ảnh đại diện thất bại`,
+    avatar_invalid: `Vui lòng chọn một tệp ảnh hợp lệ`,
+
     default_name: `Tài khoản`,
     role_user: `Người dùng`,
     role_admin: `Quản trị viên`,
