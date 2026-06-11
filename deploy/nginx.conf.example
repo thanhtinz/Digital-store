@@ -1,0 +1,64 @@
+# ──────────────────────────────────────────────────────────────
+# Nginx reverse proxy cho Sweet Premium Store
+# Đặt file này tại: /etc/nginx/sites-available/sweet-store
+# Rồi: sudo ln -s /etc/nginx/sites-available/sweet-store /etc/nginx/sites-enabled/
+#      sudo nginx -t && sudo systemctl reload nginx
+#
+# THAY 'yourdomain.com' bằng domain thật của bạn ở TẤT CẢ các dòng.
+# ──────────────────────────────────────────────────────────────
+
+server {
+    listen 80;
+    server_name yourdomain.com www.yourdomain.com;
+
+    # Cho phép Certbot xác thực để cấp SSL
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
+
+    # Sau khi có SSL, bỏ comment dòng dưới để ép HTTPS:
+    # return 301 https://$host$request_uri;
+
+    # (Tạm thời chạy HTTP trước khi cài SSL)
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        proxy_read_timeout 90s;
+    }
+}
+
+# ──────────────────────────────────────────────────────────────
+# Block HTTPS — Certbot sẽ TỰ ĐỘNG thêm/sửa block này khi bạn chạy:
+#   sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
+# Bạn KHÔNG cần tự viết block 443 — để Certbot lo.
+# Mẫu tham khảo nếu muốn cấu hình tay:
+# ──────────────────────────────────────────────────────────────
+#
+# server {
+#     listen 443 ssl http2;
+#     server_name yourdomain.com www.yourdomain.com;
+#
+#     ssl_certificate     /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+#     ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+#
+#     client_max_body_size 20M;   # cho phép upload ảnh
+#
+#     location / {
+#         proxy_pass http://127.0.0.1:3000;
+#         proxy_http_version 1.1;
+#         proxy_set_header Upgrade $http_upgrade;
+#         proxy_set_header Connection 'upgrade';
+#         proxy_set_header Host $host;
+#         proxy_set_header X-Real-IP $remote_addr;
+#         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#         proxy_set_header X-Forwarded-Proto $scheme;
+#         proxy_cache_bypass $http_upgrade;
+#     }
+# }

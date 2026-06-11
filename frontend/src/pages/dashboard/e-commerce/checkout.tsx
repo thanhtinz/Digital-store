@@ -1,0 +1,150 @@
+import { useEffect, useState } from 'react';
+// next
+import Head from 'next/head';
+import { useRouter } from 'next/router';
+// @mui
+import { Grid, Container } from '@mui/material';
+// routes
+import { PATH_DASHBOARD } from '../../../routes/paths';
+// layouts
+import DashboardLayout from '../../../layouts/dashboard';
+// redux
+import { useDispatch, useSelector } from '../../../redux/store';
+import {
+  resetCart,
+  getCart,
+  nextStep,
+  backStep,
+  gotoStep,
+  deleteCart,
+  applyDiscount,
+  increaseQuantity,
+  decreaseQuantity,
+} from '../../../redux/slices/product';
+// locales
+import { useLocales } from '../../../locales';
+// components
+import { useSettingsContext } from '../../../components/settings';
+// sections
+import {
+  CheckoutCart,
+  CheckoutSteps,
+  CheckoutPayment,
+  CheckoutOrderComplete,
+} from '../../../sections/@dashboard/e-commerce/checkout';
+
+// ----------------------------------------------------------------------
+
+// Cho phép khách chưa đăng nhập vào trang thanh toán (guest checkout).
+EcommerceCheckoutPage.getLayout = (page: React.ReactElement) => (
+  <DashboardLayout disableGuard>{page}</DashboardLayout>
+);
+
+// ----------------------------------------------------------------------
+
+export default function EcommerceCheckoutPage() {
+  const { replace } = useRouter();
+
+  const { translate } = useLocales();
+
+  const STEPS = [
+    `${translate('checkout_page.step_cart')}`,
+    `${translate('checkout_page.step_payment')}`,
+  ];
+
+  const { themeStretch } = useSettingsContext();
+
+  const dispatch = useDispatch();
+
+  const { checkout } = useSelector((state) => state.product);
+
+  const { cart, activeStep } = checkout;
+
+  const [orderCode, setOrderCode] = useState('');
+
+  const completed = activeStep === STEPS.length;
+
+  useEffect(() => {
+    dispatch(getCart(cart));
+  }, [dispatch, cart]);
+
+  const handleNextStep = () => {
+    dispatch(nextStep());
+  };
+
+  const handleBackStep = () => {
+    dispatch(backStep());
+  };
+
+  const handleGotoStep = (step: number) => {
+    dispatch(gotoStep(step));
+  };
+
+  const handleApplyDiscount = (value: number, code?: string) => {
+    if (cart.length) {
+      dispatch(applyDiscount({ discount: value, code: code || '' }));
+    }
+  };
+
+  const handleDeleteCart = (productId: string) => {
+    dispatch(deleteCart(productId));
+  };
+
+  const handleIncreaseQuantity = (productId: string) => {
+    dispatch(increaseQuantity(productId));
+  };
+
+  const handleDecreaseQuantity = (productId: string) => {
+    dispatch(decreaseQuantity(productId));
+  };
+
+  const handleReset = () => {
+    if (completed) {
+      dispatch(resetCart());
+      replace(PATH_DASHBOARD.eCommerce.shop);
+    }
+  };
+
+  return (
+    <>
+      <Head>
+        <title> {`${translate('checkout_page.title')}`} </title>
+      </Head>
+
+      <Container maxWidth={themeStretch ? false : 'lg'} sx={{ pt: { xs: 3, md: 5 } }}>
+        <Grid container justifyContent={completed ? 'center' : 'flex-start'}>
+          <Grid item xs={12} md={8}>
+            <CheckoutSteps activeStep={activeStep} steps={STEPS} />
+          </Grid>
+        </Grid>
+
+        {completed ? (
+          <CheckoutOrderComplete open={completed} orderCode={orderCode} onReset={handleReset} onDownloadPDF={() => {}} />
+        ) : (
+          <>
+            {activeStep === 0 && (
+              <CheckoutCart
+                checkout={checkout}
+                onNextStep={handleNextStep}
+                onDeleteCart={handleDeleteCart}
+                onApplyDiscount={handleApplyDiscount}
+                onIncreaseQuantity={handleIncreaseQuantity}
+                onDecreaseQuantity={handleDecreaseQuantity}
+              />
+            )}
+            {activeStep === 1 && (
+              <CheckoutPayment
+                checkout={checkout}
+                onNextStep={handleNextStep}
+                onBackStep={handleBackStep}
+                onGotoStep={handleGotoStep}
+                onReset={handleReset}
+                onComplete={setOrderCode}
+              />
+            )}
+          </>
+        )}
+      </Container>
+    </>
+  );
+}
