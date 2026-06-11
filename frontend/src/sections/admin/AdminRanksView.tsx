@@ -14,6 +14,7 @@ import Iconify from '../../components/iconify';
 import { useSnackbar } from '../../components/snackbar';
 import ResponsiveDialog from '../../components/responsive-dialog';
 import AdminPageHeader from './AdminPageHeader';
+import FeatureToggle from './FeatureToggle';
 
 // ----------------------------------------------------------------------
 
@@ -76,6 +77,13 @@ export default function AdminRanksView() {
               <Button variant="contained" onClick={openNew} startIcon={<Iconify icon="eva:plus-fill" />}>Thêm hạng</Button>
             </Stack>
           }
+        />
+
+        <FeatureToggle
+          flag="ranks"
+          label="Cấp bậc thành viên"
+          description="Hiển thị hạng, đặc quyền và giá theo hạng trên cửa hàng."
+          icon="solar:crown-bold-duotone"
         />
 
         <Grid container spacing={2}>

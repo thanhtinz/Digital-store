@@ -8,6 +8,8 @@ import axiosInstance from '../../utils/axios';
 import { fCurrency } from '../../utils/formatNumber';
 // routes
 import { PATH_DASHBOARD } from '../../routes/paths';
+// hooks
+import useSiteSettings from '../../hooks/useSiteSettings';
 // components
 import Iconify from '../../components/iconify';
 import RankBadge from './RankBadge';
@@ -15,13 +17,17 @@ import RankBadge from './RankBadge';
 // ----------------------------------------------------------------------
 
 export default function RankCard() {
+  const settings = useSiteSettings();
+  const enabled = settings?.features?.ranks !== false; // mặc định bật
   const [data, setData] = useState<any>(null);
 
   useEffect(() => {
+    if (!enabled) return;
     axiosInstance.get('/api/ranks/me').then((r) => setData(r.data)).catch(() => {});
-  }, []);
+  }, [enabled]);
 
-  // Ẩn nếu hệ thống chưa cấu hình hạng nào.
+  // Ẩn nếu tính năng tắt hoặc hệ thống chưa cấu hình hạng nào.
+  if (!enabled) return null;
   if (!data || (!data.current && (!data.ranks || data.ranks.length === 0))) return null;
 
   const cur = data.current;

@@ -34,6 +34,7 @@ import Iconify from '../../components/iconify';
 import ConfirmDialog from '../../components/confirm-dialog';
 import { useSnackbar } from '../../components/snackbar';
 import AdminPageHeader from './AdminPageHeader';
+import FeatureToggle from './FeatureToggle';
 import ImageUploadField from './ImageUploadField';
 
 // ----------------------------------------------------------------------
@@ -49,6 +50,13 @@ export default function AdminRewardsView() {
   return (
     <Container maxWidth="lg" sx={{ pb: 8 }}>
       <AdminPageHeader title="Điểm thưởng & Đổi thưởng" />
+
+        <FeatureToggle
+          configKey="loyalty_enabled"
+          label="Điểm thưởng"
+          description="Tích điểm, điểm danh, đổi thưởng cho khách."
+          icon="solar:gift-bold-duotone"
+        />
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
         <Tab value="config" label="Cấu hình điểm" icon={<Iconify icon="solar:settings-bold" />} iconPosition="start" />
         <Tab value="checkin" label="Điểm danh" icon={<Iconify icon="solar:calendar-mark-bold" />} iconPosition="start" />

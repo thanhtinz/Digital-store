@@ -37,6 +37,7 @@ import ImageUploadField from './ImageUploadField';
 import AdminBlogPostForm from './AdminBlogPostForm';
 import { useSnackbar } from '../../components/snackbar';
 import AdminPageHeader from './AdminPageHeader';
+import FeatureToggle from './FeatureToggle';
 
 // ----------------------------------------------------------------------
 
@@ -58,6 +59,13 @@ export default function AdminBlogView() {
   return (
     <Container maxWidth="lg" sx={{ pb: 8 }}>
       <AdminPageHeader title="Blog" />
+
+        <FeatureToggle
+          flag="blog"
+          label="Blog / Tin tức"
+          description="Hiển thị mục blog trên cửa hàng."
+          icon="solar:notebook-bold-duotone"
+        />
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
         <Tab value="posts" label="Bài viết" icon={<Iconify icon="solar:document-text-bold" />} iconPosition="start" />
         <Tab value="cats" label="Chuyên mục" icon={<Iconify icon="solar:folder-bold" />} iconPosition="start" />

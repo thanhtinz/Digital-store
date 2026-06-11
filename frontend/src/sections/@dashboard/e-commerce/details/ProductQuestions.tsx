@@ -6,6 +6,8 @@ import { LoadingButton } from '@mui/lab';
 import { useAuthContext } from '../../../../auth/useAuthContext';
 // utils
 import axiosInstance from '../../../../utils/axios';
+// hooks
+import useSiteSettings from '../../../../hooks/useSiteSettings';
 // components
 import Iconify from '../../../../components/iconify';
 import { useSnackbar } from '../../../../components/snackbar';
@@ -15,6 +17,8 @@ import { useSnackbar } from '../../../../components/snackbar';
 type Props = { productId: string | number };
 
 export default function ProductQuestions({ productId }: Props) {
+  const settings = useSiteSettings();
+  const enabled = settings?.features?.product_qa !== false; // mặc định bật
   const { isAuthenticated } = useAuthContext();
   const { enqueueSnackbar } = useSnackbar();
   const [items, setItems] = useState<any[]>([]);
@@ -29,9 +33,9 @@ export default function ProductQuestions({ productId }: Props) {
   };
 
   useEffect(() => {
-    if (productId) load();
+    if (productId && enabled) load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [productId]);
+  }, [productId, enabled]);
 
   const submit = async () => {
     if (!text.trim()) return;
@@ -47,6 +51,8 @@ export default function ProductQuestions({ productId }: Props) {
       setSending(false);
     }
   };
+
+  if (!enabled) return null;
 
   return (
     <Box sx={{ p: 3 }}>

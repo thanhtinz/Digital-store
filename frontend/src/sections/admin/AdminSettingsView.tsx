@@ -82,6 +82,10 @@ const FEATURE_TOGGLES: { key: string; label: string; help?: string }[] = [
   { key: 'announcements', label: 'Thông báo' },
   { key: 'balance', label: 'Ví / Số dư' },
   { key: 'api_docs', label: 'Tài liệu API' },
+  { key: 'bundles', label: 'Gói combo' },
+  { key: 'ranks', label: 'Cấp bậc thành viên' },
+  { key: 'badges', label: 'Huy hiệu thành viên' },
+  { key: 'product_qa', label: 'Hỏi & Đáp sản phẩm' },
 ];
 
 const SETTINGS_TABS = [

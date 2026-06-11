@@ -15,6 +15,7 @@ import Iconify from '../../components/iconify';
 import { useSnackbar } from '../../components/snackbar';
 import ResponsiveDialog from '../../components/responsive-dialog';
 import AdminPageHeader from './AdminPageHeader';
+import FeatureToggle from './FeatureToggle';
 
 // ----------------------------------------------------------------------
 
@@ -90,6 +91,13 @@ export default function AdminBundlesView() {
           <><Button variant="contained" onClick={openNew} startIcon={<Iconify icon="eva:plus-fill" />}>Thêm combo</Button></>
         }
       />
+
+        <FeatureToggle
+          flag="bundles"
+          label="Gói combo"
+          description="Hiển thị mục combo ở cửa hàng cho khách mua."
+          icon="solar:box-bold-duotone"
+        />
 
         <Grid container spacing={2}>
           {items.map((b) => (

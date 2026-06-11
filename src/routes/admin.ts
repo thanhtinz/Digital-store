@@ -187,6 +187,28 @@ router.get('/admin/settings', requireAdmin, async (_req: Request, res: Response)
   }
 });
 
+// Bật/tắt 1 cờ tính năng (merge vào settings_features, không ghi đè cờ khác).
+router.post('/admin/feature-flag', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const key = String(req.body?.key || '').trim();
+    if (!key) { res.status(400).json({ detail: 'Thiếu key' }); return; }
+    const enabled = req.body?.enabled !== false && req.body?.enabled !== '0' && req.body?.enabled !== 'false';
+    const row = await prisma.siteConfig.findUnique({ where: { key: 'settings_features' } });
+    let obj: Record<string, any> = {};
+    try { obj = row?.value ? JSON.parse(row.value) : {}; } catch { obj = {}; }
+    if (!obj || typeof obj !== 'object') obj = {};
+    obj[key] = enabled;
+    await prisma.siteConfig.upsert({
+      where: { key: 'settings_features' },
+      update: { value: JSON.stringify(obj) },
+      create: { key: 'settings_features', value: JSON.stringify(obj) },
+    });
+    res.json({ ok: true, key, enabled });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
 router.patch('/admin/settings', requireAdmin, async (req: Request, res: Response) => {
   try {
     const updates = req.body as Record<string, string>;
