@@ -179,7 +179,9 @@ router.get('/settings', async (_req: Request, res: Response) => {
       'wheel_enabled', 'wheel_cost_points', 'wheel_free_daily', 'require_email_verification',
       // Tuỳ chỉnh trang 404 & trang chuyển hướng link
       'notfound_title', 'notfound_message', 'notfound_image',
-      'redirect_title', 'redirect_message', 'redirect_warning', 'redirect_seconds'];
+      'redirect_title', 'redirect_message', 'redirect_warning', 'redirect_seconds',
+      // Ảnh loading toàn site
+      'loading_image'];
     const configs = await prisma.siteConfig.findMany({ where: { key: { in: publicKeys } } });
     const map = Object.fromEntries(configs.map((c: { key: string; value: string | null }) => [c.key, c.value]));
     res.json(await withPublicFlags(map));

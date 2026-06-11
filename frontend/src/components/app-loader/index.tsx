@@ -2,6 +2,8 @@ import { useState } from 'react';
 // @mui
 import { Box, Typography } from '@mui/material';
 import { keyframes } from '@mui/system';
+// hooks
+import useSiteSettings from '../../hooks/useSiteSettings';
 
 // ----------------------------------------------------------------------
 // Loader dùng chung toàn site. Hiển thị GIF tại /assets/loading.gif.
@@ -45,14 +47,17 @@ type Props = {
 };
 
 export default function AppLoader({ fullscreen, size = 140 }: Props) {
+  const settings = useSiteSettings();
   const [failed, setFailed] = useState(false);
+  // Ảnh loading do admin cấu hình; nếu trống dùng file tĩnh /assets/loading.gif.
+  const src = settings?.loading_image || '/assets/loading.gif';
 
   const content = failed ? (
     <CssFallback />
   ) : (
     <Box
       component="img"
-      src="/assets/loading.gif"
+      src={src}
       alt="Đang tải..."
       onError={() => setFailed(true)}
       sx={{ width: size, height: 'auto', maxWidth: '70vw' }}
