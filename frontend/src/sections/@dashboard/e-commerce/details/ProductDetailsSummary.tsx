@@ -22,8 +22,6 @@ import { PATH_DASHBOARD } from '../../../../routes/paths';
 import { fShortenNumber, fCurrency } from '../../../../utils/formatNumber';
 // @types
 import { IProduct, ICheckoutCartItem } from '../../../../@types/product';
-// _mock
-import { _socials } from '../../../../_mock/arrays';
 // components
 import Label from '../../../../components/label';
 import Iconify from '../../../../components/iconify';
@@ -66,6 +64,35 @@ export default function ProductDetailsSummary({
   const tp = (k: string) => `${translate(`product_page.${k}`)}`;
   const [alerting, setAlerting] = useState(false);
   const [alerted, setAlerted] = useState(false);
+  // Liên kết MXH cấu hình trong admin (Cài đặt cửa hàng) -> nút chia sẻ/theo dõi.
+  const [socials, setSocials] = useState<{ icon: string; href: string }[]>([]);
+
+  useEffect(() => {
+    let alive = true;
+    axiosInstance
+      .get('/api/admin/settings/public')
+      .then((r) => {
+        if (!alive) return;
+        const s = r.data || {};
+        const map: { key: string; icon: string }[] = [
+          { key: 'facebook', icon: 'mdi:facebook' },
+          { key: 'instagram', icon: 'mdi:instagram' },
+          { key: 'youtube', icon: 'mdi:youtube' },
+          { key: 'tiktok', icon: 'ic:baseline-tiktok' },
+          { key: 'telegram', icon: 'mdi:telegram' },
+          { key: 'zalo', icon: 'simple-icons:zalo' },
+        ];
+        setSocials(
+          map
+            .filter((m) => s[m.key] && String(s[m.key]).trim())
+            .map((m) => ({ icon: m.icon, href: String(s[m.key]).trim() }))
+        );
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const {
     id,
@@ -88,6 +115,11 @@ export default function ProductDetailsSummary({
   const serverRegion: string | null = pAny.serverRegion || null;
   const isGame = productType === 'game';
   const isGiftcard = productType === 'giftcard';
+
+  // Thông tin hiển thị dưới tên sản phẩm.
+  const productCode = pAny.code || pAny.sku || `SP${String(id).padStart(4, '0')}`;
+  const categoryName =
+    (pAny.category && (pAny.category.name || pAny.category)) || pAny.categoryName || '';
 
   // Digital Store: bán theo gói. Nếu có gói thì dùng gói thay cho size/màu.
   const hasPackages = Array.isArray(packages) && packages.length > 0;
@@ -266,6 +298,34 @@ export default function ProductDetailsSummary({
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                   ({fShortenNumber(totalReview)} {tp('reviews')})
                 </Typography>
+              </Stack>
+
+              {/* Thông tin nhanh: tình trạng, mã sản phẩm, danh mục */}
+              <Stack spacing={1}>
+                <Stack direction="row" spacing={1}>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', minWidth: 110 }}>
+                    {tp('status')}
+                  </Typography>
+                  <Typography variant="subtitle2" sx={{ color: inStock ? 'success.main' : 'error.main' }}>
+                    {inStock ? tp('in_stock') : tp('out_of_stock')}
+                  </Typography>
+                </Stack>
+
+                <Stack direction="row" spacing={1}>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', minWidth: 110 }}>
+                    {tp('sku')}
+                  </Typography>
+                  <Typography variant="subtitle2">{productCode}</Typography>
+                </Stack>
+
+                {categoryName && (
+                  <Stack direction="row" spacing={1}>
+                    <Typography variant="body2" sx={{ color: 'text.secondary', minWidth: 110 }}>
+                      {tp('category')}
+                    </Typography>
+                    <Typography variant="subtitle2">{categoryName}</Typography>
+                  </Stack>
+                )}
               </Stack>
             </>
           )}
@@ -491,13 +551,21 @@ export default function ProductDetailsSummary({
           </Stack>
         )}
 
-        <Stack direction="row" alignItems="center" justifyContent="center">
-          {_socials.map((social) => (
-            <IconButton key={social.name}>
-              <Iconify icon={social.icon} />
-            </IconButton>
-          ))}
-        </Stack>
+        {socials.length > 0 && (
+          <Stack direction="row" alignItems="center" justifyContent="center" spacing={0.5}>
+            {socials.map((social) => (
+              <IconButton
+                key={social.icon}
+                component="a"
+                href={social.href}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Iconify icon={social.icon} />
+              </IconButton>
+            ))}
+          </Stack>
+        )}
       </Stack>
     </FormProvider>
   );

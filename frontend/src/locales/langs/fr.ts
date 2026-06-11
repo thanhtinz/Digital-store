@@ -510,6 +510,10 @@ const fr = {
     load_failed: `Échec du chargement`,
   },
   product_page: {
+    status: `Statut`,
+    sku: `Code produit`,
+    category: `Catégorie`,
+
     stock_alert_btn: `Me prévenir`,
     stock_alert_done: `Vous serez prévenu`,
     stock_alert_ok: `Inscrit ! Nous vous préviendrons du réapprovisionnement.`,

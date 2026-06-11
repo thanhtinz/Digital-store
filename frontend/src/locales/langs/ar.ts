@@ -510,6 +510,10 @@ const ar = {
     load_failed: `فشل تحميل القائمة`,
   },
   product_page: {
+    status: `الحالة`,
+    sku: `رمز المنتج`,
+    category: `الفئة`,
+
     stock_alert_btn: `أبلغني عند التوفر`,
     stock_alert_done: `سنبلغك عند التوفر`,
     stock_alert_ok: `تم الاشتراك! سنبلغك عند توفره.`,

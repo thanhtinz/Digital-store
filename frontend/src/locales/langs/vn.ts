@@ -510,6 +510,10 @@ const vn = {
     load_failed: `Không tải được danh sách`,
   },
   product_page: {
+    status: `Tình trạng`,
+    sku: `Mã sản phẩm`,
+    category: `Danh mục`,
+
     stock_alert_btn: `Báo khi có hàng`,
     stock_alert_done: `Sẽ báo khi có hàng`,
     stock_alert_ok: `Đã đăng ký. Bạn sẽ được báo khi có hàng lại!`,

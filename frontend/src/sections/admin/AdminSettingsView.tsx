@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 // next
 import NextLink from 'next/link';
 // @mui
-import { Alert, AlertTitle, Box, Button, Card, CardHeader, CircularProgress, Container, Link, Stack, TextField, Typography } from '@mui/material';
+import { Alert, AlertTitle, Box, Button, Card, CardHeader, CircularProgress, Container, Divider, FormControlLabel, Link, Stack, Switch, TextField, Typography } from '@mui/material';
 // auth
 import RoleBasedGuard from '../../auth/RoleBasedGuard';
 // routes
@@ -47,28 +47,60 @@ const DRIVE_FIELDS: { key: string; label: string; help?: string; multiline?: boo
   { key: 'source_download_expiry_minutes', label: 'Link tải hết hạn sau (phút)', help: 'Mặc định 60. Link tải dùng một lần và hết hạn sau số phút này.' },
 ];
 
+// ── Bật/tắt tính năng của web (lưu trong settings_features JSON) ──
+const FEATURE_TOGGLES: { key: string; label: string; help?: string }[] = [
+  { key: 'blog', label: 'Blog / Tin tức' },
+  { key: 'offers', label: 'Ưu đãi / Khuyến mãi' },
+  { key: 'flash_sales', label: 'Flash Sale' },
+  { key: 'affiliate', label: 'Tiếp thị liên kết (Affiliate)' },
+  { key: 'support', label: 'Hỗ trợ / Ticket' },
+  { key: 'reviews', label: 'Đánh giá sản phẩm' },
+  { key: 'wishlist', label: 'Danh sách yêu thích' },
+  { key: 'announcements', label: 'Thông báo' },
+  { key: 'balance', label: 'Ví / Số dư' },
+  { key: 'api_docs', label: 'Tài liệu API' },
+];
+
 export default function AdminSettingsView() {
   const { enqueueSnackbar } = useSnackbar();
   const [values, setValues] = useState<Record<string, string>>({});
+  const [features, setFeatures] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     axiosInstance
       .get('/api/admin/settings')
-      .then((r) => setValues(r.data || {}))
+      .then((r) => {
+        const data = r.data || {};
+        setValues(data);
+        // settings_features được lưu dạng chuỗi JSON -> parse ra object.
+        try {
+          const f = typeof data.settings_features === 'string'
+            ? JSON.parse(data.settings_features)
+            : data.settings_features || {};
+          setFeatures(f && typeof f === 'object' ? f : {});
+        } catch {
+          setFeatures({});
+        }
+      })
       .catch((e) => enqueueSnackbar(e?.detail || 'Không tải được cấu hình', { variant: 'error' }))
       .finally(() => setLoading(false));
   }, [enqueueSnackbar]);
 
   const set = (key: string, v: string) => setValues((p) => ({ ...p, [key]: v }));
+  // Mặc định BẬT trừ khi đặt false tường minh (đồng bộ quy ước backend).
+  const featureOn = (k: string) => features[k] !== false;
+  const setFeature = (k: string, on: boolean) => setFeatures((p) => ({ ...p, [k]: on }));
 
   const handleSave = async () => {
     setSaving(true);
     try {
       // Chỉ gửi các key có trong form để tránh ghi đè cấu hình khác.
       const keys = [...FIELDS, ...DRIVE_FIELDS].map((f) => f.key);
-      const payload = Object.fromEntries(keys.map((k) => [k, values[k] ?? '']));
+      const payload: Record<string, string> = Object.fromEntries(keys.map((k) => [k, values[k] ?? '']));
+      // Lưu cờ tính năng dưới dạng JSON (giữ nguyên các key khác như maintenance).
+      payload.settings_features = JSON.stringify(features);
       await axiosInstance.patch('/api/admin/settings', payload);
       enqueueSnackbar('Đã lưu cấu hình');
     } catch (e: any) {
@@ -105,6 +137,57 @@ export default function AdminSettingsView() {
                     onChange={(e) => set(f.key, e.target.value)}
                   />
                 ))}
+              </Stack>
+            </Card>
+
+            <Card>
+              <CardHeader
+                title="Tính năng của web"
+                subheader="Bật/tắt các tính năng hiển thị trên cửa hàng. Tắt sẽ ẩn ở menu và chặn truy cập."
+              />
+              <Box
+                sx={{
+                  p: 3,
+                  display: 'grid',
+                  gap: 1,
+                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' },
+                }}
+              >
+                {FEATURE_TOGGLES.map((f) => (
+                  <FormControlLabel
+                    key={f.key}
+                    control={
+                      <Switch
+                        checked={featureOn(f.key)}
+                        onChange={(e) => setFeature(f.key, e.target.checked)}
+                      />
+                    }
+                    label={f.label}
+                  />
+                ))}
+              </Box>
+
+              <Divider />
+
+              <Stack spacing={2} sx={{ p: 3 }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      color="error"
+                      checked={features.maintenance === true}
+                      onChange={(e) => setFeature('maintenance', e.target.checked)}
+                    />
+                  }
+                  label="Chế độ bảo trì (chỉ admin/staff đăng nhập được)"
+                />
+                <TextField
+                  label="Thông báo bảo trì"
+                  placeholder="Hệ thống đang bảo trì. Vui lòng quay lại sau."
+                  value={features.maintenance_message ?? ''}
+                  onChange={(e) =>
+                    setFeatures((p) => ({ ...p, maintenance_message: e.target.value }))
+                  }
+                />
               </Stack>
             </Card>
 

@@ -31,6 +31,7 @@ import {
 import CartWidget from '../../../../sections/@dashboard/e-commerce/CartWidget';
 import ProductGridSection from '../../../../sections/@dashboard/e-commerce/ProductGridSection';
 // utils
+import axiosInstance from '../../../../utils/axios';
 import { addRecentProduct, getRecentProducts } from '../../../../utils/recentProducts';
 
 // ----------------------------------------------------------------------
@@ -61,6 +62,23 @@ export default function EcommerceProductDetailsPage() {
 
   const [currentTab, setCurrentTab] = useState('description');
   const [recent, setRecent] = useState<any[]>([]);
+  const [related, setRelated] = useState<any[]>([]);
+
+  // Sản phẩm liên quan: lấy theo slug (backend tự bù sản phẩm khác nếu cùng danh mục chưa đủ).
+  useEffect(() => {
+    const slug = (product as any)?.slug;
+    if (!slug) return;
+    let alive = true;
+    axiosInstance
+      .get(`/api/products/${slug}/related`, { params: { limit: 8 } })
+      .then((r) => {
+        if (alive) setRelated(r.data?.items || r.data?.products || []);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [(product as any)?.slug]);
 
   useEffect(() => {
     if (name) {
@@ -133,7 +151,7 @@ export default function EcommerceProductDetailsPage() {
 
             <ProductGridSection
               title={tp('related_title')}
-              products={(product as any).related || []}
+              products={related}
               excludeSlug={(product as any).slug}
             />
 
@@ -157,7 +175,7 @@ export default function EcommerceProductDetailsPage() {
 
             <ProductGridSection
               title={tp('related_title')}
-              products={(product as any).related || []}
+              products={related}
               excludeSlug={(product as any).slug}
             />
 
@@ -219,7 +237,7 @@ export default function EcommerceProductDetailsPage() {
 
             <ProductGridSection
               title={tp('related_title')}
-              products={(product as any).related || []}
+              products={related}
               excludeSlug={(product as any).slug}
             />
 

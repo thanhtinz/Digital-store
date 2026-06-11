@@ -510,6 +510,10 @@ const cn = {
     load_failed: `加载列表失败`,
   },
   product_page: {
+    status: `状态`,
+    sku: `产品编号`,
+    category: `分类`,
+
     stock_alert_btn: `到货通知`,
     stock_alert_done: `到货将通知您`,
     stock_alert_ok: `已订阅！到货后会通知您。`,

@@ -150,9 +150,11 @@ export default function ProductDetailsCarousel({ product }: Props) {
             key={img}
             alt="product"
             src={img}
-            ratio="4/3"
+            ratio="16/9"
+            // Hiện trọn ảnh (không cắt xén): nền trung tính + objectFit contain.
+            style={{ objectFit: 'contain' }}
             onClick={() => handleOpenLightbox(img)}
-            sx={{ cursor: 'zoom-in' }}
+            sx={{ cursor: 'zoom-in', bgcolor: 'background.neutral' }}
           />
         ))}
       </Carousel>

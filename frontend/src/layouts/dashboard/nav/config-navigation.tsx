@@ -87,9 +87,25 @@ export function useNavConfig() {
   const [giftcardProducts, setGiftcardProducts] = useState<AnyProduct[]>([]);
   // Có nền tảng MXH (SMM) khả dụng hay không -> ẩn mục SMM nếu rỗng.
   const [hasSmm, setHasSmm] = useState(false);
+  // Điểm thưởng (loyalty) có bật không -> ẩn mục "Điểm thưởng" nếu tắt.
+  const [rewardsEnabled, setRewardsEnabled] = useState(false);
+  // Cờ tính năng (settings_features) từ admin -> ẩn các mục bị tắt.
+  const [features, setFeatures] = useState<Record<string, any>>({});
 
   useEffect(() => {
     let alive = true;
+    axiosInstance
+      .get('/api/loyalty/config')
+      .then((res) => {
+        if (alive) setRewardsEnabled(!!res.data?.enabled);
+      })
+      .catch(() => {});
+    axiosInstance
+      .get('/api/admin/settings/public')
+      .then((res) => {
+        if (alive) setFeatures(res.data?.features || {});
+      })
+      .catch(() => {});
     axiosInstance
       .get('/api/categories')
       .then((res) => {
@@ -194,14 +210,17 @@ export function useNavConfig() {
     });
   }
 
+  // Mỗi tính năng coi như BẬT trừ khi admin đặt false tường minh.
+  const on = (k: string) => features[k] !== false;
+  const supportItems = [
+    ...(on('offers') ? [{ title: t('offers'), path: PATH_DASHBOARD.offers, icon: ICONS.label }] : []),
+    ...(rewardsEnabled ? [{ title: t('rewards'), path: PATH_DASHBOARD.rewards, icon: ICONS.banking }] : []),
+    ...(on('blog') ? [{ title: t('blog'), path: PATH_DASHBOARD.blog.posts, icon: ICONS.blog }] : []),
+    ...(on('support') ? [{ title: t('support'), path: PATH_DASHBOARD.support, icon: ICONS.chat }] : []),
+  ];
   const support = {
     subheader: t('support'),
-    items: [
-      { title: t('offers'), path: PATH_DASHBOARD.offers, icon: ICONS.label },
-      { title: t('rewards'), path: PATH_DASHBOARD.rewards, icon: ICONS.banking },
-      { title: t('blog'), path: PATH_DASHBOARD.blog.posts, icon: ICONS.blog },
-      { title: t('support'), path: PATH_DASHBOARD.support, icon: ICONS.chat },
-    ],
+    items: supportItems,
   };
 
   // Admin có MENU RIÊNG (AdminLayout) — không nhồi vào sidebar cửa hàng nữa.
@@ -209,6 +228,6 @@ export function useNavConfig() {
   return [
     shopping,
     ...(serviceItems.length ? [{ subheader: t('services'), items: serviceItems }] : []),
-    support,
+    ...(supportItems.length ? [support] : []),
   ];
 }
