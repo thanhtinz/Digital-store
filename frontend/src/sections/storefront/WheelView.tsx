@@ -33,11 +33,13 @@ export default function WheelView() {
   const [spinning, setSpinning] = useState(false);
   const [angle, setAngle] = useState(0);
   const [result, setResult] = useState<any>(null);
+  const [recent, setRecent] = useState<any[]>([]);
   const wheelRef = useRef<HTMLDivElement>(null);
 
   const load = () => {
     axiosInstance.get('/api/wheel/config').then((r) => setCfg(r.data)).catch(() => {});
     axiosInstance.get('/api/wheel/history').then((r) => setHistory(r.data?.items || [])).catch(() => {});
+    axiosInstance.get('/api/wheel/recent').then((r) => setRecent(r.data?.items || [])).catch(() => {});
   };
 
   useEffect(() => {
@@ -182,22 +184,52 @@ export default function WheelView() {
             )}
           </Card>
 
-          {history.length > 0 && (
+          <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' } }}>
+            {/* Lịch sử cá nhân */}
             <Card sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>Lịch sử quay</Typography>
+              <Typography variant="h6" sx={{ mb: 2 }}>Lịch sử của bạn</Typography>
               <Divider sx={{ mb: 1 }} />
-              <Stack divider={<Divider />}>
-                {history.map((h) => (
-                  <Stack key={h.id} direction="row" justifyContent="space-between" sx={{ py: 1 }}>
-                    <Typography variant="body2">{h.prize_label}</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {new Date(h.created_at).toLocaleString('vi-VN')}
-                    </Typography>
-                  </Stack>
-                ))}
-              </Stack>
+              {history.length === 0 ? (
+                <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>Bạn chưa quay lần nào.</Typography>
+              ) : (
+                <Stack divider={<Divider />}>
+                  {history.map((h) => (
+                    <Stack key={h.id} direction="row" justifyContent="space-between" alignItems="center" sx={{ py: 1 }}>
+                      <Typography variant="body2">{h.prize_label}{h.giftcode ? ` · ${h.giftcode}` : ''}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {new Date(h.created_at).toLocaleDateString('vi-VN')}
+                      </Typography>
+                    </Stack>
+                  ))}
+                </Stack>
+              )}
             </Card>
-          )}
+
+            {/* Lịch sử chung */}
+            <Card sx={{ p: 3 }}>
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+                <Iconify icon="solar:users-group-rounded-bold" sx={{ color: 'primary.main' }} />
+                <Typography variant="h6">Người chơi vừa trúng</Typography>
+              </Stack>
+              <Divider sx={{ mb: 1 }} />
+              {recent.length === 0 ? (
+                <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>Chưa có ai trúng thưởng.</Typography>
+              ) : (
+                <Stack divider={<Divider />}>
+                  {recent.map((h) => (
+                    <Stack key={h.id} direction="row" justifyContent="space-between" alignItems="center" sx={{ py: 1 }}>
+                      <Typography variant="body2">
+                        <b>{h.user}</b> trúng {h.prize_label}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {new Date(h.created_at).toLocaleDateString('vi-VN')}
+                      </Typography>
+                    </Stack>
+                  ))}
+                </Stack>
+              )}
+            </Card>
+          </Box>
         </Stack>
       )}
 
