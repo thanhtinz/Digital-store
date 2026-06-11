@@ -280,7 +280,7 @@ router.get(['/admin/users', '/auth/admin/users'], requireAdmin, async (req: Requ
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
-        select: { id: true, email: true, displayName: true, avatarUrl: true, balance: true, isActive: true, createdAt: true },
+        select: { id: true, email: true, displayName: true, avatarUrl: true, balance: true, points: true, isActive: true, createdAt: true },
       }),
     ]);
 
@@ -340,22 +340,116 @@ router.patch(['/admin/users/:id/role'], requireAdmin, async (req: Request, res: 
   }
 });
 
-/** Admin: đặt lại mật khẩu người dùng (sinh mật khẩu tạm + gửi email + trả về cho admin). */
+/** Admin: đặt lại mật khẩu người dùng. Nếu gửi `password` thì dùng, không thì sinh ngẫu nhiên + gửi email. */
 router.post(['/admin/users/:id/reset-password'], requireAdmin, async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) { res.status(404).json({ detail: 'Không tìm thấy người dùng' }); return; }
-    const newPassword = Math.random().toString(36).slice(-4) + Math.random().toString(36).toUpperCase().slice(-4) + '@' + Math.floor(Math.random() * 90 + 10);
+    const custom = typeof req.body?.password === 'string' ? req.body.password.trim() : '';
+    if (custom && custom.length < 6) { res.status(400).json({ detail: 'Mật khẩu tối thiểu 6 ký tự' }); return; }
+    const newPassword = custom || (Math.random().toString(36).slice(-4) + Math.random().toString(36).toUpperCase().slice(-4) + '@' + Math.floor(Math.random() * 90 + 10));
     const hash = await bcrypt.hash(newPassword, 10);
     await prisma.user.update({ where: { id }, data: { passwordHash: hash } });
-    // Cố gắng gửi email (không chặn nếu mail chưa cấu hình)
-    const mail = await sendMail({
-      to: user.email,
-      subject: '[Admin] Mật khẩu mới của bạn',
-      html: `<p>Mật khẩu mới của bạn là: <b>${newPassword}</b></p><p>Vui lòng đăng nhập và đổi lại mật khẩu.</p>`,
-    }).catch(() => ({ ok: false }));
-    res.json({ ok: true, new_password: newPassword, email_sent: !!mail.ok });
+    let emailSent = false;
+    if (!custom) {
+      const mail = await sendMail({
+        to: user.email,
+        subject: '[Admin] Mật khẩu mới của bạn',
+        html: `<p>Mật khẩu mới của bạn là: <b>${newPassword}</b></p><p>Vui lòng đăng nhập và đổi lại mật khẩu.</p>`,
+      }).catch(() => ({ ok: false }));
+      emailSent = !!mail.ok;
+    }
+    res.json({ ok: true, new_password: newPassword, email_sent: emailSent });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+/** Admin: tạo tài khoản mới. */
+router.post(['/admin/users'], requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const password = String(req.body?.password || '');
+    const displayName = String(req.body?.display_name || '').trim();
+    const role = String(req.body?.role || 'user');
+    const balance = Number(req.body?.balance) || 0;
+    const points = parseInt(req.body?.points, 10) || 0;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { res.status(422).json({ detail: 'Email không hợp lệ' }); return; }
+    if (password.length < 6) { res.status(422).json({ detail: 'Mật khẩu tối thiểu 6 ký tự' }); return; }
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) { res.status(400).json({ detail: 'Email đã tồn tại' }); return; }
+    const hash = await bcrypt.hash(password, 12);
+    const user = await prisma.user.create({
+      data: { email, passwordHash: hash, displayName: displayName || email.split('@')[0], balance, points, emailVerified: true },
+    });
+    if (['staff', 'admin', 'superadmin'].includes(role)) {
+      await prisma.adminUser.upsert({ where: { email }, update: { role }, create: { userId: String(user.id), email, role } });
+    }
+    res.status(201).json({ id: user.id, email: user.email });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+/** Admin: xoá tài khoản. */
+router.delete(['/admin/users/:id'], requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+    const me = (req as any).admin;
+    if (me && String(me.user_id) === String(id)) { res.status(400).json({ detail: 'Không thể tự xoá chính mình' }); return; }
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) { res.status(404).json({ detail: 'Không tìm thấy người dùng' }); return; }
+    await prisma.adminUser.deleteMany({ where: { email: user.email } });
+    await prisma.user.delete({ where: { id } });
+    res.json({ ok: true });
+  } catch (e: any) {
+    res.status(400).json({ detail: 'Không thể xoá (có thể còn dữ liệu liên quan): ' + e.message });
+  }
+});
+
+/** Admin: điều chỉnh số dư ví (cộng/trừ delta hoặc đặt giá trị). Ghi nhận giao dịch. */
+router.post(['/admin/users/:id/balance'], requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+    const mode = req.body?.mode === 'set' ? 'set' : 'adjust'; // adjust = cộng/trừ; set = đặt tuyệt đối
+    const amount = Number(req.body?.amount);
+    const note = String(req.body?.note || 'Admin điều chỉnh số dư').slice(0, 255);
+    if (!Number.isFinite(amount)) { res.status(400).json({ detail: 'Số tiền không hợp lệ' }); return; }
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) { res.status(404).json({ detail: 'Không tìm thấy người dùng' }); return; }
+    const current = money(user.balance);
+    const delta = mode === 'set' ? amount - current : amount;
+    const after = current + delta;
+    if (after < 0) { res.status(400).json({ detail: 'Số dư sau điều chỉnh không được âm' }); return; }
+    await prisma.user.update({ where: { id }, data: { balance: after } });
+    await prisma.balanceTransaction.create({
+      data: { userId: id, amount: delta, balanceAfter: after, type: 'admin_adjust', status: 'completed', description: note },
+    });
+    res.json({ ok: true, balance: after });
+  } catch (e: any) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+/** Admin: điều chỉnh điểm thưởng (cộng/trừ delta hoặc đặt giá trị). Ghi nhận giao dịch điểm. */
+router.post(['/admin/users/:id/points'], requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+    const mode = req.body?.mode === 'set' ? 'set' : 'adjust';
+    const amount = parseInt(req.body?.amount, 10);
+    const note = String(req.body?.note || 'Admin điều chỉnh điểm').slice(0, 255);
+    if (!Number.isFinite(amount)) { res.status(400).json({ detail: 'Số điểm không hợp lệ' }); return; }
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) { res.status(404).json({ detail: 'Không tìm thấy người dùng' }); return; }
+    const delta = mode === 'set' ? amount - user.points : amount;
+    const after = user.points + delta;
+    if (after < 0) { res.status(400).json({ detail: 'Điểm sau điều chỉnh không được âm' }); return; }
+    await prisma.user.update({ where: { id }, data: { points: after } });
+    await prisma.pointTransaction.create({
+      data: { userId: id, amount: delta, balanceAfter: after, type: 'admin_adjust', description: note },
+    });
+    res.json({ ok: true, points: after });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
   }
