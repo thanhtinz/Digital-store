@@ -255,6 +255,7 @@ const PKG_EMPTY = {
   image_url: '',
   price: 0,
   original_price: 0,
+  duration_days: '' as string | number,
   delivery_type: 'manual',
   sort_order: 0,
   is_active: true,
@@ -333,6 +334,7 @@ function PackagesDialog({ product, onClose, onChanged }: { product: any; onClose
       image_url: form.image_url || null,
       price: Number(form.price) || 0,
       original_price: Number(form.original_price) || null,
+      duration_days: form.duration_days ? Number(form.duration_days) : null,
       delivery_type: form.delivery_type,
       sort_order: Number(form.sort_order) || 0,
       is_active: form.is_active,
@@ -520,6 +522,7 @@ function PackagesDialog({ product, onClose, onChanged }: { product: any; onClose
                           image_url: pk.imageUrl || '',
                           price: pk.price,
                           original_price: pk.originalPrice || 0,
+                          duration_days: pk.durationDays || '',
                           delivery_type: pk.deliveryType || 'manual',
                           sort_order: pk.sortOrder || 0,
                           is_active: pk.isActive,
@@ -578,6 +581,13 @@ function PackagesDialog({ product, onClose, onChanged }: { product: any; onClose
                 <TextField fullWidth type="number" label="Giá gốc (gạch ngang, tuỳ chọn)" value={form.original_price} onChange={(e) => setForm({ ...form, original_price: Number(e.target.value) })} />
                 <TextField type="number" label="Thứ tự" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })} />
               </Stack>
+              <TextField
+                fullWidth type="number"
+                label="Số ngày sử dụng (gói có hạn)"
+                helperText="Để trống nếu dùng vĩnh viễn. Có giá trị → hệ thống tự nhắc khách gia hạn trước khi hết hạn."
+                value={form.duration_days}
+                onChange={(e) => setForm({ ...form, duration_days: e.target.value })}
+              />
               <FormControlLabel
                 control={<Switch checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />}
                 label="Đang bán"

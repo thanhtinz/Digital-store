@@ -48,8 +48,17 @@ export function useAdminNavConfig() {
       subheader: 'Vận hành',
       items: [
         { title: 'Hỗ trợ & Đánh giá', path: PATH_DASHBOARD.admin.support, icon: ICONS.banking },
+        { title: 'Hỏi & Đáp', path: PATH_DASHBOARD.admin.questions, icon: ICONS.blog },
         { title: 'Giới thiệu bạn bè', path: PATH_DASHBOARD.admin.affiliate, icon: ICONS.user },
         { title: 'Điểm thưởng', path: PATH_DASHBOARD.admin.rewards, icon: ICONS.label },
+      ],
+    },
+    {
+      subheader: 'Ưu đãi & Tương tác',
+      items: [
+        { title: 'Gói combo', path: PATH_DASHBOARD.admin.bundles, icon: ICONS.cart },
+        { title: 'Vòng quay may mắn', path: PATH_DASHBOARD.admin.wheel, icon: ICONS.label },
+        { title: 'Huy hiệu', path: PATH_DASHBOARD.admin.badges, icon: ICONS.user },
       ],
     },
     {

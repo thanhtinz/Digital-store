@@ -352,7 +352,7 @@ router.post('/admin/:productId/packages', requireStaffOrAdmin, async (req: Reque
   try {
     const productId = parseInt(req.params.productId);
     const { name, price, original_price, description, notes, image_url, delivery_type, sort_order, is_active,
-      api_provider_id, external_product_id, external_plan_id, auto_markup, markup_percent } = req.body;
+      api_provider_id, external_product_id, external_plan_id, auto_markup, markup_percent, duration_days } = req.body;
     const pkg = await prisma.productPackage.create({
       data: {
         productId, name,
@@ -364,6 +364,7 @@ router.post('/admin/:productId/packages', requireStaffOrAdmin, async (req: Reque
         deliveryType: delivery_type || 'manual',
         sortOrder: sort_order || 0,
         isActive: is_active !== false,
+        durationDays: duration_days ? parseInt(duration_days, 10) : null,
         apiProviderId: api_provider_id || null,
         externalProductId: external_product_id || null,
         externalPlanId: external_plan_id || null,
@@ -395,6 +396,7 @@ router.patch('/admin/packages/:id', requireStaffOrAdmin, async (req: Request, re
         ...(req.body.external_plan_id !== undefined && { externalPlanId: req.body.external_plan_id || null }),
         ...(req.body.auto_markup !== undefined && { autoMarkup: !!req.body.auto_markup }),
         ...(req.body.markup_percent !== undefined && { markupPercent: req.body.markup_percent }),
+        ...(req.body.duration_days !== undefined && { durationDays: req.body.duration_days ? parseInt(req.body.duration_days, 10) : null }),
       },
     });
     res.json(pkg);
@@ -426,6 +428,7 @@ router.get('/admin/:productId/packages', requireStaffOrAdmin, async (req: Reques
         name: pkg.name,
         price: money(pkg.price),
         originalPrice: pkg.originalPrice != null ? money(pkg.originalPrice) : null,
+        durationDays: pkg.durationDays ?? null,
         deliveryType: pkg.deliveryType,
         isActive: pkg.isActive,
         sortOrder: pkg.sortOrder,
