@@ -7,7 +7,6 @@ import {
   CardContent,
   CardHeader,
   CircularProgress,
-  Container,
   Grid,
   MenuItem,
   Stack,
@@ -41,21 +40,8 @@ const statusColor = (s: string): any => {
   return 'warning';
 };
 
-export default function CardChargeView() {
-  const { translate } = useLocales();
-  const t = (k: string) => `${translate(`card_charge_page.${k}`)}`;
-  return (
-    <Container sx={{ pt: { xs: 3, md: 5 }, pb: 8 }}>
-      <Typography variant="h4" sx={{ mb: 3 }}>
-        {t('title')}
-      </Typography>
-      <CardChargePanel />
-    </Container>
-  );
-}
-
 // ----------------------------------------------------------------------
-// Panel tái dùng (nhúng trong trang Nạp tiền) — không có Container/tiêu đề lớn.
+// Panel nạp thẻ — nhúng dưới dạng tab trong trang Nạp tiền.
 
 export function CardChargePanel() {
   const { isAuthenticated } = useAuthContext();
