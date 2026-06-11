@@ -78,7 +78,8 @@ export function useAdminNavConfig() {
           path: PATH_DASHBOARD.admin.support,
           icon: ICONS.chat,
           children: [
-            { title: 'Hỗ trợ & Đánh giá', path: PATH_DASHBOARD.admin.support },
+            { title: 'Ticket hỗ trợ', path: PATH_DASHBOARD.admin.tickets },
+            { title: 'Đánh giá', path: PATH_DASHBOARD.admin.reviews },
             { title: 'Hỏi & Đáp', path: PATH_DASHBOARD.admin.questions },
             { title: 'Blog', path: PATH_DASHBOARD.admin.blog },
             { title: 'Giới thiệu bạn bè', path: PATH_DASHBOARD.admin.affiliate },

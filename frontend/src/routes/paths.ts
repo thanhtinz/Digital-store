@@ -86,6 +86,8 @@ export const PATH_DASHBOARD = {
     announcements: path(ROOTS_DASHBOARD, '/admin/announcements'),
     blog: path(ROOTS_DASHBOARD, '/admin/blog'),
     support: path(ROOTS_DASHBOARD, '/admin/support'),
+    tickets: path(ROOTS_DASHBOARD, '/admin/tickets'),
+    reviews: path(ROOTS_DASHBOARD, '/admin/reviews'),
     affiliate: path(ROOTS_DASHBOARD, '/admin/affiliate'),
     rewards: path(ROOTS_DASHBOARD, '/admin/rewards'),
     integrations: path(ROOTS_DASHBOARD, '/admin/integrations'),

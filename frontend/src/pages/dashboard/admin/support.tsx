@@ -1,24 +1,14 @@
 // next
-import Head from 'next/head';
-// layouts
-import AdminLayout from '../../../layouts/dashboard/AdminLayout';
-// sections
-import AdminSupportView from '../../../sections/admin/AdminSupportView';
+import { useEffect } from 'react';
+import { useRouter } from 'next/router';
+// routes
+import { PATH_DASHBOARD } from '../../../routes/paths';
 
-// ----------------------------------------------------------------------
-
-AdminSupportPage.getLayout = (page: React.ReactElement) => <AdminLayout>{page}</AdminLayout>;
-
-// ----------------------------------------------------------------------
-
-export default function AdminSupportPage() {
-  return (
-    <>
-      <Head>
-        <title> Hỗ trợ & Tài chính | Quản trị</title>
-      </Head>
-
-      <AdminSupportView />
-    </>
-  );
+// Hỗ trợ & Đánh giá đã tách thành 2 trang riêng — chuyển hướng sang Ticket.
+export default function AdminSupportRedirect() {
+  const { replace } = useRouter();
+  useEffect(() => {
+    replace(PATH_DASHBOARD.admin.tickets);
+  }, [replace]);
+  return null;
 }
