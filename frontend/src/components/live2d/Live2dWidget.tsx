@@ -83,6 +83,8 @@ export default function Live2dWidget() {
   const modelRef = useRef<any>(null);
   const mouthTimer = useRef<any>(null);
   const bubbleTimer = useRef<any>(null);
+  const lastBubbleAt = useRef(0);   // thời điểm bong bóng tương tác/AI gần nhất (chặn tips chạy song song)
+  const interactLock = useRef(0);   // chống spam click liên tục
   const tickerFnRef = useRef<any>(null);
   const interactRef = useRef<() => void>(() => {});
   const utterRef = useRef<any[]>([]); // giữ ref utterance chống bị GC (Chrome cắt giữa chừng)
@@ -162,7 +164,9 @@ export default function Live2dWidget() {
   useEffect(() => {
     let hideT: any;
     const showOnce = (text: string) => {
-      if (openRef.current || sendingRef.current) return;
+      // Không chạy song song với chat / AI đang nói / bong bóng tương tác vừa hiện.
+      if (openRef.current || sendingRef.current || speakingRef.current) return;
+      if (Date.now() - lastBubbleAt.current < 12000) return;
       setBubble(text);
       clearTimeout(hideT);
       hideT = setTimeout(() => setBubble(''), 6000);
@@ -226,12 +230,17 @@ export default function Live2dWidget() {
 
   const popBubble = (text: string, ms = 5000) => {
     if (openRef.current) return;
+    lastBubbleAt.current = Date.now();
     setBubble(text);
     clearTimeout(bubbleTimer.current);
     bubbleTimer.current = setTimeout(() => setBubble((b) => (b === text ? '' : b)), ms);
   };
 
   const interact = () => {
+    // Chống spam: bỏ qua nếu vừa tương tác cách đây < 1.6s.
+    const now = Date.now();
+    if (now - interactLock.current < 1600) return;
+    interactLock.current = now;
     playRandomMotion();
     popBubble(INTERACTIONS[Math.floor(Math.random() * INTERACTIONS.length)]);
   };
@@ -282,6 +291,7 @@ export default function Live2dWidget() {
       });
       const reply = r.data?.reply || 'Mình chưa rõ ý bạn lắm 😅';
       setMessages((m) => [...m, { role: 'assistant', content: reply }]);
+      lastBubbleAt.current = Date.now();
       setBubble(reply);
       speak(reply);
     } catch (e: any) {
@@ -369,7 +379,7 @@ export default function Live2dWidget() {
           direction="column"
           spacing={0.5}
           sx={{
-            position: 'absolute', left: -8, bottom: 8, transform: 'translateX(-100%)',
+            position: 'absolute', right: 0, top: 4, zIndex: 1,
             opacity: { xs: 1, md: 0 }, pointerEvents: { xs: 'auto', md: 'none' }, transition: 'opacity .2s',
           }}
         >
