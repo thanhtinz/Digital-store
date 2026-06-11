@@ -98,6 +98,7 @@ export function useAdminNavConfig() {
           ],
         },
         { title: 'Tích hợp', path: PATH_DASHBOARD.admin.integrations, icon: ICONS.external },
+        { title: 'Bảo trì', path: PATH_DASHBOARD.admin.maintenance, icon: ICONS.label },
         { title: 'Về cửa hàng', path: '/', icon: ICONS.menuItem },
       ],
     },

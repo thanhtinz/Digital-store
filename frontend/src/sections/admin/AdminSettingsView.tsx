@@ -215,26 +215,18 @@ export default function AdminSettingsView() {
 
               <Divider />
 
-              <Stack spacing={2} sx={{ p: 3 }}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      color="error"
-                      checked={features.maintenance === true}
-                      onChange={(e) => setFeature('maintenance', e.target.checked)}
-                    />
+              <Box sx={{ p: 3 }}>
+                <Alert
+                  severity="info"
+                  action={
+                    <Button component={NextLink} href={PATH_DASHBOARD.admin.maintenance} size="small" color="inherit">
+                      Mở trang
+                    </Button>
                   }
-                  label="Chế độ bảo trì (chỉ admin/staff đăng nhập được)"
-                />
-                <TextField
-                  label="Thông báo bảo trì"
-                  placeholder="Hệ thống đang bảo trì. Vui lòng quay lại sau."
-                  value={features.maintenance_message ?? ''}
-                  onChange={(e) =>
-                    setFeatures((p) => ({ ...p, maintenance_message: e.target.value }))
-                  }
-                />
-              </Stack>
+                >
+                  Chế độ bảo trì &amp; tuỳ chỉnh trang bảo trì đã chuyển sang trang riêng.
+                </Alert>
+              </Box>
             </Card>
 
             <Card>
