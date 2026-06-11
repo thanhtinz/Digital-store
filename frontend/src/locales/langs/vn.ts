@@ -109,7 +109,8 @@ const vn = {
   },
   nav: {
     flash_sale: `Flash Sale`,
-
+    wheel: `Vòng quay may mắn`,
+    bundles: `Gói combo`,
     rewards: `Điểm thưởng`,
     affiliate: `Affiliate`,
     wallet_history: `Lịch sử ví`,

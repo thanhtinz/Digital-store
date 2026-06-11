@@ -89,6 +89,8 @@ export function useNavConfig() {
   const [hasSmm, setHasSmm] = useState(false);
   // Điểm thưởng (loyalty) có bật không -> ẩn mục "Điểm thưởng" nếu tắt.
   const [rewardsEnabled, setRewardsEnabled] = useState(false);
+  // Vòng quay may mắn có bật không.
+  const [wheelEnabled, setWheelEnabled] = useState(false);
   // Cờ tính năng (settings_features) từ admin -> ẩn các mục bị tắt.
   const [features, setFeatures] = useState<Record<string, any>>({});
 
@@ -104,6 +106,13 @@ export function useNavConfig() {
       .get('/api/admin/settings/public')
       .then((res) => {
         if (alive) setFeatures(res.data?.features || {});
+      })
+      .catch(() => {});
+    axiosInstance
+      .get('/api/settings')
+      .then((res) => {
+        const v = res.data || {};
+        if (alive) setWheelEnabled(v.wheel_enabled === '1' || v.wheel_enabled === 'true');
       })
       .catch(() => {});
     axiosInstance
@@ -162,11 +171,14 @@ export function useNavConfig() {
     .map((c) => ({ title: c.name || c.slug || '', path: shopByCat(c.slug) }));
 
   // ── Lắp ráp menu ──
+  const on = (k: string) => features[k] !== false;
+
   const shopping = {
     subheader: t('shopping'),
     items: [
       { title: t('home'), path: '/', icon: ICONS.dashboard },
       ...premiumCats,
+      ...(on('bundles') ? [{ title: t('bundles'), path: PATH_DASHBOARD.bundles, icon: ICONS.cart }] : []),
     ],
   };
 
@@ -211,11 +223,11 @@ export function useNavConfig() {
   }
 
   // Mỗi tính năng coi như BẬT trừ khi admin đặt false tường minh.
-  const on = (k: string) => features[k] !== false;
   const supportItems = [
     ...(on('flash_sales') ? [{ title: t('flash_sale'), path: PATH_DASHBOARD.flashSale, icon: ICONS.label }] : []),
     ...(on('offers') ? [{ title: t('offers'), path: PATH_DASHBOARD.offers, icon: ICONS.label }] : []),
     ...(rewardsEnabled ? [{ title: t('rewards'), path: PATH_DASHBOARD.rewards, icon: ICONS.banking }] : []),
+    ...(wheelEnabled ? [{ title: t('wheel'), path: PATH_DASHBOARD.wheel, icon: ICONS.label }] : []),
     ...(on('blog') ? [{ title: t('blog'), path: PATH_DASHBOARD.blog.posts, icon: ICONS.blog }] : []),
     ...(on('support') ? [{ title: t('support'), path: PATH_DASHBOARD.support, icon: ICONS.chat }] : []),
   ];

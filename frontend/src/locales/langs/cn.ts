@@ -108,6 +108,8 @@ const cn = {
     last_name_required: `请输入姓`,
   },
   nav: {
+    wheel: `幸运转盘`,
+    bundles: `组合包`,
     flash_sale: `限时抢购`,
 
     rewards: `积分奖励`,

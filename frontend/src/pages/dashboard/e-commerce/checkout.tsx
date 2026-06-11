@@ -35,8 +35,9 @@ import {
 
 // ----------------------------------------------------------------------
 
+// Cho phép khách chưa đăng nhập vào trang thanh toán (guest checkout).
 EcommerceCheckoutPage.getLayout = (page: React.ReactElement) => (
-  <DashboardLayout>{page}</DashboardLayout>
+  <DashboardLayout disableGuard>{page}</DashboardLayout>
 );
 
 // ----------------------------------------------------------------------

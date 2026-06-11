@@ -108,6 +108,8 @@ const en = {
     last_name_required: `Last name is required`,
   },
   nav: {
+    wheel: `Lucky Wheel`,
+    bundles: `Bundles`,
     flash_sale: `Flash Sale`,
 
     rewards: `Rewards`,

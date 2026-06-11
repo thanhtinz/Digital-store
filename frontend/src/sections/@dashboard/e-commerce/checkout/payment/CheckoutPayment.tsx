@@ -43,7 +43,7 @@ export default function CheckoutPayment({
   onComplete,
 }: Props) {
   const { total, discount, subtotal } = checkout;
-  const { user } = useAuthContext();
+  const { user, isAuthenticated } = useAuthContext();
   const { enqueueSnackbar } = useSnackbar();
   const { translate } = useLocales();
   const { push } = useRouter();
@@ -100,6 +100,103 @@ export default function CheckoutPayment({
 
   const balance = Number((user as any)?.balance || 0);
   const enough = balance >= payable;
+
+  // ── Guest checkout (khách chưa đăng nhập) ──
+  const [guestEmail, setGuestEmail] = useState('');
+  const guestEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail.trim());
+
+  const cartItems = (checkout.cart || [])
+    .map((item: any) => ({
+      product_id: item.id,
+      package_id: Number(item.packageId),
+      quantity: item.quantity || 1,
+      custom_fields: item.customFields || undefined,
+    }))
+    .filter((it: any) => Number.isFinite(it.package_id) && it.package_id > 0);
+
+  const placeGuestOrder = async () => {
+    if (!cartItems.length) { enqueueSnackbar(t('invalid_cart'), { variant: 'error' }); return; }
+    if (!guestEmailValid) { enqueueSnackbar(t('gift_email_invalid'), { variant: 'error' }); return; }
+    setSubmitting(true);
+    try {
+      const res = await axios.post('/api/orders/guest', {
+        items: cartItems,
+        email: guestEmail.trim(),
+        coupon_code: (checkout as any).couponCode || undefined,
+      });
+      const code = res.data?.order_code || res.data?.orderCode || '';
+      onReset();
+      push(`/dashboard/guest-order/${code}`);
+    } catch (error: any) {
+      if (error?.need_login) {
+        enqueueSnackbar(error?.detail || 'Email đã có tài khoản. Vui lòng đăng nhập.', { variant: 'warning' });
+        push(`${PATH_DASHBOARD.root}`);
+      } else {
+        enqueueSnackbar(error?.detail || error?.message || t('place_order_failed'), { variant: 'error' });
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={8}>
+          <Card sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h6" sx={{ mb: 1 }}>Mua không cần đăng nhập</Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
+              Nhập email của bạn để nhận sản phẩm. Thanh toán qua chuyển khoản VietQR.
+            </Typography>
+            <TextField
+              fullWidth
+              type="email"
+              label="Email nhận hàng"
+              placeholder="email@example.com"
+              value={guestEmail}
+              onChange={(e) => setGuestEmail(e.target.value)}
+              error={!!guestEmail && !guestEmailValid}
+              helperText={!!guestEmail && !guestEmailValid ? 'Email không hợp lệ' : 'Key/tài khoản sẽ được gửi tới email này.'}
+            />
+            <Alert severity="info" sx={{ mt: 2 }}>
+              Đã có tài khoản?{' '}
+              <NextLink href={PATH_DASHBOARD.root} style={{ fontWeight: 600 }}>Đăng nhập</NextLink>{' '}
+              để dùng số dư, điểm thưởng và theo dõi đơn hàng.
+            </Alert>
+            <Button
+              size="small"
+              color="inherit"
+              onClick={onBackStep}
+              startIcon={<Iconify icon="eva:arrow-ios-back-fill" />}
+              sx={{ mt: 3 }}
+            >
+              {t('back_btn')}
+            </Button>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <CheckoutSummary
+            enableEdit
+            total={total}
+            subtotal={subtotal}
+            discount={discount || 0}
+            onEdit={() => onGotoStep(0)}
+          />
+          <LoadingButton
+            fullWidth
+            size="large"
+            variant="contained"
+            loading={submitting}
+            disabled={!guestEmailValid}
+            onClick={placeGuestOrder}
+            startIcon={<Iconify icon="solar:qr-code-bold" />}
+          >
+            {t('create_qr_btn')}
+          </LoadingButton>
+        </Grid>
+      </Grid>
+    );
+  }
 
   const placeOrder = async () => {
     const items = (checkout.cart || [])

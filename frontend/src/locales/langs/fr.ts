@@ -108,6 +108,8 @@ const fr = {
     last_name_required: `Le nom est requis`,
   },
   nav: {
+    wheel: `Roue de la chance`,
+    bundles: `Packs combo`,
     flash_sale: `Vente flash`,
 
     rewards: `Récompenses`,

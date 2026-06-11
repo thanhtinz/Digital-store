@@ -108,6 +108,8 @@ const ar = {
     last_name_required: `اسم العائلة مطلوب`,
   },
   nav: {
+    wheel: `عجلة الحظ`,
+    bundles: `الباقات`,
     flash_sale: `تخفيضات سريعة`,
 
     rewards: `المكافآت`,

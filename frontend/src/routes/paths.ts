@@ -80,6 +80,10 @@ export const PATH_DASHBOARD = {
     affiliate: path(ROOTS_DASHBOARD, '/admin/affiliate'),
     rewards: path(ROOTS_DASHBOARD, '/admin/rewards'),
     integrations: path(ROOTS_DASHBOARD, '/admin/integrations'),
+    badges: path(ROOTS_DASHBOARD, '/admin/badges'),
+    wheel: path(ROOTS_DASHBOARD, '/admin/wheel'),
+    bundles: path(ROOTS_DASHBOARD, '/admin/bundles'),
+    questions: path(ROOTS_DASHBOARD, '/admin/questions'),
   },
   smm: {
     root: path(ROOTS_DASHBOARD, '/smm'),
@@ -92,6 +96,10 @@ export const PATH_DASHBOARD = {
   offers: path(ROOTS_DASHBOARD, '/offers'),
   flashSale: path(ROOTS_DASHBOARD, '/flash-sale'),
   rewards: path(ROOTS_DASHBOARD, '/rewards'),
+  wheel: path(ROOTS_DASHBOARD, '/wheel'),
+  bundles: path(ROOTS_DASHBOARD, '/bundles'),
+  bundle: (slug: string) => path(ROOTS_DASHBOARD, `/bundles/${slug}`),
+  subscriptions: path(ROOTS_DASHBOARD, '/subscriptions'),
   user: {
     root: path(ROOTS_DASHBOARD, '/user'),
     new: path(ROOTS_DASHBOARD, '/user/new'),
