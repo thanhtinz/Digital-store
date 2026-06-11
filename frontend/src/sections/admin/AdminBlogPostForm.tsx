@@ -6,6 +6,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 // @mui
 import { LoadingButton } from '@mui/lab';
 import { Box, Button, Card, Grid, Stack, Typography, IconButton, CircularProgress } from '@mui/material';
+import AppLoader from '../../components/app-loader';
 // utils
 import axiosInstance from '../../utils/axios';
 // components
@@ -128,7 +129,7 @@ export default function AdminBlogPostForm({ postId, categories, onBack, onSaved 
   if (!loaded)
     return (
       <Stack alignItems="center" sx={{ py: 8 }}>
-        <CircularProgress />
+        <AppLoader />
       </Stack>
     );
 

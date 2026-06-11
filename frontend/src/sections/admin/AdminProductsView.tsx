@@ -29,6 +29,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import AppLoader from '../../components/app-loader';
 // utils
 import axiosInstance from '../../utils/axios';
 import { fCurrency } from '../../utils/formatNumber';
@@ -176,7 +177,7 @@ export default function AdminProductsView() {
       <Card>
         {loading ? (
           <Stack alignItems="center" sx={{ py: 8 }}>
-            <CircularProgress />
+            <AppLoader />
           </Stack>
         ) : (
           <TableContainer>
@@ -500,7 +501,7 @@ function PackagesDialog({ product, onClose, onChanged }: { product: any; onClose
 
         {loading ? (
           <Stack alignItems="center" sx={{ py: 4 }}>
-            <CircularProgress />
+            <AppLoader />
           </Stack>
         ) : (
           <Table size="small">

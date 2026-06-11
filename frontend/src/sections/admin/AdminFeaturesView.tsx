@@ -1,5 +1,6 @@
 // @mui
 import { Box, Card, CircularProgress, Container, FormControlLabel, Stack, Switch, Typography } from '@mui/material';
+import AppLoader from '../../components/app-loader';
 import { LoadingButton } from '@mui/lab';
 // auth
 import RoleBasedGuard from '../../auth/RoleBasedGuard';
@@ -18,7 +19,7 @@ export default function AdminFeaturesView() {
         <AdminPageHeader title="Tính năng của web" links={[{ name: 'Cài đặt' }]} />
 
         {loading ? (
-          <Box sx={{ display: 'grid', placeItems: 'center', py: 8 }}><CircularProgress /></Box>
+          <Box sx={{ display: 'grid', placeItems: 'center', py: 8 }}><AppLoader /></Box>
         ) : (
           <Card sx={{ maxWidth: 720 }}>
             <Typography variant="body2" color="text.secondary" sx={{ p: 3, pb: 0 }}>

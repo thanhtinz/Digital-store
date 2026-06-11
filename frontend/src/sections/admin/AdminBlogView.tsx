@@ -26,6 +26,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import AppLoader from '../../components/app-loader';
 // utils
 import axiosInstance from '../../utils/axios';
 // components
@@ -50,7 +51,7 @@ function useSnack() {
 }
 const Loading = () => (
   <Stack alignItems="center" sx={{ py: 8 }}>
-    <CircularProgress />
+    <AppLoader />
   </Stack>
 );
 

@@ -19,6 +19,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import AppLoader from '../../components/app-loader';
 // auth
 import { useAuthContext } from '../../auth/useAuthContext';
 // locales
@@ -113,7 +114,7 @@ export function CardChargePanel() {
         <EmptyContent title={t('login_required')} img="/assets/illustrations/illustration_empty_cart.svg" />
       ) : loading ? (
         <Stack alignItems="center" sx={{ py: 8 }}>
-          <CircularProgress />
+          <AppLoader />
         </Stack>
       ) : !enabled ? (
         <Alert severity="info">{t('unavailable')}</Alert>
