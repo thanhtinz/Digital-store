@@ -3,8 +3,7 @@ import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 // @mui
-import { alpha } from '@mui/material/styles';
-import { Box, Tab, Tabs, Card, Grid, Divider, Container, Typography, Stack } from '@mui/material';
+import { Box, Tab, Tabs, Card, Grid, Divider, Container, Typography } from '@mui/material';
 // redux
 import { useDispatch, useSelector } from '../../../../redux/store';
 import { getProduct, addToCart, gotoStep } from '../../../../redux/slices/product';
@@ -17,7 +16,6 @@ import { ICheckoutCartItem } from '../../../../@types/product';
 // layouts
 import DashboardLayout from '../../../../layouts/dashboard';
 // components
-import Iconify from '../../../../components/iconify';
 import Markdown from '../../../../components/markdown';
 import CustomBreadcrumbs from '../../../../components/custom-breadcrumbs';
 import { useSettingsContext } from '../../../../components/settings';
@@ -34,26 +32,6 @@ import CartWidget from '../../../../sections/@dashboard/e-commerce/CartWidget';
 import ProductGridSection from '../../../../sections/@dashboard/e-commerce/ProductGridSection';
 // utils
 import { addRecentProduct, getRecentProducts } from '../../../../utils/recentProducts';
-
-// ----------------------------------------------------------------------
-
-const SUMMARY = [
-  {
-    title: 'Giao tự động',
-    description: 'Sản phẩm số được giao ngay sau khi thanh toán thành công.',
-    icon: 'solar:bolt-bold',
-  },
-  {
-    title: 'Bảo hành đổi mới',
-    description: 'Hỗ trợ đổi/bảo hành theo chính sách của từng sản phẩm.',
-    icon: 'solar:shield-check-bold',
-  },
-  {
-    title: 'Hỗ trợ nhanh',
-    description: 'Đội ngũ hỗ trợ phản hồi nhanh qua chat & ticket.',
-    icon: 'solar:chat-round-dots-bold',
-  },
-];
 
 // ----------------------------------------------------------------------
 
@@ -209,42 +187,7 @@ export default function EcommerceProductDetailsPage() {
               </Grid>
             </Grid>
 
-            <Box
-              gap={5}
-              display="grid"
-              gridTemplateColumns={{
-                xs: 'repeat(1, 1fr)',
-                md: 'repeat(3, 1fr)',
-              }}
-              sx={{ my: 10 }}
-            >
-              {SUMMARY.map((item) => (
-                <Box key={item.title} sx={{ textAlign: 'center' }}>
-                  <Stack
-                    alignItems="center"
-                    justifyContent="center"
-                    sx={{
-                      width: 64,
-                      height: 64,
-                      mx: 'auto',
-                      borderRadius: '50%',
-                      color: 'primary.main',
-                      bgcolor: (theme) => `${alpha(theme.palette.primary.main, 0.08)}`,
-                    }}
-                  >
-                    <Iconify icon={item.icon} width={36} />
-                  </Stack>
-
-                  <Typography variant="h6" sx={{ mb: 1, mt: 3 }}>
-                    {item.title}
-                  </Typography>
-
-                  <Typography sx={{ color: 'text.secondary' }}>{item.description}</Typography>
-                </Box>
-              ))}
-            </Box>
-
-            <Card>
+            <Card sx={{ mt: 10 }}>
               <Tabs
                 value={currentTab}
                 onChange={(event, newValue) => setCurrentTab(newValue)}

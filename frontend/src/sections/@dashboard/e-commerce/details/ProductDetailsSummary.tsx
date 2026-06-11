@@ -25,7 +25,6 @@ import { IProduct, ICheckoutCartItem } from '../../../../@types/product';
 // _mock
 import { _socials } from '../../../../_mock/arrays';
 // components
-import Image from '../../../../components/image';
 import Label from '../../../../components/label';
 import Iconify from '../../../../components/iconify';
 import { IncrementerButton } from '../../../../components/custom-input';
@@ -290,71 +289,51 @@ export default function ProductDetailsSummary({
         {hasPackages ? (
           <Stack spacing={1.5}>
             <Typography variant="subtitle2">{tp('package')}</Typography>
-            <Box
-              display="grid"
-              gap={1.5}
-              gridTemplateColumns={{ xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' }}
+            <TextField
+              select
+              fullWidth
+              size="small"
+              label={tp('package')}
+              value={values.packageId || ''}
+              onChange={(e) => {
+                const pkg = packages.find((p: any) => String(p.id) === e.target.value);
+                if (pkg) selectPackage(pkg);
+              }}
             >
               {packages.map((pkg: any) => {
-                const selected = String(pkg.id) === String(values.packageId);
                 const oos = pkg.isStockManaged && (pkg.stockQuantity || 0) <= 0;
                 const eff = pkgPrice(pkg);
                 const hasFlash = !!pkg.flashSale?.salePrice && pkg.price > eff;
-                const showImg = (isGame || isGiftcard) && !!pkg.imageUrl;
                 return (
-                  <Box
-                    key={pkg.id}
-                    onClick={() => !oos && selectPackage(pkg)}
-                    sx={{
-                      position: 'relative',
-                      p: 1.25,
-                      cursor: oos ? 'not-allowed' : 'pointer',
-                      opacity: oos ? 0.5 : 1,
-                      borderRadius: 1.5,
-                      bgcolor: selected ? 'primary.lighter' : 'background.paper',
-                      border: (theme) =>
-                        `solid 2px ${selected ? theme.palette.primary.main : theme.palette.divider}`,
-                      transition: (theme) => theme.transitions.create('border-color'),
-                    }}
-                  >
-                    {hasFlash && (
-                      <Label color="error" variant="filled" sx={{ position: 'absolute', top: 6, left: 6, zIndex: 9 }}>
-                        SALE
-                      </Label>
-                    )}
-                    {oos && (
-                      <Label color="error" sx={{ position: 'absolute', top: 6, right: 6, zIndex: 9 }}>
-                        {tp('out_of_stock')}
-                      </Label>
-                    )}
-                    {showImg && (
-                      <Image
-                        src={pkg.imageUrl}
-                        alt={pkg.name}
-                        ratio={isGiftcard ? '3/4' : '1/1'}
-                        sx={{ borderRadius: 1, mb: 1 }}
-                      />
-                    )}
-                    <Typography variant="subtitle2" noWrap title={pkg.name}>
-                      {pkg.name}
-                    </Typography>
-                    <Stack direction="row" spacing={0.5} alignItems="baseline" flexWrap="wrap">
-                      <Typography variant="subtitle2" color="primary.main">
+                  <MenuItem key={pkg.id} value={String(pkg.id)} disabled={oos}>
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      justifyContent="space-between"
+                      spacing={1}
+                      sx={{ width: 1 }}
+                    >
+                      <Typography variant="body2" noWrap sx={{ flexGrow: 1 }}>
+                        {pkg.name}
+                      </Typography>
+                      {oos && (
+                        <Label color="error" sx={{ flexShrink: 0 }}>
+                          {tp('out_of_stock')}
+                        </Label>
+                      )}
+                      {hasFlash && (
+                        <Label color="error" variant="filled" sx={{ flexShrink: 0 }}>
+                          SALE
+                        </Label>
+                      )}
+                      <Typography variant="subtitle2" color="primary.main" sx={{ flexShrink: 0 }}>
                         {fCurrency(eff)}
                       </Typography>
-                      {hasFlash && (
-                        <Typography
-                          variant="caption"
-                          sx={{ color: 'text.disabled', textDecoration: 'line-through' }}
-                        >
-                          {fCurrency(pkg.price)}
-                        </Typography>
-                      )}
                     </Stack>
-                  </Box>
+                  </MenuItem>
                 );
               })}
-            </Box>
+            </TextField>
           </Stack>
         ) : (
           <>
