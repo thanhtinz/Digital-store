@@ -15,13 +15,18 @@ import Iconify from '../iconify';
 // ----------------------------------------------------------------------
 
 const CDN = {
-  core: 'https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js',
+  // Cubism 2 core (cho model .model.json) + Cubism 4 core (cho .model3.json)
+  core2: 'https://cdn.jsdelivr.net/gh/dylanNew/live2d/webgl/Live2D/lib/live2d.min.js',
+  core4: 'https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js',
   pixi: 'https://cdn.jsdelivr.net/npm/pixi.js@6.5.10/dist/browser/pixi.min.js',
-  display: 'https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/cubism4.min.js',
+  // bundle hỗ trợ CẢ Cubism 2 và 4
+  display: 'https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/index.min.js',
 };
 
-// Model mẫu công khai (Cubism 4) — admin có thể thay bằng URL model riêng.
-const DEFAULT_MODEL = 'https://cdn.jsdelivr.net/gh/guansss/pixi-live2d-display/test/assets/haru/haru_greeter_t03.model3.json';
+// Kho model Live2D (AzharRizkiZ/Live2D-Model) phục vụ qua jsDelivr CDN.
+const MODEL_CDN_BASE = 'https://cdn.jsdelivr.net/gh/AzharRizkiZ/Live2D-Model@main/assets/models';
+// Model mặc định (Asuna - SAO) — admin có thể đổi.
+const DEFAULT_MODEL = `${MODEL_CDN_BASE}/SAO/asuna/asuna_01/asuna_01.model.json`;
 
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -47,7 +52,13 @@ type Msg = { role: 'user' | 'assistant'; content: string };
 
 export default function Live2dWidget() {
   const settings = useSiteSettings();
-  const modelUrl = settings?.live2d_model_url || DEFAULT_MODEL;
+  // Cho phép dán URL đầy đủ HOẶC đường dẫn tương đối trong kho model (vd "SAO/asuna/asuna_01/asuna_01.model.json").
+  const rawModel = (settings?.live2d_model_url || '').trim();
+  const modelUrl = !rawModel
+    ? DEFAULT_MODEL
+    : /^https?:\/\//i.test(rawModel)
+      ? rawModel
+      : `${MODEL_CDN_BASE}/${rawModel.replace(/^\/+/, '')}`;
   const scale = Number(settings?.live2d_scale) || 0.16;
   const greeting = settings?.assistant_greeting || 'Xin chào! Mình có thể giúp gì cho bạn? 💬';
   const tips: string[] = String(settings?.assistant_tips || '')
@@ -72,7 +83,9 @@ export default function Live2dWidget() {
     if (!modelUrl) return undefined;
     (async () => {
       try {
-        await loadScript(CDN.core);
+        // Cubism 2 core có thể lỗi tải ở vài mạng -> không chặn (model cubism4 vẫn chạy).
+        await loadScript(CDN.core2).catch(() => {});
+        await loadScript(CDN.core4).catch(() => {});
         await loadScript(CDN.pixi);
         await loadScript(CDN.display);
         if (cancelled || !canvasRef.current) return;

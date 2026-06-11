@@ -9,6 +9,13 @@ import useAdminSettings, { LIVECHAT_PROVIDERS, LIVECHAT_KEYS } from './useAdminS
 
 // ----------------------------------------------------------------------
 
+// Một vài nhân vật có sẵn từ kho mở (đường dẫn tương đối trong assets/models).
+const LIVE2D_PRESETS = [
+  { value: '', label: 'Mặc định (Asuna - Sword Art Online)' },
+  { value: 'SAO/asuna/asuna_01/asuna_01.model.json', label: 'Asuna - Sword Art Online' },
+  { value: 'Saekano/kato/01.json', label: 'Kato Megumi - Saekano' },
+];
+
 export default function AdminLivechatView() {
   const { values, set, loading, saving, saveConfig } = useAdminSettings();
   const provider = values.livechat_provider || 'builtin';
@@ -49,8 +56,16 @@ export default function AdminLivechatView() {
                     Cần cấu hình <b>AI</b> ở trang Tích hợp → AI. Nếu chưa có model Live2D, hệ thống dùng avatar tĩnh (chat vẫn chạy).
                   </Alert>
                   <TextField
-                    label="URL model Live2D (.model3.json)"
-                    helperText="Link tới file .model3.json (Cubism 4). Tham khảo nguồn model mở trên GitHub."
+                    select label="Chọn nhân vật có sẵn (kho AzharRizkiZ/Live2D-Model)"
+                    value={LIVE2D_PRESETS.some((p) => p.value === values.live2d_model_url) ? values.live2d_model_url : '__custom'}
+                    onChange={(e) => set('live2d_model_url', e.target.value === '__custom' ? '' : e.target.value)}
+                  >
+                    {LIVE2D_PRESETS.map((p) => <MenuItem key={p.value} value={p.value}>{p.label}</MenuItem>)}
+                    <MenuItem value="__custom">— Tự nhập URL / đường dẫn —</MenuItem>
+                  </TextField>
+                  <TextField
+                    label="URL model hoặc đường dẫn trong kho"
+                    helperText='Dán URL .model.json/.model3.json đầy đủ, HOẶC đường dẫn tương đối trong kho (vd "Konosuba/megumin/megumin_01/megumin_01.model.json"). Xem kho: github.com/AzharRizkiZ/Live2D-Model'
                     value={values.live2d_model_url || ''} onChange={(e) => set('live2d_model_url', e.target.value)}
                   />
                   <TextField
