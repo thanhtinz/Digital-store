@@ -33,7 +33,10 @@ export default function RankPriceEditor({ packageId, basePrice }: { packageId: n
   }, [packageId]);
 
   const setRow = (rankId: number, patch: any) =>
-    setRows((p) => ({ ...p, [rankId]: { price_type: 'percent', discount_percent: '', fixed_price: '', ...p[rankId], ...patch } }));
+    setRows((p) => {
+      const cur = p[rankId] || { price_type: 'percent', discount_percent: '', fixed_price: '' };
+      return { ...p, [rankId]: { ...cur, ...patch } };
+    });
 
   const save = async () => {
     setSaving(true);
