@@ -36,6 +36,7 @@ import Image from '../../components/image';
 import Iconify from '../../components/iconify';
 import ConfirmDialog from '../../components/confirm-dialog';
 import { useSnackbar } from '../../components/snackbar';
+import AdminPageHeader from './AdminPageHeader';
 import AdminBannerForm from './AdminBannerForm';
 
 // ----------------------------------------------------------------------
@@ -51,9 +52,7 @@ export default function AdminMarketingView() {
   const [tab, setTab] = useState('banners');
   return (
     <Container maxWidth="lg" sx={{ pb: 8 }}>
-      <Typography variant="h4" sx={{ my: 3 }}>
-        Marketing
-      </Typography>
+      <AdminPageHeader title="Marketing" />
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }} variant="scrollable" scrollButtons="auto">
         {TABS.map((t) => (
           <Tab key={t.value} value={t.value} label={t.label} icon={<Iconify icon={t.icon} />} iconPosition="start" />

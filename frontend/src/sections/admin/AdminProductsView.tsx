@@ -37,6 +37,7 @@ import Label from '../../components/label';
 import Iconify from '../../components/iconify';
 import ConfirmDialog from '../../components/confirm-dialog';
 import { useSnackbar } from '../../components/snackbar';
+import AdminPageHeader from './AdminPageHeader';
 import AdminProductForm from './AdminProductForm';
 import ImageUploadField from './ImageUploadField';
 import RankPriceEditor from './RankPriceEditor';
@@ -138,12 +139,14 @@ export default function AdminProductsView() {
 
   return (
     <Container sx={{ pb: 6 }} maxWidth="lg">
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ my: 3 }}>
-        <Typography variant="h4">Sản phẩm</Typography>
-        <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => setEditing('new')}>
+      <AdminPageHeader
+        title="Sản phẩm"
+        action={
+          <><Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={() => setEditing('new')}>
           Thêm sản phẩm
-        </Button>
-      </Stack>
+        </Button></>
+        }
+      />
 
       <Tabs
         value={typeFilter}

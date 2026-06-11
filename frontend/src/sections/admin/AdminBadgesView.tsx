@@ -12,6 +12,7 @@ import axiosInstance from '../../utils/axios';
 import Label from '../../components/label';
 import Iconify from '../../components/iconify';
 import { useSnackbar } from '../../components/snackbar';
+import AdminPageHeader from './AdminPageHeader';
 
 // ----------------------------------------------------------------------
 
@@ -60,13 +61,15 @@ export default function AdminBadgesView() {
   return (
     <RoleBasedGuard hasContent roles={['admin', 'superadmin']}>
       <Container sx={{ pb: 6 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ my: 3 }}>
-          <Typography variant="h4">Huy hiệu thành viên</Typography>
-          <Stack direction="row" spacing={1}>
-            <Button variant="outlined" onClick={recompute} startIcon={<Iconify icon="solar:refresh-bold" />}>Rà soát</Button>
-            <Button variant="contained" onClick={openNew} startIcon={<Iconify icon="eva:plus-fill" />}>Thêm</Button>
-          </Stack>
-        </Stack>
+        <AdminPageHeader
+          title="Huy hiệu thành viên"
+          action={
+            <Stack direction="row" spacing={1}>
+              <Button variant="outlined" onClick={recompute} startIcon={<Iconify icon="solar:refresh-bold" />}>Rà soát</Button>
+              <Button variant="contained" onClick={openNew} startIcon={<Iconify icon="eva:plus-fill" />}>Thêm</Button>
+            </Stack>
+          }
+        />
 
         <Grid container spacing={2}>
           {items.map((b) => (

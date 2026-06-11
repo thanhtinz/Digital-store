@@ -36,6 +36,7 @@ import ConfirmDialog from '../../components/confirm-dialog';
 import ImageUploadField from './ImageUploadField';
 import AdminBlogPostForm from './AdminBlogPostForm';
 import { useSnackbar } from '../../components/snackbar';
+import AdminPageHeader from './AdminPageHeader';
 
 // ----------------------------------------------------------------------
 
@@ -56,9 +57,7 @@ export default function AdminBlogView() {
   const [tab, setTab] = useState('posts');
   return (
     <Container maxWidth="lg" sx={{ pb: 8 }}>
-      <Typography variant="h4" sx={{ my: 3 }}>
-        Blog
-      </Typography>
+      <AdminPageHeader title="Blog" />
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
         <Tab value="posts" label="Bài viết" icon={<Iconify icon="solar:document-text-bold" />} iconPosition="start" />
         <Tab value="cats" label="Chuyên mục" icon={<Iconify icon="solar:folder-bold" />} iconPosition="start" />

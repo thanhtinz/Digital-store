@@ -11,6 +11,7 @@ import { PATH_DASHBOARD } from '../../routes/paths';
 import axiosInstance from '../../utils/axios';
 // components
 import { useSnackbar } from '../../components/snackbar';
+import AdminPageHeader from './AdminPageHeader';
 
 // ----------------------------------------------------------------------
 // Các trường cấu hình chung (key trùng với siteConfig backend).
@@ -134,9 +135,7 @@ export default function AdminSettingsView() {
   return (
     <RoleBasedGuard hasContent roles={['admin', 'superadmin']}>
       <Container sx={{ pb: 6 }}>
-        <Typography variant="h4" sx={{ my: 3 }}>
-          Cài đặt cửa hàng
-        </Typography>
+        <AdminPageHeader title="Cài đặt cửa hàng" />
 
         {loading ? (
           <Box sx={{ display: 'grid', placeItems: 'center', py: 8 }}>

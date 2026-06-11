@@ -13,6 +13,7 @@ import { fCurrency } from '../../utils/formatNumber';
 import Label from '../../components/label';
 import Iconify from '../../components/iconify';
 import { useSnackbar } from '../../components/snackbar';
+import AdminPageHeader from './AdminPageHeader';
 
 // ----------------------------------------------------------------------
 
@@ -82,10 +83,12 @@ export default function AdminBundlesView() {
   return (
     <RoleBasedGuard hasContent roles={['admin', 'superadmin']}>
       <Container sx={{ pb: 6 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ my: 3 }}>
-          <Typography variant="h4">Gói combo</Typography>
-          <Button variant="contained" onClick={openNew} startIcon={<Iconify icon="eva:plus-fill" />}>Thêm combo</Button>
-        </Stack>
+        <AdminPageHeader
+        title="Gói combo"
+        action={
+          <><Button variant="contained" onClick={openNew} startIcon={<Iconify icon="eva:plus-fill" />}>Thêm combo</Button></>
+        }
+      />
 
         <Grid container spacing={2}>
           {items.map((b) => (

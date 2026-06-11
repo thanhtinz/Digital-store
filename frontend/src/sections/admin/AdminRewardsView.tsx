@@ -32,6 +32,7 @@ import Label from '../../components/label';
 import Iconify from '../../components/iconify';
 import ConfirmDialog from '../../components/confirm-dialog';
 import { useSnackbar } from '../../components/snackbar';
+import AdminPageHeader from './AdminPageHeader';
 import ImageUploadField from './ImageUploadField';
 
 // ----------------------------------------------------------------------
@@ -46,9 +47,7 @@ export default function AdminRewardsView() {
   const [tab, setTab] = useState('config');
   return (
     <Container maxWidth="lg" sx={{ pb: 8 }}>
-      <Typography variant="h4" sx={{ my: 3 }}>
-        Điểm thưởng & Đổi thưởng
-      </Typography>
+      <AdminPageHeader title="Điểm thưởng & Đổi thưởng" />
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
         <Tab value="config" label="Cấu hình điểm" icon={<Iconify icon="solar:settings-bold" />} iconPosition="start" />
         <Tab value="checkin" label="Điểm danh" icon={<Iconify icon="solar:calendar-mark-bold" />} iconPosition="start" />

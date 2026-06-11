@@ -31,6 +31,7 @@ import { fDateTime } from '../../utils/formatTime';
 import Iconify from '../../components/iconify';
 import Label from '../../components/label';
 import { useSnackbar } from '../../components/snackbar';
+import AdminPageHeader from './AdminPageHeader';
 
 // ----------------------------------------------------------------------
 
@@ -114,9 +115,7 @@ export default function AdminOrdersView() {
 
   return (
     <Container sx={{ pb: 6 }} maxWidth="lg">
-      <Typography variant="h4" sx={{ my: 3 }}>
-        Đơn hàng
-      </Typography>
+      <AdminPageHeader title="Đơn hàng" />
 
       <Tabs
         value={typeFilter}

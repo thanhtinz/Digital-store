@@ -12,6 +12,7 @@ import axiosInstance from '../../utils/axios';
 import Label from '../../components/label';
 import Iconify from '../../components/iconify';
 import { useSnackbar } from '../../components/snackbar';
+import AdminPageHeader from './AdminPageHeader';
 
 // ----------------------------------------------------------------------
 
@@ -60,7 +61,7 @@ export default function AdminQuestionsView() {
   return (
     <RoleBasedGuard hasContent roles={['admin', 'superadmin', 'staff']}>
       <Container sx={{ pb: 6 }}>
-        <Typography variant="h4" sx={{ my: 3 }}>Hỏi & Đáp sản phẩm</Typography>
+        <AdminPageHeader title="Hỏi & Đáp sản phẩm" />
 
         <Tabs value={filter} onChange={(_, v) => setFilter(v)} sx={{ mb: 3 }}>
           <Tab value="all" label="Tất cả" />
