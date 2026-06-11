@@ -88,7 +88,6 @@ function ConfigTab() {
     setSaving(true);
     try {
       await axiosInstance.patch('/api/admin/settings', {
-        loyalty_enabled: v.loyalty_enabled === '1' ? '1' : '0',
         loyalty_earn_per: v.loyalty_earn_per || '1000',
         loyalty_redeem_value: v.loyalty_redeem_value || '100',
         loyalty_min_redeem: v.loyalty_min_redeem || '100',
@@ -106,10 +105,6 @@ function ConfigTab() {
   return (
     <Card sx={{ p: 3, maxWidth: 560 }}>
       <Stack spacing={2.5}>
-        <FormControlLabel
-          control={<Switch checked={v.loyalty_enabled === '1'} onChange={(e) => set('loyalty_enabled', e.target.checked ? '1' : '0')} />}
-          label="Bật hệ thống điểm thưởng"
-        />
         <TextField
           type="number"
           label="Số tiền để được 1 điểm (đồng)"

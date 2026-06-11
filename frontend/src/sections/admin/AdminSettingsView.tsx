@@ -67,7 +67,6 @@ const LIVECHAT_KEYS = [
 // ── Tính năng nâng cao (lưu trong site_config) ──
 const ADVANCED_KEYS = [
   'require_email_verification', 'entitlement_reminder_days',
-  'wheel_enabled', 'wheel_cost_points', 'wheel_free_daily',
 ];
 
 // ── Bật/tắt tính năng của web (lưu trong settings_features JSON) ──
@@ -134,12 +133,13 @@ export default function AdminSettingsView() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Chỉ gửi các key có trong form để tránh ghi đè cấu hình khác.
+      // 1) Các key cấu hình trong site_config.
       const keys = [...FIELDS.map((f) => f.key), ...DRIVE_FIELDS.map((f) => f.key), ...LIVECHAT_KEYS, ...ADVANCED_KEYS];
       const payload: Record<string, string> = Object.fromEntries(keys.map((k) => [k, values[k] ?? '']));
-      // Lưu cờ tính năng dưới dạng JSON (giữ nguyên các key khác như maintenance).
-      payload.settings_features = JSON.stringify(features);
       await axiosInstance.patch('/api/admin/settings', payload);
+      // 2) CHỈ merge các cờ tính năng chung (không đụng maintenance/cờ trang riêng).
+      const flagPatch = Object.fromEntries(FEATURE_TOGGLES.map((f) => [f.key, featureOn(f.key)]));
+      await axiosInstance.post('/api/admin/feature-set', { patch: flagPatch });
       enqueueSnackbar('Đã lưu cấu hình');
     } catch (e: any) {
       enqueueSnackbar(e?.detail || e?.message || 'Lưu thất bại', { variant: 'error' });
@@ -231,8 +231,8 @@ export default function AdminSettingsView() {
 
             <Card>
               <CardHeader
-                title="Tính năng nâng cao"
-                subheader="Xác minh email, nhắc gia hạn gói, vòng quay may mắn."
+                title="Bảo mật & Nhắc nhở"
+                subheader="Xác minh email khi đăng ký, nhắc gia hạn gói có thời hạn."
               />
               <Stack spacing={2.5} sx={{ p: 3 }}>
                 <FormControlLabel
@@ -251,34 +251,10 @@ export default function AdminSettingsView() {
                   value={values.entitlement_reminder_days ?? ''}
                   onChange={(e) => set('entitlement_reminder_days', e.target.value)}
                 />
-
-                <Divider />
-
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={values.wheel_enabled === '1' || values.wheel_enabled === 'true'}
-                      onChange={(e) => set('wheel_enabled', e.target.checked ? '1' : '0')}
-                    />
-                  }
-                  label="Bật vòng quay may mắn"
-                />
-                <TextField
-                  type="number"
-                  label="Phí mỗi lượt quay (điểm)"
-                  helperText="Số điểm trừ cho mỗi lượt quay (sau khi hết lượt miễn phí). 0 = chỉ quay miễn phí."
-                  value={values.wheel_cost_points ?? ''}
-                  onChange={(e) => set('wheel_cost_points', e.target.value)}
-                />
-                <TextField
-                  type="number"
-                  label="Lượt quay miễn phí mỗi ngày"
-                  helperText="Số lượt quay miễn phí mỗi user/ngày. 0 = không có."
-                  value={values.wheel_free_daily ?? ''}
-                  onChange={(e) => set('wheel_free_daily', e.target.value)}
-                />
                 <Alert severity="info">
-                  Quản lý phần thưởng vòng quay, huy hiệu, combo và Hỏi&Đáp ở các trang quản trị riêng tương ứng.
+                  Cấu hình <b>Vòng quay may mắn</b> (bật/tắt, phí, lượt quay, ảnh, phần thưởng) đã gom về{' '}
+                  <Link component={NextLink} href={PATH_DASHBOARD.admin.wheel}>trang Vòng quay</Link>.
+                  Huy hiệu, Combo, Hỏi&Đáp, Điểm thưởng… quản lý ở trang riêng tương ứng.
                 </Alert>
               </Stack>
             </Card>
