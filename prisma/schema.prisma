@@ -99,6 +99,7 @@ model Product {
   wishlists Wishlist[]
   sourceVersions  SourceVersion[]
   sourceLicenses  SourceLicense[]
+  questions       ProductQuestion[]
 
   @@index([slug])
   @@map("products")
@@ -178,6 +179,7 @@ model ProductPackage {
   externalPlanId    String?  @db.VarChar(255) @map("external_plan_id")
   autoMarkup        Boolean  @default(false) @map("auto_markup")
   markupPercent     Decimal? @db.Decimal(5, 2) @map("markup_percent")
+  durationDays      Int?     @map("duration_days") // số ngày sử dụng (gói premium có hạn) — để nhắc gia hạn
   sortOrder         Int      @default(0) @map("sort_order")
   isActive          Boolean  @default(true) @map("is_active")
   createdAt         DateTime @default(now()) @map("created_at")
@@ -189,6 +191,8 @@ model ProductPackage {
   orders      Order[]
   orderItems  OrderItem[]
   flashSales  FlashSale[]
+  bundleItems BundleItem[]
+  entitlements UserEntitlement[]
 
   @@map("product_packages")
 }
@@ -410,6 +414,8 @@ model User {
   balance         Decimal  @default(0) @db.Decimal(12, 2)
   points          Int      @default(0)
   isActive        Boolean  @default(true) @map("is_active")
+  emailVerified   Boolean  @default(false) @map("email_verified")
+  emailVerifyToken String? @db.VarChar(64) @map("email_verify_token")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
@@ -418,6 +424,11 @@ model User {
   cardTransactions    CardChargeTransaction[]
   notifications       Notification[]
   pointTransactions   PointTransaction[]
+  sessions            UserSession[]
+  badges              UserBadge[]
+  wheelSpins          WheelSpin[]
+  entitlements        UserEntitlement[]
+  pushSubscriptions   PushSubscription[]
   // Lưu ý: Wishlist tham chiếu user qua userId dạng String (giống Order),
   // không khai báo quan hệ Prisma ở đây để tránh lỗi validate (User.id là Int).
 
@@ -887,4 +898,183 @@ model ChatMessage {
 
   @@index([conversationId])
   @@map("chat_messages")
+}
+
+// ── Web Push: đăng ký thiết bị nhận thông báo đẩy ──────
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  endpoint  String   @unique
+  p256dh    String   @db.VarChar(255)
+  auth      String   @db.VarChar(255)
+  userAgent String?  @db.VarChar(500) @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+// ── Quyền sử dụng có hạn (gói premium) → nhắc gia hạn ──
+model UserEntitlement {
+  id          Int       @id @default(autoincrement())
+  userId      Int       @map("user_id")
+  packageId   Int?      @map("package_id")
+  orderId     Int?      @map("order_id")
+  productName String    @db.VarChar(255) @map("product_name")
+  packageName String?   @db.VarChar(255) @map("package_name")
+  startsAt    DateTime  @default(now()) @map("starts_at")
+  expiresAt   DateTime  @map("expires_at")
+  reminderSent Boolean  @default(false) @map("reminder_sent")
+  expiredNotified Boolean @default(false) @map("expired_notified")
+  status      String    @default("active") @db.VarChar(20) // active | expired
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  package ProductPackage? @relation(fields: [packageId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt, status])
+  @@map("user_entitlements")
+}
+
+// ── Hỏi & Đáp ở trang sản phẩm ─────────────────────────
+model ProductQuestion {
+  id         Int      @id @default(autoincrement())
+  productId  Int      @map("product_id")
+  userId     Int      @map("user_id")
+  userName   String?  @db.VarChar(255) @map("user_name")
+  question   String
+  answer     String?
+  answeredBy String?  @db.VarChar(255) @map("answered_by")
+  answeredAt DateTime? @map("answered_at")
+  isVisible  Boolean  @default(true) @map("is_visible")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, isVisible])
+  @@map("product_questions")
+}
+
+// ── Huy hiệu thành viên ────────────────────────────────
+model Badge {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique @db.VarChar(50) // vd: vip, top_reviewer, loyal
+  name        String   @db.VarChar(255)
+  description String?
+  icon        String?  @db.VarChar(120)  // tên iconify hoặc emoji
+  color       String   @default("#00AB55") @db.VarChar(20)
+  // Tiêu chí tự trao: kiểu + ngưỡng (null = chỉ trao tay)
+  criteriaType String? @db.VarChar(30) @map("criteria_type") // orders | spend | reviews | points
+  threshold    Decimal? @db.Decimal(12, 2)
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  userBadges UserBadge[]
+
+  @@map("badges")
+}
+
+model UserBadge {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  badgeId   Int      @map("badge_id")
+  awardedAt DateTime @default(now()) @map("awarded_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+  @@map("user_badges")
+}
+
+// ── Phiên đăng nhập (quản lý thiết bị) ─────────────────
+model UserSession {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  jti        String   @unique @db.VarChar(64) // id token (lưu trong JWT)
+  userAgent  String?  @db.VarChar(500) @map("user_agent")
+  ipAddress  String?  @db.VarChar(50) @map("ip_address")
+  lastSeenAt DateTime @default(now()) @map("last_seen_at")
+  revokedAt  DateTime? @map("revoked_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_sessions")
+}
+
+// ── Vòng quay may mắn ──────────────────────────────────
+model WheelPrize {
+  id         Int      @id @default(autoincrement())
+  label      String   @db.VarChar(120)
+  type       String   @default("points") @db.VarChar(20) // points | balance | voucher | none
+  value      Decimal  @default(0) @db.Decimal(12, 2)      // số điểm/tiền, hoặc giá trị voucher
+  voucherCode String? @db.VarChar(50) @map("voucher_code") // mã giftcode trao khi trúng (type=voucher)
+  weight     Int      @default(1)  // trọng số xác suất
+  color      String   @default("#00AB55") @db.VarChar(20)
+  stock      Int      @default(-1) // -1 = không giới hạn
+  wonCount   Int      @default(0) @map("won_count")
+  isActive   Boolean  @default(true) @map("is_active")
+  sortOrder  Int      @default(0) @map("sort_order")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  spins WheelSpin[]
+
+  @@map("wheel_prizes")
+}
+
+model WheelSpin {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  prizeId   Int?     @map("prize_id")
+  prizeLabel String  @db.VarChar(120) @map("prize_label")
+  type      String   @db.VarChar(20)
+  value     Decimal  @default(0) @db.Decimal(12, 2)
+  costPoints Int     @default(0) @map("cost_points")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prize WheelPrize? @relation(fields: [prizeId], references: [id])
+
+  @@index([userId])
+  @@map("wheel_spins")
+}
+
+// ── Gói combo / Bundle ─────────────────────────────────
+model Bundle {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(255)
+  slug        String   @unique @db.VarChar(255)
+  description String?
+  imageUrl    String?  @map("image_url")
+  price       Decimal  @db.Decimal(12, 2)            // giá combo
+  originalPrice Decimal? @db.Decimal(12, 2) @map("original_price")
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  items BundleItem[]
+
+  @@index([slug])
+  @@map("bundles")
+}
+
+model BundleItem {
+  id        Int     @id @default(autoincrement())
+  bundleId  Int     @map("bundle_id")
+  packageId Int     @map("package_id")
+  quantity  Int     @default(1)
+
+  bundle  Bundle         @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  package ProductPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@index([bundleId])
+  @@map("bundle_items")
 }
