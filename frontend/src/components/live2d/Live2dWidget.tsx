@@ -38,6 +38,22 @@ const DEFAULT_QUOTES = [
   'Có gì thắc mắc cứ hỏi mình nhé! 😊',
 ];
 
+// Map thẻ cảm xúc (AI trả về) -> từ khoá tìm expression/motion trong model.
+const EMO_KEYS: Record<string, string[]> = {
+  'vui': ['happy', 'smile', 'joy', 'fun', 'laugh'],
+  'buồn': ['sad', 'cry', 'down', 'tear'],
+  'ngại': ['shy', 'blush', 'embarrass'],
+  'ngạc nhiên': ['surprise', 'shock', 'wow'],
+  'giận': ['angry', 'mad', 'anger'],
+  'bình thường': ['normal', 'default', 'neutral', 'idle'],
+};
+
+function parseEmotion(raw: string): { emotion: string; text: string } {
+  const m = String(raw || '').match(/^\s*\[([^\]]{1,24})\]\s*/);
+  if (m) return { emotion: m[1].trim().toLowerCase(), text: raw.slice(m[0].length) };
+  return { emotion: '', text: raw };
+}
+
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
     if (typeof document === 'undefined') return reject();
@@ -99,6 +115,8 @@ export default function Live2dWidget() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [listening, setListening] = useState(false);
+  const recRef = useRef<any>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
 
   const openRef = useRef(open);
@@ -247,6 +265,40 @@ export default function Live2dWidget() {
     }, 42);
   };
 
+  // ── Cảm xúc -> biểu cảm + động tác (giống emotion engine N.E.K.O.) ──
+  const playEmotion = (emo: string) => {
+    const m = modelRef.current;
+    if (!m || !emo) return;
+    const keys = EMO_KEYS[emo] || [];
+    if (!keys.length) return;
+    try {
+      const exps = m.internalModel?.settings?.expressions;
+      if (Array.isArray(exps) && exps.length) {
+        const idx = exps.findIndex((e: any) => keys.some((k) => String(e?.Name || e?.name || e?.file || e?.File || '').toLowerCase().includes(k)));
+        if (idx >= 0) m.expression(idx);
+      }
+      const mm = m.internalModel?.motionManager;
+      const groups = Object.keys(mm?.definitions || mm?.motionGroups || {});
+      const g = groups.find((grp) => keys.some((k) => grp.toLowerCase().includes(k)));
+      if (g) m.motion(g);
+    } catch { /* noop */ }
+  };
+
+  // ── Nhận giọng nói (Web Speech API) -> gửi câu hỏi ──
+  const toggleVoice = () => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { popBubble('Trình duyệt không hỗ trợ nhận giọng nói 😢'); return; }
+    if (listening && recRef.current) { try { recRef.current.stop(); } catch { /* noop */ } return; }
+    const rec = new SR();
+    rec.lang = 'vi-VN'; rec.interimResults = false; rec.maxAlternatives = 1;
+    rec.onresult = (e: any) => { const t = e?.results?.[0]?.[0]?.transcript || ''; if (t) send(t); };
+    rec.onend = () => setListening(false);
+    rec.onerror = () => setListening(false);
+    recRef.current = rec;
+    setListening(true);
+    try { rec.start(); } catch { setListening(false); }
+  };
+
   // ── Đọc bằng TTS (audio; miệng do typewriter điều khiển) ──
   const speak = (text: string) => {
     try {
@@ -272,8 +324,8 @@ export default function Live2dWidget() {
     } catch { /* noop */ }
   };
 
-  const send = async () => {
-    const text = input.trim();
+  const send = async (override?: string) => {
+    const text = (override ?? input).trim();
     if (!text || sending) return;
     setInput('');
     const next = [...messages, { role: 'user' as const, content: text }];
@@ -282,8 +334,10 @@ export default function Live2dWidget() {
     if (!openRef.current) setBubble('...');
     try {
       const r = await axiosInstance.post('/api/assistant/chat', { message: text, history: next.slice(-8) });
-      const reply = r.data?.reply || 'Mình chưa rõ ý bạn lắm 😅';
+      const raw = r.data?.reply || '[bình thường] Mình chưa rõ ý bạn lắm 😅';
+      const { emotion, text: reply } = parseEmotion(raw);
       setSending(false);
+      playEmotion(emotion);
       speak(reply);
       typewrite(reply);
     } catch (e: any) {
@@ -371,13 +425,20 @@ export default function Live2dWidget() {
               {sending && <Bubble role="assistant" text="..." />}
             </Box>
 
-            <Stack direction="row" spacing={1} sx={{ p: 1 }}>
+            <Stack direction="row" spacing={0.5} sx={{ p: 1 }} alignItems="center">
+              <IconButton
+                color={listening ? 'error' : 'default'} onClick={toggleVoice}
+                title={listening ? 'Đang nghe... bấm để dừng' : 'Nói chuyện bằng giọng nói'}
+                sx={listening ? { animation: 'l2dpulse 1s infinite', '@keyframes l2dpulse': { '0%,100%': { opacity: 1 }, '50%': { opacity: 0.4 } } } : undefined}
+              >
+                <Iconify icon={listening ? 'solar:microphone-bold' : 'solar:microphone-3-bold'} />
+              </IconButton>
               <TextField
-                fullWidth size="small" placeholder="Nhập câu hỏi..." value={input}
+                fullWidth size="small" placeholder={listening ? 'Đang nghe...' : 'Nhập câu hỏi...'} value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && send()}
               />
-              <IconButton color="primary" onClick={send} disabled={sending}>
+              <IconButton color="primary" onClick={() => send()} disabled={sending}>
                 <Iconify icon="solar:plain-bold" />
               </IconButton>
             </Stack>

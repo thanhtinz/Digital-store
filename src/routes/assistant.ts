@@ -4,11 +4,23 @@
  * Dùng để nhân vật anime ở góc tư vấn/hỗ trợ khách.
  */
 import { Router, Request, Response } from 'express';
+import axios from 'axios';
 import prisma from '../db';
 import { optionalUser } from '../middleware/auth';
 import { getAiConfig, callProvider } from '../services/ai';
 
 const router = Router();
+
+// Gọi sang N.E.K.O. tự host (OpenAI-compatible /v1/chat/completions). Thử nhanh, lỗi thì bỏ qua.
+async function callNeko(baseUrl: string, apiKey: string, messages: Array<{ role: string; content: string }>, maxTokens: number): Promise<string> {
+  const url = `${baseUrl.replace(/\/$/, '')}/v1/chat/completions`;
+  const resp = await axios.post(
+    url,
+    { messages, max_tokens: maxTokens, temperature: 0.85, stream: false },
+    { headers: { 'Content-Type': 'application/json', ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}) }, timeout: 30000 }
+  );
+  return resp.data?.choices?.[0]?.message?.content?.trim() || '';
+}
 
 async function getCfg(keys: string[]): Promise<Record<string, string>> {
   const rows = await prisma.siteConfig.findMany({ where: { key: { in: keys } } });
@@ -22,8 +34,9 @@ router.post('/chat', optionalUser, async (req: Request, res: Response) => {
     const history = Array.isArray(req.body?.history) ? req.body.history.slice(-8) : [];
 
     const ai = await getAiConfig();
-    const cfg = await getCfg(['site_name', 'contact_email', 'hotline', 'zalo', 'live2d_model_url', 'live2d_characters']);
+    const cfg = await getCfg(['site_name', 'contact_email', 'hotline', 'zalo', 'live2d_model_url', 'live2d_characters', 'neko_base_url', 'neko_api_key']);
     const siteName = cfg.site_name || 'cửa hàng';
+    const useNeko = !!(cfg.neko_base_url || '').trim();
 
     // Tính cách lấy từ nhân vật Live2D đang chọn (AI đã quét sẵn khi nhập model).
     let charPersona = '';
@@ -39,7 +52,7 @@ router.post('/chat', optionalUser, async (req: Request, res: Response) => {
       }
     } catch { /* noop */ }
 
-    if (!ai?.api_key) {
+    if (!ai?.api_key && !useNeko) {
       // Chưa cấu hình AI -> trả lời mặc định, không lỗi.
       res.json({
         reply: `Xin chào! Mình là trợ lý của ${siteName}. Hiện trợ lý AI chưa được kích hoạt, bạn vui lòng liên hệ hỗ trợ${cfg.hotline ? ' qua ' + cfg.hotline : ''} nhé!`,
@@ -70,16 +83,25 @@ Trả lời NGẮN (1-3 câu), tiếng Việt, kèm emoji hợp tính cách. Kh�
 Nhiệm vụ: chào khách, tư vấn chọn & mua sản phẩm, hướng dẫn sử dụng website, trả lời câu hỏi.
 Trả lời NGẮN GỌN (1-3 câu), tiếng Việt, vui vẻ, emoji nhẹ. Không bịa thông tin giá/đơn hàng cụ thể; nếu cần hãy hướng dẫn khách xem trang sản phẩm hoặc liên hệ hỗ trợ${cfg.hotline ? ` (${cfg.hotline})` : ''}.`;
 
+    // Cảm xúc -> động tác/biểu cảm Live2D (giống emotion engine N.E.K.O.).
+    const emotionRule =
+      '\nBẮT BUỘC: bắt đầu câu trả lời bằng ĐÚNG MỘT thẻ cảm xúc trong [vui] [buồn] [ngại] [ngạc nhiên] [giận] [bình thường], rồi mới tới nội dung. Ví dụ: "[vui] Chào bạn nha!".';
+
     const messages = [
-      { role: 'system', content: systemPrompt },
+      { role: 'system', content: systemPrompt + emotionRule },
       ...history
         .filter((h: any) => h && (h.role === 'user' || h.role === 'assistant') && typeof h.content === 'string')
         .map((h: any) => ({ role: h.role, content: String(h.content).slice(0, 1000) })),
       { role: 'user', content: message },
     ];
 
-    const reply = await callProvider(ai, messages, 600);
-    res.json({ reply: String(reply || '').trim() || 'Mình chưa rõ ý bạn lắm, bạn nói rõ hơn được không?', ai: true });
+    // Ưu tiên N.E.K.O. tự host nếu được cấu hình; lỗi/không có thì dùng AI thường.
+    let reply = '';
+    if (useNeko) {
+      try { reply = await callNeko(cfg.neko_base_url, cfg.neko_api_key, messages, 600); } catch { /* fallback */ }
+    }
+    if (!reply && ai?.api_key) reply = await callProvider(ai, messages, 600);
+    res.json({ reply: String(reply || '').trim() || '[bình thường] Mình chưa rõ ý bạn lắm, bạn nói rõ hơn được không?', ai: true });
   } catch (e: any) {
     res.status(500).json({ detail: e.message || 'Lỗi trợ lý' });
   }
