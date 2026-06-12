@@ -49,8 +49,8 @@ export const LIVECHAT_PROVIDERS = [
 export const LIVECHAT_KEYS = [
   'livechat_enabled', 'livechat_provider', 'livechat_tawkto_id', 'livechat_crisp_id',
   'livechat_messenger_page_id', 'livechat_messenger_color', 'livechat_zalo_oa_id', 'livechat_custom_code',
-  // Trợ lý ảo Live2D
-  'live2d_model_url', 'live2d_scale', 'assistant_greeting', 'assistant_tips', 'assistant_system_prompt',
+  // Trợ lý ảo Live2D (tính cách & lời thoại do AI tự sinh khi quét model)
+  'live2d_model_url', 'live2d_scale', 'assistant_greeting',
 ];
 
 export const SECURITY_KEYS = ['require_email_verification', 'entitlement_reminder_days'];
