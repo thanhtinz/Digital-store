@@ -78,7 +78,7 @@ Trả lời NGẮN GỌN (1-3 câu), tiếng Việt, vui vẻ, emoji nhẹ. Khô
       { role: 'user', content: message },
     ];
 
-    const reply = await callProvider(ai, messages, 300);
+    const reply = await callProvider(ai, messages, 600);
     res.json({ reply: String(reply || '').trim() || 'Mình chưa rõ ý bạn lắm, bạn nói rõ hơn được không?', ai: true });
   } catch (e: any) {
     res.status(500).json({ detail: e.message || 'Lỗi trợ lý' });
