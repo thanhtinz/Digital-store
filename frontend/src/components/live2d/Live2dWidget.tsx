@@ -304,7 +304,7 @@ export default function Live2dWidget() {
       width={220}
       height={300}
       style={open
-        ? { width: '100%', height: 'auto', maxHeight: '100%', display: live2dReady ? 'block' : 'none' }
+        ? { width: '100%', height: '100%', objectFit: 'contain', display: live2dReady ? 'block' : 'none' }
         : { height: 220, width: 'auto', display: live2dReady ? 'block' : 'none' }}
     />
   ) : null;
@@ -346,7 +346,7 @@ export default function Live2dWidget() {
       >
         {/* Cột trái: tin nhắn (chỉ khi mở) */}
         {open && (
-          <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
             <Stack direction="row" alignItems="center" spacing={1} sx={{ p: 1.5, bgcolor: 'primary.main', color: 'common.white' }}>
               <Iconify icon="solar:chat-round-dots-bold" />
               <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>Trợ lý {settings?.site_name || ''}</Typography>
@@ -382,7 +382,8 @@ export default function Live2dWidget() {
           onClick={open ? undefined : interact}
           sx={open
             ? {
-                position: 'relative', width: { xs: '100%', sm: 240 }, minHeight: { xs: 200, sm: 'auto' },
+                position: 'relative', flexShrink: 0,
+                width: { xs: '100%', sm: 240 }, height: { xs: '40%', sm: 'auto' },
                 display: 'flex', alignItems: 'flex-end', justifyContent: 'center', overflow: 'hidden',
                 background: (t) => `linear-gradient(180deg, ${alpha(t.palette.primary.main, 0.10)}, ${alpha(t.palette.primary.light, 0.04)})`,
               }
