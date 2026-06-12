@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 // @mui
-import { Box, Chip, IconButton, Paper, Stack, TextField, Typography, Fade } from '@mui/material';
+import { Box, Chip, IconButton, Menu, Paper, Stack, TextField, Typography, Fade } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 // hooks
 import useSiteSettings from '../../hooks/useSiteSettings';
@@ -118,6 +118,10 @@ export default function Live2dWidget() {
   const [listening, setListening] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [panelPos, setPanelPos] = useState<{ left: number; top: number } | null>(null);
+  const [ttsMuted, setTtsMuted] = useState(false);
+  const [emojiAnchor, setEmojiAnchor] = useState<null | HTMLElement>(null);
+  const ttsMutedRef = useRef(false);
+  useEffect(() => { ttsMutedRef.current = ttsMuted; }, [ttsMuted]);
   const recRef = useRef<any>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ sx: number; sy: number; ox: number; oy: number } | null>(null);
@@ -306,6 +310,7 @@ export default function Live2dWidget() {
   // ── Đọc bằng TTS (audio; miệng do typewriter điều khiển) ──
   const speak = (text: string) => {
     try {
+      if (ttsMutedRef.current) return;
       const synth = window.speechSynthesis;
       if (!synth) return;
       synth.cancel();
@@ -365,6 +370,9 @@ export default function Live2dWidget() {
     } catch { /* noop */ }
   };
 
+  const clearChat = () => { setMessages([]); setSuggestions([]); setBubble(''); };
+  const addEmoji = (emo: string) => { setInput((v) => v + emo); setEmojiAnchor(null); };
+
   // Kéo thả panel chat.
   const onDragMove = (e: PointerEvent) => {
     if (!dragRef.current) return;
@@ -419,8 +427,13 @@ export default function Live2dWidget() {
         onClick={interact}
         sx={open
           ? {
-              position: 'fixed', right: 0, bottom: 0, zIndex: (t) => t.zIndex.speedDial,
-              height: { xs: '46vh', sm: 'min(86vh, 760px)' }, display: 'flex', alignItems: 'flex-end',
+              position: 'fixed', zIndex: (t) => t.zIndex.speedDial, display: 'flex', alignItems: 'flex-end',
+              // Mobile: nhân vật ở NỬA TRÊN (panel ở nửa dưới) -> không bị che.
+              // Desktop: nhân vật cao bên phải.
+              height: { xs: '40vh', sm: 'min(86vh, 760px)' },
+              top: { xs: 6, sm: 'auto' }, bottom: { xs: 'auto', sm: 0 },
+              left: { xs: '50%', sm: 'auto' }, right: { xs: 'auto', sm: 0 },
+              transform: { xs: 'translateX(-50%)', sm: 'none' },
               cursor: 'pointer', '&:hover .live2d-toolbar': { opacity: 1, pointerEvents: 'auto' },
             }
           : {
@@ -491,9 +504,12 @@ export default function Live2dWidget() {
           elevation={0}
           sx={{
             position: 'fixed', zIndex: (t) => t.zIndex.speedDial + 1,
-            ...(panelPos ? { left: panelPos.left, top: panelPos.top, bottom: 'auto' } : { left: { xs: 12, md: 32 }, bottom: { xs: 12, md: 40 } }),
-            width: { xs: '92vw', sm: 380 }, height: { xs: '60vh', sm: 500 }, maxWidth: '95vw',
-            display: 'flex', flexDirection: 'column', borderRadius: 3, overflow: 'hidden',
+            // Mobile: bottom sheet nửa dưới (nhân vật ở nửa trên). Desktop: nổi góc trái, kéo thả được.
+            ...(panelPos
+              ? { left: panelPos.left, top: panelPos.top, bottom: 'auto', right: 'auto' }
+              : { left: { xs: 0, md: 32 }, right: { xs: 0, md: 'auto' }, bottom: { xs: 0, md: 40 } }),
+            width: { xs: '100vw', sm: 380 }, height: { xs: '52vh', sm: 500 }, maxWidth: '100vw',
+            display: 'flex', flexDirection: 'column', borderRadius: { xs: '16px 16px 0 0', sm: 3 }, overflow: 'hidden',
             bgcolor: (t) => alpha(t.palette.background.paper, 0.82), backdropFilter: 'blur(12px)',
             border: (t) => `1px solid ${alpha(t.palette.common.white, 0.25)}`, boxShadow: 24,
           }}
@@ -529,7 +545,34 @@ export default function Live2dWidget() {
             </Stack>
           )}
 
-          <Stack direction="row" spacing={0.5} sx={{ p: 1 }} alignItems="center">
+          {/* Thanh công cụ panel (kiểu N.E.K.O.) */}
+          <Stack direction="row" spacing={0.25} sx={{ px: 1, pt: 0.5 }} alignItems="center">
+            <IconButton size="small" title="Chèn emoji" onClick={(e) => setEmojiAnchor(e.currentTarget)}>
+              <Iconify icon="solar:emoji-funny-circle-bold" width={20} />
+            </IconButton>
+            <IconButton size="small" title="Đổi động tác" onClick={interact}>
+              <Iconify icon="solar:magic-stick-3-bold" width={20} />
+            </IconButton>
+            <IconButton size="small" title="Chụp ảnh nhân vật" onClick={screenshot}>
+              <Iconify icon="solar:camera-bold" width={20} />
+            </IconButton>
+            <IconButton size="small" title={ttsMuted ? 'Bật đọc giọng' : 'Tắt đọc giọng'} onClick={() => setTtsMuted((m) => !m)}>
+              <Iconify icon={ttsMuted ? 'solar:volume-cross-bold' : 'solar:volume-loud-bold'} width={20} />
+            </IconButton>
+            <Box sx={{ flexGrow: 1 }} />
+            <IconButton size="small" color="error" title="Xoá hội thoại" onClick={clearChat}>
+              <Iconify icon="solar:trash-bin-trash-bold" width={20} />
+            </IconButton>
+          </Stack>
+          <Menu anchorEl={emojiAnchor} open={!!emojiAnchor} onClose={() => setEmojiAnchor(null)}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', px: 1, py: 0.5 }}>
+              {['😊', '😍', '😂', '👍', '❤️', '🎁', '🛒', '💎', '🔥', '✨'].map((e) => (
+                <IconButton key={e} size="small" onClick={() => addEmoji(e)}><span style={{ fontSize: 18 }}>{e}</span></IconButton>
+              ))}
+            </Box>
+          </Menu>
+
+          <Stack direction="row" spacing={0.5} sx={{ p: 1, pt: 0.5 }} alignItems="center">
             <IconButton
               color={listening ? 'error' : 'default'} onClick={toggleVoice}
               title={listening ? 'Đang nghe... bấm để dừng' : 'Nói chuyện bằng giọng nói'}
