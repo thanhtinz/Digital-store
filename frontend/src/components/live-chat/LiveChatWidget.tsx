@@ -9,7 +9,6 @@ import useSiteSettings from '../../hooks/useSiteSettings';
 import { PATH_DASHBOARD } from '../../routes/paths';
 // components
 import Iconify from '../iconify';
-import Live2dWidget from '../live2d/Live2dWidget';
 
 // ----------------------------------------------------------------------
 // Widget live chat hiển thị ở góc client khi admin bật.
@@ -97,11 +96,6 @@ export default function LiveChatWidget() {
       }
     }
   }, [enabled, provider, settings]);
-
-  // Trợ lý ảo Live2D + AI (thay cho live chat).
-  if (enabled && provider === 'live2d') {
-    return <Live2dWidget />;
-  }
 
   // Nguồn nội bộ: nút nổi điều hướng tới trang chat.
   if (enabled && provider === 'builtin') {
