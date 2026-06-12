@@ -434,9 +434,11 @@ export default function Live2dWidget() {
             }
           : isMobile
             ? {
-                // Mobile mở: nhân vật nằm trong "sân khấu" trên cùng của khung toàn màn hình.
-                position: 'fixed', top: 52, left: 0, right: 0, height: '34vh', zIndex: (t) => t.zIndex.speedDial + 2,
-                display: 'flex', alignItems: 'flex-end', justifyContent: 'center', cursor: 'pointer',
+                // Mobile mở: nhân vật chiếm 45% TRÊN (có nền riêng), panel chat 55% dưới -> tile khít, không lệch.
+                position: 'fixed', top: 0, left: 0, right: 0, height: '45vh', zIndex: (t) => t.zIndex.speedDial + 2,
+                display: 'flex', alignItems: 'flex-end', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden',
+                bgcolor: 'background.default',
+                backgroundImage: (t) => `linear-gradient(180deg, ${alpha(t.palette.primary.light, 0.30)}, ${alpha(t.palette.primary.main, 0.08)})`,
               }
             : {
                 // Desktop mở: nhân vật cao bên phải.
@@ -448,15 +450,33 @@ export default function Live2dWidget() {
         {canvasEl}
         {avatarFallback}
 
+        {/* Mobile: thanh trên cùng (tên + ẩn + đóng) đặt trên vùng nhân vật */}
+        {open && isMobile && (
+          <Stack
+            direction="row" alignItems="center" spacing={1}
+            onClick={(e) => e.stopPropagation()}
+            sx={{ position: 'absolute', top: 0, left: 0, right: 0, px: 1.5, py: 1, zIndex: 4 }}
+          >
+            <Iconify icon="solar:chat-round-dots-bold" sx={{ color: 'primary.main' }} />
+            <Typography variant="subtitle2" sx={{ flexGrow: 1, color: 'text.primary' }}>Trợ lý {settings?.site_name || ''}</Typography>
+            <IconButton size="small" title="Ẩn trợ lý" onClick={() => { setOpen(false); setHidden(true); }} sx={{ bgcolor: 'background.paper', boxShadow: 2 }}>
+              <Iconify icon="solar:eye-closed-bold" width={18} />
+            </IconButton>
+            <IconButton size="small" title="Đóng" onClick={() => setOpen(false)} sx={{ bgcolor: 'background.paper', boxShadow: 2 }}>
+              <Iconify icon="eva:close-fill" width={18} />
+            </IconButton>
+          </Stack>
+        )}
+
         {/* Bong bóng thoại (lời chào/ý/tương tác) phía trên đầu nhân vật */}
         <Fade in={!!bubble}>
           <Paper
             elevation={6}
             sx={{
-              position: 'absolute', top: open ? 8 : 'auto', bottom: open ? 'auto' : 'calc(100% + 8px)',
+              position: 'absolute', top: open ? (isMobile ? 52 : 8) : 'auto', bottom: open ? 'auto' : 'calc(100% + 8px)',
               right: open ? 'auto' : 0, left: open ? '50%' : 'auto', transform: open ? 'translateX(-50%)' : 'none',
-              maxWidth: 260, p: 1.25, borderRadius: 2, bgcolor: (t) => alpha(t.palette.background.paper, 0.96),
-              pointerEvents: 'none', zIndex: 2,
+              maxWidth: { xs: '86%', sm: 260 }, p: 1.25, borderRadius: 2, bgcolor: (t) => alpha(t.palette.background.paper, 0.96),
+              pointerEvents: 'none', zIndex: 3,
             }}
           >
             <Typography variant="body2">{bubble}</Typography>
@@ -509,10 +529,10 @@ export default function Live2dWidget() {
           elevation={0}
           sx={isMobile
             ? {
-                // Mobile: khung TOÀN MÀN HÌNH (che hẳn trang) — sân khấu nhân vật ở trên, chat ở dưới.
-                position: 'fixed', inset: 0, width: '100vw', height: '100dvh', zIndex: (t) => t.zIndex.speedDial + 1,
-                display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: 0,
-                bgcolor: 'background.default',
+                // Mobile: panel chat chiếm 55% DƯỚI (nhân vật 45% trên) -> tile khít, che hẳn trang.
+                position: 'fixed', left: 0, right: 0, bottom: 0, height: '55vh', zIndex: (t) => t.zIndex.speedDial + 1,
+                display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: '20px 20px 0 0',
+                bgcolor: 'background.paper', boxShadow: 24,
               }
             : {
                 // Desktop: panel kính mờ nổi góc trái, kéo thả được.
@@ -524,23 +544,27 @@ export default function Live2dWidget() {
                 border: (t) => `1px solid ${alpha(t.palette.common.white, 0.25)}`, boxShadow: 24,
               }}
         >
-          <Stack
-            direction="row" alignItems="center" spacing={1}
-            onPointerDown={isMobile ? undefined : onDragStart}
-            sx={{ p: 1.5, color: 'common.white', cursor: isMobile ? 'default' : 'move', bgcolor: (t) => alpha(t.palette.primary.main, 0.92), touchAction: 'none', flexShrink: 0 }}
-          >
-            <Iconify icon="solar:chat-round-dots-bold" />
-            <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>Trợ lý {settings?.site_name || ''}</Typography>
-            <IconButton size="small" sx={{ color: 'common.white' }} title="Ẩn trợ lý" onClick={() => { setOpen(false); setHidden(true); }}>
-              <Iconify icon="solar:eye-closed-bold" />
-            </IconButton>
-            <IconButton size="small" sx={{ color: 'common.white' }} onClick={() => setOpen(false)}>
-              <Iconify icon="eva:close-fill" />
-            </IconButton>
-          </Stack>
-
-          {/* Mobile: chừa "sân khấu" trên cùng để nhân vật đứng (nhân vật là lớp nổi phía trên) */}
-          {isMobile && <Box sx={{ height: '34vh', flexShrink: 0 }} />}
+          {isMobile ? (
+            // Mobile: thanh kéo (grabber) mảnh — tiêu đề & đóng đã nằm trên vùng nhân vật.
+            <Box sx={{ flexShrink: 0, display: 'flex', justifyContent: 'center', pt: 1, pb: 0.5 }}>
+              <Box sx={{ width: 40, height: 4, borderRadius: 2, bgcolor: 'divider' }} />
+            </Box>
+          ) : (
+            <Stack
+              direction="row" alignItems="center" spacing={1}
+              onPointerDown={onDragStart}
+              sx={{ p: 1.5, color: 'common.white', cursor: 'move', bgcolor: (t) => alpha(t.palette.primary.main, 0.92), touchAction: 'none', flexShrink: 0 }}
+            >
+              <Iconify icon="solar:chat-round-dots-bold" />
+              <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>Trợ lý {settings?.site_name || ''}</Typography>
+              <IconButton size="small" sx={{ color: 'common.white' }} title="Ẩn trợ lý" onClick={() => { setOpen(false); setHidden(true); }}>
+                <Iconify icon="solar:eye-closed-bold" />
+              </IconButton>
+              <IconButton size="small" sx={{ color: 'common.white' }} onClick={() => setOpen(false)}>
+                <Iconify icon="eva:close-fill" />
+              </IconButton>
+            </Stack>
+          )}
 
           <Box ref={listRef} sx={{ flexGrow: 1, minHeight: 0, p: 1.5, overflowY: 'auto' }}>
             <Bubble role="assistant" text={greeting} />
@@ -550,7 +574,7 @@ export default function Live2dWidget() {
 
           {/* Gợi ý trả lời A/B/C */}
           {!!suggestions.length && (
-            <Stack spacing={0.5} sx={{ px: 1.5, pb: 0.5 }}>
+            <Stack spacing={0.5} sx={{ px: 1.5, pb: 0.5, flexShrink: 0 }}>
               {suggestions.map((s, i) => (
                 <Chip
                   key={i} clickable variant="outlined" size="small"
@@ -562,7 +586,7 @@ export default function Live2dWidget() {
           )}
 
           {/* Thanh công cụ panel (kiểu N.E.K.O.) */}
-          <Stack direction="row" spacing={0.25} sx={{ px: 1, pt: 0.5 }} alignItems="center">
+          <Stack direction="row" spacing={0.25} sx={{ px: 1, pt: 0.5, flexShrink: 0 }} alignItems="center">
             <IconButton size="small" title="Chèn emoji" onClick={(e) => setEmojiAnchor(e.currentTarget)}>
               <Iconify icon="solar:emoji-funny-circle-bold" width={20} />
             </IconButton>
@@ -588,7 +612,7 @@ export default function Live2dWidget() {
             </Box>
           </Menu>
 
-          <Stack direction="row" spacing={0.5} sx={{ p: 1, pt: 0.5 }} alignItems="center">
+          <Stack direction="row" spacing={0.5} sx={{ p: 1, pt: 0.5, flexShrink: 0 }} alignItems="center">
             <IconButton
               color={listening ? 'error' : 'default'} onClick={toggleVoice}
               title={listening ? 'Đang nghe... bấm để dừng' : 'Nói chuyện bằng giọng nói'}
