@@ -101,7 +101,26 @@ Trả lời NGẮN GỌN (1-3 câu), tiếng Việt, vui vẻ, emoji nhẹ. Khô
       try { reply = await callNeko(cfg.neko_base_url, cfg.neko_api_key, messages, 600); } catch { /* fallback */ }
     }
     if (!reply && ai?.api_key) reply = await callProvider(ai, messages, 600);
-    res.json({ reply: String(reply || '').trim() || '[bình thường] Mình chưa rõ ý bạn lắm, bạn nói rõ hơn được không?', ai: true });
+    reply = String(reply || '').trim() || '[bình thường] Mình chưa rõ ý bạn lắm, bạn nói rõ hơn được không?';
+
+    // Gợi ý 3 câu người dùng có thể trả lời tiếp (chip A/B/C kiểu N.E.K.O.).
+    let suggestions: string[] = [];
+    try {
+      const sgMessages = [
+        { role: 'system', content: 'Bạn tạo gợi ý câu trả lời cho NGƯỜI DÙNG. Chỉ trả về DUY NHẤT một mảng JSON gồm 3 chuỗi ngắn.' },
+        { role: 'user', content:
+          `Trợ lý vừa nói với người dùng: "${reply.replace(/^\s*\[[^\]]+\]\s*/, '')}". ` +
+          `Gợi ý 3 câu NGẮN (ngôi thứ nhất, < 12 từ, đa dạng: 1 hỏi tiếp, 1 đồng ý, 1 chuyển hướng) mà NGƯỜI DÙNG có thể nhắn tiếp. Trả về DUY NHẤT mảng JSON 3 chuỗi tiếng Việt.` },
+      ];
+      let sgRaw = '';
+      if (useNeko) { try { sgRaw = await callNeko(cfg.neko_base_url, cfg.neko_api_key, sgMessages, 150); } catch { /* noop */ } }
+      if (!sgRaw && ai?.api_key) sgRaw = await callProvider(ai, sgMessages, 150);
+      const s = sgRaw.replace(/```(?:json)?/gi, '').replace(/```/g, '');
+      const i = s.indexOf('['); const j = s.lastIndexOf(']');
+      if (i >= 0 && j > i) { const arr = JSON.parse(s.slice(i, j + 1)); if (Array.isArray(arr)) suggestions = arr.map((x) => String(x || '').trim()).filter(Boolean).slice(0, 3); }
+    } catch { /* bỏ qua nếu lỗi */ }
+
+    res.json({ reply, suggestions, ai: true });
   } catch (e: any) {
     res.status(500).json({ detail: e.message || 'Lỗi trợ lý' });
   }

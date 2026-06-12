@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 // @mui
-import { Box, IconButton, Paper, Stack, TextField, Typography, Fade } from '@mui/material';
+import { Box, Chip, IconButton, Paper, Stack, TextField, Typography, Fade } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 // hooks
 import useSiteSettings from '../../hooks/useSiteSettings';
@@ -116,7 +116,11 @@ export default function Live2dWidget() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [listening, setListening] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [panelPos, setPanelPos] = useState<{ left: number; top: number } | null>(null);
   const recRef = useRef<any>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const dragRef = useRef<{ sx: number; sy: number; ox: number; oy: number } | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
 
   const openRef = useRef(open);
@@ -140,7 +144,7 @@ export default function Live2dWidget() {
         const PIXI = (window as any).PIXI;
         const Live2DModel = PIXI?.live2d?.Live2DModel;
         if (!PIXI || !Live2DModel) return;
-        const app = new PIXI.Application({ view: canvasRef.current, autoStart: true, backgroundAlpha: 0, width: 220, height: 300 });
+        const app = new PIXI.Application({ view: canvasRef.current, autoStart: true, backgroundAlpha: 0, width: 220, height: 300, preserveDrawingBuffer: true });
         appRef.current = app;
         const model = await Live2DModel.from(modelUrl);
         if (cancelled) { app.destroy(); return; }
@@ -328,6 +332,7 @@ export default function Live2dWidget() {
     const text = (override ?? input).trim();
     if (!text || sending) return;
     setInput('');
+    setSuggestions([]);
     const next = [...messages, { role: 'user' as const, content: text }];
     setMessages(next);
     setSending(true);
@@ -340,12 +345,43 @@ export default function Live2dWidget() {
       playEmotion(emotion);
       speak(reply);
       typewrite(reply);
+      if (Array.isArray(r.data?.suggestions)) setSuggestions(r.data.suggestions.slice(0, 3));
     } catch (e: any) {
       setSending(false);
       const msg = e?.detail || 'Trợ lý đang bận, thử lại sau nhé!';
       setMessages((m) => [...m, { role: 'assistant', content: msg }]);
       if (!openRef.current) setBubble(msg);
     }
+  };
+
+  // Chụp ảnh nhân vật (tải xuống) — giống nút camera của N.E.K.O.
+  const screenshot = () => {
+    try {
+      const url = canvasRef.current?.toDataURL('image/png');
+      if (!url) return;
+      const a = document.createElement('a');
+      a.href = url; a.download = `assistant_${Date.now()}.png`;
+      document.body.appendChild(a); a.click(); a.remove();
+    } catch { /* noop */ }
+  };
+
+  // Kéo thả panel chat.
+  const onDragMove = (e: PointerEvent) => {
+    if (!dragRef.current) return;
+    const left = dragRef.current.ox + (e.clientX - dragRef.current.sx);
+    const top = dragRef.current.oy + (e.clientY - dragRef.current.sy);
+    setPanelPos({ left: Math.max(4, left), top: Math.max(4, top) });
+  };
+  const onDragEnd = () => {
+    dragRef.current = null;
+    window.removeEventListener('pointermove', onDragMove);
+    window.removeEventListener('pointerup', onDragEnd);
+  };
+  const onDragStart = (e: any) => {
+    const r = panelRef.current?.getBoundingClientRect();
+    dragRef.current = { sx: e.clientX, sy: e.clientY, ox: r?.left || 0, oy: r?.top || 0 };
+    window.addEventListener('pointermove', onDragMove);
+    window.addEventListener('pointerup', onDragEnd);
   };
 
   // Đã ẩn -> nút nhỏ gọi trợ lý quay lại.
@@ -365,145 +401,154 @@ export default function Live2dWidget() {
       width={220}
       height={300}
       style={open
-        ? { width: '100%', height: '100%', objectFit: 'contain', display: live2dReady ? 'block' : 'none' }
+        ? { height: '100%', width: 'auto', objectFit: 'contain', display: live2dReady ? 'block' : 'none' }
         : { height: 220, width: 'auto', display: live2dReady ? 'block' : 'none' }}
     />
   ) : null;
 
   const avatarFallback = (!modelUrl || !live2dReady) && (
-    <Box sx={{ width: open ? 96 : 72, height: open ? 96 : 72, borderRadius: '50%', display: 'grid', placeItems: 'center', bgcolor: 'primary.main', color: 'common.white', boxShadow: 6 }}>
-      <Iconify icon="solar:user-heart-rounded-bold" width={open ? 48 : 36} />
+    <Box sx={{ width: open ? 140 : 72, height: open ? 140 : 72, borderRadius: '50%', display: 'grid', placeItems: 'center', bgcolor: 'primary.main', color: 'common.white', boxShadow: 6 }}>
+      <Iconify icon="solar:user-heart-rounded-bold" width={open ? 64 : 36} />
     </Box>
   );
 
   return (
-    <Box sx={{ position: 'fixed', right: { xs: 12, md: 24 }, bottom: { xs: 12, md: 24 }, zIndex: (t) => t.zIndex.speedDial }}>
-      {/* Bong bóng thoại (chỉ khi đóng) */}
-      <Fade in={!!bubble && !open}>
-        <Paper
-          elevation={6}
-          sx={{
-            position: 'absolute', bottom: 'calc(100% + 8px)', right: 0, maxWidth: 240, p: 1.5, borderRadius: 2, fontSize: 14,
-            '&::after': {
-              content: '""', position: 'absolute', bottom: -8, right: 28, borderLeft: '8px solid transparent',
-              borderRight: '8px solid transparent', borderTop: (th) => `8px solid ${th.palette.background.paper}`,
-            },
-          }}
-        >
-          <Typography variant="body2">{bubble}</Typography>
-        </Paper>
-      </Fade>
-
-      {/* Khung chính: nở thành cửa sổ lớn khi mở */}
+    <>
+      {/* ── Nhân vật (cố định góc/phải; khi mở chat thì cao gần nguyên màn) ── */}
       <Box
+        onClick={interact}
         sx={open
           ? {
-              position: 'absolute', bottom: 0, right: 0,
-              display: 'flex', flexDirection: { xs: 'column-reverse', sm: 'row' },
-              width: { xs: '92vw', sm: 640 }, height: { xs: '72vh', sm: 460 }, maxWidth: '95vw',
-              bgcolor: 'background.paper', borderRadius: 3, overflow: 'hidden', boxShadow: 24,
+              position: 'fixed', right: 0, bottom: 0, zIndex: (t) => t.zIndex.speedDial,
+              height: { xs: '46vh', sm: 'min(86vh, 760px)' }, display: 'flex', alignItems: 'flex-end',
+              cursor: 'pointer', '&:hover .live2d-toolbar': { opacity: 1, pointerEvents: 'auto' },
             }
-          : { position: 'relative' }}
+          : {
+              position: 'fixed', right: { xs: 12, md: 24 }, bottom: { xs: 12, md: 24 }, zIndex: (t) => t.zIndex.speedDial,
+              cursor: 'pointer', '&:hover .live2d-toolbar': { opacity: 1, pointerEvents: 'auto' },
+            }}
       >
-        {/* Cột trái: tin nhắn (chỉ khi mở) */}
-        {open && (
-          <Box sx={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-            <Stack direction="row" alignItems="center" spacing={1} sx={{ p: 1.5, bgcolor: 'primary.main', color: 'common.white' }}>
-              <Iconify icon="solar:chat-round-dots-bold" />
-              <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>Trợ lý {settings?.site_name || ''}</Typography>
-              <IconButton size="small" sx={{ color: 'common.white' }} title="Đổi động tác" onClick={interact}>
-                <Iconify icon="solar:magic-stick-3-bold" />
-              </IconButton>
-              <IconButton size="small" sx={{ color: 'common.white' }} onClick={() => setOpen(false)}>
-                <Iconify icon="eva:close-fill" />
-              </IconButton>
-            </Stack>
+        {canvasEl}
+        {avatarFallback}
 
-            <Box ref={listRef} sx={{ flexGrow: 1, p: 1.5, overflowY: 'auto', bgcolor: 'background.neutral' }}>
-              <Bubble role="assistant" text={greeting} />
-              {messages.map((m, i) => <Bubble key={i} role={m.role} text={m.content} />)}
-              {sending && <Bubble role="assistant" text="..." />}
-            </Box>
+        {/* Bong bóng thoại (lời chào/ý/tương tác) phía trên đầu nhân vật */}
+        <Fade in={!!bubble}>
+          <Paper
+            elevation={6}
+            sx={{
+              position: 'absolute', top: open ? 8 : 'auto', bottom: open ? 'auto' : 'calc(100% + 8px)',
+              right: open ? 'auto' : 0, left: open ? '50%' : 'auto', transform: open ? 'translateX(-50%)' : 'none',
+              maxWidth: 260, p: 1.25, borderRadius: 2, bgcolor: (t) => alpha(t.palette.background.paper, 0.96),
+              pointerEvents: 'none', zIndex: 2,
+            }}
+          >
+            <Typography variant="body2">{bubble}</Typography>
+          </Paper>
+        </Fade>
 
-            <Stack direction="row" spacing={0.5} sx={{ p: 1 }} alignItems="center">
-              <IconButton
-                color={listening ? 'error' : 'default'} onClick={toggleVoice}
-                title={listening ? 'Đang nghe... bấm để dừng' : 'Nói chuyện bằng giọng nói'}
-                sx={listening ? { animation: 'l2dpulse 1s infinite', '@keyframes l2dpulse': { '0%,100%': { opacity: 1 }, '50%': { opacity: 0.4 } } } : undefined}
-              >
-                <Iconify icon={listening ? 'solar:microphone-bold' : 'solar:microphone-3-bold'} />
-              </IconButton>
-              <TextField
-                fullWidth size="small" placeholder={listening ? 'Đang nghe...' : 'Nhập câu hỏi...'} value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && send()}
-              />
-              <IconButton color="primary" onClick={() => send()} disabled={sending}>
-                <Iconify icon="solar:plain-bold" />
-              </IconButton>
-            </Stack>
-          </Box>
-        )}
-
-        {/* Sân khấu nhân vật (LUÔN là phần tử cuối -> canvas không bị remount) */}
-        <Box
-          onClick={interact}
-          sx={open
-            ? {
-                position: 'relative', flexShrink: 0,
-                width: { xs: '100%', sm: 240 }, height: { xs: '40%', sm: 'auto' },
-                display: 'flex', alignItems: 'flex-end', justifyContent: 'center', overflow: 'hidden',
-                background: (t) => `linear-gradient(180deg, ${alpha(t.palette.primary.main, 0.10)}, ${alpha(t.palette.primary.light, 0.04)})`,
-              }
-            : { position: 'relative', cursor: 'pointer', '&:hover .live2d-toolbar': { opacity: 1, pointerEvents: 'auto' } }}
+        {/* Thanh công cụ nổi cạnh nhân vật */}
+        <Stack
+          className="live2d-toolbar"
+          direction="column"
+          spacing={0.5}
+          sx={{
+            position: 'absolute', left: open ? 4 : 'auto', right: open ? 'auto' : 0, top: open ? '32%' : 4, zIndex: 3,
+            opacity: { xs: 1, md: 0 }, pointerEvents: { xs: 'auto', md: 'none' }, transition: 'opacity .2s',
+          }}
+          onClick={(e) => e.stopPropagation()}
         >
-          {canvasEl}
-          {avatarFallback}
-
-          {/* Bong bóng thoại khi tương tác model lúc đang mở chat */}
+          <IconButton size="small" title={open ? 'Ẩn/hiện khung chat' : 'Trò chuyện với trợ lý'} onClick={() => setOpen((o) => !o)}
+            sx={{ bgcolor: 'primary.main', color: 'common.white', boxShadow: 3, '&:hover': { bgcolor: 'primary.dark' } }}>
+            <Iconify icon="solar:chat-round-dots-bold" width={18} />
+          </IconButton>
           {open && (
-            <Fade in={!!bubble}>
-              <Paper
-                elevation={4}
-                sx={{
-                  position: 'absolute', top: 8, left: 8, right: 8, p: 1, borderRadius: 2,
-                  bgcolor: (t) => alpha(t.palette.background.paper, 0.95), zIndex: 2, pointerEvents: 'none',
-                }}
-              >
-                <Typography variant="caption" sx={{ display: 'block', lineHeight: 1.4 }}>{bubble}</Typography>
-              </Paper>
-            </Fade>
+            <IconButton size="small" title={listening ? 'Đang nghe...' : 'Nói bằng giọng nói'} onClick={toggleVoice}
+              sx={{ bgcolor: listening ? 'error.main' : 'background.paper', color: listening ? 'common.white' : 'inherit', boxShadow: 3 }}>
+              <Iconify icon="solar:microphone-3-bold" width={18} />
+            </IconButton>
           )}
+          <IconButton size="small" title="Đổi động tác" onClick={interact}
+            sx={{ bgcolor: 'background.paper', boxShadow: 3, '&:hover': { bgcolor: 'background.neutral' } }}>
+            <Iconify icon="solar:magic-stick-3-bold" width={18} />
+          </IconButton>
+          {open && (
+            <IconButton size="small" title="Chụp ảnh nhân vật" onClick={screenshot}
+              sx={{ bgcolor: 'background.paper', boxShadow: 3, '&:hover': { bgcolor: 'background.neutral' } }}>
+              <Iconify icon="solar:camera-bold" width={18} />
+            </IconButton>
+          )}
+          <IconButton size="small" title="Ẩn trợ lý" onClick={() => { setOpen(false); setHidden(true); }}
+            sx={{ bgcolor: 'background.paper', boxShadow: 3, '&:hover': { bgcolor: 'background.neutral' } }}>
+            <Iconify icon="solar:eye-closed-bold" width={18} />
+          </IconButton>
+        </Stack>
+      </Box>
 
-          {/* Thanh công cụ (chỉ khi đóng) — góc phải nhân vật */}
-          {!open && (
-            <Stack
-              className="live2d-toolbar"
-              direction="column"
-              spacing={0.5}
-              sx={{
-                position: 'absolute', right: 0, top: 4, zIndex: 1,
-                opacity: { xs: 1, md: 0 }, pointerEvents: { xs: 'auto', md: 'none' }, transition: 'opacity .2s',
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <IconButton size="small" title="Trò chuyện với trợ lý" onClick={() => setOpen(true)}
-                sx={{ bgcolor: 'primary.main', color: 'common.white', boxShadow: 3, '&:hover': { bgcolor: 'primary.dark' } }}>
-                <Iconify icon="solar:chat-round-dots-bold" width={18} />
-              </IconButton>
-              <IconButton size="small" title="Đổi động tác" onClick={interact}
-                sx={{ bgcolor: 'background.paper', boxShadow: 3, '&:hover': { bgcolor: 'background.neutral' } }}>
-                <Iconify icon="solar:magic-stick-3-bold" width={18} />
-              </IconButton>
-              <IconButton size="small" title="Ẩn trợ lý" onClick={() => { setOpen(false); setHidden(true); }}
-                sx={{ bgcolor: 'background.paper', boxShadow: 3, '&:hover': { bgcolor: 'background.neutral' } }}>
-                <Iconify icon="solar:eye-closed-bold" width={18} />
-              </IconButton>
+      {/* ── Panel chat kính mờ, kéo thả được ── */}
+      {open && (
+        <Paper
+          ref={panelRef}
+          elevation={0}
+          sx={{
+            position: 'fixed', zIndex: (t) => t.zIndex.speedDial + 1,
+            ...(panelPos ? { left: panelPos.left, top: panelPos.top, bottom: 'auto' } : { left: { xs: 12, md: 32 }, bottom: { xs: 12, md: 40 } }),
+            width: { xs: '92vw', sm: 380 }, height: { xs: '60vh', sm: 500 }, maxWidth: '95vw',
+            display: 'flex', flexDirection: 'column', borderRadius: 3, overflow: 'hidden',
+            bgcolor: (t) => alpha(t.palette.background.paper, 0.82), backdropFilter: 'blur(12px)',
+            border: (t) => `1px solid ${alpha(t.palette.common.white, 0.25)}`, boxShadow: 24,
+          }}
+        >
+          <Stack
+            direction="row" alignItems="center" spacing={1}
+            onPointerDown={onDragStart}
+            sx={{ p: 1.5, color: 'common.white', cursor: 'move', bgcolor: (t) => alpha(t.palette.primary.main, 0.92), touchAction: 'none' }}
+          >
+            <Iconify icon="solar:chat-round-dots-bold" />
+            <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>Trợ lý {settings?.site_name || ''}</Typography>
+            <IconButton size="small" sx={{ color: 'common.white' }} onClick={() => setOpen(false)}>
+              <Iconify icon="eva:close-fill" />
+            </IconButton>
+          </Stack>
+
+          <Box ref={listRef} sx={{ flexGrow: 1, minHeight: 0, p: 1.5, overflowY: 'auto' }}>
+            <Bubble role="assistant" text={greeting} />
+            {messages.map((m, i) => <Bubble key={i} role={m.role} text={m.content} />)}
+            {sending && <Bubble role="assistant" text="..." />}
+          </Box>
+
+          {/* Gợi ý trả lời A/B/C */}
+          {!!suggestions.length && (
+            <Stack spacing={0.5} sx={{ px: 1.5, pb: 0.5 }}>
+              {suggestions.map((s, i) => (
+                <Chip
+                  key={i} clickable variant="outlined" size="small"
+                  label={`${'ABC'[i] || '•'}. ${s}`} onClick={() => send(s)}
+                  sx={{ justifyContent: 'flex-start', height: 'auto', py: 0.5, '& .MuiChip-label': { whiteSpace: 'normal' } }}
+                />
+              ))}
             </Stack>
           )}
-        </Box>
-      </Box>
-    </Box>
+
+          <Stack direction="row" spacing={0.5} sx={{ p: 1 }} alignItems="center">
+            <IconButton
+              color={listening ? 'error' : 'default'} onClick={toggleVoice}
+              title={listening ? 'Đang nghe... bấm để dừng' : 'Nói chuyện bằng giọng nói'}
+              sx={listening ? { animation: 'l2dpulse 1s infinite', '@keyframes l2dpulse': { '0%,100%': { opacity: 1 }, '50%': { opacity: 0.4 } } } : undefined}
+            >
+              <Iconify icon={listening ? 'solar:microphone-bold' : 'solar:microphone-3-bold'} />
+            </IconButton>
+            <TextField
+              fullWidth size="small" placeholder={listening ? 'Đang nghe...' : 'Nhập câu hỏi...'} value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && send()}
+            />
+            <IconButton color="primary" onClick={() => send()} disabled={sending}>
+              <Iconify icon="solar:plain-bold" />
+            </IconButton>
+          </Stack>
+        </Paper>
+      )}
+    </>
   );
 }
 
