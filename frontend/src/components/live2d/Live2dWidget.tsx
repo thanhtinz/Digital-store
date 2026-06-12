@@ -198,7 +198,6 @@ export default function Live2dWidget() {
   };
 
   const popBubble = (text: string, ms = 5000) => {
-    if (openRef.current) return;
     lastBubbleAt.current = Date.now();
     setBubble(text);
     clearTimeout(bubbleTimer.current);
@@ -391,6 +390,21 @@ export default function Live2dWidget() {
         >
           {canvasEl}
           {avatarFallback}
+
+          {/* Bong bóng thoại khi tương tác model lúc đang mở chat */}
+          {open && (
+            <Fade in={!!bubble}>
+              <Paper
+                elevation={4}
+                sx={{
+                  position: 'absolute', top: 8, left: 8, right: 8, p: 1, borderRadius: 2,
+                  bgcolor: (t) => alpha(t.palette.background.paper, 0.95), zIndex: 2, pointerEvents: 'none',
+                }}
+              >
+                <Typography variant="caption" sx={{ display: 'block', lineHeight: 1.4 }}>{bubble}</Typography>
+              </Paper>
+            </Fade>
+          )}
 
           {/* Thanh công cụ (chỉ khi đóng) — góc phải nhân vật */}
           {!open && (
