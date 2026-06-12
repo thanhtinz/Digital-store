@@ -1,24 +1,58 @@
+import { useEffect, useState } from 'react';
 // @mui
-import { Alert, Box, Card, CircularProgress, Container, FormControlLabel, MenuItem, Stack, Switch, TextField } from '@mui/material';
+import { Alert, Box, Card, Chip, CircularProgress, Container, Divider, FormControlLabel, IconButton, MenuItem, Stack, Switch, TextField, Typography } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 // auth
 import RoleBasedGuard from '../../auth/RoleBasedGuard';
+// utils
+import axiosInstance from '../../utils/axios';
 // components
+import Iconify from '../../components/iconify';
+import { useSnackbar } from '../../components/snackbar';
 import AdminPageHeader from './AdminPageHeader';
 import useAdminSettings, { LIVECHAT_PROVIDERS, LIVECHAT_KEYS } from './useAdminSettings';
 
 // ----------------------------------------------------------------------
 
-// Một vài nhân vật có sẵn từ kho mở (đường dẫn tương đối trong assets/models).
-const LIVE2D_PRESETS = [
-  { value: '', label: 'Mặc định (Asuna - Sword Art Online)' },
-  { value: 'SAO/asuna/asuna_01/asuna_01.model.json', label: 'Asuna - Sword Art Online' },
-  { value: 'Saekano/kato/01.json', label: 'Kato Megumi - Saekano' },
-];
+type Live2dChar = { id: string; name: string; modelUrl: string; scale?: string; personality: string; greeting: string; quotes: string[] };
 
 export default function AdminLivechatView() {
   const { values, set, loading, saving, saveConfig } = useAdminSettings();
+  const { enqueueSnackbar } = useSnackbar();
   const provider = values.livechat_provider || 'builtin';
+
+  const [chars, setChars] = useState<Live2dChar[]>([]);
+  const [scanning, setScanning] = useState(false);
+
+  const loadChars = () => {
+    axiosInstance.get('/api/admin/live2d/characters').then((r) => setChars(r.data?.items || [])).catch(() => {});
+  };
+  useEffect(() => { loadChars(); }, []);
+
+  const selected = chars.find((c) => c.modelUrl === values.live2d_model_url);
+
+  const scanCharacter = async (force = false) => {
+    const modelUrl = (values.live2d_model_url || '').trim();
+    if (!modelUrl) { enqueueSnackbar('Nhập URL/đường dẫn model trước đã', { variant: 'warning' }); return; }
+    setScanning(true);
+    try {
+      const r = await axiosInstance.post('/api/admin/live2d/scan', { modelUrl, scale: values.live2d_scale || '', force });
+      const c: Live2dChar = r.data?.character;
+      if (c) {
+        if (!values.assistant_greeting) set('assistant_greeting', c.greeting || '');
+        await saveConfig(LIVECHAT_KEYS);
+        loadChars();
+        enqueueSnackbar(r.data?.cached ? `Đã có sẵn nhân vật "${c.name}" (${c.quotes?.length || 0} câu)` : `Đã tạo "${c.name}" + ${c.quotes?.length || 0} câu thoại 🎉`);
+      }
+    } catch (e: any) {
+      enqueueSnackbar(e?.detail || 'Quét nhân vật thất bại', { variant: 'error' });
+    } finally { setScanning(false); }
+  };
+
+  const deleteChar = async (id: string) => {
+    try { await axiosInstance.delete(`/api/admin/live2d/characters/${id}`); loadChars(); }
+    catch (e: any) { enqueueSnackbar(e?.detail || 'Xoá thất bại', { variant: 'error' }); }
+  };
 
   return (
     <RoleBasedGuard hasContent roles={['admin', 'superadmin']}>
@@ -52,17 +86,22 @@ export default function AdminLivechatView() {
               {provider === 'live2d' && (
                 <>
                   <Alert severity="info">
-                    Nhân vật anime Live2D đứng ở góc, biết chào khách, tư vấn, hướng dẫn và trả lời tự động bằng AI + đọc giọng nói (TTS).
-                    Cần cấu hình <b>AI</b> ở trang Tích hợp → AI. Nếu chưa có model Live2D, hệ thống dùng avatar tĩnh (chat vẫn chạy).
+                    Nhân vật anime Live2D biết chào khách, tư vấn, hướng dẫn và trả lời bằng AI + đọc giọng nói (TTS).
+                    Khi mở chat sẽ hiện khung lớn: bên trái là tin nhắn, bên phải là nhân vật đang tương tác.
+                    Cần cấu hình <b>AI</b> ở Tích hợp → AI. Khi nhập model mới, bấm <b>Quét nhân vật</b> để AI tự đọc tính cách & tạo 100 câu thoại (chỉ chạy 1 lần, lưu sẵn vào hệ thống).
                   </Alert>
-                  <TextField
-                    select label="Chọn nhân vật có sẵn (kho AzharRizkiZ/Live2D-Model)"
-                    value={LIVE2D_PRESETS.some((p) => p.value === values.live2d_model_url) ? values.live2d_model_url : '__custom'}
-                    onChange={(e) => set('live2d_model_url', e.target.value === '__custom' ? '' : e.target.value)}
-                  >
-                    {LIVE2D_PRESETS.map((p) => <MenuItem key={p.value} value={p.value}>{p.label}</MenuItem>)}
-                    <MenuItem value="__custom">— Tự nhập URL / đường dẫn —</MenuItem>
-                  </TextField>
+
+                  {chars.length > 0 && (
+                    <TextField
+                      select label="Nhân vật đã lưu (AI đã tạo lời thoại)"
+                      value={chars.some((c) => c.modelUrl === values.live2d_model_url) ? values.live2d_model_url : ''}
+                      onChange={(e) => { set('live2d_model_url', e.target.value); const c = chars.find((x) => x.modelUrl === e.target.value); if (c) { set('live2d_scale', c.scale || ''); set('assistant_greeting', c.greeting || ''); } }}
+                    >
+                      <MenuItem value="">— Chọn nhân vật đã lưu —</MenuItem>
+                      {chars.map((c) => <MenuItem key={c.id} value={c.modelUrl}>{c.name} · {c.quotes?.length || 0} câu</MenuItem>)}
+                    </TextField>
+                  )}
+
                   <TextField
                     label="URL model hoặc đường dẫn trong kho"
                     helperText='Dán URL .model.json/.model3.json đầy đủ, HOẶC đường dẫn tương đối trong kho (vd "Konosuba/megumin/megumin_01/megumin_01.model.json"). Xem kho: github.com/AzharRizkiZ/Live2D-Model'
@@ -73,19 +112,45 @@ export default function AdminLivechatView() {
                     helperText="Mặc định 0.16. Tăng/giảm nếu nhân vật quá to/nhỏ."
                     value={values.live2d_scale || ''} onChange={(e) => set('live2d_scale', e.target.value)}
                   />
+
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <LoadingButton
+                      variant="contained" color="secondary" loading={scanning}
+                      startIcon={<Iconify icon="solar:magic-stick-3-bold" />}
+                      onClick={() => scanCharacter(false)}
+                    >
+                      Quét nhân vật & tạo lời thoại (AI)
+                    </LoadingButton>
+                    {selected && (
+                      <LoadingButton color="inherit" loading={scanning} onClick={() => scanCharacter(true)}>
+                        Tạo lại
+                      </LoadingButton>
+                    )}
+                  </Stack>
+
+                  {selected && (
+                    <Card variant="outlined" sx={{ p: 2, bgcolor: 'background.neutral' }}>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Iconify icon="solar:user-heart-rounded-bold" />
+                        <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>{selected.name}</Typography>
+                        <Chip size="small" label={`${selected.quotes?.length || 0} câu thoại`} />
+                        <IconButton size="small" color="error" title="Xoá nhân vật" onClick={() => deleteChar(selected.id)}>
+                          <Iconify icon="solar:trash-bin-trash-bold" />
+                        </IconButton>
+                      </Stack>
+                      <Divider sx={{ my: 1 }} />
+                      <Typography variant="caption" color="text.secondary">Tính cách (AI tạo):</Typography>
+                      <Typography variant="body2" sx={{ mb: 1 }}>{selected.personality}</Typography>
+                      <Typography variant="caption" color="text.secondary">Vài câu thoại mẫu:</Typography>
+                      <Typography variant="body2" component="ul" sx={{ pl: 2, m: 0 }}>
+                        {(selected.quotes || []).slice(0, 5).map((q, i) => <li key={i}>{q}</li>)}
+                      </Typography>
+                    </Card>
+                  )}
+
                   <TextField
-                    label="Lời chào" placeholder="Xin chào! Mình có thể giúp gì cho bạn?"
+                    label="Lời chào (tuỳ chọn — để trống dùng câu AI tạo)" placeholder={selected?.greeting || 'Xin chào! Mình có thể giúp gì cho bạn?'}
                     value={values.assistant_greeting || ''} onChange={(e) => set('assistant_greeting', e.target.value)}
-                  />
-                  <TextField
-                    label="Lời thoại ngẫu nhiên (mỗi dòng 1 câu)" multiline minRows={3}
-                    helperText="Hiện luân phiên trên đầu nhân vật khi rảnh."
-                    value={values.assistant_tips || ''} onChange={(e) => set('assistant_tips', e.target.value)}
-                  />
-                  <TextField
-                    label="Tính cách / hướng dẫn cho AI (system prompt)" multiline minRows={3}
-                    helperText="Để trống dùng mặc định (tư vấn mua hàng + hướng dẫn website)."
-                    value={values.assistant_system_prompt || ''} onChange={(e) => set('assistant_system_prompt', e.target.value)}
                   />
                 </>
               )}

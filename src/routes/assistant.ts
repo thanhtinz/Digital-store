@@ -22,8 +22,17 @@ router.post('/chat', optionalUser, async (req: Request, res: Response) => {
     const history = Array.isArray(req.body?.history) ? req.body.history.slice(-8) : [];
 
     const ai = await getAiConfig();
-    const cfg = await getCfg(['site_name', 'assistant_system_prompt', 'contact_email', 'hotline', 'zalo']);
+    const cfg = await getCfg(['site_name', 'contact_email', 'hotline', 'zalo', 'live2d_model_url', 'live2d_characters']);
     const siteName = cfg.site_name || 'cửa hàng';
+
+    // Tính cách lấy từ nhân vật Live2D đang chọn (AI đã quét sẵn khi nhập model).
+    let charPersona = '';
+    let charName = '';
+    try {
+      const chars = JSON.parse(cfg.live2d_characters || '[]');
+      const sel = Array.isArray(chars) ? chars.find((c: any) => c?.modelUrl === (cfg.live2d_model_url || '')) : null;
+      if (sel) { charPersona = String(sel.personality || ''); charName = String(sel.name || ''); }
+    } catch { /* noop */ }
 
     if (!ai?.api_key) {
       // Chưa cấu hình AI -> trả lời mặc định, không lỗi.
@@ -34,10 +43,13 @@ router.post('/chat', optionalUser, async (req: Request, res: Response) => {
       return;
     }
 
-    const systemPrompt = cfg.assistant_system_prompt ||
-      `Bạn là trợ lý ảo thân thiện, dễ thương của ${siteName} — một cửa hàng bán tài khoản premium, key sản phẩm số, nạp game, giftcard, mã nguồn.
+    const personaLine = charPersona
+      ? `Bạn nhập vai nhân vật ${charName || ''}. Tính cách & cách xưng hô: ${charPersona}\n`
+      : `Bạn là trợ lý ảo thân thiện, dễ thương của ${siteName}.\n`;
+    const systemPrompt =
+      `${personaLine}${siteName} là cửa hàng bán tài khoản premium, key sản phẩm số, nạp game, giftcard, mã nguồn.
 Nhiệm vụ: chào khách, tư vấn chọn & mua sản phẩm, hướng dẫn sử dụng website (đăng nhập, nạp tiền vào ví, mua hàng, nhận key, đổi điểm, vòng quay), và trả lời câu hỏi.
-Trả lời NGẮN GỌN (1-3 câu), tiếng Việt, vui vẻ, có thể dùng emoji nhẹ. Không bịa thông tin giá/đơn hàng cụ thể; nếu cần hãy hướng dẫn khách xem trang sản phẩm hoặc liên hệ hỗ trợ${cfg.hotline ? ` (${cfg.hotline})` : ''}.`;
+LUÔN giữ đúng tính cách nhân vật. Trả lời NGẮN GỌN (1-3 câu), tiếng Việt, có thể dùng emoji nhẹ. Không bịa thông tin giá/đơn hàng cụ thể; nếu cần hãy hướng dẫn khách xem trang sản phẩm hoặc liên hệ hỗ trợ${cfg.hotline ? ` (${cfg.hotline})` : ''}.`;
 
     const messages = [
       { role: 'system', content: systemPrompt },
