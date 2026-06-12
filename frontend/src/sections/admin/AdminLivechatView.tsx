@@ -56,11 +56,12 @@ export default function AdminLivechatView() {
     catch (e: any) { enqueueSnackbar(e?.detail || 'Xoá thất bại', { variant: 'error' }); }
   };
 
-  const importCard = async () => {
-    if (!cardJson.trim()) { enqueueSnackbar('Dán nội dung character card (JSON) trước đã', { variant: 'warning' }); return; }
+  const importCard = async (raw?: string) => {
+    const payload = (raw ?? cardJson).trim();
+    if (!payload) { enqueueSnackbar('Dán nội dung character card (JSON) trước đã', { variant: 'warning' }); return; }
     setImporting(true);
     try {
-      const r = await axiosInstance.post('/api/admin/live2d/import', { card: cardJson, modelUrl: values.live2d_model_url || '', scale: values.live2d_scale || '' });
+      const r = await axiosInstance.post('/api/admin/live2d/import', { card: payload, modelUrl: values.live2d_model_url || '', scale: values.live2d_scale || '' });
       const c: Live2dChar = r.data?.character;
       if (c) {
         if (c.modelUrl) set('live2d_model_url', c.modelUrl);
@@ -177,17 +178,17 @@ export default function AdminLivechatView() {
 
                   {/* Import character card (định dạng N.E.K.O. / TavernAI v2 / tự do) */}
                   <TextField
-                    label="Import character card (dán JSON)" multiline minRows={3}
-                    helperText="Dán character card kiểu N.E.K.O./TavernAI (name, personality/description, first_mes, model...). Thiếu lời thoại sẽ được AI tạo 100 câu."
+                    label="Import character card — dán JSON hoặc chọn file" multiline minRows={3}
+                    helperText="Card kiểu N.E.K.O./TavernAI (name, personality/description, first_mes, model...). Thiếu lời thoại sẽ được AI tạo 100 câu. Đây là cách thay thế cho 'Quét nhân vật' ở trên."
                     value={cardJson} onChange={(e) => setCardJson(e.target.value)}
                   />
                   <Stack direction="row" spacing={1.5}>
-                    <LoadingButton variant="outlined" loading={importing} startIcon={<Iconify icon="solar:import-bold" />} onClick={importCard}>
-                      Import nhân vật từ card
+                    <LoadingButton variant="outlined" loading={importing} startIcon={<Iconify icon="solar:import-bold" />} onClick={() => importCard()}>
+                      Import từ JSON đã dán
                     </LoadingButton>
-                    <LoadingButton component="label" variant="text" startIcon={<Iconify icon="solar:file-bold" />}>
-                      Chọn file .json
-                      <input hidden type="file" accept="application/json,.json" onChange={(e) => { const f = e.target.files?.[0]; if (f) { const rd = new FileReader(); rd.onload = () => setCardJson(String(rd.result || '')); rd.readAsText(f); } }} />
+                    <LoadingButton component="label" variant="text" loading={importing} startIcon={<Iconify icon="solar:file-bold" />}>
+                      Chọn file .json (import luôn)
+                      <input hidden type="file" accept="application/json,.json" onChange={(e) => { const f = e.target.files?.[0]; if (f) { const rd = new FileReader(); rd.onload = () => { const t = String(rd.result || ''); setCardJson(t); importCard(t); }; rd.readAsText(f); } }} />
                     </LoadingButton>
                   </Stack>
 
