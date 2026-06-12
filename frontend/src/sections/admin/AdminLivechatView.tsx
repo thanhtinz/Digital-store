@@ -23,6 +23,8 @@ export default function AdminLivechatView() {
 
   const [chars, setChars] = useState<Live2dChar[]>([]);
   const [scanning, setScanning] = useState(false);
+  const [cardJson, setCardJson] = useState('');
+  const [importing, setImporting] = useState(false);
 
   const loadChars = () => {
     axiosInstance.get('/api/admin/live2d/characters').then((r) => setChars(r.data?.items || [])).catch(() => {});
@@ -52,6 +54,24 @@ export default function AdminLivechatView() {
   const deleteChar = async (id: string) => {
     try { await axiosInstance.delete(`/api/admin/live2d/characters/${id}`); loadChars(); }
     catch (e: any) { enqueueSnackbar(e?.detail || 'Xoá thất bại', { variant: 'error' }); }
+  };
+
+  const importCard = async () => {
+    if (!cardJson.trim()) { enqueueSnackbar('Dán nội dung character card (JSON) trước đã', { variant: 'warning' }); return; }
+    setImporting(true);
+    try {
+      const r = await axiosInstance.post('/api/admin/live2d/import', { card: cardJson, modelUrl: values.live2d_model_url || '', scale: values.live2d_scale || '' });
+      const c: Live2dChar = r.data?.character;
+      if (c) {
+        if (c.modelUrl) set('live2d_model_url', c.modelUrl);
+        set('assistant_greeting', c.greeting || '');
+        await saveConfig(LIVECHAT_KEYS);
+        loadChars(); setCardJson('');
+        enqueueSnackbar(`Đã import "${c.name}" (${c.quotes?.length || 0} câu) 🎉`);
+      }
+    } catch (e: any) {
+      enqueueSnackbar(e?.detail || 'Import thất bại', { variant: 'error' });
+    } finally { setImporting(false); }
   };
 
   return (
@@ -151,6 +171,38 @@ export default function AdminLivechatView() {
                   <TextField
                     label="Lời chào (tuỳ chọn — để trống dùng câu AI tạo)" placeholder={selected?.greeting || 'Xin chào! Mình có thể giúp gì cho bạn?'}
                     value={values.assistant_greeting || ''} onChange={(e) => set('assistant_greeting', e.target.value)}
+                  />
+
+                  <Divider textAlign="left"><Chip size="small" label="Tích hợp Project N.E.K.O." /></Divider>
+
+                  {/* Import character card (định dạng N.E.K.O. / TavernAI v2 / tự do) */}
+                  <TextField
+                    label="Import character card (dán JSON)" multiline minRows={3}
+                    helperText="Dán character card kiểu N.E.K.O./TavernAI (name, personality/description, first_mes, model...). Thiếu lời thoại sẽ được AI tạo 100 câu."
+                    value={cardJson} onChange={(e) => setCardJson(e.target.value)}
+                  />
+                  <Stack direction="row" spacing={1.5}>
+                    <LoadingButton variant="outlined" loading={importing} startIcon={<Iconify icon="solar:import-bold" />} onClick={importCard}>
+                      Import nhân vật từ card
+                    </LoadingButton>
+                    <LoadingButton component="label" variant="text" startIcon={<Iconify icon="solar:file-bold" />}>
+                      Chọn file .json
+                      <input hidden type="file" accept="application/json,.json" onChange={(e) => { const f = e.target.files?.[0]; if (f) { const rd = new FileReader(); rd.onload = () => setCardJson(String(rd.result || '')); rd.readAsText(f); } }} />
+                    </LoadingButton>
+                  </Stack>
+
+                  {/* Kết nối tới N.E.K.O. tự host (OpenAI-compatible) */}
+                  <Alert severity="info" sx={{ '& a': { color: 'inherit' } }}>
+                    Nếu bạn tự host <b>Project N.E.K.O.</b> (MIT, chạy ở localhost:48911), điền địa chỉ API bên dưới để dùng AI của N.E.K.O. thay cho AI thường. Để trống nếu không dùng.
+                  </Alert>
+                  <TextField
+                    label="N.E.K.O. API base URL (tuỳ chọn)" placeholder="https://neko.your-domain.com hoặc http://127.0.0.1:48911"
+                    helperText="Hệ thống gọi <base>/v1/chat/completions (OpenAI-compatible). Lỗi/không có sẽ tự quay về AI thường."
+                    value={values.neko_base_url || ''} onChange={(e) => set('neko_base_url', e.target.value)}
+                  />
+                  <TextField
+                    label="N.E.K.O. API key (nếu cần)" type="password"
+                    value={values.neko_api_key || ''} onChange={(e) => set('neko_api_key', e.target.value)}
                   />
                 </>
               )}
