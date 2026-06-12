@@ -84,6 +84,7 @@ export default function Live2dWidget() {
   const modelRef = useRef<any>(null);
   const bubbleTimer = useRef<any>(null);
   const typingTimer = useRef<any>(null);
+  const quoteQueue = useRef<string[]>([]);  // hàng đợi đã xáo trộn -> không lặp lại tới khi hết
   const lastBubbleAt = useRef(0);   // chặn tips chạy song song
   const interactLock = useRef(0);   // chống spam click
   const tickerFnRef = useRef<any>(null);
@@ -160,8 +161,9 @@ export default function Live2dWidget() {
       clearTimeout(hideT);
       hideT = setTimeout(() => setBubble(''), 6000);
     };
+    quoteQueue.current = []; // dùng bộ câu mới khi đổi nhân vật
     const greetT = setTimeout(() => showOnce(greeting), 1500);
-    const iv = setInterval(() => { showOnce(quotes[Math.floor(Math.random() * quotes.length)]); }, 16000);
+    const iv = setInterval(() => { showOnce(pickQuote()); }, 16000);
     return () => { clearTimeout(greetT); clearTimeout(hideT); clearInterval(iv); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [greeting, quotes.join('|')]);
@@ -204,12 +206,18 @@ export default function Live2dWidget() {
     bubbleTimer.current = setTimeout(() => setBubble((b) => (b === text ? '' : b)), ms);
   };
 
+  // Lấy câu thoại theo hàng đợi đã xáo trộn -> đi hết 100 câu mới lặp lại.
+  const pickQuote = () => {
+    if (!quoteQueue.current.length) quoteQueue.current = [...quotes].sort(() => Math.random() - 0.5);
+    return quoteQueue.current.pop() || quotes[0] || '';
+  };
+
   const interact = () => {
     const now = Date.now();
     if (now - interactLock.current < 1600) return; // chống spam
     interactLock.current = now;
     playRandomMotion();
-    popBubble(quotes[Math.floor(Math.random() * quotes.length)]);
+    popBubble(pickQuote());
   };
   useEffect(() => { interactRef.current = interact; });
 
@@ -378,7 +386,7 @@ export default function Live2dWidget() {
 
         {/* Sân khấu nhân vật (LUÔN là phần tử cuối -> canvas không bị remount) */}
         <Box
-          onClick={open ? undefined : interact}
+          onClick={interact}
           sx={open
             ? {
                 position: 'relative', flexShrink: 0,
