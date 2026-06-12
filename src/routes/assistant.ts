@@ -28,10 +28,15 @@ router.post('/chat', optionalUser, async (req: Request, res: Response) => {
     // Tính cách lấy từ nhân vật Live2D đang chọn (AI đã quét sẵn khi nhập model).
     let charPersona = '';
     let charName = '';
+    let charQuotes: string[] = [];
     try {
       const chars = JSON.parse(cfg.live2d_characters || '[]');
       const sel = Array.isArray(chars) ? chars.find((c: any) => c?.modelUrl === (cfg.live2d_model_url || '')) : null;
-      if (sel) { charPersona = String(sel.personality || ''); charName = String(sel.name || ''); }
+      if (sel) {
+        charPersona = String(sel.personality || '');
+        charName = String(sel.name || '');
+        if (Array.isArray(sel.quotes)) charQuotes = sel.quotes.map((q: any) => String(q || '')).filter(Boolean);
+      }
     } catch { /* noop */ }
 
     if (!ai?.api_key) {
@@ -43,13 +48,27 @@ router.post('/chat', optionalUser, async (req: Request, res: Response) => {
       return;
     }
 
-    const personaLine = charPersona
-      ? `Bạn nhập vai nhân vật ${charName || ''}. Tính cách & cách xưng hô: ${charPersona}\n`
-      : `Bạn là trợ lý ảo thân thiện, dễ thương của ${siteName}.\n`;
-    const systemPrompt =
-      `${personaLine}${siteName} là cửa hàng bán tài khoản premium, key sản phẩm số, nạp game, giftcard, mã nguồn.
-Nhiệm vụ: chào khách, tư vấn chọn & mua sản phẩm, hướng dẫn sử dụng website (đăng nhập, nạp tiền vào ví, mua hàng, nhận key, đổi điểm, vòng quay), và trả lời câu hỏi.
-LUÔN giữ đúng tính cách nhân vật. Trả lời NGẮN GỌN (1-3 câu), tiếng Việt, có thể dùng emoji nhẹ. Không bịa thông tin giá/đơn hàng cụ thể; nếu cần hãy hướng dẫn khách xem trang sản phẩm hoặc liên hệ hỗ trợ${cfg.hotline ? ` (${cfg.hotline})` : ''}.`;
+    // Lấy vài câu thoại mẫu để AI bắt được "giọng" nhân vật (few-shot phong cách).
+    const styleSamples = charQuotes.length
+      ? charQuotes.sort(() => Math.random() - 0.5).slice(0, 8).map((q) => `- ${q}`).join('\n')
+      : '';
+
+    const systemPrompt = charPersona
+      ? // Có nhân vật -> NHẬP VAI hoàn toàn.
+        `Bạn ĐANG NHẬP VAI nhân vật tên "${charName}" làm trợ lý ảo cho ${siteName} (cửa hàng bán tài khoản premium, key số, nạp game, giftcard, mã nguồn).
+TÍNH CÁCH & CÁCH XƯNG HÔ của ${charName}: ${charPersona}
+
+QUY TẮC NHẬP VAI (BẮT BUỘC):
+- LUÔN nói chuyện đúng giọng điệu, tính cách, cách xưng hô của ${charName} — KHÔNG trả lời kiểu máy móc, trung tính hay "trợ lý ảo" chung chung.
+- Giữ nguyên ngôi xưng và phong cách như các câu mẫu bên dưới; thêm cảm xúc, biểu cảm, đôi khi trêu đùa/tán tỉnh nhẹ nhàng đúng chất nhân vật.
+- KHÔNG nhắc đến việc mình là AI/mô hình ngôn ngữ. Luôn coi mình là ${charName}.
+${styleSamples ? `\nVÍ DỤ GIỌNG NÓI của ${charName} (bắt chước phong cách, đừng lặp lại nguyên văn):\n${styleSamples}\n` : ''}
+NHIỆM VỤ: chào khách, tư vấn chọn & mua sản phẩm, hướng dẫn dùng website (đăng nhập, nạp ví, mua hàng, nhận key, đổi điểm, vòng quay), trả lời thắc mắc.
+Trả lời NGẮN (1-3 câu), tiếng Việt, kèm emoji hợp tính cách. Không bịa giá/đơn hàng cụ thể; cần thì hướng dẫn xem trang sản phẩm hoặc liên hệ hỗ trợ${cfg.hotline ? ` (${cfg.hotline})` : ''}. Tuyệt đối KHÔNG rớt vai.`
+      : // Không có nhân vật -> trợ lý thường.
+        `Bạn là trợ lý ảo thân thiện, dễ thương của ${siteName} — cửa hàng bán tài khoản premium, key số, nạp game, giftcard, mã nguồn.
+Nhiệm vụ: chào khách, tư vấn chọn & mua sản phẩm, hướng dẫn sử dụng website, trả lời câu hỏi.
+Trả lời NGẮN GỌN (1-3 câu), tiếng Việt, vui vẻ, emoji nhẹ. Không bịa thông tin giá/đơn hàng cụ thể; nếu cần hãy hướng dẫn khách xem trang sản phẩm hoặc liên hệ hỗ trợ${cfg.hotline ? ` (${cfg.hotline})` : ''}.`;
 
     const messages = [
       { role: 'system', content: systemPrompt },
