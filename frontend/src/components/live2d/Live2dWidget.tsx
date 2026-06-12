@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 // @mui
-import { Box, Chip, IconButton, Menu, Paper, Stack, TextField, Typography, Fade } from '@mui/material';
-import { alpha } from '@mui/material/styles';
+import { Box, Chip, IconButton, Menu, Paper, Stack, TextField, Typography, Fade, useMediaQuery } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
 // hooks
 import useSiteSettings from '../../hooks/useSiteSettings';
 // utils
@@ -78,6 +78,8 @@ type Msg = { role: 'user' | 'assistant'; content: string };
 
 export default function Live2dWidget() {
   const settings = useSiteSettings();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const rawModel = (settings?.live2d_model_url || '').trim();
   const modelUrl = !rawModel
     ? DEFAULT_MODEL
@@ -425,21 +427,23 @@ export default function Live2dWidget() {
       {/* ── Nhân vật (cố định góc/phải; khi mở chat thì cao gần nguyên màn) ── */}
       <Box
         onClick={interact}
-        sx={open
+        sx={!open
           ? {
-              position: 'fixed', zIndex: (t) => t.zIndex.speedDial, display: 'flex', alignItems: 'flex-end',
-              // Mobile: nhân vật ở NỬA TRÊN (panel ở nửa dưới) -> không bị che.
-              // Desktop: nhân vật cao bên phải.
-              height: { xs: '40vh', sm: 'min(86vh, 760px)' },
-              top: { xs: 6, sm: 'auto' }, bottom: { xs: 'auto', sm: 0 },
-              left: { xs: '50%', sm: 'auto' }, right: { xs: 'auto', sm: 0 },
-              transform: { xs: 'translateX(-50%)', sm: 'none' },
-              cursor: 'pointer', '&:hover .live2d-toolbar': { opacity: 1, pointerEvents: 'auto' },
-            }
-          : {
               position: 'fixed', right: { xs: 12, md: 24 }, bottom: { xs: 12, md: 24 }, zIndex: (t) => t.zIndex.speedDial,
               cursor: 'pointer', '&:hover .live2d-toolbar': { opacity: 1, pointerEvents: 'auto' },
-            }}
+            }
+          : isMobile
+            ? {
+                // Mobile mở: nhân vật nằm trong "sân khấu" trên cùng của khung toàn màn hình.
+                position: 'fixed', top: 52, left: 0, right: 0, height: '34vh', zIndex: (t) => t.zIndex.speedDial + 2,
+                display: 'flex', alignItems: 'flex-end', justifyContent: 'center', cursor: 'pointer',
+              }
+            : {
+                // Desktop mở: nhân vật cao bên phải.
+                position: 'fixed', right: 0, bottom: 0, height: 'min(86vh, 760px)', zIndex: (t) => t.zIndex.speedDial,
+                display: 'flex', alignItems: 'flex-end', cursor: 'pointer',
+                '&:hover .live2d-toolbar': { opacity: 1, pointerEvents: 'auto' },
+              }}
       >
         {canvasEl}
         {avatarFallback}
@@ -459,13 +463,14 @@ export default function Live2dWidget() {
           </Paper>
         </Fade>
 
-        {/* Thanh công cụ nổi cạnh nhân vật */}
+        {/* Thanh công cụ nổi cạnh nhân vật (ẩn khi mở trên mobile vì panel đã có đủ) */}
         <Stack
           className="live2d-toolbar"
           direction="column"
           spacing={0.5}
           sx={{
             position: 'absolute', left: open ? 4 : 'auto', right: open ? 'auto' : 0, top: open ? '32%' : 4, zIndex: 3,
+            display: open && isMobile ? 'none' : 'flex',
             opacity: { xs: 1, md: 0 }, pointerEvents: { xs: 'auto', md: 'none' }, transition: 'opacity .2s',
           }}
           onClick={(e) => e.stopPropagation()}
@@ -502,29 +507,40 @@ export default function Live2dWidget() {
         <Paper
           ref={panelRef}
           elevation={0}
-          sx={{
-            position: 'fixed', zIndex: (t) => t.zIndex.speedDial + 1,
-            // Mobile: bottom sheet nửa dưới (nhân vật ở nửa trên). Desktop: nổi góc trái, kéo thả được.
-            ...(panelPos
-              ? { left: panelPos.left, top: panelPos.top, bottom: 'auto', right: 'auto' }
-              : { left: { xs: 0, md: 32 }, right: { xs: 0, md: 'auto' }, bottom: { xs: 0, md: 40 } }),
-            width: { xs: '100vw', sm: 380 }, height: { xs: '52vh', sm: 500 }, maxWidth: '100vw',
-            display: 'flex', flexDirection: 'column', borderRadius: { xs: '16px 16px 0 0', sm: 3 }, overflow: 'hidden',
-            bgcolor: (t) => alpha(t.palette.background.paper, 0.82), backdropFilter: 'blur(12px)',
-            border: (t) => `1px solid ${alpha(t.palette.common.white, 0.25)}`, boxShadow: 24,
-          }}
+          sx={isMobile
+            ? {
+                // Mobile: khung TOÀN MÀN HÌNH (che hẳn trang) — sân khấu nhân vật ở trên, chat ở dưới.
+                position: 'fixed', inset: 0, width: '100vw', height: '100dvh', zIndex: (t) => t.zIndex.speedDial + 1,
+                display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: 0,
+                bgcolor: 'background.default',
+              }
+            : {
+                // Desktop: panel kính mờ nổi góc trái, kéo thả được.
+                position: 'fixed', zIndex: (t) => t.zIndex.speedDial + 1,
+                ...(panelPos ? { left: panelPos.left, top: panelPos.top, bottom: 'auto', right: 'auto' } : { left: 32, bottom: 40 }),
+                width: 380, height: 500, maxWidth: '95vw',
+                display: 'flex', flexDirection: 'column', borderRadius: 3, overflow: 'hidden',
+                bgcolor: (t) => alpha(t.palette.background.paper, 0.82), backdropFilter: 'blur(12px)',
+                border: (t) => `1px solid ${alpha(t.palette.common.white, 0.25)}`, boxShadow: 24,
+              }}
         >
           <Stack
             direction="row" alignItems="center" spacing={1}
-            onPointerDown={onDragStart}
-            sx={{ p: 1.5, color: 'common.white', cursor: 'move', bgcolor: (t) => alpha(t.palette.primary.main, 0.92), touchAction: 'none' }}
+            onPointerDown={isMobile ? undefined : onDragStart}
+            sx={{ p: 1.5, color: 'common.white', cursor: isMobile ? 'default' : 'move', bgcolor: (t) => alpha(t.palette.primary.main, 0.92), touchAction: 'none', flexShrink: 0 }}
           >
             <Iconify icon="solar:chat-round-dots-bold" />
             <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>Trợ lý {settings?.site_name || ''}</Typography>
+            <IconButton size="small" sx={{ color: 'common.white' }} title="Ẩn trợ lý" onClick={() => { setOpen(false); setHidden(true); }}>
+              <Iconify icon="solar:eye-closed-bold" />
+            </IconButton>
             <IconButton size="small" sx={{ color: 'common.white' }} onClick={() => setOpen(false)}>
               <Iconify icon="eva:close-fill" />
             </IconButton>
           </Stack>
+
+          {/* Mobile: chừa "sân khấu" trên cùng để nhân vật đứng (nhân vật là lớp nổi phía trên) */}
+          {isMobile && <Box sx={{ height: '34vh', flexShrink: 0 }} />}
 
           <Box ref={listRef} sx={{ flexGrow: 1, minHeight: 0, p: 1.5, overflowY: 'auto' }}>
             <Bubble role="assistant" text={greeting} />
