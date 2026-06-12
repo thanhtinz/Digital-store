@@ -8,7 +8,6 @@ import { requireAdmin, requireStaffOrAdmin } from '../middleware/auth';
 import { money } from '../services/orders';
 import { getFeatures } from '../services/features';
 import { sendMail } from '../services/mail';
-import { getAiConfig, callProvider } from '../services/ai';
 
 const uploadImage = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
 
@@ -33,87 +32,6 @@ async function withPublicFlags(map: Record<string, any>): Promise<Record<string,
       eta: String(maintenance_eta || '').slice(0, 100),
     },
   };
-}
-
-// ════════════════════════════════════════════════════
-// LIVE2D — nhân vật + lời thoại (AI tự sinh khi nhập model)
-// ════════════════════════════════════════════════════
-
-const LIVE2D_CHAR_KEY = 'live2d_characters';
-const MODEL_CDN_BASE = 'https://cdn.jsdelivr.net/gh/AzharRizkiZ/Live2D-Model@main/assets/models';
-
-export type Live2dCharacter = {
-  id: string;
-  name: string;
-  modelUrl: string;   // giá trị admin nhập (URL đầy đủ hoặc đường dẫn tương đối)
-  scale?: string;
-  personality: string;
-  greeting: string;
-  quotes: string[];
-  createdAt: string;
-};
-
-function resolveModelUrl(raw: string): string {
-  const v = (raw || '').trim();
-  if (!v) return '';
-  if (/^https?:\/\//i.test(v)) return v;
-  return `${MODEL_CDN_BASE}/${v.replace(/^\/+/, '')}`;
-}
-
-function deriveCharName(raw: string): string {
-  // Lấy tên gợi nhớ từ đường dẫn: .../konosuba/megumin/megumin_01.model.json -> "Megumin"
-  const path = (raw || '').replace(/^https?:\/\//i, '');
-  const segs = path.split('/').filter(Boolean);
-  const file = segs.pop() || '';
-  const base = file.replace(/\.(model3?|json)$/gi, '').replace(/[_-]?\d+$/g, '');
-  const cand = (base || segs.pop() || 'Trợ lý').replace(/[_-]+/g, ' ').trim();
-  return cand.replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-async function getLive2dCharacters(): Promise<Live2dCharacter[]> {
-  const row = await prisma.siteConfig.findUnique({ where: { key: LIVE2D_CHAR_KEY } });
-  if (!row?.value) return [];
-  try { const a = JSON.parse(row.value); return Array.isArray(a) ? a : []; } catch { return []; }
-}
-
-async function saveLive2dCharacters(list: Live2dCharacter[]): Promise<void> {
-  await prisma.siteConfig.upsert({
-    where: { key: LIVE2D_CHAR_KEY },
-    update: { value: JSON.stringify(list) },
-    create: { key: LIVE2D_CHAR_KEY, value: JSON.stringify(list) },
-  });
-}
-
-// Trích JSON (mảng/đối tượng) từ output AI dù có kèm ```json hay chữ thừa.
-function extractJson(text: string): any {
-  let s = String(text || '').trim();
-  s = s.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
-  // thử cả mảng và object
-  for (const [open, close] of [['[', ']'], ['{', '}']] as const) {
-    const i = s.indexOf(open);
-    const j = s.lastIndexOf(close);
-    if (i >= 0 && j > i) {
-      try { return JSON.parse(s.slice(i, j + 1)); } catch { /* tiếp */ }
-    }
-  }
-  try { return JSON.parse(s); } catch { return null; }
-}
-
-// Dùng AI sinh 100 câu thoại tiếng Việt cho nhân vật (dùng cho cả quét model & import card).
-async function aiGenerateQuotes(ai: any, name: string, personality: string, siteName: string): Promise<string[]> {
-  const raw = await callProvider(ai, [
-    { role: 'system', content: 'Bạn viết lời thoại nhân vật ảo tiếng Việt. Chỉ trả về DUY NHẤT một mảng JSON các chuỗi.' },
-    { role: 'user', content:
-      `Tính cách: ${personality}\n` +
-      `Viết 100 câu thoại NGẮN tiếng Việt mà "${name}" tự nói khi rảnh trên ${siteName}: chào mời, trêu đùa/tán tỉnh duyên dáng (phù hợp 16+, KHÔNG tục), tư vấn mua tài khoản, nhắc ưu đãi/flash sale/vòng quay, động viên khách. ` +
-      `Mỗi câu < 18 từ, giọng tự nhiên đúng tính cách, có thể kèm emoji. Trả về DUY NHẤT mảng JSON gồm 100 chuỗi, không đánh số.` },
-  ], 3000);
-  const parsed = extractJson(raw);
-  let quotes: string[] = Array.isArray(parsed) ? parsed.map((q) => String(q || '').trim()).filter(Boolean) : [];
-  if (!quotes.length) {
-    quotes = String(raw || '').split('\n').map((l) => l.replace(/^\s*[-*\d.)"]+\s*/, '').trim()).filter((l) => l.length > 1).slice(0, 100);
-  }
-  return quotes;
 }
 
 // ════════════════════════════════════════════════════
@@ -264,22 +182,10 @@ router.get('/settings', async (_req: Request, res: Response) => {
       'redirect_title', 'redirect_message', 'redirect_warning', 'redirect_seconds',
       // Ảnh loading toàn site
       'loading_image',
-      // Trợ lý ảo Live2D
-      'live2d_model_url', 'live2d_scale', 'assistant_greeting',
       // Giao diện & hiệu ứng
       'click_effect', 'season_effect', 'nav_bg_image'];
     const configs = await prisma.siteConfig.findMany({ where: { key: { in: publicKeys } } });
     const map = Object.fromEntries(configs.map((c: { key: string; value: string | null }) => [c.key, c.value]));
-    // Gắn lời thoại của nhân vật đang chọn (AI đã sinh sẵn) cho widget.
-    try {
-      const chars = await getLive2dCharacters();
-      const sel = chars.find((c) => c.modelUrl === (map.live2d_model_url || ''));
-      if (sel) {
-        map.live2d_quotes = JSON.stringify(sel.quotes || []);
-        if (!map.assistant_greeting) map.assistant_greeting = sel.greeting || '';
-        if (!map.live2d_scale && sel.scale) map.live2d_scale = sel.scale;
-      }
-    } catch { /* noop */ }
     res.json(await withPublicFlags(map));
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
@@ -351,120 +257,6 @@ router.patch('/admin/settings', requireAdmin, async (req: Request, res: Response
       )
     );
     res.json({ message: 'Đã lưu cấu hình' });
-  } catch (e: any) {
-    res.status(500).json({ detail: e.message });
-  }
-});
-
-// ── Live2D: danh sách nhân vật đã quét ──
-router.get('/admin/live2d/characters', requireAdmin, async (_req: Request, res: Response) => {
-  try {
-    res.json({ items: await getLive2dCharacters() });
-  } catch (e: any) {
-    res.status(500).json({ detail: e.message });
-  }
-});
-
-// ── Live2D: quét nhân vật từ model JSON + AI tự sinh tính cách & 100 câu thoại ──
-// Chỉ sinh 1 lần cho mỗi modelUrl; lần sau trả về bản đã lưu (trừ khi force=true).
-router.post('/admin/live2d/scan', requireAdmin, async (req: Request, res: Response) => {
-  try {
-    const rawModel = String(req.body?.modelUrl || '').trim();
-    if (!rawModel) { res.status(400).json({ detail: 'Thiếu model URL' }); return; }
-    const scale = String(req.body?.scale || '').trim();
-    const force = req.body?.force === true || req.body?.force === '1';
-
-    const list = await getLive2dCharacters();
-    const existed = list.find((c) => c.modelUrl === rawModel);
-    if (existed && !force) { res.json({ character: existed, cached: true }); return; }
-
-    const ai = await getAiConfig();
-    if (!ai?.api_key) { res.status(400).json({ detail: 'Chưa cấu hình AI (Tích hợp → AI). Cần AI để tự sinh lời thoại.' }); return; }
-
-    const siteRow = await prisma.siteConfig.findUnique({ where: { key: 'site_name' } });
-    const siteName = siteRow?.value || 'cửa hàng số';
-    const name = String(req.body?.name || '').trim() || deriveCharName(rawModel);
-
-    // 1) Tính cách + lời chào
-    const metaRaw = await callProvider(ai, [
-      { role: 'system', content: 'Bạn là chuyên gia xây dựng nhân vật ảo. Chỉ trả về JSON hợp lệ, không giải thích.' },
-      { role: 'user', content:
-        `Nhân vật Live2D tên "${name}" (nếu nhận ra từ anime/visual novel hãy dựa theo). ` +
-        `Hãy tạo TÍNH CÁCH để nhân vật làm trợ lý ảo tư vấn bán hàng cho "${siteName}" (web bán tài khoản, key số, nạp game, giftcard). ` +
-        `Trả về JSON: {"personality": string (2-4 câu tiếng Việt, mô tả tính cách + cách xưng hô), "greeting": string (1 câu chào tiếng Việt đúng tính cách, có emoji nhẹ)}.` },
-    ], 500);
-    const meta = extractJson(metaRaw) || {};
-    const personality = String(meta.personality || '').trim() ||
-      `${name} là trợ lý ảo dễ thương, thân thiện, nhiệt tình tư vấn và hỗ trợ khách của ${siteName}.`;
-    const greeting = String(meta.greeting || '').trim() || `Xin chào, mình là ${name}! Mình giúp gì được cho bạn nè? 💕`;
-
-    // 2) 100 câu thoại
-    const quotes = await aiGenerateQuotes(ai, name, personality, siteName);
-    if (!quotes.length) { res.status(502).json({ detail: 'AI không tạo được lời thoại, thử lại sau.' }); return; }
-
-    const character: Live2dCharacter = {
-      id: existed?.id || `c_${Date.now().toString(36)}`,
-      name, modelUrl: rawModel, scale: scale || existed?.scale || '',
-      personality, greeting, quotes, createdAt: new Date().toISOString(),
-    };
-    const next = existed ? list.map((c) => (c.id === existed.id ? character : c)) : [...list, character];
-    await saveLive2dCharacters(next);
-    res.json({ character, cached: false });
-  } catch (e: any) {
-    res.status(500).json({ detail: e.message || 'Lỗi quét nhân vật' });
-  }
-});
-
-// ── Live2D: import "character card" (định dạng N.E.K.O. / TavernAI v2 / tự do) ──
-router.post('/admin/live2d/import', requireAdmin, async (req: Request, res: Response) => {
-  try {
-    let card = req.body?.card;
-    if (typeof card === 'string') { card = extractJson(card) || {}; }
-    if (!card || typeof card !== 'object') { res.status(400).json({ detail: 'Character card không hợp lệ' }); return; }
-    // Một số card bọc trong { data: {...} } (TavernAI v2).
-    const d = (card.data && typeof card.data === 'object') ? card.data : card;
-
-    const name = String(d.name || d.char_name || card.name || '').trim() || 'Nhân vật';
-    const personality = String(d.personality || d.description || d.persona || d.summary || '').trim()
-      || `${name} là trợ lý ảo dễ thương, thân thiện.`;
-    const greeting = String(d.first_mes || d.greeting || d.first_message || '').trim()
-      || `Xin chào, mình là ${name}! Mình giúp gì được cho bạn nè? 💕`;
-    const modelUrl = String(d.modelUrl || d.model || d.live2d || d.avatar_model || req.body?.modelUrl || '').trim();
-    let quotes: string[] = Array.isArray(d.quotes) ? d.quotes.map((q: any) => String(q || '').trim()).filter(Boolean)
-      : Array.isArray(d.mes_example) ? d.mes_example.map((q: any) => String(q || '').trim()).filter(Boolean)
-      : [];
-
-    const siteRow = await prisma.siteConfig.findUnique({ where: { key: 'site_name' } });
-    const siteName = siteRow?.value || 'cửa hàng số';
-
-    // Thiếu lời thoại -> nhờ AI sinh 100 câu (nếu có AI).
-    if (quotes.length < 10) {
-      const ai = await getAiConfig();
-      if (ai?.api_key) { try { const g = await aiGenerateQuotes(ai, name, personality, siteName); if (g.length) quotes = g; } catch { /* noop */ } }
-    }
-
-    const list = await getLive2dCharacters();
-    const existed = list.find((c) => c.modelUrl && c.modelUrl === modelUrl);
-    const character: Live2dCharacter = {
-      id: existed?.id || `c_${Date.now().toString(36)}`,
-      name, modelUrl, scale: existed?.scale || String(req.body?.scale || ''),
-      personality, greeting, quotes, createdAt: new Date().toISOString(),
-    };
-    const next = existed ? list.map((c) => (c.id === existed.id ? character : c)) : [...list, character];
-    await saveLive2dCharacters(next);
-    res.json({ character });
-  } catch (e: any) {
-    res.status(500).json({ detail: e.message || 'Lỗi import character card' });
-  }
-});
-
-// ── Live2D: xoá nhân vật ──
-router.delete('/admin/live2d/characters/:id', requireAdmin, async (req: Request, res: Response) => {
-  try {
-    const id = String(req.params.id);
-    const list = await getLive2dCharacters();
-    await saveLive2dCharacters(list.filter((c) => c.id !== id));
-    res.json({ ok: true });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
   }
