@@ -1,6 +1,6 @@
 // @mui
 import { useTheme } from '@mui/material/styles';
-import { Box, Stack, AppBar, Toolbar, IconButton } from '@mui/material';
+import { Box, Stack, AppBar, Toolbar } from '@mui/material';
 // utils
 import { bgBlur } from '../../../utils/cssStyles';
 // hooks
@@ -10,7 +10,6 @@ import useResponsive from '../../../hooks/useResponsive';
 import { HEADER, NAV } from '../../../config-global';
 // components
 import Logo from '../../../components/logo';
-import Iconify from '../../../components/iconify';
 import { useSettingsContext } from '../../../components/settings';
 //
 import ProductSearchbar from './ProductSearchbar';
@@ -42,11 +41,8 @@ export default function Header({ onOpenNav }: Props) {
     <>
       {isDesktop && isNavHorizontal && <Logo sx={{ mr: 2.5 }} />}
 
-      {!isDesktop && (
-        <IconButton onClick={onOpenNav} sx={{ mr: 1, color: 'text.primary' }}>
-          <Iconify icon="eva:menu-2-fill" />
-        </IconButton>
-      )}
+      {/* Logo gọn cho mobile (menu đã chuyển xuống thanh dưới đáy). */}
+      {!isDesktop && <Logo sx={{ mr: 1.5, flexShrink: 0 }} />}
 
       <Box sx={{ flexGrow: 1, minWidth: 0, maxWidth: 420, mr: { xs: 1, sm: 2 } }}>
         <ProductSearchbar />
@@ -60,7 +56,10 @@ export default function Header({ onOpenNav }: Props) {
       >
         <CartButton />
 
-        <LanguagePopover />
+        {/* Đổi ngôn ngữ ẩn trên mobile cho gọn header. */}
+        <Box sx={{ display: { xs: 'none', sm: 'inline-flex' } }}>
+          <LanguagePopover />
+        </Box>
 
         <NotificationsPopover />
 
