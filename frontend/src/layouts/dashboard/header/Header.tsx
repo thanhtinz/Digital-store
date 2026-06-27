@@ -54,7 +54,11 @@ export default function Header({ onOpenNav }: Props) {
         flexShrink={0}
         spacing={{ xs: 0.5, sm: 1 }}
       >
-        <CartButton />
+        {/* Giỏ hàng & Tài khoản đã có ở thanh dưới đáy (mobile) -> chỉ hiện trên desktop
+            để tránh trùng menu. Thông báo giữ ở header (không có trong thanh dưới). */}
+        <Box sx={{ display: { xs: 'none', lg: 'inline-flex' } }}>
+          <CartButton />
+        </Box>
 
         {/* Đổi ngôn ngữ ẩn trên mobile cho gọn header. */}
         <Box sx={{ display: { xs: 'none', sm: 'inline-flex' } }}>
@@ -63,7 +67,9 @@ export default function Header({ onOpenNav }: Props) {
 
         <NotificationsPopover />
 
-        <AccountPopover />
+        <Box sx={{ display: { xs: 'none', lg: 'inline-flex' } }}>
+          <AccountPopover />
+        </Box>
       </Stack>
     </>
   );
