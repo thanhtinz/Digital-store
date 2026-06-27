@@ -104,8 +104,7 @@ router.post('/login', authRateLimit, async (req: Request, res: Response) => {
       res.status(403).json({ detail: 'Tài khoản đã bị khóa' });
       return;
     }
-    const adminUser = await prisma.adminUser.findUnique({ where: { email } });
-    const role = adminUser?.role || 'user';
+    const role = user.role || 'user';
     // Bảo trì: VẪN cho đăng nhập. Nếu là user thường thì báo cờ maintenance để
     // frontend hiện toast cảnh báo (các trang khác sẽ tự hiện trang bảo trì).
     const maint = await getMaintenance();
@@ -148,8 +147,7 @@ router.post('/admin/login', authRateLimit, async (req: Request, res: Response) =
       res.status(403).json({ detail: 'Tài khoản đã bị khóa' });
       return;
     }
-    const adminUser = await prisma.adminUser.findUnique({ where: { email } });
-    const role = adminUser?.role || 'user';
+    const role = user.role || 'user';
     if (!isStaffRole(role)) {
       res.status(403).json({ detail: 'Tài khoản này không có quyền truy cập quản trị' });
       return;
@@ -173,7 +171,6 @@ router.get('/me', requireUser, async (req: Request, res: Response) => {
     const payload = (req as any).user;
     const user = await prisma.user.findUnique({ where: { id: payload.user_id } });
     if (!user) { res.status(404).json({ detail: 'User not found' }); return; }
-    const adminUser = await prisma.adminUser.findUnique({ where: { email: user.email } });
     res.json({
       id: user.id,
       email: user.email,
@@ -185,7 +182,7 @@ router.get('/me', requireUser, async (req: Request, res: Response) => {
       is_active: user.isActive,
       email_verified: user.emailVerified,
       two_factor_enabled: !!user.twoFactorSecret,
-      role: adminUser?.role || 'user',
+      role: user.role || 'user',
       created_at: user.createdAt,
     });
   } catch (e: any) {
@@ -318,14 +315,13 @@ router.get('/google/callback', async (req: Request, res: Response) => {
 
     let user = await prisma.user.findUnique({ where: { email } });
     // Bảo trì: vẫn cho đăng nhập qua OAuth (trang bảo trì sẽ tự chặn hiển thị với user thường).
-    const adminUser = await prisma.adminUser.findUnique({ where: { email } });
-    const role = adminUser?.role || 'user';
     if (!user) {
       user = await prisma.user.create({ data: { email, displayName: name, avatarUrl: picture, provider: 'google', emailVerified: true } });
       notifyNewUser(user.id).catch(() => {});
     } else {
       user = await prisma.user.update({ where: { id: user.id }, data: { displayName: name, avatarUrl: picture, emailVerified: true } });
     }
+    const role = user.role || 'user';
     const sid = await createSession(user.id, req);
     const token = signToken({ user_id: user.id, email: user.email, display_name: user.displayName, role, sid });
     res.redirect(`${baseUrl}/auth-callback?token=${token}`);
@@ -540,9 +536,8 @@ router.post('/make-admin', authRateLimit, async (req: Request, res: Response) =>
   }
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) { res.status(404).json({ detail: 'User not found' }); return; }
-  const existing = await prisma.adminUser.findUnique({ where: { email } });
-  if (!existing) {
-    await prisma.adminUser.create({ data: { userId: user.id.toString(), email, role: 'admin' } });
+  if (!['admin', 'superadmin'].includes(user.role)) {
+    await prisma.user.update({ where: { id: user.id }, data: { role: 'admin' } });
   }
   res.json({ message: `${email} is now admin` });
 });
