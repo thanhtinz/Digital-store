@@ -47,9 +47,7 @@ export default function Main({ children, sx, ...other }: BoxProps) {
       component="main"
       sx={{
         flexGrow: 1,
-        pt: `${HEADER.H_MOBILE + SPACING}px`,
-        // Chừa chỗ cho thanh điều hướng dưới (mobile) + safe-area iOS.
-        pb: `calc(${HEADER.H_MOBILE + SPACING}px + env(safe-area-inset-bottom))`,
+        py: `${HEADER.H_MOBILE + SPACING}px`,
         ...(isDesktop && {
           px: 2,
           py: `${HEADER.H_DASHBOARD_DESKTOP + SPACING}px`,
