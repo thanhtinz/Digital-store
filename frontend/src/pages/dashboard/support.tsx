@@ -1,6 +1,5 @@
 // next
 import Head from 'next/head';
-import NextLink from 'next/link';
 // @mui
 import {
   Accordion,
@@ -16,8 +15,6 @@ import {
 import DashboardLayout from '../../layouts/dashboard';
 // locales
 import { useLocales } from '../../locales';
-// routes
-import { PATH_DASHBOARD } from '../../routes/paths';
 // components
 import Iconify from '../../components/iconify';
 
@@ -65,8 +62,7 @@ export default function SupportPage() {
               </Typography>
             </Stack>
             <Button
-              component={NextLink}
-              href={PATH_DASHBOARD.chat.root}
+              onClick={() => window.dispatchEvent(new Event('open-livechat'))}
               variant="contained"
               startIcon={<Iconify icon="solar:chat-round-dots-bold" />}
             >

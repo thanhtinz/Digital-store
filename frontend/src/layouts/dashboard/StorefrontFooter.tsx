@@ -75,7 +75,7 @@ export default function StorefrontFooter() {
   ];
   const SUPPORT_LINKS = [
     { label: tf('support_center'), href: PATH_DASHBOARD.support },
-    { label: tf('contact'), href: PATH_DASHBOARD.chat.root },
+    { label: tf('contact'), href: PATH_DASHBOARD.support },
     { label: tf('my_orders'), href: PATH_DASHBOARD.orders.root },
     { label: tf('my_account'), href: PATH_DASHBOARD.myAccount },
   ];
