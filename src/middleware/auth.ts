@@ -4,16 +4,19 @@ import { JwtPayload, AdminPayload } from '../types/index';
 import prisma from '../db';
 
 /**
- * Lấy role HIỆN TẠI từ DB (bảng admin_users theo email) thay vì tin role trong
- * token. Nhờ vậy khi đổi vai trò, hiệu lực ngay — không cần đăng nhập lại.
+ * Lấy role HIỆN TẠI từ DB (cột users.role) thay vì tin role trong token.
+ * Nhờ vậy khi đổi vai trò, hiệu lực ngay — không cần đăng nhập lại.
  * Fallback role trong token nếu DB lỗi.
  */
 async function resolveRole(payload: any): Promise<string> {
   try {
-    if (payload?.email) {
-      const adminUser = await prisma.adminUser.findUnique({ where: { email: payload.email } });
-      if (adminUser?.role) return adminUser.role;
+    let user: { role: string } | null = null;
+    if (payload?.user_id) {
+      user = await prisma.user.findUnique({ where: { id: payload.user_id }, select: { role: true } });
+    } else if (payload?.email) {
+      user = await prisma.user.findUnique({ where: { email: payload.email }, select: { role: true } });
     }
+    if (user?.role) return user.role;
   } catch {
     /* DB lỗi -> dùng role trong token */
   }

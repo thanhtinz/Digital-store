@@ -73,23 +73,19 @@ async function seedAdmin() {
         displayName: 'Administrator',
         provider: 'local',
         isActive: true,
+        role: 'superadmin',
       },
     });
     console.log(`  ✓ Created user: ${ADMIN_EMAIL}`);
-  } else {
-    console.log(`  • User already exists: ${ADMIN_EMAIL}`);
-  }
-
-  const admin = await prisma.adminUser.findUnique({ where: { email: ADMIN_EMAIL } });
-  if (!admin) {
-    await prisma.adminUser.create({
-      data: { userId: user.id.toString(), email: ADMIN_EMAIL, role: 'superadmin' },
-    });
     console.log(`  ✓ Granted superadmin role`);
     console.log(`\n  ⚠️  Mật khẩu admin mặc định: ${ADMIN_PASSWORD}`);
     console.log(`     ĐỔI NGAY sau khi đăng nhập lần đầu!\n`);
   } else {
-    console.log(`  • Admin role already exists`);
+    if (user.role !== 'superadmin') {
+      await prisma.user.update({ where: { id: user.id }, data: { role: 'superadmin' } });
+      console.log(`  ✓ Updated role -> superadmin`);
+    }
+    console.log(`  • User already exists: ${ADMIN_EMAIL}`);
   }
 }
 

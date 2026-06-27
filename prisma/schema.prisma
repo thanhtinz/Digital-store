@@ -412,6 +412,7 @@ model User {
   language        String?  @default("vn") @db.VarChar(10)
   provider        String   @default("local") @db.VarChar(50)
   providerId      String?  @db.VarChar(255) @map("provider_id")
+  role            String   @default("user") @db.VarChar(50) // user | staff | admin | superadmin
   twoFactorSecret String?  @db.VarChar(255) @map("two_factor_secret")
   balance         Decimal  @default(0) @db.Decimal(12, 2)
   points          Int      @default(0)
@@ -440,16 +441,6 @@ model User {
 
   @@index([email])
   @@map("users")
-}
-
-model AdminUser {
-  id        Int      @id @default(autoincrement())
-  userId    String   @unique @db.VarChar(255) @map("user_id")
-  email     String   @unique @db.VarChar(255)
-  role      String   @default("admin") @db.VarChar(50)
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@map("admin_users")
 }
 
 

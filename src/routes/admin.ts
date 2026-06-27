@@ -287,15 +287,12 @@ router.get(['/admin/users', '/auth/admin/users'], requireAdmin, async (req: Requ
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
-        select: { id: true, email: true, displayName: true, avatarUrl: true, balance: true, points: true, isActive: true, createdAt: true },
+        select: { id: true, email: true, displayName: true, avatarUrl: true, balance: true, points: true, isActive: true, role: true, createdAt: true },
       }),
     ]);
 
-    // Gắn vai trò (từ bảng adminUser)
-    const emails = users.map((u: any) => u.email);
-    const admins = emails.length ? await prisma.adminUser.findMany({ where: { email: { in: emails } }, select: { email: true, role: true } }) : [];
-    const roleMap: Record<string, string> = Object.fromEntries(admins.map((a: any) => [a.email, a.role]));
-    res.json({ total, page, items: users.map((u: any) => ({ ...u, balance: money(u.balance), role: roleMap[u.email] || 'user' })) });
+    // Vai trò lấy thẳng từ cột users.role
+    res.json({ total, page, items: users.map((u: any) => ({ ...u, balance: money(u.balance), role: u.role || 'user' })) });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
   }
@@ -332,15 +329,7 @@ router.patch(['/admin/users/:id/role'], requireAdmin, async (req: Request, res: 
     if (me && String(me.user_id) === String(id) && role !== me.role) {
       res.status(400).json({ detail: 'Không thể tự đổi vai trò của chính mình' }); return;
     }
-    if (role === 'user') {
-      await prisma.adminUser.deleteMany({ where: { email: user.email } });
-    } else {
-      await prisma.adminUser.upsert({
-        where: { email: user.email },
-        update: { role },
-        create: { userId: String(user.id), email: user.email, role },
-      });
-    }
+    await prisma.user.update({ where: { id }, data: { role } });
     res.json({ ok: true, role });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
@@ -387,12 +376,10 @@ router.post(['/admin/users'], requireAdmin, async (req: Request, res: Response) 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) { res.status(400).json({ detail: 'Email đã tồn tại' }); return; }
     const hash = await bcrypt.hash(password, 12);
+    const safeRole = ['staff', 'admin', 'superadmin'].includes(role) ? role : 'user';
     const user = await prisma.user.create({
-      data: { email, passwordHash: hash, displayName: displayName || email.split('@')[0], balance, points, emailVerified: true },
+      data: { email, passwordHash: hash, displayName: displayName || email.split('@')[0], balance, points, emailVerified: true, role: safeRole },
     });
-    if (['staff', 'admin', 'superadmin'].includes(role)) {
-      await prisma.adminUser.upsert({ where: { email }, update: { role }, create: { userId: String(user.id), email, role } });
-    }
     res.status(201).json({ id: user.id, email: user.email });
   } catch (e: any) {
     res.status(500).json({ detail: e.message });
@@ -407,7 +394,6 @@ router.delete(['/admin/users/:id'], requireAdmin, async (req: Request, res: Resp
     if (me && String(me.user_id) === String(id)) { res.status(400).json({ detail: 'Không thể tự xoá chính mình' }); return; }
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) { res.status(404).json({ detail: 'Không tìm thấy người dùng' }); return; }
-    await prisma.adminUser.deleteMany({ where: { email: user.email } });
     await prisma.user.delete({ where: { id } });
     res.json({ ok: true });
   } catch (e: any) {
