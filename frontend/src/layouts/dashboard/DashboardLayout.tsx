@@ -18,6 +18,7 @@ import SeasonEffect from '../../components/effects/SeasonEffect';
 //
 import Main from './Main';
 import Header from './header';
+import MobileBottomNav from './MobileBottomNav';
 import NavMini from './nav/NavMini';
 import NavVertical from './nav/NavVertical';
 import NavHorizontal from './nav/NavHorizontal';
@@ -114,6 +115,7 @@ export default function DashboardLayout({ children, disableGuard = false }: Prop
 
   const extras = (
     <>
+      <MobileBottomNav />
       <LiveChatWidget />
       <ExternalLinkInterceptor />
       <ClickEffect />
