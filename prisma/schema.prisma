@@ -43,7 +43,7 @@ model ApiProvider {
   isActive     Boolean  @default(true) @map("is_active")
   settings     Json     @default("{}") @map("settings")
   createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
 
   packages         ProductPackage[]
   smmServices      SmmService[]
@@ -91,7 +91,7 @@ model Product {
   serverRegion String?  @db.VarChar(20) @map("server_region")
   sourceMeta   Json?    @map("source_meta")
   createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
 
   category Category?       @relation(fields: [categoryId], references: [id])
   packages ProductPackage[]
@@ -252,7 +252,7 @@ model Order {
   apiProviderId   Int?     @map("api_provider_id")
   externalOrderId String?  @db.VarChar(255) @map("external_order_id")
   createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
 
   package     ProductPackage? @relation(fields: [packageId], references: [id])
   apiProvider ApiProvider?    @relation(fields: [apiProviderId], references: [id])
@@ -282,7 +282,7 @@ model OrderItem {
   apiStatus            String?  @db.VarChar(50) @map("api_status")
   apiProviderId        Int?     @map("api_provider_id")
   createdAt            DateTime @default(now()) @map("created_at")
-  updatedAt            DateTime @updatedAt @map("updated_at")
+  updatedAt            DateTime @default(now()) @updatedAt @map("updated_at")
 
   order       Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
   package     ProductPackage? @relation(fields: [packageId], references: [id])
@@ -361,7 +361,7 @@ model RewardRedemption {
 model SiteSetting {
   key       String   @id @db.VarChar(255)
   value     String?
-  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@map("site_settings")
 }
@@ -371,7 +371,7 @@ model SiteConfig {
   key         String   @unique @db.VarChar(255)
   value       String?
   description String?
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@index([key])
   @@map("site_config")
@@ -422,7 +422,7 @@ model User {
   rankLockedManual Boolean @default(false) @map("rank_locked_manual") // admin gán tay -> không tự đổi theo chi tiêu
   totalSpent      Decimal  @default(0) @db.Decimal(14, 2) @map("total_spent") // tổng chi tiêu (để xét hạng)
   createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
 
   balanceTransactions BalanceTransaction[]
   smmOrders           SmmOrder[]
@@ -592,7 +592,7 @@ model BlogPost {
   authorId        String?   @db.VarChar(255) @map("author_id")
   viewCount       Int       @default(0) @map("view_count")
   createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
 
   category BlogCategory? @relation(fields: [categoryId], references: [id])
 
@@ -642,7 +642,7 @@ model SupportPage {
   isPublished     Boolean  @default(true) @map("is_published")
   sortOrder       Int      @default(0) @map("sort_order")
   createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@map("support_pages")
 }
@@ -661,7 +661,7 @@ model SupportTicket {
   orderId      Int?      @map("order_id")
   assignedTo   String?   @db.VarChar(255) @map("assigned_to")
   createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at")
   resolvedAt   DateTime? @map("resolved_at")
 
   order    Order?          @relation(fields: [orderId], references: [id])
@@ -695,7 +695,7 @@ model Announcement {
   isActive  Boolean  @default(true) @map("is_active")
   sortOrder Int      @default(0) @map("sort_order")
   createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@map("announcements")
 }
@@ -730,7 +730,7 @@ model CardChargeTransaction {
   balanceTransactionId  Int?      @map("balance_transaction_id")
   ipAddress             String?   @db.VarChar(50) @map("ip_address")
   createdAt             DateTime  @default(now()) @map("created_at")
-  updatedAt             DateTime  @updatedAt @map("updated_at")
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at")
 
   user        User         @relation(fields: [userId], references: [id])
   apiProvider ApiProvider? @relation(fields: [apiProviderId], references: [id])
@@ -787,7 +787,7 @@ model SmmService {
   isActive          Boolean  @default(true) @map("is_active")
   sortOrder         Int      @default(0) @map("sort_order")
   createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
 
   category    SmmCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   apiProvider ApiProvider? @relation(fields: [apiProviderId], references: [id])
@@ -824,7 +824,7 @@ model SmmOrder {
   repeatRemaining  Int       @default(0) @map("repeat_remaining")
   parentOrderId    Int?      @map("parent_order_id")
   createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at")
 
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   smmService  SmmService?  @relation(fields: [smmServiceId], references: [id])
@@ -844,7 +844,7 @@ model TelegramBot {
   receiveReports Boolean @default(false) @map("receive_reports")
   isActive      Boolean  @default(true) @map("is_active")
   createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@map("telegram_bots")
 }
@@ -1133,7 +1133,7 @@ model Bundle {
   isActive    Boolean  @default(true) @map("is_active")
   sortOrder   Int      @default(0) @map("sort_order")
   createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
 
   items BundleItem[]
 
