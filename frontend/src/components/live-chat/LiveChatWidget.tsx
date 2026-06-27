@@ -1,14 +1,8 @@
 import { useEffect } from 'react';
-// next
-import NextLink from 'next/link';
-// @mui
-import { Fab, Tooltip } from '@mui/material';
 // hooks
 import useSiteSettings from '../../hooks/useSiteSettings';
-// routes
-import { PATH_DASHBOARD } from '../../routes/paths';
 // components
-import Iconify from '../iconify';
+import LiveChatPanel from './LiveChatPanel';
 
 // ----------------------------------------------------------------------
 // Widget live chat hiển thị ở góc client khi admin bật.
@@ -97,20 +91,9 @@ export default function LiveChatWidget() {
     }
   }, [enabled, provider, settings]);
 
-  // Nguồn nội bộ: nút nổi điều hướng tới trang chat.
+  // Nguồn nội bộ: mở khung chat ngay tại chỗ (bong bóng), không chuyển trang.
   if (enabled && provider === 'builtin') {
-    return (
-      <Tooltip title="Hỗ trợ trực tuyến" placement="left">
-        <Fab
-          color="primary"
-          component={NextLink}
-          href={PATH_DASHBOARD.chat.root}
-          sx={{ position: 'fixed', bottom: 24, right: 24, zIndex: (theme) => theme.zIndex.speedDial }}
-        >
-          <Iconify icon="solar:chat-round-dots-bold" width={26} />
-        </Fab>
-      </Tooltip>
-    );
+    return <LiveChatPanel />;
   }
 
   // Các nhà cung cấp khác tự render widget của họ qua script.
