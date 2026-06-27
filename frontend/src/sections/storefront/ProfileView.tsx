@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 // next
 import NextLink from 'next/link';
+import { useRouter } from 'next/router';
 // @mui
 import {
   Avatar,
@@ -23,7 +24,7 @@ import axiosInstance from '../../utils/axios';
 import { fCurrency } from '../../utils/formatNumber';
 import { fDate, fDateTime } from '../../utils/formatTime';
 // routes
-import { PATH_DASHBOARD } from '../../routes/paths';
+import { PATH_DASHBOARD, PATH_AUTH } from '../../routes/paths';
 // components
 import Label from '../../components/label';
 import Iconify from '../../components/iconify';
@@ -69,11 +70,23 @@ type OrderLite = {
 // ----------------------------------------------------------------------
 
 export default function ProfileView() {
-  const { user, refreshUser } = useAuthContext();
+  const { user, refreshUser, logout } = useAuthContext();
   const { translate } = useLocales();
   const { enqueueSnackbar } = useSnackbar();
+  const { replace } = useRouter();
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  // Đăng xuất ngay trong trang tài khoản (nút avatar/logout đã bỏ khỏi header mobile).
+  const handleLogout = async () => {
+    try {
+      await logout();
+      replace(PATH_AUTH.login);
+    } catch (error) {
+      console.error(error);
+      enqueueSnackbar(`${translate('nav.logout_failed')}`, { variant: 'error' });
+    }
+  };
 
   const avatarUrl =
     (user as any)?.avatar_url || (user as any)?.avatarUrl || (user as any)?.photoURL || '';
@@ -257,6 +270,17 @@ export default function ProfileView() {
                 </Stack>
               </>
             )}
+
+            <Button
+              fullWidth
+              variant="soft"
+              color="error"
+              onClick={handleLogout}
+              startIcon={<Iconify icon="solar:logout-3-bold-duotone" />}
+              sx={{ mt: 2.5 }}
+            >
+              {`${translate('nav.logout')}`}
+            </Button>
           </Card>
 
           {/* Thẻ số dư */}
