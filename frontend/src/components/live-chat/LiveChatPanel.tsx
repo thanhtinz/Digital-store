@@ -186,7 +186,9 @@ export default function LiveChatPanel() {
         elevation={0}
         sx={{
           position: 'fixed',
-          zIndex: theme.zIndex.speedDial,
+          // Phải cao hơn header site (appBar) để khung full-màn mobile không bị
+          // header đè lên che mất thanh tiêu đề + nút đóng.
+          zIndex: theme.zIndex.modal,
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -209,6 +211,8 @@ export default function LiveChatPanel() {
           spacing={1.5}
           sx={{
             p: 2,
+            // Chừa tai thỏ/safe-area khi full-màn trên mobile (xs).
+            pt: { xs: 'calc(env(safe-area-inset-top) + 16px)', sm: 2 },
             color: 'common.white',
             background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
           }}
@@ -289,7 +293,11 @@ export default function LiveChatPanel() {
               direction="row"
               alignItems="center"
               spacing={1}
-              sx={{ p: 1.5, borderTop: `solid 1px ${theme.palette.divider}` }}
+              sx={{
+                p: 1.5,
+                pb: { xs: 'calc(env(safe-area-inset-bottom) + 12px)', sm: 1.5 },
+                borderTop: `solid 1px ${theme.palette.divider}`,
+              }}
             >
               <InputBase
                 fullWidth
