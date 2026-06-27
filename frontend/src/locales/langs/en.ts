@@ -81,6 +81,9 @@ const en = {
     save_changes: `Save changes`,
     change_password_success: `Password changed successfully!`,
     forgot_failed: `Failed to send request`,
+    login_failed: `Sign in failed. Please check your email and password.`,
+    register_failed: `Registration failed. Please try again.`,
+    maintenance_notice: `The system is under maintenance; some features are temporarily limited.`,
 
     sign_in: `Sign in`,
     no_account: `Don't have an account?`,

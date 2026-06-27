@@ -81,6 +81,9 @@ const cn = {
     save_changes: `保存更改`,
     change_password_success: `密码修改成功！`,
     forgot_failed: `发送请求失败`,
+    login_failed: `登录失败，请检查邮箱和密码。`,
+    register_failed: `注册失败，请重试。`,
+    maintenance_notice: `系统正在维护，部分功能暂时受限。`,
 
     sign_in: `登录`,
     no_account: `还没有账户？`,

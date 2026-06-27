@@ -73,7 +73,7 @@ export default function AuthRegisterForm() {
           error?.detail ||
           error?.message ||
           (typeof error === 'string' ? error : '') ||
-          'Đăng ký thất bại. Vui lòng thử lại.',
+          t('register_failed'),
       });
     }
   };

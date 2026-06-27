@@ -81,6 +81,9 @@ const vn = {
     save_changes: `Lưu thay đổi`,
     change_password_success: `Đổi mật khẩu thành công!`,
     forgot_failed: `Gửi yêu cầu thất bại`,
+    login_failed: `Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.`,
+    register_failed: `Đăng ký thất bại. Vui lòng thử lại.`,
+    maintenance_notice: `Hệ thống đang bảo trì, một số chức năng tạm thời bị giới hạn.`,
 
     sign_in: `Đăng nhập`,
     no_account: `Chưa có tài khoản?`,
