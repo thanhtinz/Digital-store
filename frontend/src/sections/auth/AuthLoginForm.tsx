@@ -62,7 +62,7 @@ export default function AuthLoginForm() {
       const res: any = await login(data.email, data.password);
       // Bảo trì: user thường vẫn đăng nhập được nhưng nhận cảnh báo.
       if (res?.maintenance?.on) {
-        enqueueSnackbar(res.maintenance.message || 'Hệ thống đang bảo trì, một số chức năng tạm thời bị giới hạn.', {
+        enqueueSnackbar(res.maintenance.message || t('maintenance_notice'), {
           variant: 'warning',
           autoHideDuration: 8000,
         });
@@ -78,7 +78,7 @@ export default function AuthLoginForm() {
           error?.detail ||
           error?.message ||
           (typeof error === 'string' ? error : '') ||
-          'Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.',
+          t('login_failed'),
       });
     }
   };

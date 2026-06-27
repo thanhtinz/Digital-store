@@ -81,6 +81,9 @@ const fr = {
     save_changes: `Enregistrer`,
     change_password_success: `Mot de passe modifié !`,
     forgot_failed: `Échec de l'envoi`,
+    login_failed: `Échec de la connexion. Vérifiez votre e-mail et votre mot de passe.`,
+    register_failed: `Échec de l'inscription. Veuillez réessayer.`,
+    maintenance_notice: `Le système est en maintenance ; certaines fonctions sont temporairement limitées.`,
 
     sign_in: `Connexion`,
     no_account: `Vous n'avez pas de compte ?`,
