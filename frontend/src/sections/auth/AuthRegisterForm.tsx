@@ -62,12 +62,18 @@ export default function AuthRegisterForm() {
       if (register) {
         await register(data.email, data.password, data.firstName, data.lastName);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       reset();
+      // axios interceptor reject bằng response.data ({ detail }) hoặc chuỗi -> KHÔNG có .message.
+      // Lấy đúng nội dung để Alert không bị trống (chỉ hiện icon).
       setError('afterSubmit', {
-        ...error,
-        message: error.message,
+        type: 'manual',
+        message:
+          error?.detail ||
+          error?.message ||
+          (typeof error === 'string' ? error : '') ||
+          'Đăng ký thất bại. Vui lòng thử lại.',
       });
     }
   };
