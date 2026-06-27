@@ -32,7 +32,8 @@ export default function ResetPasswordPage() {
   return (
     <>
       <Head>
-        <title> {hasToken ? t('reset_title') : t('forgot_title')} | Digital Store</title>
+        {/* Hậu tố "| Tên site" do SiteHead tự ghép từ cấu hình admin (site_name). */}
+        <title>{hasToken ? t('reset_title') : t('forgot_title')}</title>
       </Head>
 
       <PasswordIcon sx={{ mb: 5, height: 96 }} />

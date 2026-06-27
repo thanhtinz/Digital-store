@@ -15,7 +15,8 @@ export default function RegisterPage() {
   return (
     <>
       <Head>
-        <title> {`${translate('auth.create_account')}`} | Digital Store</title>
+        {/* Hậu tố "| Tên site" do SiteHead tự ghép từ cấu hình admin (site_name). */}
+        <title>{`${translate('auth.create_account')}`}</title>
       </Head>
 
       <GuestGuard>

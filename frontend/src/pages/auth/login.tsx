@@ -15,7 +15,8 @@ export default function LoginPage() {
   return (
     <>
       <Head>
-        <title> {`${translate('auth.sign_in')}`} | Digital Store</title>
+        {/* Hậu tố "| Tên site" do SiteHead tự ghép từ cấu hình admin (site_name). */}
+        <title>{`${translate('auth.sign_in')}`}</title>
       </Head>
 
       <GuestGuard>
