@@ -15,19 +15,35 @@ import Iconify from '../../components/iconify';
 
 // ----------------------------------------------------------------------
 // Thanh điều hướng dưới cùng (mobile) — kiểu app bán hàng (Shopee/Lazada):
-// Trang chủ · Cửa hàng · Giỏ hàng · Đơn hàng · Tài khoản.
+// Trang chủ · Danh mục (mở menu đầy đủ) · Giỏ hàng · Đơn hàng · Tài khoản.
+// Menu đầy đủ (danh mục, dịch vụ, hỗ trợ…) mở từ tab "Danh mục" -> drawer.
 // Chỉ hiển thị trên mobile/tablet, ẩn trên desktop (đã có sidebar).
 // ----------------------------------------------------------------------
 
-const ITEMS = [
-  { label: 'Trang chủ', value: '/', icon: 'solar:home-2-bold-duotone', auth: false },
-  { label: 'Cửa hàng', value: PATH_DASHBOARD.eCommerce.shop, icon: 'solar:shop-2-bold-duotone', auth: false },
-  { label: 'Giỏ hàng', value: PATH_DASHBOARD.eCommerce.checkout, icon: 'solar:cart-3-bold-duotone', auth: false, cart: true },
+const MENU = '__menu__';
+
+type NavItem = {
+  label: string;
+  value: string;
+  icon: string;
+  auth?: boolean;
+  cart?: boolean;
+};
+
+const ITEMS: NavItem[] = [
+  { label: 'Trang chủ', value: '/', icon: 'solar:home-2-bold-duotone' },
+  { label: 'Danh mục', value: MENU, icon: 'solar:widget-5-bold-duotone' },
+  { label: 'Giỏ hàng', value: PATH_DASHBOARD.eCommerce.checkout, icon: 'solar:cart-3-bold-duotone', cart: true },
   { label: 'Đơn hàng', value: PATH_DASHBOARD.orders.root, icon: 'solar:bag-check-bold-duotone', auth: true },
   { label: 'Tài khoản', value: PATH_DASHBOARD.myAccount, icon: 'solar:user-bold-duotone', auth: true },
 ];
 
-export default function MobileBottomNav() {
+type Props = {
+  // Mở menu đầy đủ (drawer NavVertical) khi bấm tab "Danh mục".
+  onOpenMenu?: VoidFunction;
+};
+
+export default function MobileBottomNav({ onOpenMenu }: Props) {
   const theme = useTheme();
   const { pathname, push } = useRouter();
   const { isAuthenticated } = useAuthContext();
@@ -36,11 +52,17 @@ export default function MobileBottomNav() {
   const cartCount = checkout?.cart?.length || 0;
 
   // Khớp tab đang mở: trang chủ khớp tuyệt đối, còn lại khớp theo tiền tố.
+  // Tab "Danh mục" là hành động (mở menu) nên không bao giờ ở trạng thái chọn.
   const current =
-    ITEMS.find((it) => (it.value === '/' ? pathname === '/' : pathname.startsWith(it.value)))?.value ||
-    false;
+    ITEMS.find((it) =>
+      it.value === MENU ? false : it.value === '/' ? pathname === '/' : pathname.startsWith(it.value)
+    )?.value || false;
 
   const handleChange = (_e: React.SyntheticEvent, value: string) => {
+    if (value === MENU) {
+      onOpenMenu?.();
+      return;
+    }
     const item = ITEMS.find((it) => it.value === value);
     // Mục cần đăng nhập (đơn hàng, tài khoản) -> chuyển sang trang đăng nhập nếu chưa.
     if (item?.auth && !isAuthenticated) {

@@ -115,7 +115,7 @@ export default function DashboardLayout({ children, disableGuard = false }: Prop
 
   const extras = (
     <>
-      <MobileBottomNav />
+      <MobileBottomNav onOpenMenu={handleOpen} />
       <LiveChatWidget />
       <ExternalLinkInterceptor />
       <ClickEffect />
