@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { requireUser } from '@/lib/auth';
 import { handler, jsonError } from '@/lib/api';
-import { createOrder, type CheckoutItemInput } from '@/lib/orders';
+import { createOrder, releaseOrderResources, type CheckoutItemInput } from '@/lib/orders';
 import { createStripeCheckoutSession } from '@/lib/stripe';
 import { createPaypalOrder } from '@/lib/paypal';
 import { debitWallet } from '@/lib/wallet';
@@ -52,7 +52,7 @@ export const POST = handler(async (req: NextRequest) => {
   if (paymentMethod === 'balance') {
     const ok = await debitWallet(user.id, Number(order.total), 'PURCHASE', `Order ${order.code}`);
     if (!ok) {
-      await cancelOrder(order.id, order.pointsUsed, user.id);
+      await cancelOrder(order.id);
       return jsonError(402, 'Insufficient wallet balance — top up or choose another method');
     }
     if (fromCart) await prisma.cartItem.deleteMany({ where: { userId: user.id } });
@@ -86,15 +86,14 @@ export const POST = handler(async (req: NextRequest) => {
     return NextResponse.json({ ok: true, orderCode: order.code, redirectUrl });
   } catch (e: any) {
     // Payment session failed — cancel the order so coupons/flash stock free up.
-    await cancelOrder(order.id, order.pointsUsed, user.id);
+    await cancelOrder(order.id);
     return jsonError(502, e.message || 'Could not start the payment. Please try again.');
   }
 });
 
-// Cancels a just-created order and returns any redeemed loyalty points.
-async function cancelOrder(orderId: number, pointsUsed: number, userId: number): Promise<void> {
+// Cancels a just-created order and releases everything it was holding
+// (coupon slot, flash-sale allocation, redeemed loyalty points).
+async function cancelOrder(orderId: number): Promise<void> {
   await prisma.order.update({ where: { id: orderId }, data: { status: 'CANCELLED' } }).catch(() => {});
-  if (pointsUsed > 0) {
-    await prisma.user.update({ where: { id: userId }, data: { loyaltyPoints: { increment: pointsUsed } } }).catch(() => {});
-  }
+  await releaseOrderResources(orderId).catch(() => {});
 }

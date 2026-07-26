@@ -138,7 +138,7 @@ export async function createOrder(params: {
         pointsUsed,
         paymentMethod,
         items: {
-          create: orderItems.map(({ flashSaleItemId, ...it }) => it),
+          create: orderItems,
         },
       },
       include: { items: true },
@@ -167,6 +167,64 @@ export async function createOrder(params: {
   });
 
   return order;
+}
+
+// Returns everything a cancelled order was holding: coupon usage,
+// flash-sale allocation and redeemed loyalty points. Safe to call once per
+// order — callers must only invoke it when transitioning PENDING → CANCELLED.
+export async function releaseOrderResources(orderId: number): Promise<void> {
+  const order = await prisma.order.findUnique({ where: { id: orderId }, include: { items: true } });
+  if (!order) return;
+
+  // Coupon: free the redemption slot and the per-user usage record.
+  if (order.couponCode) {
+    const coupon = await prisma.coupon.findUnique({ where: { code: order.couponCode } });
+    if (coupon) {
+      await prisma.coupon.updateMany({
+        where: { id: coupon.id, usedCount: { gt: 0 } },
+        data: { usedCount: { decrement: 1 } },
+      }).catch(() => {});
+      await prisma.couponRedemption.deleteMany({ where: { couponId: coupon.id, orderId } }).catch(() => {});
+    }
+  }
+
+  // Flash sale: return the reserved allocation.
+  for (const item of order.items) {
+    if (item.flashSaleItemId) {
+      await prisma.flashSaleItem.updateMany({
+        where: { id: item.flashSaleItemId, soldCount: { gte: item.quantity } },
+        data: { soldCount: { decrement: item.quantity } },
+      }).catch(() => {});
+    }
+  }
+
+  // Loyalty: give redeemed points back.
+  if (order.pointsUsed > 0) {
+    await prisma.user.update({
+      where: { id: order.userId },
+      data: { loyaltyPoints: { increment: order.pointsUsed } },
+    }).catch(() => {});
+  }
+}
+
+// Abandoned checkouts: cancel PENDING orders older than 24h so their
+// coupon slots, flash-sale stock and loyalty points free up again.
+export async function expireStaleOrders(): Promise<number> {
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const stale = await prisma.order.findMany({
+    where: { status: 'PENDING', createdAt: { lt: cutoff } },
+    select: { id: true },
+    take: 200,
+  });
+  let expired = 0;
+  for (const { id } of stale) {
+    const res = await prisma.order.updateMany({ where: { id, status: 'PENDING' }, data: { status: 'CANCELLED' } });
+    if (res.count === 1) {
+      await releaseOrderResources(id);
+      expired += 1;
+    }
+  }
+  return expired;
 }
 
 // Marks an order paid (idempotent) and runs auto-delivery from stock pools.
