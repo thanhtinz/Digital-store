@@ -4,11 +4,13 @@ import { hashPassword, issueToken, setSessionCookie } from '@/lib/auth';
 import { handler, jsonError } from '@/lib/api';
 import { isValidEmail } from '@/lib/utils';
 import { getSettings, getAppUrl } from '@/lib/settings';
+import { rateLimit } from '@/lib/rateLimit';
 import { sendMail, emailLayout, buttonHtml } from '@/lib/mail';
 
 export const dynamic = 'force-dynamic';
 
 export const POST = handler(async (req: NextRequest) => {
+  rateLimit('register', 5, 60 * 60); // 5 accounts / hour per IP
   const body = await req.json();
   const email = String(body.email || '').trim().toLowerCase();
   const name = String(body.name || '').trim().slice(0, 120);

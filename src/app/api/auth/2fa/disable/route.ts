@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticator } from 'otplib';
 import prisma from '@/lib/db';
-import { requireUser, verifyPassword } from '@/lib/auth';
+import { requireUser, verifyPassword, bumpSessionVersion, setSessionCookie } from '@/lib/auth';
 import { handler, jsonError } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
@@ -21,5 +21,7 @@ export const POST = handler(async (req: NextRequest) => {
     where: { id: user.id },
     data: { twoFactorEnabled: false, twoFactorSecret: null },
   });
+  const fresh = await bumpSessionVersion(user.id);
+  setSessionCookie(fresh);
   return NextResponse.json({ ok: true });
 });

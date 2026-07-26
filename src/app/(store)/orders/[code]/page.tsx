@@ -101,9 +101,10 @@ function OrderTimeline({ status }: { status: string }) {
   const steps = [
     { key: 'placed', label: 'Order placed', icon: 'cart' },
     { key: 'paid', label: 'Payment confirmed', icon: 'credit-card' },
+    { key: 'awaiting', label: 'Preparing delivery', icon: 'truck' },
     { key: 'delivered', label: 'Delivered', icon: 'check' },
   ];
-  const activeIndex = status === 'COMPLETED' ? 2 : status === 'PAID' ? 1 : 0;
+  const activeIndex = status === 'COMPLETED' ? 3 : status === 'PAID' ? 2 : 0;
   return (
     <div className="card mt-6 px-6 py-5">
       <div className="flex items-center">

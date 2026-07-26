@@ -4,11 +4,13 @@ import { authenticator } from 'otplib';
 import prisma from '@/lib/db';
 import { setSessionCookie, recordLogin } from '@/lib/auth';
 import { handler, jsonError } from '@/lib/api';
+import { rateLimit } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
 // Completes a 2FA login challenge issued by /api/auth/login.
 export const POST = handler(async (req: NextRequest) => {
+  rateLimit('2fa-verify', 10, 15 * 60);
   const body = await req.json();
   const challenge = String(body.challenge || '');
   const code = String(body.code || '').replace(/\s/g, '');

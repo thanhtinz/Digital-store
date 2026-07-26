@@ -10,7 +10,7 @@ type LoginRow = { id: number; ip: string | null; userAgent: string | null; metho
 export default function AccountPage() {
   const { user, refreshUser, toast } = useStore();
   const router = useRouter();
-  const [tab, setTab] = useState<'security' | 'logins'>('security');
+  const [tab, setTab] = useState<'profile' | 'security' | 'logins'>('profile');
 
   useEffect(() => {
     if (user === null) router.replace('/login?next=/account');
@@ -36,7 +36,7 @@ export default function AccountPage() {
       </div>
 
       <div className="mt-6 flex gap-2 border-b border-gray-200">
-        {([['security', 'Security'], ['logins', 'Login history']] as const).map(([key, label]) => (
+        {([['profile', 'Profile'], ['security', 'Security'], ['logins', 'Login history']] as const).map(([key, label]) => (
           <button
             key={key}
             onClick={() => setTab(key)}
@@ -47,14 +47,14 @@ export default function AccountPage() {
         ))}
       </div>
 
-      {tab === 'security' ? (
+      {tab === 'profile' && <ProfileEditor initialName={user.name} initialAvatar={user.avatarUrl || ''} onSaved={refreshUser} />}
+      {tab === 'security' && (
         <div className="mt-6 space-y-6">
           <ChangePassword hasPassword={user.hasPassword} />
           <TwoFactor enabled={user.twoFactorEnabled} hasPassword={user.hasPassword} onChanged={refreshUser} toast={toast} />
         </div>
-      ) : (
-        <LoginHistory />
       )}
+      {tab === 'logins' && <LoginHistory />}
     </div>
   );
 }
@@ -269,6 +269,50 @@ function LoginHistory() {
           )}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function ProfileEditor({ initialName, initialAvatar, onSaved }: {
+  initialName: string;
+  initialAvatar: string;
+  onSaved: () => Promise<void>;
+}) {
+  const { toast } = useStore();
+  const [name, setName] = useState(initialName);
+  const [avatarUrl, setAvatarUrl] = useState(initialAvatar);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await api('/api/account/profile', { method: 'POST', json: { name, avatarUrl } });
+      toast('Profile updated');
+      await onSaved();
+    } catch (err: any) {
+      toast(err.message, 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="card mt-6 p-5">
+      <h2 className="font-bold">Profile</h2>
+      <form onSubmit={submit} className="mt-4 grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className="label">Display name</label>
+          <input className="input" required maxLength={120} value={name} onChange={(e) => setName(e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Avatar URL</label>
+          <input className="input" placeholder="https://… (optional)" value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} />
+        </div>
+        <div className="sm:col-span-2">
+          <button className="btn-primary" disabled={busy}>{busy ? 'Saving…' : 'Save profile'}</button>
+        </div>
+      </form>
     </div>
   );
 }
