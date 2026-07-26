@@ -1,6 +1,8 @@
 import prisma from './db';
 import { sendMail, emailLayout, buttonHtml } from './mail';
 import { getSettings, getAppUrl } from './settings';
+import { notifyUser } from './notify';
+import { escapeHtml } from './telegram';
 
 // Email everyone waiting on a package once it is back in stock.
 // Called after an admin imports stock; failures only log — the import
@@ -30,9 +32,15 @@ export async function notifyRestock(packageId: number): Promise<number> {
   );
 
   let sent = 0;
+  const text = `<b>${escapeHtml(title)}</b>\n${escapeHtml(`${pkg.product.name} — ${pkg.name}`)} is available again.\n${url}`;
   for (const alert of pending) {
-    const ok = await sendMail(alert.email, title, html).catch(() => false);
-    if (ok !== false) sent += 1;
+    if (alert.userId) {
+      await notifyUser(alert.userId, { subject: title, html, text }).catch(() => {});
+      sent += 1;
+    } else {
+      const ok = await sendMail(alert.email, title, html).catch(() => false);
+      if (ok !== false) sent += 1;
+    }
     await prisma.stockAlert.update({ where: { id: alert.id }, data: { notifiedAt: new Date() } }).catch(() => {});
   }
   return sent;

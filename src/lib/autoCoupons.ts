@@ -1,4 +1,5 @@
 import prisma from './db';
+import { notifyUser } from './notify';
 import { getSettings, getAppUrl } from './settings';
 import { sendMail, emailLayout, buttonHtml } from './mail';
 
@@ -91,15 +92,15 @@ export async function runAutoCouponRules(): Promise<{ granted: number }> {
         ? '<p>You left some great picks in your cart — here is a little push to finish your order:</p>'
         : '<p>We miss you! Here is a personal discount to welcome you back:</p>';
 
-      sendMail(
-        user.email,
-        `A ${discountLabel} code just for you — ${s.site_name}`,
-        emailLayout(s.site_name, `Your personal code: ${code}`,
+      notifyUser(user.id, {
+        subject: `A ${discountLabel} code just for you — ${s.site_name}`,
+        html: emailLayout(s.site_name, `Your personal code: ${code}`,
           `${intro}
            <p style="font-size:22px;font-weight:bold;letter-spacing:2px;background:#eef2ff;color:#4338ca;padding:12px 16px;border-radius:8px;text-align:center">${code}</p>
            <p>${discountLabel} · valid for ${rule.expiresDays} day${rule.expiresDays === 1 ? '' : 's'} · one use.</p>
-           ${buttonHtml(`${appUrl}${rule.trigger === 'ABANDONED_CART' ? '/cart' : '/products'}`, rule.trigger === 'ABANDONED_CART' ? 'Finish my order' : 'Shop now')}`)
-      ).catch(() => {});
+           ${buttonHtml(`${appUrl}${rule.trigger === 'ABANDONED_CART' ? '/cart' : '/products'}`, rule.trigger === 'ABANDONED_CART' ? 'Finish my order' : 'Shop now')}`),
+        text: `<b>Your personal discount code</b>\n<code>${code}</code>\n${discountLabel} · valid ${rule.expiresDays} day(s) · one use.\n${appUrl}${rule.trigger === 'ABANDONED_CART' ? '/cart' : '/products'}`,
+      }).catch(() => {});
     }
   }
 

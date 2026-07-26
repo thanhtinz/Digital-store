@@ -6,6 +6,7 @@ import { getSetting, getSettings } from './settings';
 import { creditWallet } from './wallet';
 import { sendMail, emailLayout } from './mail';
 import { sendTelegram, escapeHtml } from './telegram';
+import { notifyUser } from './notify';
 
 export type CheckoutItemInput = {
   packageId: number;
@@ -435,7 +436,14 @@ export async function sendDeliveryEmail(orderId: number): Promise<void> {
      <p>You can always find your items on the order page:<br>
      <a href="${appUrl}/orders/${order.code}">${appUrl}/orders/${order.code}</a></p>`
   );
-  await sendMail(order.email, `Your ${siteName} order ${order.code} is ready`, html);
+  const textBlocks = delivered
+    .map((i) => `<b>${escapeHtml(`${i.productName} — ${i.packageName}`)}</b>\n<code>${escapeHtml(i.deliveryData || '')}</code>`)
+    .join('\n');
+  await notifyUser(order.userId, {
+    subject: `Your ${siteName} order ${order.code} is ready`,
+    html,
+    text: `<b>Order ${order.code} — item${delivered.length > 1 ? 's' : ''} delivered</b>\n${textBlocks}\n\n${appUrl}/orders/${order.code}`,
+  });
 }
 
 async function sendOrderEmail(orderId: number): Promise<void> {
@@ -454,5 +462,12 @@ async function sendOrderEmail(orderId: number): Promise<void> {
      <p>Track your order and view delivered items here:<br>
      <a href="${appUrl}/orders/${order.code}">${appUrl}/orders/${order.code}</a></p>`
   );
-  await sendMail(order.email, `Your ${siteName} order ${order.code}`, html);
+  const itemsText = order.items
+    .map((i) => `• ${escapeHtml(`${i.productName} — ${i.packageName}`)} ×${i.quantity}`)
+    .join('\n');
+  await notifyUser(order.userId, {
+    subject: `Your ${siteName} order ${order.code}`,
+    html,
+    text: `<b>Payment received — order ${order.code}</b>\n${itemsText}\nTotal: $${Number(order.total).toFixed(2)}\n\n${appUrl}/orders/${order.code}`,
+  });
 }
