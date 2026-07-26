@@ -30,7 +30,7 @@ export default async function WishlistPage() {
           <Link href="/products" className="btn-primary mt-5 inline-flex">Browse products</Link>
         </div>
       ) : (
-        <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:[grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
           {products.map((p) => <ProductCardView key={p.id} product={p} />)}
         </div>
       )}

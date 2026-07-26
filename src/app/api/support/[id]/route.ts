@@ -6,6 +6,16 @@ import { rateLimit } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
+// Only allow attachment URLs that point at our own media store.
+function cleanAttachments(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((u) => String(u))
+    .filter((u) => /^\/api\/media\/\d+$/.test(u))
+    .slice(0, 3);
+}
+
+
 export const GET = handler(async (_req: NextRequest, { params }: { params: { id: string } }) => {
   const user = await requireUser();
   const ticket = await prisma.supportTicket.findFirst({
@@ -22,11 +32,13 @@ export const POST = handler(async (req: NextRequest, { params }: { params: { id:
   rateLimit('ticket-reply', 20, 60 * 60, String(user.id));
   const ticket = await prisma.supportTicket.findFirst({ where: { id: Number(params.id), userId: user.id } });
   if (!ticket) return jsonError(404, 'Ticket not found');
-  const content = String((await req.json()).message || '').trim().slice(0, 5000);
-  if (!content) return jsonError(400, 'Message cannot be empty');
+  const b = await req.json();
+  const content = String(b.message || '').trim().slice(0, 5000);
+  const attachments = cleanAttachments(b.attachments);
+  if (!content && !attachments.length) return jsonError(400, 'Message cannot be empty');
 
   await prisma.$transaction([
-    prisma.ticketMessage.create({ data: { ticketId: ticket.id, content, isStaff: false } }),
+    prisma.ticketMessage.create({ data: { ticketId: ticket.id, content, isStaff: false, attachments } }),
     prisma.supportTicket.update({ where: { id: ticket.id }, data: { status: 'OPEN' } }),
   ]);
   const fresh = await prisma.supportTicket.findUnique({

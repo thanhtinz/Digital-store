@@ -43,18 +43,6 @@ export default async function HomePage() {
 
   const [featured, latest] = await Promise.all([toProductCards(featuredRaw), toProductCards(latestRaw)]);
 
-  // Genuine live numbers for the stats strip.
-  const [productCount, deliveredCount, reviewAgg] = await Promise.all([
-    prisma.product.count({ where: { isActive: true } }),
-    prisma.order.count({ where: { status: 'COMPLETED' } }),
-    prisma.review.aggregate({ where: { isApproved: true }, _count: true, _avg: { rating: true } }),
-  ]);
-  const stats: Array<[string, string, string]> = [
-    ['bag', String(productCount), 'Digital products'],
-    ['check', deliveredCount.toLocaleString('en-US'), 'Orders delivered'],
-    ['star', reviewAgg._count ? `${(reviewAgg._avg.rating || 0).toFixed(1)}/5` : 'New', 'Average rating'],
-    ['bolt', '< 1 min', 'Typical delivery time'],
-  ];
 
   return (
     <div className="container space-y-12 py-6">
@@ -90,21 +78,6 @@ export default async function HomePage() {
           </div>
         </section>
       )}
-
-      {/* Live store stats */}
-      <section className="grid grid-cols-2 gap-3 rounded-2xl bg-gray-900 p-5 text-white sm:p-6 lg:grid-cols-4">
-        {stats.map(([icon, value, label]) => (
-          <div key={label} className="flex items-center gap-3">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white/10">
-              <Icon name={icon} size={19} />
-            </span>
-            <span>
-              <span className="block text-xl font-extrabold leading-tight">{value}</span>
-              <span className="block text-xs text-gray-400">{label}</span>
-            </span>
-          </div>
-        ))}
-      </section>
 
       {/* Flash sale */}
       {flashSale && flashSale.items.length > 0 && (
@@ -167,7 +140,7 @@ export default async function HomePage() {
             <h2 className="text-xl font-bold">Featured products</h2>
             <Link href="/products" className="text-sm font-semibold text-brand-600 hover:underline">View all →</Link>
           </div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:[grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
             {featured.map((p) => <ProductCardView key={p.id} product={p} />)}
           </div>
         </section>
@@ -180,7 +153,7 @@ export default async function HomePage() {
           <Link href="/products?sort=newest" className="text-sm font-semibold text-brand-600 hover:underline">View all →</Link>
         </div>
         {latest.length > 0 ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:[grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
             {latest.map((p) => <ProductCardView key={p.id} product={p} />)}
           </div>
         ) : (

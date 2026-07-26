@@ -7,6 +7,16 @@ import { sendMail, emailLayout, buttonHtml } from '@/lib/mail';
 
 export const dynamic = 'force-dynamic';
 
+// Only allow attachment URLs that point at our own media store.
+function cleanAttachments(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((u) => String(u))
+    .filter((u) => /^\/api\/media\/\d+$/.test(u))
+    .slice(0, 3);
+}
+
+
 // PATCH { action: "reply", message } | { action: "close" } | { action: "reopen" }
 export const PATCH = handler(async (req: NextRequest, { params }: { params: { id: string } }) => {
   await requireAdmin();
@@ -20,9 +30,10 @@ export const PATCH = handler(async (req: NextRequest, { params }: { params: { id
 
   if (b.action === 'reply') {
     const content = String(b.message || '').trim().slice(0, 5000);
-    if (!content) return jsonError(400, 'Reply cannot be empty');
+    const attachments = cleanAttachments(b.attachments);
+    if (!content && !attachments.length) return jsonError(400, 'Reply cannot be empty');
     await prisma.$transaction([
-      prisma.ticketMessage.create({ data: { ticketId: id, content, isStaff: true } }),
+      prisma.ticketMessage.create({ data: { ticketId: id, content, isStaff: true, attachments } }),
       prisma.supportTicket.update({ where: { id }, data: { status: 'ANSWERED' } }),
     ]);
     // Automatic email so the customer knows support replied.
