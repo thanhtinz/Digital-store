@@ -113,6 +113,7 @@ function TelegramLink({ toast }: { toast: (m: string, k?: 'success' | 'error') =
   const [state, setState] = useState<{ available: boolean; linked: boolean; channel: string } | null>(null);
   const [link, setLink] = useState('');
   const [busy, setBusy] = useState(false);
+  const [botUsername, setBotUsername] = useState('');
 
   const load = () => api<{ available: boolean; linked: boolean; channel: string }>('/api/telegram/link').then(setState);
   useEffect(() => { load().catch(() => {}); }, []);
@@ -130,8 +131,9 @@ function TelegramLink({ toast }: { toast: (m: string, k?: 'success' | 'error') =
   const startLink = async () => {
     setBusy(true);
     try {
-      const d = await api<{ url: string }>('/api/telegram/link', { method: 'POST' });
+      const d = await api<{ url: string; botUsername: string }>('/api/telegram/link', { method: 'POST' });
       setLink(d.url);
+      setBotUsername(d.botUsername);
       window.open(d.url, '_blank');
     } catch (e: any) {
       toast(e.message, 'error');
@@ -172,15 +174,48 @@ function TelegramLink({ toast }: { toast: (m: string, k?: 'success' | 'error') =
 
       {!state.linked ? (
         <div className="mt-4">
-          <button className="btn-primary" onClick={startLink} disabled={busy}>
+          {/* Step-by-step guide */}
+          <div className="rounded-xl bg-gray-50 p-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-gray-500">How to link — 3 steps</p>
+            <ol className="mt-2 space-y-2">
+              {[
+                <>Press <b>Connect Telegram</b> below — a Telegram chat with our bot opens automatically.</>,
+                <>In that chat, tap the <b>Start</b> button (or send the pre-filled /start message).</>,
+                <>Done — this card switches to <b>Connected</b> by itself and you can pick where notifications go.</>,
+              ].map((step, i) => (
+                <li key={i} className="flex items-start gap-2.5 text-sm text-gray-600">
+                  <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand-600 text-[11px] font-bold text-white">{i + 1}</span>
+                  <span>{step}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="mt-2.5 text-xs text-gray-400">
+              Works on phone and desktop — you just need the Telegram app or web.telegram.org.
+            </p>
+          </div>
+
+          <button className="btn-primary mt-4" onClick={startLink} disabled={busy}>
             <Icon name="telegram" size={16} /> {busy ? 'Preparing…' : 'Connect Telegram'}
           </button>
           {link && (
-            <p className="mt-3 rounded-lg bg-sky-50 p-3 text-xs text-sky-800">
-              Tap <b>Start</b> in the Telegram chat that just opened. Didn&apos;t open?{' '}
-              <a href={link} target="_blank" rel="noreferrer" className="font-semibold underline">Use this link</a>.
-              This card updates automatically once connected.
-            </p>
+            <div className="mt-3 rounded-lg bg-sky-50 p-3 text-xs text-sky-800">
+              <p>
+                Waiting for you to tap <b>Start</b> in the chat with{' '}
+                {botUsername ? <b>@{botUsername}</b> : 'our bot'}…
+              </p>
+              <p className="mt-1">
+                Chat didn&apos;t open?{' '}
+                <a href={link} target="_blank" rel="noreferrer" className="font-semibold underline">Open it manually</a>
+                {' '}— or copy this link to your phone:
+              </p>
+              <input
+                className="input mt-1.5 bg-white py-1.5 font-mono text-[11px]"
+                readOnly
+                value={link}
+                onFocus={(e) => e.target.select()}
+              />
+              <p className="mt-1.5 text-sky-600">This card updates automatically once connected.</p>
+            </div>
           )}
         </div>
       ) : (
