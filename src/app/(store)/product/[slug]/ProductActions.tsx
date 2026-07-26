@@ -86,7 +86,7 @@ export default function ProductActions({
           onClick={copyAffiliateLink}
           disabled={affBusy}
           title={`Copy your affiliate link — earn ${affiliate.rate}% commission on every sale`}
-          className="flex h-10 items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 px-3 text-xs font-bold text-green-700 transition hover:bg-green-100 disabled:opacity-50"
+          className="flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-green-200 bg-green-50 px-3 text-xs font-bold text-green-700 transition hover:bg-green-100 disabled:opacity-50"
         >
           <Icon name="gift" size={15} /> Earn {affiliate.rate}%
         </button>
