@@ -27,6 +27,7 @@ type PkgForm = {
   price: string;
   comparePrice: string;
   autoDeliver: boolean;
+  inStock: boolean;
   isActive: boolean;
   customFields: CustomFieldDef[];
   stockCount?: number;
@@ -55,10 +56,11 @@ export default function ProductEditor({ product, categories, onClose }: {
       price: String(p.price),
       comparePrice: p.comparePrice ? String(p.comparePrice) : '',
       autoDeliver: p.autoDeliver,
+      inStock: p.inStock !== false,
       isActive: p.isActive,
       customFields: Array.isArray(p.customFields) ? p.customFields : [],
       stockCount: p._count?.stockItems ?? 0,
-    })) || [{ name: 'Standard', description: '', price: '', comparePrice: '', autoDeliver: false, isActive: true, customFields: [] }]
+    })) || [{ name: 'Standard', description: '', price: '', comparePrice: '', autoDeliver: false, inStock: true, isActive: true, customFields: [] }]
   );
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -99,6 +101,7 @@ export default function ProductEditor({ product, categories, onClose }: {
           price: Number(p.price) || 0,
           comparePrice: p.comparePrice ? Number(p.comparePrice) : null,
           autoDeliver: p.autoDeliver,
+          inStock: p.inStock,
           isActive: p.isActive,
           customFields: p.customFields,
         })),
@@ -243,7 +246,7 @@ export default function ProductEditor({ product, categories, onClose }: {
           </div>
           <button
             className="btn-secondary px-3 py-1.5 text-xs"
-            onClick={() => setPackages((p) => [...p, { name: `Package ${p.length + 1}`, description: '', price: '', comparePrice: '', autoDeliver: false, isActive: true, customFields: [] }])}
+            onClick={() => setPackages((p) => [...p, { name: `Package ${p.length + 1}`, description: '', price: '', comparePrice: '', autoDeliver: false, inStock: true, isActive: true, customFields: [] }])}
           >
             + Add package
           </button>
@@ -278,6 +281,24 @@ export default function ProductEditor({ product, categories, onClose }: {
                   </div>
                   <label className="flex items-center gap-1.5 pb-2.5"><input type="checkbox" checked={pkg.isActive} onChange={(e) => updatePkg(i, { isActive: e.target.checked })} /> Active</label>
                 </div>
+                {!pkg.autoDeliver && (
+                  <div className="sm:col-span-4">
+                    <label className="label">Availability</label>
+                    <select
+                      className={`input ${!pkg.inStock ? 'border-red-300 bg-red-50 text-red-700' : ''}`}
+                      value={pkg.inStock ? 'in' : 'out'}
+                      onChange={(e) => updatePkg(i, { inStock: e.target.value === 'in' })}
+                    >
+                      <option value="in">In stock — customers can order</option>
+                      <option value="out">Out of stock — hide buy button, collect restock alerts</option>
+                    </select>
+                    {!pkg.inStock && (
+                      <p className="mt-1 text-xs text-gray-500">
+                        Customers see an out-of-stock notice with a &quot;Notify me&quot; button. Switching back to in stock emails everyone on the waitlist automatically.
+                      </p>
+                    )}
+                  </div>
+                )}
                 <div className="sm:col-span-4">
                   <label className="label">Short description</label>
                   <input className="input" value={pkg.description} onChange={(e) => updatePkg(i, { description: e.target.value })} />

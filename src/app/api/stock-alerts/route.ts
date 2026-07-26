@@ -17,11 +17,16 @@ export const POST = handler(async (req: NextRequest) => {
   if (!packageId) return jsonError(400, 'packageId is required');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return jsonError(400, 'A valid email address is required');
 
-  const pkg = await prisma.package.findUnique({ where: { id: packageId }, select: { autoDeliver: true, isActive: true } });
-  if (!pkg || !pkg.isActive || !pkg.autoDeliver) return jsonError(404, 'Package not found');
+  const pkg = await prisma.package.findUnique({
+    where: { id: packageId },
+    select: { autoDeliver: true, inStock: true, isActive: true },
+  });
+  if (!pkg || !pkg.isActive) return jsonError(404, 'Package not found');
 
-  const available = await prisma.stockItem.count({ where: { packageId, isSold: false } });
-  if (available > 0) return jsonError(400, 'This package is already in stock');
+  const available = pkg.autoDeliver
+    ? (await prisma.stockItem.count({ where: { packageId, isSold: false } })) > 0
+    : pkg.inStock;
+  if (available) return jsonError(400, 'This package is already in stock');
 
   // Re-subscribing after a restock notification re-arms the alert.
   await prisma.stockAlert.upsert({

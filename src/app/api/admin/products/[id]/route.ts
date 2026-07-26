@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/auth';
 import { handler, jsonError } from '@/lib/api';
 import { slugify, parseCustomFields } from '@/lib/utils';
 import { audit } from '@/lib/audit';
+import { notifyRestock } from '@/lib/stockAlerts';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +30,7 @@ export const PATCH = handler(async (req: NextRequest, { params }: { params: { id
   const b = await req.json();
   const existing = await prisma.product.findUnique({ where: { id }, include: { packages: true } });
   if (!existing) return jsonError(404, 'Product not found');
+  const restocked: number[] = [];
 
   await prisma.$transaction(async (tx) => {
     await tx.product.update({
@@ -54,6 +56,7 @@ export const PATCH = handler(async (req: NextRequest, { params }: { params: { id
 
     if (Array.isArray(b.packages)) {
       const keptIds: number[] = [];
+      restocked.length = 0;
       for (const [i, p] of b.packages.slice(0, 30).entries()) {
         const data = {
           name: String(p.name || `Package ${i + 1}`).slice(0, 160),
@@ -62,11 +65,15 @@ export const PATCH = handler(async (req: NextRequest, { params }: { params: { id
           comparePrice: p.comparePrice ? Number(p.comparePrice) : null,
           customFields: parseCustomFields(p.customFields),
           autoDeliver: !!p.autoDeliver,
+          inStock: p.inStock !== false,
           sortOrder: i,
           isActive: p.isActive !== false,
         };
         if (p.id && existing.packages.some((ep) => ep.id === Number(p.id))) {
+          const before = existing.packages.find((ep) => ep.id === Number(p.id))!;
           await tx.package.update({ where: { id: Number(p.id) }, data });
+          // A manual package switched back to "in stock" → alert the waitlist.
+          if (!data.autoDeliver && !before.inStock && data.inStock) restocked.push(Number(p.id));
           keptIds.push(Number(p.id));
         } else {
           const created = await tx.package.create({ data: { ...data, productId: id } });
@@ -86,6 +93,9 @@ export const PATCH = handler(async (req: NextRequest, { params }: { params: { id
     include: { images: { orderBy: { sortOrder: 'asc' } }, packages: { orderBy: { sortOrder: 'asc' } } },
   });
   audit(admin, 'product.update', existing.name);
+  for (const pkgId of restocked) {
+    notifyRestock(pkgId).catch((e) => console.error('[stock-alerts] notify failed:', e));
+  }
   return NextResponse.json({ ok: true, product });
 });
 
