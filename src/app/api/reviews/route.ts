@@ -22,7 +22,7 @@ export const POST = handler(async (req: NextRequest) => {
   rateLimit('review-post', 10, 60 * 60, String(user.id));
   const body = await req.json();
   const productId = Number(body.productId);
-  const images = cleanImages(body.images);
+  const images = body.images !== undefined ? cleanImages(body.images) : undefined;
   const rating = Math.min(5, Math.max(1, Math.floor(Number(body.rating) || 0)));
   const content = String(body.content || '').trim().slice(0, 2000);
   if (!productId || !rating) return jsonError(400, 'Rating is required');
@@ -37,8 +37,8 @@ export const POST = handler(async (req: NextRequest) => {
 
   await prisma.review.upsert({
     where: { productId_userId: { productId, userId: user.id } },
-    update: { rating, content: content || null, images },
-    create: { productId, userId: user.id, rating, content: content || null, images },
+    update: { rating, content: content || null, ...(images !== undefined ? { images } : {}) },
+    create: { productId, userId: user.id, rating, content: content || null, images: images ?? [] },
   });
 
   // Refresh aggregate rating.

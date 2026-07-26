@@ -357,6 +357,8 @@ model OrderItem {
   unitPrice        Decimal   @map("unit_price") @db.Decimal(10, 2)
   lineTotal        Decimal   @map("line_total") @db.Decimal(10, 2)
   customFieldsData Json?     @map("custom_fields_data")
+  // Flash-sale allocation this line consumed — released if the order is cancelled.
+  flashSaleItemId  Int?      @map("flash_sale_item_id")
   deliveryData     String?   @map("delivery_data") // keys/credentials/notes delivered to buyer
   deliveredAt      DateTime? @map("delivered_at")
 

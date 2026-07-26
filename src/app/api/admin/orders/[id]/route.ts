@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 import { handler, jsonError } from '@/lib/api';
-import { markOrderPaid, sendDeliveryEmail } from '@/lib/orders';
+import { markOrderPaid, sendDeliveryEmail, releaseOrderResources } from '@/lib/orders';
+import { creditWallet } from '@/lib/wallet';
 import { audit } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
@@ -37,11 +38,20 @@ export const PATCH = handler(async (req: NextRequest, { params }: { params: { id
   } else if (b.action === 'cancel') {
     if (order.status !== 'PENDING') return jsonError(400, 'Only pending orders can be cancelled');
     await prisma.order.update({ where: { id }, data: { status: 'CANCELLED' } });
+    // Free the coupon slot, flash-sale allocation and redeemed points.
+    await releaseOrderResources(id);
   } else if (b.action === 'refund') {
     if (order.status !== 'PAID' && order.status !== 'COMPLETED') return jsonError(400, 'Only paid orders can be refunded');
-    // Marks the order refunded for bookkeeping — issue the actual refund in
-    // your Stripe/PayPal dashboard.
     await prisma.order.update({ where: { id }, data: { status: 'REFUNDED' } });
+    // Wallet-paid orders are refunded straight back to the buyer's balance.
+    // Stripe/PayPal money must still be refunded in the gateway dashboard.
+    if (order.paymentMethod === 'balance') {
+      await creditWallet(order.userId, Number(order.total), 'REFUND', `Refund — order ${order.code}`);
+    }
+    // Give redeemed loyalty points back too.
+    if (order.pointsUsed > 0) {
+      await prisma.user.update({ where: { id: order.userId }, data: { loyaltyPoints: { increment: order.pointsUsed } } });
+    }
   } else {
     return jsonError(400, 'Unknown action');
   }
