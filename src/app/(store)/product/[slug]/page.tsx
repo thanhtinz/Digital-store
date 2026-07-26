@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import prisma from '@/lib/db';
 import { getActiveFlashPrices, effectivePrice, toProductCards, productCardInclude } from '@/lib/catalog';
-import { getAppUrl } from '@/lib/settings';
+import { getAppUrl, getSettings } from '@/lib/settings';
 import { parseCustomFields } from '@/lib/utils';
 import ProductCardView, { Stars } from '@/components/ProductCardView';
 import Gallery from './Gallery';
@@ -76,6 +76,12 @@ export default async function ProductPage({ params }: { params: { slug: string }
     };
   });
 
+  const aff = await getSettings(['affiliate_enabled', 'affiliate_rate']);
+  const affiliate = {
+    enabled: aff.affiliate_enabled === 'true',
+    rate: product.affiliateRate !== null ? Number(product.affiliateRate) : Number(aff.affiliate_rate) || 0,
+  };
+
   const relatedRaw = await prisma.product.findMany({
     where: { isActive: true, id: { not: product.id }, categoryId: product.categoryId ?? undefined },
     orderBy: { soldCount: 'desc' },
@@ -132,7 +138,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
         <div className="lg:sticky lg:top-20 lg:self-start">
           <div className="flex items-start justify-between gap-3">
             <h1 className="text-2xl font-bold sm:text-3xl">{product.name}</h1>
-            <ProductActions productId={product.id} />
+            <ProductActions productId={product.id} slug={product.slug} affiliate={affiliate} />
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-500">
             <span className="flex items-center gap-1.5">
