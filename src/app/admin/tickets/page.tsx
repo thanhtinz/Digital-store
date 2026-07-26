@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useStore } from '@/components/Providers';
 import { api } from '@/lib/client';
 import Icon from '@/components/icons';
+import { AttachmentPicker, MessageBubble } from '@/components/TicketParts';
 
 const STATUS_BADGE: Record<string, string> = {
   OPEN: 'bg-amber-100 text-amber-700',
@@ -18,6 +19,7 @@ export default function AdminTicketsPage() {
   const [status, setStatus] = useState('');
   const [active, setActive] = useState<any | null>(null);
   const [reply, setReply] = useState('');
+  const [attachments, setAttachments] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
@@ -34,6 +36,7 @@ export default function AdminTicketsPage() {
       const d = await api<{ ticket: any }>(`/api/admin/tickets/${id}`, { method: 'PATCH', json: body });
       setActive(d.ticket);
       setReply('');
+      setAttachments([]);
       await load();
       if (body.action === 'reply') toast('Reply sent — the customer has been emailed');
     } catch (e: any) {
@@ -67,30 +70,25 @@ export default function AdminTicketsPage() {
           </div>
         </div>
 
-        <div className="mt-5 space-y-3">
-          {active.messages.map((m: any) => (
-            <div key={m.id} className={`flex ${m.isStaff ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                m.isStaff ? 'rounded-tr-sm bg-brand-600 text-white' : 'rounded-tl-sm border border-gray-200 bg-white shadow-sm'
-              }`}>
-                <p className={`mb-1 text-[11px] font-bold uppercase tracking-wide ${m.isStaff ? 'text-white/70' : 'text-gray-400'}`}>
-                  {m.isStaff ? 'You (support)' : active.user.name}
-                </p>
-                <p className="whitespace-pre-wrap">{m.content}</p>
-                <p className={`mt-1.5 text-[10px] ${m.isStaff ? 'text-white/60' : 'text-gray-400'}`}>
-                  {new Date(m.createdAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
-                </p>
-              </div>
+        <div className="card mt-4 overflow-hidden">
+          <div className="max-h-[520px] space-y-3 overflow-y-auto bg-gray-50 px-4 py-5 sm:px-5">
+            {active.messages.map((m: any) => (
+              <MessageBubble
+                key={m.id}
+                message={m}
+                mine={m.isStaff}
+                authorLabel={m.isStaff ? 'You (support)' : active.user.name}
+              />
+            ))}
+          </div>
+          <div className="border-t border-gray-100 p-4">
+            <textarea className="input" rows={3} placeholder="Write a reply — the customer is notified by email…" value={reply} onChange={(e) => setReply(e.target.value)} />
+            <div className="mt-2.5 flex flex-wrap items-center justify-between gap-3">
+              <AttachmentPicker attachments={attachments} onChange={setAttachments} toast={toast} />
+              <button className="btn-primary" disabled={busy || (!reply.trim() && !attachments.length)} onClick={() => action(active.id, { action: 'reply', message: reply, attachments })}>
+                <Icon name="send" size={15} /> {busy ? 'Sending…' : 'Send reply'}
+              </button>
             </div>
-          ))}
-        </div>
-
-        <div className="card mt-5 p-4">
-          <textarea className="input" rows={3} placeholder="Write a reply — the customer is notified by email…" value={reply} onChange={(e) => setReply(e.target.value)} />
-          <div className="mt-2 flex justify-end">
-            <button className="btn-primary" disabled={busy || !reply.trim()} onClick={() => action(active.id, { action: 'reply', message: reply })}>
-              <Icon name="send" size={15} /> {busy ? 'Sending…' : 'Send reply'}
-            </button>
           </div>
         </div>
       </div>

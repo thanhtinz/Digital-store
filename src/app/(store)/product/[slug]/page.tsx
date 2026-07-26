@@ -125,7 +125,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
       {related.length > 0 && (
         <section className="mt-12">
           <h2 className="mb-4 text-xl font-bold">Related products</h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:[grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
             {related.map((p) => <ProductCardView key={p.id} product={p} />)}
           </div>
         </section>

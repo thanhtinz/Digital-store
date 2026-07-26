@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useStore } from '@/components/Providers';
 import { api } from '@/lib/client';
 import Icon from '@/components/icons';
+import { AttachmentPicker, MessageBubble } from '@/components/TicketParts';
 
 export default function TicketThreadPage() {
   const { user, toast } = useStore();
@@ -13,6 +14,7 @@ export default function TicketThreadPage() {
   const params = useParams<{ id: string }>();
   const [ticket, setTicket] = useState<any | null>(null);
   const [reply, setReply] = useState('');
+  const [attachments, setAttachments] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
 
   const load = () => api<{ ticket: any }>(`/api/support/${params.id}`).then((d) => setTicket(d.ticket));
@@ -27,9 +29,13 @@ export default function TicketThreadPage() {
     e.preventDefault();
     setBusy(true);
     try {
-      const d = await api<{ ticket: any }>(`/api/support/${params.id}`, { method: 'POST', json: { message: reply } });
+      const d = await api<{ ticket: any }>(`/api/support/${params.id}`, {
+        method: 'POST',
+        json: { message: reply, attachments },
+      });
       setTicket(d.ticket);
       setReply('');
+      setAttachments([]);
     } catch (e: any) {
       toast(e.message, 'error');
     } finally {
@@ -44,53 +50,57 @@ export default function TicketThreadPage() {
       <Link href="/support" className="flex items-center gap-1 text-sm text-gray-500 hover:text-brand-600">
         <Icon name="chevron-left" size={15} /> All tickets
       </Link>
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-bold">#{ticket.id} · {ticket.subject}</h1>
-        <span className={`badge ${ticket.status === 'ANSWERED' ? 'bg-green-100 text-green-700' : ticket.status === 'CLOSED' ? 'bg-gray-200 text-gray-500' : 'bg-amber-100 text-amber-700'}`}>
-          {ticket.status === 'ANSWERED' ? 'Support replied' : ticket.status === 'CLOSED' ? 'Closed' : 'Waiting for support'}
-        </span>
-      </div>
-      {ticket.orderCode && (
-        <p className="mt-1 text-sm text-gray-500">
-          Related order: <Link href={`/orders/${ticket.orderCode}`} className="font-mono font-semibold text-brand-600 hover:underline">#{ticket.orderCode}</Link>
-        </p>
-      )}
 
-      {/* Thread */}
-      <div className="mt-5 space-y-3">
-        {ticket.messages.map((m: any) => (
-          <div key={m.id} className={`flex ${m.isStaff ? 'justify-start' : 'justify-end'}`}>
-            <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-              m.isStaff ? 'rounded-tl-sm bg-white shadow-sm border border-gray-200' : 'rounded-tr-sm bg-brand-600 text-white'
-            }`}>
-              <p className={`mb-1 text-[11px] font-bold uppercase tracking-wide ${m.isStaff ? 'text-brand-600' : 'text-white/70'}`}>
-                {m.isStaff ? 'Support team' : 'You'}
+      {/* Framed conversation card */}
+      <div className="card mt-3 overflow-hidden">
+        {/* Header */}
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 bg-gray-50/60 px-5 py-4">
+          <div>
+            <h1 className="text-lg font-bold">#{ticket.id} · {ticket.subject}</h1>
+            {ticket.orderCode && (
+              <p className="mt-0.5 text-sm text-gray-500">
+                Related order:{' '}
+                <Link href={`/orders/${ticket.orderCode}`} className="font-mono font-semibold text-brand-600 hover:underline">
+                  #{ticket.orderCode}
+                </Link>
               </p>
-              <p className="whitespace-pre-wrap">{m.content}</p>
-              <p className={`mt-1.5 text-[10px] ${m.isStaff ? 'text-gray-400' : 'text-white/60'}`}>
-                {new Date(m.createdAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
-              </p>
-            </div>
+            )}
           </div>
-        ))}
-      </div>
-
-      {/* Reply box */}
-      <form onSubmit={send} className="card mt-5 p-4">
-        <textarea
-          className="input"
-          rows={3}
-          maxLength={5000}
-          placeholder={ticket.status === 'CLOSED' ? 'This ticket is closed — replying will reopen it.' : 'Write a reply…'}
-          value={reply}
-          onChange={(e) => setReply(e.target.value)}
-        />
-        <div className="mt-2 flex justify-end">
-          <button className="btn-primary" disabled={busy || !reply.trim()}>
-            <Icon name="send" size={15} /> {busy ? 'Sending…' : 'Send reply'}
-          </button>
+          <span className={`badge ${ticket.status === 'ANSWERED' ? 'bg-green-100 text-green-700' : ticket.status === 'CLOSED' ? 'bg-gray-200 text-gray-500' : 'bg-amber-100 text-amber-700'}`}>
+            {ticket.status === 'ANSWERED' ? 'Support replied' : ticket.status === 'CLOSED' ? 'Closed' : 'Waiting for support'}
+          </span>
         </div>
-      </form>
+
+        {/* Messages */}
+        <div className="max-h-[520px] space-y-3 overflow-y-auto bg-gray-50 px-4 py-5 sm:px-5">
+          {ticket.messages.map((m: any) => (
+            <MessageBubble
+              key={m.id}
+              message={m}
+              mine={!m.isStaff}
+              authorLabel={m.isStaff ? 'Support team' : 'You'}
+            />
+          ))}
+        </div>
+
+        {/* Reply box */}
+        <form onSubmit={send} className="border-t border-gray-100 p-4">
+          <textarea
+            className="input"
+            rows={3}
+            maxLength={5000}
+            placeholder={ticket.status === 'CLOSED' ? 'This ticket is closed — replying will reopen it.' : 'Write a reply…'}
+            value={reply}
+            onChange={(e) => setReply(e.target.value)}
+          />
+          <div className="mt-2.5 flex flex-wrap items-center justify-between gap-3">
+            <AttachmentPicker attachments={attachments} onChange={setAttachments} toast={toast} />
+            <button className="btn-primary" disabled={busy || (!reply.trim() && !attachments.length)}>
+              <Icon name="send" size={15} /> {busy ? 'Sending…' : 'Send reply'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

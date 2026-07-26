@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useStore } from '@/components/Providers';
 import { api } from '@/lib/client';
 import Icon from '@/components/icons';
+import { AttachmentPicker } from '@/components/TicketParts';
 
 const STATUS_BADGE: Record<string, string> = {
   OPEN: 'bg-amber-100 text-amber-700',
@@ -25,6 +26,7 @@ export default function SupportPage() {
   const [subject, setSubject] = useState('');
   const [orderCode, setOrderCode] = useState('');
   const [message, setMessage] = useState('');
+  const [attachments, setAttachments] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -38,7 +40,7 @@ export default function SupportPage() {
     try {
       const d = await api<{ ticket: { id: number } }>('/api/support', {
         method: 'POST',
-        json: { subject, message, orderCode: orderCode || undefined },
+        json: { subject, message, orderCode: orderCode || undefined, attachments },
       });
       toast('Ticket created — we’ll get back to you soon');
       router.push(`/support/${d.ticket.id}`);
@@ -59,7 +61,7 @@ export default function SupportPage() {
         Questions about an order or a product? Open a ticket — replies also arrive by email.
       </p>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      <div className="mt-6 grid gap-6 lg:grid-cols-[420px_1fr]">
         {/* New ticket */}
         <div className="card h-fit p-5">
           <h2 className="flex items-center gap-2 font-bold">
@@ -78,6 +80,7 @@ export default function SupportPage() {
               <label className="label">Describe the issue *</label>
               <textarea className="input" rows={5} required maxLength={5000} placeholder="What happened? Include any error messages…" value={message} onChange={(e) => setMessage(e.target.value)} />
             </div>
+            <AttachmentPicker attachments={attachments} onChange={setAttachments} toast={toast} />
             <button className="btn-primary w-full" disabled={busy}>
               <Icon name="send" size={16} /> {busy ? 'Creating…' : 'Create ticket'}
             </button>

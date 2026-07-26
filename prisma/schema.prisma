@@ -395,11 +395,12 @@ model SupportTicket {
 }
 
 model TicketMessage {
-  id        Int      @id @default(autoincrement())
-  ticketId  Int      @map("ticket_id")
-  isStaff   Boolean  @default(false) @map("is_staff")
-  content   String
-  createdAt DateTime @default(now()) @map("created_at")
+  id          Int      @id @default(autoincrement())
+  ticketId    Int      @map("ticket_id")
+  isStaff     Boolean  @default(false) @map("is_staff")
+  content     String
+  attachments Json?    // array of image URLs (/api/media/…)
+  createdAt   DateTime @default(now()) @map("created_at")
 
   ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 

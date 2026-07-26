@@ -6,6 +6,16 @@ import { rateLimit } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
+// Only allow attachment URLs that point at our own media store.
+function cleanAttachments(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((u) => String(u))
+    .filter((u) => /^\/api\/media\/\d+$/.test(u))
+    .slice(0, 3);
+}
+
+
 export const GET = handler(async () => {
   const user = await requireUser();
   const tickets = await prisma.supportTicket.findMany({
@@ -36,7 +46,7 @@ export const POST = handler(async (req: NextRequest) => {
       userId: user.id,
       subject,
       orderCode,
-      messages: { create: { content: message, isStaff: false } },
+      messages: { create: { content: message, isStaff: false, attachments: cleanAttachments(b.attachments) } },
     },
   });
   return NextResponse.json({ ok: true, ticket });
