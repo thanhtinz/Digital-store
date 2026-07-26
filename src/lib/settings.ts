@@ -44,6 +44,9 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   loyalty_redeem_value: '0.01', // dollars per point
   loyalty_min_redeem: '100',    // minimum points to redeem
   affiliate_enabled: 'false',
+  telegram_enabled: 'false',
+  telegram_bot_token: '',
+  telegram_chat_id: '',
   affiliate_rate: '10',         // commission percent
 };
 

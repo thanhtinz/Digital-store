@@ -35,6 +35,7 @@ const NAV: Array<{ href: string; label: string; icon: string } | { section: stri
   { href: '/admin/settings/marketing', label: 'Rewards & affiliate', icon: 'star' },
   { href: '/admin/settings/google', label: 'Google login', icon: 'key' },
   { href: '/admin/settings/email', label: 'Email (SMTP)', icon: 'mail' },
+  { href: '/admin/settings/notifications', label: 'Notifications', icon: 'bell' },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
