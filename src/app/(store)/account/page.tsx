@@ -100,9 +100,117 @@ export default function AccountPage() {
         <div className="mt-6 space-y-6">
           <ChangePassword hasPassword={user.hasPassword} />
           <TwoFactor enabled={user.twoFactorEnabled} hasPassword={user.hasPassword} onChanged={refreshUser} toast={toast} />
+          <TelegramLink toast={toast} />
         </div>
       )}
       {tab === 'logins' && <LoginHistory />}
+    </div>
+  );
+}
+
+// Connect a Telegram chat and pick where notifications are delivered.
+function TelegramLink({ toast }: { toast: (m: string, k?: 'success' | 'error') => void }) {
+  const [state, setState] = useState<{ available: boolean; linked: boolean; channel: string } | null>(null);
+  const [link, setLink] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const load = () => api<{ available: boolean; linked: boolean; channel: string }>('/api/telegram/link').then(setState);
+  useEffect(() => { load().catch(() => {}); }, []);
+
+  // While a link is pending, poll so the card flips to "connected" the
+  // moment the user taps Start in Telegram.
+  useEffect(() => {
+    if (!link || state?.linked) return;
+    const t = setInterval(() => load().catch(() => {}), 3000);
+    return () => clearInterval(t);
+  }, [link, state?.linked]);
+
+  if (!state || !state.available) return null;
+
+  const startLink = async () => {
+    setBusy(true);
+    try {
+      const d = await api<{ url: string }>('/api/telegram/link', { method: 'POST' });
+      setLink(d.url);
+      window.open(d.url, '_blank');
+    } catch (e: any) {
+      toast(e.message, 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const setChannel = async (channel: string) => {
+    try {
+      await api('/api/telegram/link', { method: 'PATCH', json: { channel } });
+      setState((s) => (s ? { ...s, channel } : s));
+      toast('Notification preference saved');
+    } catch (e: any) {
+      toast(e.message, 'error');
+    }
+  };
+
+  const unlink = async () => {
+    if (!confirm('Disconnect Telegram? Notifications will go back to email.')) return;
+    await api('/api/telegram/link', { method: 'DELETE' });
+    setLink('');
+    await load();
+    toast('Telegram disconnected');
+  };
+
+  return (
+    <div className="card p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 font-bold">
+          <Icon name="telegram" className="text-sky-500" /> Telegram notifications
+        </h2>
+        {state.linked && <span className="badge bg-green-100 text-green-700">Connected</span>}
+      </div>
+      <p className="mt-1 text-sm text-gray-500">
+        Link your Telegram to check orders and balance from the bot, and get order updates as instant messages.
+      </p>
+
+      {!state.linked ? (
+        <div className="mt-4">
+          <button className="btn-primary" onClick={startLink} disabled={busy}>
+            <Icon name="telegram" size={16} /> {busy ? 'Preparing…' : 'Connect Telegram'}
+          </button>
+          {link && (
+            <p className="mt-3 rounded-lg bg-sky-50 p-3 text-xs text-sky-800">
+              Tap <b>Start</b> in the Telegram chat that just opened. Didn&apos;t open?{' '}
+              <a href={link} target="_blank" rel="noreferrer" className="font-semibold underline">Use this link</a>.
+              This card updates automatically once connected.
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="mt-4 space-y-4">
+          <div>
+            <p className="label">Send order updates via</p>
+            <div className="flex flex-wrap gap-2">
+              {([['email', 'Email only'], ['telegram', 'Telegram only'], ['both', 'Email + Telegram']] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  onClick={() => setChannel(value)}
+                  className={`rounded-full px-4 py-1.5 text-sm font-semibold shadow-sm transition ${
+                    state.channel === value ? 'bg-brand-600 text-white' : 'border border-gray-200 bg-white text-gray-600 hover:border-brand-300'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1.5 text-xs text-gray-400">
+              Security emails (verification, password reset) always go to email.
+            </p>
+          </div>
+          <div className="rounded-xl bg-gray-50 p-3 text-xs text-gray-600">
+            <p className="font-bold text-gray-700">Bot commands</p>
+            <p className="mt-1">/orders · /order CODE · /balance · /unlink</p>
+          </div>
+          <button className="text-xs text-red-500 hover:underline" onClick={unlink}>Disconnect Telegram</button>
+        </div>
+      )}
     </div>
   );
 }

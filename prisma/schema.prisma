@@ -37,6 +37,11 @@ model User {
   loyaltyPoints    Int       @default(0) @map("loyalty_points")
   refCode          String?   @unique @map("ref_code") @db.VarChar(20)
   referredById     Int?      @map("referred_by_id")
+  // Telegram bot link: chat id once connected, one-time code while linking.
+  telegramChatId   String?   @unique @map("telegram_chat_id") @db.VarChar(32)
+  telegramLinkCode String?   @unique @map("telegram_link_code") @db.VarChar(40)
+  // Where account notifications go: email | telegram | both
+  notifyChannel    String    @default("email") @map("notify_channel") @db.VarChar(10)
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at")
 
