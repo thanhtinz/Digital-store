@@ -5,6 +5,8 @@ import { handler, jsonError } from '@/lib/api';
 import { createOrder, type CheckoutItemInput } from '@/lib/orders';
 import { createStripeCheckoutSession } from '@/lib/stripe';
 import { createPaypalOrder } from '@/lib/paypal';
+import { debitWallet } from '@/lib/wallet';
+import { markOrderPaid } from '@/lib/orders';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +16,7 @@ export const dynamic = 'force-dynamic';
 export const POST = handler(async (req: NextRequest) => {
   const user = await requireUser();
   const body = await req.json();
-  const paymentMethod = body.paymentMethod === 'paypal' ? 'paypal' : 'stripe';
+  const paymentMethod = body.paymentMethod === 'paypal' ? 'paypal' : body.paymentMethod === 'balance' ? 'balance' : 'stripe';
 
   let items: CheckoutItemInput[];
   let fromCart = false;
@@ -40,10 +42,23 @@ export const POST = handler(async (req: NextRequest) => {
     email: user.email,
     items,
     couponCode: body.couponCode ? String(body.couponCode) : undefined,
+    redeemPoints: body.redeemPoints ? Number(body.redeemPoints) : undefined,
     paymentMethod,
   });
 
   const itemsLabel = order.items.map((i) => `${i.productName} — ${i.packageName} ×${i.quantity}`).join(', ');
+
+  // ── Pay with wallet balance: settle instantly, no gateway redirect ──
+  if (paymentMethod === 'balance') {
+    const ok = await debitWallet(user.id, Number(order.total), 'PURCHASE', `Order ${order.code}`);
+    if (!ok) {
+      await cancelOrder(order.id, order.pointsUsed, user.id);
+      return jsonError(402, 'Insufficient wallet balance — top up or choose another method');
+    }
+    if (fromCart) await prisma.cartItem.deleteMany({ where: { userId: user.id } });
+    await markOrderPaid(order.id, 'wallet');
+    return NextResponse.json({ ok: true, orderCode: order.code, paid: true, redirectUrl: `/orders/${order.code}?payment=success` });
+  }
 
   try {
     let redirectUrl: string;
@@ -71,7 +86,15 @@ export const POST = handler(async (req: NextRequest) => {
     return NextResponse.json({ ok: true, orderCode: order.code, redirectUrl });
   } catch (e: any) {
     // Payment session failed — cancel the order so coupons/flash stock free up.
-    await prisma.order.update({ where: { id: order.id }, data: { status: 'CANCELLED' } }).catch(() => {});
+    await cancelOrder(order.id, order.pointsUsed, user.id);
     return jsonError(502, e.message || 'Could not start the payment. Please try again.');
   }
 });
+
+// Cancels a just-created order and returns any redeemed loyalty points.
+async function cancelOrder(orderId: number, pointsUsed: number, userId: number): Promise<void> {
+  await prisma.order.update({ where: { id: orderId }, data: { status: 'CANCELLED' } }).catch(() => {});
+  if (pointsUsed > 0) {
+    await prisma.user.update({ where: { id: userId }, data: { loyaltyPoints: { increment: pointsUsed } } }).catch(() => {});
+  }
+}

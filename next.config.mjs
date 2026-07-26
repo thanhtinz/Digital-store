@@ -8,6 +8,7 @@ const nextConfig = {
   },
   experimental: {
     serverActions: { bodySizeLimit: '8mb' },
+    instrumentationHook: true, // background scheduler (auto coupons)
   },
 };
 

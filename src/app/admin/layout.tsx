@@ -20,6 +20,7 @@ const NAV: Array<{ href: string; label: string; icon: string } | { section: stri
   { href: '/admin/banners', label: 'Banners', icon: 'image' },
   { href: '/admin/coupons', label: 'Coupons', icon: 'ticket' },
   { href: '/admin/flash-sales', label: 'Flash sales', icon: 'bolt' },
+  { href: '/admin/auto-coupons', label: 'Auto coupons', icon: 'gift' },
   { section: 'Community' },
   { href: '/admin/tickets', label: 'Support tickets', icon: 'chat' },
   { href: '/admin/reviews', label: 'Reviews', icon: 'star' },
@@ -28,6 +29,7 @@ const NAV: Array<{ href: string; label: string; icon: string } | { section: stri
   { href: '/admin/security', label: 'Security', icon: 'shield' },
   { href: '/admin/settings', label: 'Site settings', icon: 'settings' },
   { href: '/admin/settings/payments', label: 'Payments', icon: 'credit-card' },
+  { href: '/admin/settings/marketing', label: 'Rewards & affiliate', icon: 'star' },
   { href: '/admin/settings/google', label: 'Google login', icon: 'key' },
   { href: '/admin/settings/email', label: 'Email (SMTP)', icon: 'mail' },
 ];

@@ -16,6 +16,8 @@ export async function GET() {
       twoFactorEnabled: user.twoFactorEnabled,
       emailVerified: !!user.emailVerifiedAt,
       hasPassword: !!user.passwordHash,
+      balance: Number(user.balance),
+      loyaltyPoints: user.loyaltyPoints,
     },
   });
 }
