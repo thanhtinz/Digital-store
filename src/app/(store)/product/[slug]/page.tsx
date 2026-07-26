@@ -4,6 +4,7 @@ import { getActiveFlashPrices, effectivePrice, toProductCards, productCardInclud
 import { parseCustomFields } from '@/lib/utils';
 import ProductCardView, { Stars } from '@/components/ProductCardView';
 import Gallery from './Gallery';
+import ProductActions from './ProductActions';
 import BuyBox from './BuyBox';
 import ProductTabs from './ProductTabs';
 import Icon from '@/components/icons';
@@ -33,6 +34,11 @@ export default async function ProductPage({ params }: { params: { slug: string }
   if (!product || !product.isActive) notFound();
 
   const flash = await getActiveFlashPrices(product.packages.map((p) => p.id));
+  const autoIds = product.packages.filter((p) => p.autoDeliver).map((p) => p.id);
+  const stockGroups = autoIds.length
+    ? await prisma.stockItem.groupBy({ by: ['packageId'], where: { packageId: { in: autoIds }, isSold: false }, _count: true })
+    : [];
+  const stockFor = (id: number) => stockGroups.find((g) => g.packageId === id)?._count ?? 0;
   const packages = product.packages.map((pkg) => {
     const eff = effectivePrice(pkg, flash);
     const flashInfo = flash.get(pkg.id);
@@ -46,6 +52,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
       onSale: eff.onSale,
       saleEndsAt: eff.onSale && flashInfo ? flashInfo.endsAt.toISOString() : null,
       customFields: parseCustomFields(pkg.customFields),
+      stock: pkg.autoDeliver ? stockFor(pkg.id) : null, // null = fulfilled manually, always available
     };
   });
 
@@ -74,8 +81,11 @@ export default async function ProductPage({ params }: { params: { slug: string }
 
       <div className="grid gap-8 lg:grid-cols-2">
         <Gallery images={product.images.map((i) => i.url)} name={product.name} />
-        <div>
-          <h1 className="text-2xl font-bold sm:text-3xl">{product.name}</h1>
+        <div className="lg:sticky lg:top-20 lg:self-start">
+          <div className="flex items-start justify-between gap-3">
+            <h1 className="text-2xl font-bold sm:text-3xl">{product.name}</h1>
+            <ProductActions productId={product.id} />
+          </div>
           <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-500">
             <span className="flex items-center gap-1.5">
               <Stars value={product.ratingAvg} />

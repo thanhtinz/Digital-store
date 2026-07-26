@@ -55,3 +55,10 @@
 .prose-content a { @apply text-brand-600 underline; }
 .prose-content img { @apply rounded-lg my-3 max-w-full; }
 .prose-content code { @apply bg-gray-100 rounded px-1 py-0.5 text-[13px]; }
+
+/* Print: turn the order page into a clean invoice */
+@media print {
+  header, footer, nav, .print\:hidden { display: none !important; }
+  body { background: #fff; }
+  .card { box-shadow: none !important; border-color: #ddd !important; }
+}
