@@ -56,7 +56,7 @@ export default async function HomePage() {
             <h2 className="text-xl font-bold">Browse categories</h2>
             <p className="mt-0.5 text-sm text-gray-500">Find exactly what you need, faster.</p>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:[grid-template-columns:repeat(auto-fit,minmax(200px,1fr))]">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:[grid-template-columns:repeat(auto-fill,minmax(190px,1fr))]">
             {categories.map((c) => (
               <Link
                 key={c.id}
@@ -81,7 +81,7 @@ export default async function HomePage() {
 
       {/* Flash sale */}
       {flashSale && flashSale.items.length > 0 && (
-        <section className="rounded-2xl bg-gradient-to-r from-red-600 to-orange-500 p-4 sm:p-6">
+        <section className="rounded-2xl bg-gradient-to-r from-red-600 to-orange-500 p-4 sm:p-5">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 className="flex items-center gap-2 text-lg font-extrabold text-white sm:text-xl">
               <Icon name="bolt" size={20} /> {flashSale.name}
@@ -94,8 +94,8 @@ export default async function HomePage() {
               </Link>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:[grid-template-columns:repeat(auto-fit,minmax(200px,1fr))]">
-            {flashSale.items.slice(0, 5).map((item) => {
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:[grid-template-columns:repeat(auto-fill,minmax(170px,1fr))]">
+            {flashSale.items.slice(0, 6).map((item) => {
               const soldOut = item.quantityLimit != null && item.soldCount >= item.quantityLimit;
               const pct = Number(item.package.price) > 0
                 ? Math.round((1 - Number(item.salePrice) / Number(item.package.price)) * 100)
@@ -140,7 +140,7 @@ export default async function HomePage() {
             <h2 className="text-xl font-bold">Featured products</h2>
             <Link href="/products" className="text-sm font-semibold text-brand-600 hover:underline">View all →</Link>
           </div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:[grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:[grid-template-columns:repeat(auto-fill,minmax(240px,1fr))]">
             {featured.map((p) => <ProductCardView key={p.id} product={p} />)}
           </div>
         </section>
@@ -153,7 +153,7 @@ export default async function HomePage() {
           <Link href="/products?sort=newest" className="text-sm font-semibold text-brand-600 hover:underline">View all →</Link>
         </div>
         {latest.length > 0 ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:[grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:[grid-template-columns:repeat(auto-fill,minmax(240px,1fr))]">
             {latest.map((p) => <ProductCardView key={p.id} product={p} />)}
           </div>
         ) : (

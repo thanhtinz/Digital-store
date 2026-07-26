@@ -39,7 +39,7 @@ export default async function FlashSalePage() {
             <span className="text-sm text-gray-500">ends in</span>
             <Countdown until={sale.endsAt.toISOString()} />
           </div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:[grid-template-columns:repeat(auto-fill,minmax(190px,1fr))]">
             {sale.items.map((item) => {
               const soldOut = item.quantityLimit != null && item.soldCount >= item.quantityLimit;
               const pct = Number(item.package.price) > 0
