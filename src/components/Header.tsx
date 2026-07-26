@@ -70,7 +70,7 @@ export default function Header({ siteName, logo, categories }: Props) {
         <Link href="/" className="flex shrink-0 items-center gap-2" onClick={closeAll}>
           {logo ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logo} alt={siteName} className="h-8 w-8 rounded-lg object-contain" />
+            <img src={logo} alt={siteName} className="h-9 w-auto max-w-[150px] object-contain" />
           ) : (
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-lg font-extrabold text-white">
               {siteName.charAt(0)}
@@ -129,6 +129,9 @@ export default function Header({ siteName, logo, categories }: Props) {
 
           <Link href="/flash-sale" className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50">
             <Icon name="bolt" size={15} /> Flash Sale
+          </Link>
+          <Link href="/news" className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">
+            News
           </Link>
         </nav>
 
@@ -235,6 +238,9 @@ export default function Header({ siteName, logo, categories }: Props) {
                 </Link>
                 <Link href="/flash-sale" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50">
                   <Icon name="bolt" size={17} /> Flash Sale
+                </Link>
+                <Link href="/news" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
+                  <Icon name="news" size={17} className="text-gray-400" /> News
                 </Link>
 
                 {/* Categories dropdown (accordion) */}
