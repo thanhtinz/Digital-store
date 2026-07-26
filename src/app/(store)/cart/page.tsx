@@ -20,6 +20,7 @@ type CartItemView = {
   originalPrice: number;
   onSale: boolean;
   available: boolean;
+  outOfStock?: boolean;
   customFieldDefs: CustomFieldDef[];
 };
 
@@ -92,7 +93,11 @@ export default function CartPage() {
                     {item.productName}
                   </Link>
                   <p className="text-xs text-gray-500">{item.packageName}</p>
-                  {!item.available && <p className="mt-0.5 text-xs font-semibold text-red-600">No longer available — please remove</p>}
+                  {!item.available && (
+                    <p className="mt-0.5 text-xs font-semibold text-red-600">
+                      {item.outOfStock ? 'Out of stock — please remove or reduce quantity' : 'No longer available — please remove'}
+                    </p>
+                  )}
                   {Object.keys(item.customFieldsData).length > 0 && (
                     <p className="mt-1 truncate text-xs text-gray-400">
                       {Object.entries(item.customFieldsData).map(([k, v]) => `${k}: ${v}`).join(' · ')}

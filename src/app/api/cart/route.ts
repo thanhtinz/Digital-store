@@ -18,8 +18,15 @@ async function serializeCart(userId: number) {
     },
   });
   const flash = await getActiveFlashPrices(items.map((i) => i.packageId));
+  // Live stock for auto-delivered packages so sold-out items can't check out.
+  const autoIds = items.filter((i) => i.package.autoDeliver).map((i) => i.packageId);
+  const stockGroups = autoIds.length
+    ? await prisma.stockItem.groupBy({ by: ['packageId'], where: { packageId: { in: autoIds }, isSold: false }, _count: true })
+    : [];
+  const stockFor = (id: number) => stockGroups.find((g) => g.packageId === id)?._count ?? 0;
   return items.map((item) => {
     const eff = effectivePrice(item.package, flash);
+    const stock = item.package.autoDeliver ? stockFor(item.packageId) : null;
     return {
       id: item.id,
       packageId: item.packageId,
@@ -32,7 +39,9 @@ async function serializeCart(userId: number) {
       unitPrice: eff.price,
       originalPrice: eff.original,
       onSale: eff.onSale,
-      available: item.package.isActive && item.package.product.isActive,
+      available: item.package.isActive && item.package.product.isActive && (stock === null || stock >= item.quantity),
+      stock,
+      outOfStock: stock !== null && stock < item.quantity,
       customFieldDefs: parseCustomFields(item.package.customFields),
     };
   });
@@ -55,6 +64,17 @@ export const POST = handler(async (req: NextRequest) => {
   });
   if (!pkg) return jsonError(404, 'This item is not available');
 
+  // Auto-delivered packages can only be bought while stock lasts.
+  if (pkg.autoDeliver) {
+    const [stock, existing] = await Promise.all([
+      prisma.stockItem.count({ where: { packageId, isSold: false } }),
+      prisma.cartItem.findUnique({ where: { userId_packageId: { userId: user.id, packageId } } }),
+    ]);
+    const wanted = (existing?.quantity || 0) + quantity;
+    if (stock === 0) return jsonError(400, 'This package is out of stock');
+    if (wanted > stock) return jsonError(400, `Only ${stock} left in stock`);
+  }
+
   const customFieldsData = body.customFieldsData && typeof body.customFieldsData === 'object' ? body.customFieldsData : undefined;
 
   await prisma.cartItem.upsert({
@@ -70,10 +90,14 @@ export const PATCH = handler(async (req: NextRequest) => {
   const user = await requireUser();
   const body = await req.json();
   const id = Number(body.id);
-  const item = await prisma.cartItem.findFirst({ where: { id, userId: user.id } });
+  const item = await prisma.cartItem.findFirst({ where: { id, userId: user.id }, include: { package: true } });
   if (!item) return jsonError(404, 'Cart item not found');
 
   const quantity = Math.floor(Number(body.quantity));
+  if (Number.isFinite(quantity) && quantity > 0 && item.package.autoDeliver) {
+    const stock = await prisma.stockItem.count({ where: { packageId: item.packageId, isSold: false } });
+    if (quantity > stock) return jsonError(400, stock === 0 ? 'This package is out of stock' : `Only ${stock} left in stock`);
+  }
   if (Number.isFinite(quantity) && quantity <= 0) {
     await prisma.cartItem.delete({ where: { id } });
   } else {

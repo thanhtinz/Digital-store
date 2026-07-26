@@ -35,6 +35,26 @@ export async function createOrder(params: {
   });
   const flash = await getActiveFlashPrices(packageIds);
 
+  // Auto-delivered packages are sold strictly from stock — validate upfront
+  // so a sold-out package can never be paid for.
+  const autoIds = packages.filter((p) => p.autoDeliver).map((p) => p.id);
+  const stockGroups = autoIds.length
+    ? await prisma.stockItem.groupBy({ by: ['packageId'], where: { packageId: { in: autoIds }, isSold: false }, _count: true })
+    : [];
+  for (const item of items) {
+    const pkg = packages.find((p) => p.id === item.packageId);
+    if (!pkg?.autoDeliver) continue;
+    const stock = stockGroups.find((g) => g.packageId === pkg.id)?._count ?? 0;
+    const quantity = Math.min(Math.max(1, Math.floor(item.quantity || 1)), 100);
+    if (quantity > stock) {
+      throw new OrderError(
+        stock === 0
+          ? `${pkg.product.name} — ${pkg.name} is out of stock`
+          : `Only ${stock} of ${pkg.product.name} — ${pkg.name} left in stock`
+      );
+    }
+  }
+
   let subtotal = 0;
   const orderItems = items.map((item) => {
     const pkg = packages.find((p) => p.id === item.packageId);
