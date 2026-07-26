@@ -18,23 +18,40 @@ export const GET = handler(async (req: NextRequest) => {
 });
 
 // POST { packageId, lines: "one item per line" } — bulk add stock.
+// Lines already present in the package's pool (sold or unsold) are skipped,
+// so re-pasting a supplier file never creates duplicate deliverables.
 export const POST = handler(async (req: NextRequest) => {
   await requireAdmin();
   const b = await req.json();
   const packageId = Number(b.packageId);
-  const lines = String(b.lines || '')
-    .split('\n')
-    .map((l) => l.trim())
-    .filter(Boolean)
-    .slice(0, 1000);
+  const lines = Array.from(new Set(
+    String(b.lines || '')
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean)
+  )).slice(0, 1000);
   if (!packageId || !lines.length) return jsonError(400, 'packageId and at least one line are required');
 
   const pkg = await prisma.package.findUnique({ where: { id: packageId } });
   if (!pkg) return jsonError(404, 'Package not found');
 
-  await prisma.stockItem.createMany({ data: lines.map((content) => ({ packageId, content })) });
+  const existing = await prisma.stockItem.findMany({
+    where: { packageId, content: { in: lines } },
+    select: { content: true },
+  });
+  const existingSet = new Set(existing.map((e) => e.content));
+  const fresh = lines.filter((l) => !existingSet.has(l));
+
+  if (fresh.length) {
+    await prisma.stockItem.createMany({ data: fresh.map((content) => ({ packageId, content })) });
+  }
   const count = await prisma.stockItem.count({ where: { packageId, isSold: false } });
-  return NextResponse.json({ ok: true, added: lines.length, available: count });
+  return NextResponse.json({
+    ok: true,
+    added: fresh.length,
+    skippedDuplicates: lines.length - fresh.length,
+    available: count,
+  });
 });
 
 // DELETE { id } — remove an unsold stock item.

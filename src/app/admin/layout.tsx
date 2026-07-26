@@ -12,6 +12,7 @@ import { api } from '@/lib/client';
 const NAV: Array<{ href: string; label: string; icon: string } | { section: string }> = [
   { href: '/admin', label: 'Dashboard', icon: 'dashboard' },
   { href: '/admin/deliveries', label: 'Deliveries', icon: 'truck' },
+  { href: '/admin/inventory', label: 'Auto delivery', icon: 'bolt' },
   { href: '/admin/orders', label: 'Orders', icon: 'box' },
   { href: '/admin/products', label: 'Products', icon: 'bag' },
   { href: '/admin/categories', label: 'Categories', icon: 'folder' },

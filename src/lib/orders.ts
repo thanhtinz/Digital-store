@@ -143,13 +143,18 @@ export async function markOrderPaid(orderId: number, paymentRef?: string): Promi
 
 // Delivers items whose package has auto-delivery enabled, pulling unsold
 // stock items. Marks the order COMPLETED when every item is delivered.
+// Professional touches: a per-package delivery note is appended to the
+// codes, the store owner is alerted when stock runs low, and orders that
+// could not be fully auto-delivered raise a manual-fulfillment alert.
 export async function autoDeliver(orderId: number): Promise<void> {
   const order = await prisma.order.findUnique({ where: { id: orderId }, include: { items: true } });
   if (!order || (order.status !== 'PAID' && order.status !== 'COMPLETED')) return;
 
+  const shortages: string[] = [];
+
   for (const item of order.items) {
     if (item.deliveredAt || !item.packageId) continue;
-    const pkg = await prisma.package.findUnique({ where: { id: item.packageId } });
+    const pkg = await prisma.package.findUnique({ where: { id: item.packageId }, include: { product: { select: { name: true } } } });
     if (!pkg?.autoDeliver) continue;
 
     const delivered: string[] = [];
@@ -167,18 +172,47 @@ export async function autoDeliver(orderId: number): Promise<void> {
       if (!claimed) break;
       delivered.push(claimed.content);
     }
+
+    const withNote = (codes: string[]) =>
+      codes.join('\n') + (pkg.deliveryNote ? `\n\n${pkg.deliveryNote}` : '');
+
     if (delivered.length === item.quantity) {
       await prisma.orderItem.update({
         where: { id: item.id },
-        data: { deliveryData: delivered.join('\n'), deliveredAt: new Date() },
+        data: { deliveryData: withNote(delivered), deliveredAt: new Date() },
       });
     } else if (delivered.length > 0) {
       // Partial stock — deliver what we have, admin completes the rest.
       await prisma.orderItem.update({
         where: { id: item.id },
-        data: { deliveryData: delivered.join('\n') },
+        data: { deliveryData: withNote(delivered) },
       });
+      shortages.push(`${pkg.product.name} — ${pkg.name} (${delivered.length}/${item.quantity} delivered)`);
+    } else {
+      shortages.push(`${pkg.product.name} — ${pkg.name} (0/${item.quantity} delivered)`);
     }
+
+    // Low-stock alert for the store owner (fires when crossing the threshold).
+    if (pkg.lowStockAlert != null && delivered.length > 0) {
+      const left = await prisma.stockItem.count({ where: { packageId: pkg.id, isSold: false } });
+      if (left <= pkg.lowStockAlert && left + delivered.length > pkg.lowStockAlert) {
+        notifyAdmin(
+          `Low stock: ${pkg.product.name} — ${pkg.name}`,
+          `<p><b>${pkg.product.name} — ${pkg.name}</b> is down to <b>${left}</b> unsold unit${left === 1 ? '' : 's'} (alert threshold: ${pkg.lowStockAlert}).</p>
+           <p>Top up the stock pool in Admin → Auto delivery to keep instant delivery running.</p>`
+        ).catch(() => {});
+      }
+    }
+  }
+
+  // Alert the owner when an order is stuck waiting for manual fulfillment.
+  if (shortages.length > 0) {
+    notifyAdmin(
+      `Order ${order.code} needs manual delivery`,
+      `<p>Auto-delivery ran out of stock for order <b>${order.code}</b>:</p>
+       <ul>${shortages.map((s) => `<li>${s}</li>`).join('')}</ul>
+       <p>Fulfill it from Admin → Deliveries.</p>`
+    ).catch(() => {});
   }
 
   const remaining = await prisma.orderItem.count({ where: { orderId, deliveredAt: null } });
@@ -188,6 +222,13 @@ export async function autoDeliver(orderId: number): Promise<void> {
 
   const deliveredAny = await prisma.orderItem.count({ where: { orderId, deliveryData: { not: null } } });
   if (deliveredAny > 0) await sendDeliveryEmail(orderId).catch(() => {});
+}
+
+// Operational alerts for the store owner (sent to the support email).
+async function notifyAdmin(subject: string, bodyHtml: string): Promise<void> {
+  const [siteName, adminEmail] = await Promise.all([getSetting('site_name'), getSetting('support_email')]);
+  if (!adminEmail) return;
+  await sendMail(adminEmail, `[${siteName}] ${subject}`, emailLayout(siteName, subject, bodyHtml));
 }
 
 // Emails the buyer their delivered items (called after auto-delivery and
