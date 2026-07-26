@@ -43,6 +43,19 @@ export default async function HomePage() {
 
   const [featured, latest] = await Promise.all([toProductCards(featuredRaw), toProductCards(latestRaw)]);
 
+  // Genuine live numbers for the stats strip.
+  const [productCount, deliveredCount, reviewAgg] = await Promise.all([
+    prisma.product.count({ where: { isActive: true } }),
+    prisma.order.count({ where: { status: 'COMPLETED' } }),
+    prisma.review.aggregate({ where: { isApproved: true }, _count: true, _avg: { rating: true } }),
+  ]);
+  const stats: Array<[string, string, string]> = [
+    ['bag', String(productCount), 'Digital products'],
+    ['check', deliveredCount.toLocaleString('en-US'), 'Orders delivered'],
+    ['star', reviewAgg._count ? `${(reviewAgg._avg.rating || 0).toFixed(1)}/5` : 'New', 'Average rating'],
+    ['bolt', '< 1 min', 'Typical delivery time'],
+  ];
+
   return (
     <div className="container space-y-12 py-6">
       {/* Hero banners */}
@@ -55,7 +68,7 @@ export default async function HomePage() {
             <h2 className="text-xl font-bold">Browse categories</h2>
             <p className="mt-0.5 text-sm text-gray-500">Find exactly what you need, faster.</p>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:[grid-template-columns:repeat(auto-fit,minmax(200px,1fr))]">
             {categories.map((c) => (
               <Link
                 key={c.id}
@@ -78,6 +91,21 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* Live store stats */}
+      <section className="grid grid-cols-2 gap-3 rounded-2xl bg-gray-900 p-5 text-white sm:p-6 lg:grid-cols-4">
+        {stats.map(([icon, value, label]) => (
+          <div key={label} className="flex items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white/10">
+              <Icon name={icon} size={19} />
+            </span>
+            <span>
+              <span className="block text-xl font-extrabold leading-tight">{value}</span>
+              <span className="block text-xs text-gray-400">{label}</span>
+            </span>
+          </div>
+        ))}
+      </section>
+
       {/* Flash sale */}
       {flashSale && flashSale.items.length > 0 && (
         <section className="rounded-2xl bg-gradient-to-r from-red-600 to-orange-500 p-4 sm:p-6">
@@ -93,7 +121,7 @@ export default async function HomePage() {
               </Link>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:[grid-template-columns:repeat(auto-fit,minmax(200px,1fr))]">
             {flashSale.items.slice(0, 5).map((item) => {
               const soldOut = item.quantityLimit != null && item.soldCount >= item.quantityLimit;
               const pct = Number(item.package.price) > 0

@@ -43,6 +43,7 @@ model User {
   reviews      Review[]
   couponUses   CouponRedemption[]
   wishlist     WishlistItem[]
+  tickets      SupportTicket[]
 
   @@map("users")
 }
@@ -366,6 +367,44 @@ model Review {
   @@unique([productId, userId])
   @@index([productId, isApproved])
   @@map("reviews")
+}
+
+// ─────────────────────────── Support ───────────────────────────
+
+enum TicketStatus {
+  OPEN      // waiting for staff
+  ANSWERED  // staff replied, waiting for customer
+  CLOSED
+}
+
+model SupportTicket {
+  id        Int          @id @default(autoincrement())
+  userId    Int          @map("user_id")
+  subject   String       @db.VarChar(200)
+  orderCode String?      @map("order_code") @db.VarChar(20)
+  status    TicketStatus @default(OPEN)
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @default(now()) @updatedAt @map("updated_at")
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages TicketMessage[]
+
+  @@index([userId, updatedAt])
+  @@index([status])
+  @@map("support_tickets")
+}
+
+model TicketMessage {
+  id        Int      @id @default(autoincrement())
+  ticketId  Int      @map("ticket_id")
+  isStaff   Boolean  @default(false) @map("is_staff")
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@map("ticket_messages")
 }
 
 // ─────────────────────────── Media & Settings ───────────────────────────
