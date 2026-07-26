@@ -37,7 +37,8 @@ export default function AffiliatePage() {
 
   return (
     <div className="container max-w-4xl py-8">
-      <h1 className="text-2xl font-bold">Affiliate program</h1>
+      <p className="section-eyebrow">Earn with us</p>
+      <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Affiliate program</h1>
       <p className="mt-1 text-sm text-gray-500">
         Share your link — earn <b>{data.rate}%</b> of every order your referrals pay for, credited straight to your wallet.
         Some products pay a custom rate (see below).

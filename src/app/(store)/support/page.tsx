@@ -59,7 +59,8 @@ export default function SupportPage() {
 
   return (
     <div className="container py-8">
-      <h1 className="text-2xl font-bold">Support center</h1>
+      <p className="section-eyebrow">We are here to help</p>
+      <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Support center</h1>
       <p className="mt-1 text-sm text-gray-500">
         Questions about an order or a product? Open a ticket — replies also arrive by email.
       </p>

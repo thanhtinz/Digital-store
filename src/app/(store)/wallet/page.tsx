@@ -64,7 +64,8 @@ export default function WalletPage() {
 
   return (
     <div className="container max-w-4xl py-8">
-      <h1 className="text-2xl font-bold">Wallet</h1>
+      <p className="section-eyebrow">Account</p>
+      <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Wallet</h1>
       <p className="mt-1 text-sm text-gray-500">
         Top up once, pay instantly at checkout — no card entry on every order.
       </p>
@@ -73,9 +74,12 @@ export default function WalletPage() {
         {/* Balance + top-up */}
         <div className="space-y-5">
           <div className="card overflow-hidden">
-            <div className="bg-gradient-to-r from-brand-600 to-purple-600 p-5 text-white">
+            <div className="relative overflow-hidden bg-gradient-to-br from-brand-600 via-brand-700 to-purple-700 p-5 text-white">
+              <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10" />
+              <div className="pointer-events-none absolute -bottom-14 right-16 h-28 w-28 rounded-full bg-white/5" />
               <p className="text-xs font-semibold uppercase tracking-wider text-white/70">Available balance</p>
-              <p className="mt-1 text-3xl font-extrabold">{formatMoney(balance)}</p>
+              <p className="relative mt-1 text-3xl font-extrabold">{formatMoney(balance)}</p>
+              <Icon name="credit-card" size={38} className="absolute bottom-4 right-4 text-white/25" />
             </div>
             <form onSubmit={topup} className="space-y-3 p-5">
               <div>

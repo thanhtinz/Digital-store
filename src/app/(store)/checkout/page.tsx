@@ -149,7 +149,8 @@ function CheckoutInner() {
 
   return (
     <div className="container py-8">
-      <h1 className="text-2xl font-bold">Checkout</h1>
+      <p className="section-eyebrow">Almost there</p>
+      <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Checkout</h1>
 
       {nothingToBuy ? (
         <div className="card mt-6 p-16 text-center">
