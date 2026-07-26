@@ -4,12 +4,14 @@ import { useState } from 'react';
 import { useStore } from '@/components/Providers';
 import { api } from '@/lib/client';
 import { Stars } from '@/components/ProductCardView';
+import { AttachmentPicker } from '@/components/TicketParts';
 
 type ReviewView = {
   id: number;
   rating: number;
   content: string | null;
   adminReply: string | null;
+  images: string[];
   userName: string;
   avatarUrl: string | null;
   createdAt: string;
@@ -66,6 +68,7 @@ function ReviewsSection({ productId, ratingAvg, ratingCount, reviews }: Omit<Pro
   const { user, toast } = useStore();
   const [rating, setRating] = useState(5);
   const [content, setContent] = useState('');
+  const [images, setImages] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -77,7 +80,7 @@ function ReviewsSection({ productId, ratingAvg, ratingCount, reviews }: Omit<Pro
   const submit = async () => {
     setBusy(true);
     try {
-      await api('/api/reviews', { method: 'POST', json: { productId, rating, content } });
+      await api('/api/reviews', { method: 'POST', json: { productId, rating, content, images } });
       toast('Thank you for your review!');
       setSubmitted(true);
     } catch (e: any) {
@@ -132,6 +135,9 @@ function ReviewsSection({ productId, ratingAvg, ratingCount, reviews }: Omit<Pro
               value={content}
               onChange={(e) => setContent(e.target.value)}
             />
+            <div className="mt-2">
+              <AttachmentPicker attachments={images} onChange={setImages} toast={toast} />
+            </div>
             <button className="btn-primary mt-2 w-full" onClick={submit} disabled={busy}>
               {busy ? 'Submitting…' : 'Submit review'}
             </button>
@@ -167,6 +173,16 @@ function ReviewsSection({ productId, ratingAvg, ratingCount, reviews }: Omit<Pro
               </div>
             </div>
             {r.content && <p className="mt-2.5 text-sm leading-relaxed text-gray-700">{r.content}</p>}
+            {r.images.length > 0 && (
+              <div className="mt-2.5 flex flex-wrap gap-2">
+                {r.images.map((url) => (
+                  <a key={url} href={url} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg border border-gray-200">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt="review photo" className="h-20 w-auto max-w-[160px] object-cover transition hover:scale-105" />
+                  </a>
+                ))}
+              </div>
+            )}
             {r.adminReply && (
               <div className="mt-3 rounded-lg bg-gray-50 p-3 text-sm">
                 <p className="text-xs font-bold text-brand-700">Store response</p>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
+import { audit } from '@/lib/audit';
 import { handler, jsonError } from '@/lib/api';
 import { slugify } from '@/lib/utils';
 
@@ -16,7 +17,7 @@ export const GET = handler(async () => {
 });
 
 export const POST = handler(async (req: NextRequest) => {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const b = await req.json();
   const name = String(b.name || '').trim().slice(0, 120);
   if (!name) return jsonError(400, 'Name is required');
@@ -33,5 +34,6 @@ export const POST = handler(async (req: NextRequest) => {
       isActive: b.isActive !== false,
     },
   });
+  audit(admin, 'category.create', category.name);
   return NextResponse.json({ ok: true, category });
 });

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 import { handler, jsonError } from '@/lib/api';
+import { audit } from '@/lib/audit';
+import { notifyRestock } from '@/lib/stockAlerts';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +23,7 @@ export const GET = handler(async (req: NextRequest) => {
 // Lines already present in the package's pool (sold or unsold) are skipped,
 // so re-pasting a supplier file never creates duplicate deliverables.
 export const POST = handler(async (req: NextRequest) => {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const b = await req.json();
   const packageId = Number(b.packageId);
   const lines = Array.from(new Set(
@@ -44,7 +46,10 @@ export const POST = handler(async (req: NextRequest) => {
 
   if (fresh.length) {
     await prisma.stockItem.createMany({ data: fresh.map((content) => ({ packageId, content })) });
+    // Tell customers waiting on this package that it is available again.
+    notifyRestock(packageId).catch((e) => console.error('[stock-alerts] notify failed:', e));
   }
+  if (fresh.length) audit(admin, 'stock.import', pkg.name, `${fresh.length} item(s) added`);
   const count = await prisma.stockItem.count({ where: { packageId, isSold: false } });
   return NextResponse.json({
     ok: true,

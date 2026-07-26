@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
+import { audit } from '@/lib/audit';
 import { handler, jsonError } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
 
 export const PATCH = handler(async (req: NextRequest, { params }: { params: { id: string } }) => {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = Number(params.id);
   const b = await req.json();
 
@@ -38,11 +39,13 @@ export const PATCH = handler(async (req: NextRequest, { params }: { params: { id
 
   const sale = await prisma.flashSale.findUnique({ where: { id }, include: { items: true } });
   if (!sale) return jsonError(404, 'Flash sale not found');
+  audit(admin, 'flashsale.update', sale.name);
   return NextResponse.json({ ok: true, sale });
 });
 
 export const DELETE = handler(async (_req: NextRequest, { params }: { params: { id: string } }) => {
-  await requireAdmin();
+  const admin = await requireAdmin();
   await prisma.flashSale.delete({ where: { id: Number(params.id) } });
+  audit(admin, 'flashsale.delete', `#${params.id}`);
   return NextResponse.json({ ok: true });
 });

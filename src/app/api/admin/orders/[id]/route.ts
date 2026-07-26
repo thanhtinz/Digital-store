@@ -3,6 +3,7 @@ import prisma from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 import { handler, jsonError } from '@/lib/api';
 import { markOrderPaid, sendDeliveryEmail } from '@/lib/orders';
+import { audit } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +12,7 @@ export const dynamic = 'force-dynamic';
 //   { action: "markPaid" }                       → confirm an offline payment
 //   { action: "cancel" } / { action: "refund" }  → close the order
 export const PATCH = handler(async (req: NextRequest, { params }: { params: { id: string } }) => {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = Number(params.id);
   const b = await req.json();
   const order = await prisma.order.findUnique({ where: { id }, include: { items: true } });
@@ -44,6 +45,7 @@ export const PATCH = handler(async (req: NextRequest, { params }: { params: { id
   } else {
     return jsonError(400, 'Unknown action');
   }
+  audit(admin, `order.${b.action}`, `Order ${order.code}`);
 
   const fresh = await prisma.order.findUnique({ where: { id }, include: { items: true, user: { select: { name: true, email: true } } } });
   return NextResponse.json({ ok: true, order: fresh });

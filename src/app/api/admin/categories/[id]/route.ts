@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
+import { audit } from '@/lib/audit';
 import { handler, jsonError } from '@/lib/api';
 import { slugify } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
 export const PATCH = handler(async (req: NextRequest, { params }: { params: { id: string } }) => {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = Number(params.id);
   const b = await req.json();
   const category = await prisma.category.update({
@@ -21,14 +22,16 @@ export const PATCH = handler(async (req: NextRequest, { params }: { params: { id
       ...(b.isActive !== undefined ? { isActive: !!b.isActive } : {}),
     },
   });
+  audit(admin, 'category.update', category.name);
   return NextResponse.json({ ok: true, category });
 });
 
 export const DELETE = handler(async (_req: NextRequest, { params }: { params: { id: string } }) => {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = Number(params.id);
   const count = await prisma.product.count({ where: { categoryId: id } });
   if (count > 0) return jsonError(400, `Move or delete the ${count} product(s) in this category first`);
   await prisma.category.delete({ where: { id } });
+  audit(admin, 'category.delete', `#${params.id}`);
   return NextResponse.json({ ok: true });
 });

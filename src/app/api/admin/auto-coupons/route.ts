@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
+import { audit } from '@/lib/audit';
 import { handler, jsonError } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
@@ -32,12 +33,13 @@ function ruleData(b: any) {
 }
 
 export const POST = handler(async (req: NextRequest) => {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const data = ruleData(await req.json());
   if (!data.name) return jsonError(400, 'Rule name is required');
   if (data.value <= 0 || (data.discountType === 'PERCENT' && data.value > 100)) {
     return jsonError(400, 'Invalid discount value');
   }
   const rule = await prisma.autoCouponRule.create({ data });
+  audit(admin, 'autocoupon.create', rule.name);
   return NextResponse.json({ ok: true, rule });
 });
