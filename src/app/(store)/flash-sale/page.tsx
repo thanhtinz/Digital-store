@@ -23,7 +23,8 @@ export default async function FlashSalePage() {
 
   return (
     <div className="container py-8">
-      <h1 className="flex items-center gap-2 text-2xl font-bold"><Icon name="bolt" size={24} className="text-red-600" /> Flash Sale</h1>
+      <p className="section-eyebrow text-red-600">Limited-time deals</p>
+      <h1 className="mt-1 flex items-center gap-2 text-2xl font-bold sm:text-3xl"><Icon name="bolt" size={26} className="text-red-600" /> Flash Sale</h1>
       <p className="mt-1 text-sm text-gray-500">Limited-time prices — once the timer hits zero, they&apos;re gone.</p>
 
       {sales.length === 0 && (

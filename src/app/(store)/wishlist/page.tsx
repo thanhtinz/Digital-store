@@ -22,7 +22,8 @@ export default async function WishlistPage() {
 
   return (
     <div className="container py-8">
-      <h1 className="text-2xl font-bold">Wishlist</h1>
+      <p className="section-eyebrow">Saved for later</p>
+      <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Wishlist</h1>
       {products.length === 0 ? (
         <div className="card mt-6 p-16 text-center">
           <Icon name="heart" size={56} className="mx-auto text-gray-300" />

@@ -25,7 +25,8 @@ export default async function NewsPage({ searchParams }: { searchParams: { page?
 
   return (
     <div className="container py-8">
-      <h1 className="text-2xl font-bold sm:text-3xl">News & updates</h1>
+      <p className="section-eyebrow">Blog</p>
+      <h1 className="mt-1 text-2xl font-bold sm:text-3xl">News & updates</h1>
       <p className="mt-1 text-sm text-gray-500">Product launches, promotions and announcements from the store.</p>
 
       {posts.length === 0 ? (
