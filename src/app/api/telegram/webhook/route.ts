@@ -16,7 +16,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 const HELP = [
   '<b>Commands</b>',
-  '/orders — your 5 latest orders',
+  '/orders — all your orders',
   '/order CODE — details of one order',
   '/balance — wallet balance and loyalty points',
   '/unlink — disconnect this Telegram from your account',
@@ -79,16 +79,28 @@ export async function POST(req: NextRequest) {
     const orders = await prisma.order.findMany({
       where: { userId: user.id },
       orderBy: { id: 'desc' },
-      take: 5,
       select: { code: true, status: true, total: true, createdAt: true },
     });
     if (!orders.length) {
       await reply('No orders yet.');
     } else {
       const lines = orders.map((o) =>
-        `<b>${o.code}</b> · ${formatMoney(Number(o.total))} · ${STATUS_LABEL[o.status] || o.status}`
+        `<b>${o.code}</b> · ${o.createdAt.toISOString().slice(0, 10)} · ${formatMoney(Number(o.total))} · ${STATUS_LABEL[o.status] || o.status}`
       );
-      await reply(`<b>Your latest orders</b>\n${lines.join('\n')}\n\nUse /order CODE for details.`);
+      // Telegram caps messages at 4096 chars — send the full history in chunks.
+      const header = `<b>Your orders (${orders.length})</b>\n`;
+      const footer = '\n\nUse /order CODE for details.';
+      let chunk = header;
+      const chunks: string[] = [];
+      for (const line of lines) {
+        if (chunk.length + line.length + 1 > 3900) {
+          chunks.push(chunk);
+          chunk = '';
+        }
+        chunk += (chunk ? '\n' : '') + line;
+      }
+      chunks.push(chunk + footer);
+      for (const c of chunks) await reply(c);
     }
   } else if (text.startsWith('/order')) {
     const code = (text.split(/\s+/)[1] || '').toUpperCase();

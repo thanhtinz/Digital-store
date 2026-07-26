@@ -19,8 +19,8 @@ export const GET = handler(async () => {
 // POST — (re)register the bot webhook against this store's public URL.
 export const POST = handler(async () => {
   const admin = await requireAdmin();
-  const s = await getSettings(['telegram_bot_token', 'telegram_webhook_secret']);
-  if (!s.telegram_bot_token) return jsonError(400, 'Save your bot token first');
+  const s = await getSettings(['customer_bot_token', 'telegram_webhook_secret']);
+  if (!s.customer_bot_token) return jsonError(400, 'Save the customer bot token first');
 
   const secret = s.telegram_webhook_secret || crypto.randomBytes(24).toString('hex');
   if (!s.telegram_webhook_secret) await setSettings({ telegram_webhook_secret: secret });

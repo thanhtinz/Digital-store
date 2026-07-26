@@ -12,9 +12,9 @@ export const dynamic = 'force-dynamic';
 // GET — current Telegram link status for the account page.
 export const GET = handler(async () => {
   const user = await requireUser();
-  const s = await getSettings(['telegram_bot_token']);
+  const s = await getSettings(['customer_bot_token']);
   return NextResponse.json({
-    available: !!s.telegram_bot_token,
+    available: !!s.customer_bot_token,
     linked: !!user.telegramChatId,
     channel: user.notifyChannel,
   });

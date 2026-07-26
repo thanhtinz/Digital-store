@@ -96,10 +96,14 @@ export default function AdminNotificationSettingsPage() {
           <Icon name="users" className="text-brand-600" /> Customer bot
         </h2>
         <p className="mt-1 text-xs text-gray-500">
-          The same bot can serve your customers: they link it from Account &amp; security, check orders and balance
-          with commands, and can choose to receive order updates on Telegram instead of email. This needs the
-          webhook below registered once (and again if your site URL changes).
+          A separate, public-facing bot for your customers: they link it from Account &amp; security, check their
+          orders and balance with commands, and can choose to receive order updates on Telegram instead of email.
+          Use a different bot from the admin alerts above so your private alerts stay private.
         </p>
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          {field(s, set, { k: 'customer_bot_token', label: 'Customer bot token', type: 'password', placeholder: '123456:ABC-DEF…', help: 'Create a second bot with @BotFather just for customers.' })}
+        </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <button className="btn-primary" onClick={activate} disabled={hookBusy}>
@@ -117,8 +121,8 @@ export default function AdminNotificationSettingsPage() {
           <p className="mt-2 text-xs text-red-500">Last delivery error from Telegram: {hook.lastError}</p>
         )}
         <p className="mt-3 text-xs text-gray-400">
-          Requires the bot token above and a public site URL (Site settings → Public site URL). Customers get:
-          /orders, /order CODE, /balance, /unlink.
+          Requires the customer bot token and a public site URL (Site settings → Public site URL). Save settings
+          before registering. Customers get: /orders, /order CODE, /balance, /unlink.
         </p>
       </div>
     </div>

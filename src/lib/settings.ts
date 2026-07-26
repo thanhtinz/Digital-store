@@ -47,6 +47,7 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   telegram_enabled: 'false',
   telegram_bot_token: '',
   telegram_chat_id: '',
+  customer_bot_token: '',
   affiliate_rate: '10',         // commission percent
 };
 
