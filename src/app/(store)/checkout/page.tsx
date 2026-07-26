@@ -31,6 +31,8 @@ export default function CheckoutPage() {
   );
 }
 
+type LoyaltyInfo = { enabled: boolean; points: number; redeemValue: number; minRedeem: number };
+
 function CheckoutInner() {
   const { user, toast } = useStore();
   const router = useRouter();
@@ -40,17 +42,21 @@ function CheckoutInner() {
   const [items, setItems] = useState<CartItemView[] | null>(null);
   const [buyNow, setBuyNow] = useState<{ packageId: number; quantity: number; customFieldsData: Record<string, string> } | null>(null);
   const [pay, setPay] = useState<PublicPay>({ stripeEnabled: false, paypalEnabled: false });
-  const [method, setMethod] = useState<'stripe' | 'paypal'>('stripe');
+  const [method, setMethod] = useState<'stripe' | 'paypal' | 'balance'>('stripe');
+  const [loyalty, setLoyalty] = useState<LoyaltyInfo | null>(null);
+  const [usePoints, setUsePoints] = useState(false);
   const [coupon, setCoupon] = useState('');
   const [applied, setApplied] = useState<{ code: string; discount: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [applying, setApplying] = useState(false);
 
   useEffect(() => {
+    api<LoyaltyInfo>('/api/loyalty/me').then(setLoyalty).catch(() => {});
     api<{ payments: PublicPay }>('/api/public/config')
       .then((d) => {
         setPay(d.payments);
         if (!d.payments.stripeEnabled && d.payments.paypalEnabled) setMethod('paypal');
+        else if (!d.payments.stripeEnabled && !d.payments.paypalEnabled) setMethod('balance');
       })
       .catch(() => {});
   }, []);
@@ -87,7 +93,12 @@ function CheckoutInner() {
   const effectiveItems = items;
   const subtotal = effectiveItems.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
   const discount = applied?.discount || 0;
-  const total = Math.max(0, subtotal - discount);
+  const canRedeem = !!loyalty?.enabled && (loyalty?.points || 0) >= (loyalty?.minRedeem || 0) && (loyalty?.redeemValue || 0) > 0;
+  const pointsDiscount = usePoints && canRedeem && loyalty
+    ? Math.min(Math.round(loyalty.points * loyalty.redeemValue * 100) / 100, Math.max(0, subtotal - discount - 0.5))
+    : 0;
+  const total = Math.max(0, Math.round((subtotal - discount - pointsDiscount) * 100) / 100);
+  const balance = user?.balance ?? 0;
   const nothingToBuy = !buyNow && effectiveItems.length === 0;
 
   const applyCoupon = async () => {
@@ -109,17 +120,22 @@ function CheckoutInner() {
   };
 
   const placeOrder = async () => {
-    if (!pay.stripeEnabled && !pay.paypalEnabled) {
+    if (method !== 'balance' && !pay.stripeEnabled && !pay.paypalEnabled) {
       toast('No payment method is available. Please contact support.', 'error');
+      return;
+    }
+    if (method === 'balance' && !buyNow && balance < total) {
+      toast('Insufficient wallet balance — top up first', 'error');
       return;
     }
     setBusy(true);
     try {
-      const d = await api<{ redirectUrl: string; orderCode: string }>('/api/checkout', {
+      const d = await api<{ redirectUrl: string; orderCode: string; paid?: boolean }>('/api/checkout', {
         method: 'POST',
         json: {
           paymentMethod: method,
           couponCode: applied?.code,
+          redeemPoints: usePoints && canRedeem && loyalty ? loyalty.points : undefined,
           ...(buyNow ? { buyNow } : {}),
         },
       });
@@ -147,6 +163,23 @@ function CheckoutInner() {
             <div className="card p-5">
               <h2 className="font-bold">Payment method</h2>
               <div className="mt-4 space-y-2.5">
+                <button
+                  onClick={() => setMethod('balance')}
+                  className={`flex w-full items-center gap-3 rounded-xl border-2 p-4 text-left transition ${
+                    method === 'balance' ? 'border-brand-600 bg-brand-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-green-50 text-green-700"><Icon name="credit-card" size={22} /></span>
+                  <span className="flex-1">
+                    <span className="block text-sm font-semibold">Wallet balance</span>
+                    <span className="block text-xs text-gray-500">
+                      Available: <b className={balance >= total ? 'text-green-600' : 'text-red-500'}>{formatMoney(balance)}</b> — instant, no redirect
+                    </span>
+                  </span>
+                  {balance < total && !buyNow && (
+                    <a href="/wallet" onClick={(e) => e.stopPropagation()} className="text-xs font-semibold text-brand-600 hover:underline">Top up</a>
+                  )}
+                </button>
                 <button
                   onClick={() => setMethod('stripe')}
                   disabled={!pay.stripeEnabled}
@@ -176,6 +209,20 @@ function CheckoutInner() {
                   {!pay.paypalEnabled && <span className="text-xs text-gray-400">Unavailable</span>}
                 </button>
               </div>
+              {canRedeem && loyalty && (
+                <label className="mt-4 flex cursor-pointer items-center gap-3 rounded-xl bg-amber-50 p-4">
+                  <input type="checkbox" checked={usePoints} onChange={(e) => setUsePoints(e.target.checked)} />
+                  <span className="flex-1">
+                    <span className="block text-sm font-semibold text-amber-800">
+                      Use my {loyalty.points.toLocaleString('en-US')} loyalty points
+                    </span>
+                    <span className="block text-xs text-amber-700">
+                      Save up to {formatMoney(Math.min(loyalty.points * loyalty.redeemValue, Math.max(0, subtotal - discount - 0.5)))} on this order
+                    </span>
+                  </span>
+                  <Icon name="star" size={18} className="text-amber-500" />
+                </label>
+              )}
               <p className="mt-4 text-xs text-gray-400">
                 You&apos;ll be redirected to a secure hosted payment page. We never see or store your card details.
               </p>
@@ -237,12 +284,15 @@ function CheckoutInner() {
                   {discount > 0 && (
                     <div className="flex justify-between text-green-600"><span>Discount</span><span>−{formatMoney(discount)}</span></div>
                   )}
+                  {pointsDiscount > 0 && (
+                    <div className="flex justify-between text-amber-600"><span>Loyalty points</span><span>−{formatMoney(pointsDiscount)}</span></div>
+                  )}
                   <div className="flex justify-between pt-1 text-base font-bold"><span>Total</span><span>{formatMoney(total)}</span></div>
                 </>
               )}
             </div>
             <button className="btn-primary mt-5 w-full" onClick={placeOrder} disabled={busy}>
-              {busy ? 'Redirecting to payment…' : method === 'paypal' ? 'Pay with PayPal' : 'Pay with card'}
+              {busy ? 'Processing…' : method === 'balance' ? `Pay ${buyNow ? 'with balance' : formatMoney(total)} from wallet` : method === 'paypal' ? 'Pay with PayPal' : 'Pay with card'}
             </button>
             <p className="mt-3 flex items-center justify-center gap-1 text-center text-xs text-gray-400"><Icon name="lock" size={13} /> 256-bit SSL secure payment</p>
           </div>

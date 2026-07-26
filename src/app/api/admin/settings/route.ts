@@ -22,6 +22,9 @@ const ALL_KEYS = [
   'google_login_enabled', 'google_client_id', 'google_client_secret',
   // SMTP
   'smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'smtp_from',
+  // Rewards & affiliate
+  'loyalty_enabled', 'loyalty_earn_rate', 'loyalty_redeem_value', 'loyalty_min_redeem',
+  'affiliate_enabled', 'affiliate_rate',
 ];
 
 export const GET = handler(async () => {

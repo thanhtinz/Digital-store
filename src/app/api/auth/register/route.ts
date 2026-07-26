@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import prisma from '@/lib/db';
 import { hashPassword, issueToken, setSessionCookie } from '@/lib/auth';
 import { handler, jsonError } from '@/lib/api';
@@ -26,12 +27,21 @@ export const POST = handler(async (req: NextRequest) => {
   const s = await getSettings(['require_email_verification', 'site_name']);
   const requireVerify = s.require_email_verification === 'true';
 
+  // Affiliate attribution from the referral cookie (set on ?ref= visits).
+  let referredById: number | null = null;
+  const refCode = cookies().get('ds_ref')?.value;
+  if (refCode) {
+    const referrer = await prisma.user.findUnique({ where: { refCode } });
+    if (referrer) referredById = referrer.id;
+  }
+
   const user = await prisma.user.create({
     data: {
       email,
       name,
       passwordHash: hashPassword(password),
       emailVerifiedAt: requireVerify ? null : new Date(),
+      referredById,
     },
   });
 

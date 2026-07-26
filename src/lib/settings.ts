@@ -32,6 +32,12 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   google_login_enabled: 'false',
   require_email_verification: 'true',
   footer_text: '',
+  loyalty_enabled: 'false',
+  loyalty_earn_rate: '1',      // points per $1 spent
+  loyalty_redeem_value: '0.01', // dollars per point
+  loyalty_min_redeem: '100',    // minimum points to redeem
+  affiliate_enabled: 'false',
+  affiliate_rate: '10',         // commission percent
 };
 
 export async function getSettings(keys: string[]): Promise<Record<string, string>> {

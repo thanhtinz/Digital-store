@@ -2,7 +2,8 @@ import prisma from './db';
 import { getActiveFlashPrices, effectivePrice } from './catalog';
 import { checkCoupon } from './coupons';
 import { generateOrderCode, parseCustomFields } from './utils';
-import { getSetting } from './settings';
+import { getSetting, getSettings } from './settings';
+import { creditWallet } from './wallet';
 import { sendMail, emailLayout } from './mail';
 
 export type CheckoutItemInput = {
@@ -20,9 +21,10 @@ export async function createOrder(params: {
   email: string;
   items: CheckoutItemInput[];
   couponCode?: string;
-  paymentMethod: 'stripe' | 'paypal';
+  redeemPoints?: number;
+  paymentMethod: 'stripe' | 'paypal' | 'balance';
 }) {
-  const { userId, email, items, couponCode, paymentMethod } = params;
+  const { userId, email, items, couponCode, redeemPoints, paymentMethod } = params;
   if (!items.length) throw new OrderError('Your cart is empty');
   if (items.length > 50) throw new OrderError('Too many items in one order');
 
@@ -75,7 +77,26 @@ export async function createOrder(params: {
     couponId = check.couponId;
     appliedCoupon = check.code;
   }
-  const total = Math.round((subtotal - discount) * 100) / 100;
+  // Loyalty redemption — points become an extra discount, capped so the
+  // remaining total never drops below the payment minimum.
+  let pointsUsed = 0;
+  let pointsDiscount = 0;
+  if (redeemPoints && redeemPoints > 0) {
+    const ls = await getSettings(['loyalty_enabled', 'loyalty_redeem_value', 'loyalty_min_redeem']);
+    if (ls.loyalty_enabled !== 'true') throw new OrderError('Loyalty points are not enabled');
+    const redeemValue = Number(ls.loyalty_redeem_value) || 0;
+    const minRedeem = Number(ls.loyalty_min_redeem) || 0;
+    const buyer = await prisma.user.findUnique({ where: { id: userId } });
+    const have = buyer?.loyaltyPoints || 0;
+    if (redeemValue <= 0 || have < minRedeem) throw new OrderError(`You need at least ${minRedeem} points to redeem`);
+    const wanted = Math.min(Math.floor(redeemPoints), have);
+    const maxDiscount = Math.max(0, subtotal - discount - 0.5);
+    pointsDiscount = Math.min(Math.round(wanted * redeemValue * 100) / 100, Math.round(maxDiscount * 100) / 100);
+    pointsUsed = Math.ceil(pointsDiscount / redeemValue);
+    if (pointsUsed <= 0) { pointsUsed = 0; pointsDiscount = 0; }
+  }
+
+  const total = Math.round((subtotal - discount - pointsDiscount) * 100) / 100;
   if (total < 0.5) throw new OrderError('Order total is below the payment minimum ($0.50)');
 
   const currency = (await getSetting('currency')) || 'USD';
@@ -87,10 +108,11 @@ export async function createOrder(params: {
         userId,
         email,
         subtotal,
-        discount,
+        discount: Math.round((discount + pointsDiscount) * 100) / 100,
         total,
         currency,
         couponCode: appliedCoupon,
+        pointsUsed,
         paymentMethod,
         items: {
           create: orderItems.map(({ flashSaleItemId, ...it }) => it),
@@ -101,6 +123,13 @@ export async function createOrder(params: {
     if (couponId) {
       await tx.coupon.update({ where: { id: couponId }, data: { usedCount: { increment: 1 } } });
       await tx.couponRedemption.create({ data: { couponId, userId, orderId: created.id } });
+    }
+    if (pointsUsed > 0) {
+      const res = await tx.user.updateMany({
+        where: { id: userId, loyaltyPoints: { gte: pointsUsed } },
+        data: { loyaltyPoints: { decrement: pointsUsed } },
+      });
+      if (res.count !== 1) throw new OrderError('Not enough loyalty points');
     }
     // Reserve flash-sale allocation.
     for (const it of orderItems) {
@@ -139,6 +168,31 @@ export async function markOrderPaid(orderId: number, paymentRef?: string): Promi
 
   await autoDeliver(orderId);
   await sendOrderEmail(orderId).catch(() => {});
+  await grantRewards(orderId).catch(() => {});
+}
+
+// Loyalty points for the buyer + affiliate commission for their referrer.
+async function grantRewards(orderId: number): Promise<void> {
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order) return;
+  const s = await getSettings(['loyalty_enabled', 'loyalty_earn_rate', 'affiliate_enabled', 'affiliate_rate']);
+
+  if (s.loyalty_enabled === 'true') {
+    const earned = Math.floor(Number(order.total) * (Number(s.loyalty_earn_rate) || 0));
+    if (earned > 0) {
+      await prisma.user.update({ where: { id: order.userId }, data: { loyaltyPoints: { increment: earned } } });
+    }
+  }
+
+  if (s.affiliate_enabled === 'true') {
+    const buyer = await prisma.user.findUnique({ where: { id: order.userId } });
+    if (buyer?.referredById && buyer.referredById !== buyer.id) {
+      const commission = Math.round(Number(order.total) * (Number(s.affiliate_rate) || 0)) / 100;
+      if (commission > 0) {
+        await creditWallet(buyer.referredById, commission, 'COMMISSION', `Referral commission — order ${order.code}`);
+      }
+    }
+  }
 }
 
 // Delivers items whose package has auto-delivery enabled, pulling unsold

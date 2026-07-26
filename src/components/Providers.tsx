@@ -12,6 +12,8 @@ export type SessionUser = {
   twoFactorEnabled: boolean;
   emailVerified: boolean;
   hasPassword: boolean;
+  balance: number;
+  loyaltyPoints: number;
 };
 
 type Toast = { id: number; message: string; kind: 'success' | 'error' };
@@ -60,6 +62,11 @@ export default function Providers({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     refreshUser().then(refreshCart);
+    // Affiliate attribution: persist ?ref= for 30 days.
+    const ref = new URLSearchParams(window.location.search).get('ref');
+    if (ref && /^[a-z0-9]{4,20}$/i.test(ref)) {
+      document.cookie = `ds_ref=${ref}; path=/; max-age=${30 * 86400}; samesite=lax`;
+    }
   }, [refreshUser, refreshCart]);
 
   const toast = useCallback((message: string, kind: 'success' | 'error' = 'success') => {

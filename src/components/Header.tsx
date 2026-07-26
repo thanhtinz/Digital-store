@@ -185,6 +185,11 @@ export default function Header({ siteName, logo, categories }: Props) {
                     </Link>
                   )}
                   <Link href="/orders" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">My orders</Link>
+                  <Link href="/wallet" onClick={closeAll} className="flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-50">
+                    Wallet
+                    <span className="text-xs font-bold text-brand-600">${(user.balance ?? 0).toFixed(2)}</span>
+                  </Link>
+                  <Link href="/affiliate" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">Affiliate program</Link>
                   <Link href="/wishlist" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">Wishlist</Link>
                   <Link href="/support" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">Support</Link>
                   <Link href="/account" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">Account & security</Link>
@@ -267,6 +272,9 @@ export default function Header({ siteName, logo, categories }: Props) {
                   <>
                     <Link href="/orders" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
                       <Icon name="box" size={17} className="text-gray-400" /> My orders
+                    </Link>
+                    <Link href="/wallet" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
+                      <Icon name="credit-card" size={17} className="text-gray-400" /> Wallet
                     </Link>
                     <Link href="/wishlist" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
                       <Icon name="heart" size={17} className="text-gray-400" /> Wishlist
