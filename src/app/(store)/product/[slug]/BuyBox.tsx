@@ -44,8 +44,11 @@ function OutOfStockNotice({ packageId }: { packageId: number }) {
 
   return (
     <div className="mt-3 rounded-lg bg-amber-50 p-3">
-      <p className="text-xs text-amber-700">
-        This package is temporarily out of auto-delivery stock — orders are fulfilled manually by our team, usually within a few hours.
+      <p className="text-xs font-semibold text-amber-800">
+        This package is currently out of stock and cannot be ordered.
+      </p>
+      <p className="mt-0.5 text-xs text-amber-700">
+        Leave your email and we will let you know the moment it is available again.
       </p>
       {done ? (
         <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-green-700">
@@ -89,6 +92,8 @@ export default function BuyBox({ productId, packages }: { productId: number; pac
   }
 
   const strike = pkg.onSale ? pkg.originalPrice : pkg.comparePrice;
+  const soldOut = pkg.stock !== null && pkg.stock === 0;
+  const maxQty = pkg.stock === null ? 100 : Math.max(1, Math.min(100, pkg.stock));
 
   const validateFields = (): Record<string, string> | null => {
     const data: Record<string, string> = {};
@@ -145,7 +150,10 @@ export default function BuyBox({ productId, packages }: { productId: number; pac
         {packages.map((p) => (
           <button
             key={p.id}
-            onClick={() => setSelectedId(p.id)}
+            onClick={() => {
+              setSelectedId(p.id);
+              setQuantity((q) => Math.min(q, p.stock === null ? 100 : Math.max(1, p.stock)));
+            }}
             className={`rounded-xl border-2 p-3 text-left transition ${
               p.id === pkg.id ? 'border-brand-600 bg-brand-50' : 'border-gray-200 bg-white hover:border-gray-300'
             }`}
@@ -157,7 +165,7 @@ export default function BuyBox({ productId, packages }: { productId: number; pac
                 {p.stock === null ? null : p.stock > 0 ? (
                   <span className="badge gap-1 bg-green-100 text-green-700"><Icon name="bolt" size={11} /> Instant</span>
                 ) : (
-                  <span className="badge bg-amber-100 text-amber-700">Backorder</span>
+                  <span className="badge bg-red-100 text-red-700">Out of stock</span>
                 )}
               </span>
             </div>
@@ -181,7 +189,7 @@ export default function BuyBox({ productId, packages }: { productId: number; pac
       </div>
 
       {/* Custom fields required for this package */}
-      {pkg.customFields.length > 0 && (
+      {!soldOut && pkg.customFields.length > 0 && (
         <div className="mt-4 space-y-3 rounded-xl bg-gray-50 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Required information</p>
           {pkg.customFields.map((def) => (
@@ -212,25 +220,32 @@ export default function BuyBox({ productId, packages }: { productId: number; pac
         </div>
       )}
 
-      {pkg.stock !== null && pkg.stock === 0 && <OutOfStockNotice packageId={pkg.id} />}
-
-      {/* Quantity + actions */}
-      <div className="mt-5 flex flex-wrap items-center gap-3">
-        <div className="flex items-center rounded-lg border border-gray-300">
-          <button className="px-3 py-2 text-lg leading-none hover:bg-gray-100" onClick={() => setQuantity((q) => Math.max(1, q - 1))}>−</button>
-          <span className="w-10 text-center text-sm font-semibold">{quantity}</span>
-          <button className="px-3 py-2 text-lg leading-none hover:bg-gray-100" onClick={() => setQuantity((q) => Math.min(100, q + 1))}>+</button>
-        </div>
-        <button className="btn-secondary flex-1" onClick={addToCart} disabled={busy !== ''}>
-          {busy === 'cart' ? 'Adding…' : (<><Icon name="cart" size={17} /> Add to cart</>)}
-        </button>
-        <button className="btn-primary flex-1" onClick={buyNow} disabled={busy !== ''}>
-          Buy now
-        </button>
-      </div>
-      <p className="mt-3 text-center text-xs text-gray-400">
-        Secure checkout · Visa / Mastercard via Stripe · PayPal
-      </p>
+      {soldOut ? (
+        <OutOfStockNotice packageId={pkg.id} />
+      ) : (
+        <>
+          {/* Quantity + actions */}
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <div className="flex items-center rounded-lg border border-gray-300">
+              <button className="px-3 py-2 text-lg leading-none hover:bg-gray-100" onClick={() => setQuantity((q) => Math.max(1, q - 1))}>−</button>
+              <span className="w-10 text-center text-sm font-semibold">{quantity}</span>
+              <button className="px-3 py-2 text-lg leading-none hover:bg-gray-100" onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}>+</button>
+            </div>
+            <button className="btn-secondary flex-1" onClick={addToCart} disabled={busy !== ''}>
+              {busy === 'cart' ? 'Adding…' : (<><Icon name="cart" size={17} /> Add to cart</>)}
+            </button>
+            <button className="btn-primary flex-1" onClick={buyNow} disabled={busy !== ''}>
+              Buy now
+            </button>
+          </div>
+          {pkg.stock !== null && pkg.stock > 0 && pkg.stock <= 10 && (
+            <p className="mt-2 text-xs font-semibold text-amber-600">Only {pkg.stock} left in stock</p>
+          )}
+          <p className="mt-3 text-center text-xs text-gray-400">
+            Secure checkout · Visa / Mastercard via Stripe · PayPal
+          </p>
+        </>
+      )}
     </div>
   );
 }
