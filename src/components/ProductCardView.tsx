@@ -19,7 +19,7 @@ export default function ProductCardView({ product }: { product: ProductCard }) {
   return (
     <Link
       href={`/product/${product.slug}`}
-      className="card group flex flex-col overflow-hidden transition hover:-translate-y-0.5 hover:shadow-md"
+      className="card group flex flex-col overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-brand-200 hover:shadow-[0_2px_4px_rgba(16,24,40,.06),0_20px_36px_-16px_rgba(79,70,229,.25)]"
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
         {product.image ? (
@@ -27,33 +27,40 @@ export default function ProductCardView({ product }: { product: ProductCard }) {
           <img
             src={product.image}
             alt={product.name}
-            className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.06]"
             loading="lazy"
           />
         ) : (
           <div className="grid h-full w-full place-items-center text-gray-300"><Icon name="bag" size={44} /></div>
         )}
         {product.onSale && (
-          <span className="badge absolute left-2 top-2 bg-red-600 text-white">SALE</span>
+          <span className="badge absolute left-2.5 top-2.5 gap-1 bg-gradient-to-r from-red-600 to-orange-500 text-white shadow-md">
+            <Icon name="bolt" size={11} /> SALE
+          </span>
         )}
       </div>
-      <div className="flex flex-1 flex-col p-3.5">
+      <div className="flex flex-1 flex-col p-4">
         {product.categoryName && (
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-600">{product.categoryName}</p>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-brand-600">{product.categoryName}</p>
         )}
-        <h3 className="mt-0.5 line-clamp-2 text-sm font-semibold leading-snug">{product.name}</h3>
+        <h3 className="mt-1 line-clamp-2 text-sm font-semibold leading-snug transition-colors group-hover:text-brand-700">{product.name}</h3>
         <div className="mt-1.5 flex items-center gap-1.5 text-xs text-gray-500">
           <Stars value={product.ratingAvg} />
           <span>({product.ratingCount})</span>
           {product.soldCount > 0 && <span>· {product.soldCount.toLocaleString('en-US')} sold</span>}
         </div>
-        <div className="mt-auto flex items-baseline gap-2 pt-2">
-          <span className="text-base font-bold text-gray-900">
-            {product.minPrice > 0 ? formatMoney(product.minPrice) : 'Free'}
+        <div className="mt-auto flex items-center justify-between gap-2 pt-3">
+          <span className="flex items-baseline gap-2">
+            <span className="text-base font-extrabold text-gray-900">
+              {product.minPrice > 0 ? formatMoney(product.minPrice) : 'Free'}
+            </span>
+            {product.onSale && product.minOriginal > product.minPrice && (
+              <span className="text-xs text-gray-400 line-through">{formatMoney(product.minOriginal)}</span>
+            )}
           </span>
-          {product.onSale && product.minOriginal > product.minPrice && (
-            <span className="text-xs text-gray-400 line-through">{formatMoney(product.minOriginal)}</span>
-          )}
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gray-100 text-gray-400 transition-all group-hover:bg-brand-600 group-hover:text-white">
+            <Icon name="arrow-right" size={15} />
+          </span>
         </div>
       </div>
     </Link>

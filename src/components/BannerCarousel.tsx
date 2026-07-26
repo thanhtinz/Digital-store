@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Icon from './icons';
 
 type Banner = { id: number; title: string | null; subtitle: string | null; imageUrl: string; linkUrl: string | null };
 
@@ -16,8 +17,11 @@ export default function BannerCarousel({ banners }: { banners: Banner[] }) {
 
   if (!banners.length) return null;
 
+  const prev = () => setIndex((i) => (i - 1 + banners.length) % banners.length);
+  const next = () => setIndex((i) => (i + 1) % banners.length);
+
   return (
-    <div className="relative overflow-hidden rounded-2xl">
+    <div className="group relative overflow-hidden rounded-3xl shadow-[0_24px_48px_-24px_rgba(16,24,40,.35)]">
       <div
         className="flex transition-transform duration-500 ease-out"
         style={{ transform: `translateX(-${index * 100}%)` }}
@@ -43,7 +47,25 @@ export default function BannerCarousel({ banners }: { banners: Banner[] }) {
         })}
       </div>
       {banners.length > 1 && (
-        <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
+        <>
+          <button
+            aria-label="Previous slide"
+            onClick={prev}
+            className="absolute left-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/85 text-gray-700 opacity-0 shadow-md backdrop-blur transition hover:bg-white group-hover:opacity-100"
+          >
+            <Icon name="chevron-right" size={18} className="rotate-180" />
+          </button>
+          <button
+            aria-label="Next slide"
+            onClick={next}
+            className="absolute right-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/85 text-gray-700 opacity-0 shadow-md backdrop-blur transition hover:bg-white group-hover:opacity-100"
+          >
+            <Icon name="chevron-right" size={18} />
+          </button>
+        </>
+      )}
+      {banners.length > 1 && (
+        <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5 rounded-full bg-black/20 px-2 py-1.5 backdrop-blur">
           {banners.map((_, i) => (
             <button
               key={i}
