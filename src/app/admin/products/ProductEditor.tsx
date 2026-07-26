@@ -237,7 +237,10 @@ export default function ProductEditor({ product, categories, onClose }: {
       {/* Packages */}
       <div className="card p-5">
         <div className="flex items-center justify-between">
-          <h2 className="font-bold">Packages & pricing</h2>
+          <div>
+            <h2 className="font-bold">Packages & pricing</h2>
+            <p className="mt-0.5 text-xs text-gray-500">Each package chooses its own delivery method. Automatic packages appear in Admin → Auto delivery where you manage their stock pools.</p>
+          </div>
           <button
             className="btn-secondary px-3 py-1.5 text-xs"
             onClick={() => setPackages((p) => [...p, { name: `Package ${p.length + 1}`, description: '', price: '', comparePrice: '', autoDeliver: false, isActive: true, customFields: [] }])}
@@ -262,10 +265,18 @@ export default function ProductEditor({ product, categories, onClose }: {
                   <input className="input" type="number" min="0" step="0.01" placeholder="optional" value={pkg.comparePrice} onChange={(e) => updatePkg(i, { comparePrice: e.target.value })} />
                 </div>
                 <div className="flex items-end gap-3 pb-1 text-sm">
-                  <label className="flex items-center gap-1.5"><input type="checkbox" checked={pkg.isActive} onChange={(e) => updatePkg(i, { isActive: e.target.checked })} /> Active</label>
-                  <label className="flex items-center gap-1.5" title="Deliver automatically from the stock pool when paid">
-                    <input type="checkbox" checked={pkg.autoDeliver} onChange={(e) => updatePkg(i, { autoDeliver: e.target.checked })} /> Auto-deliver
-                  </label>
+                  <div className="flex-1">
+                    <label className="label">Delivery method</label>
+                    <select
+                      className="input"
+                      value={pkg.autoDeliver ? 'auto' : 'manual'}
+                      onChange={(e) => updatePkg(i, { autoDeliver: e.target.value === 'auto' })}
+                    >
+                      <option value="manual">Manual — admin fulfills each order</option>
+                      <option value="auto">Automatic — instant from stock pool</option>
+                    </select>
+                  </div>
+                  <label className="flex items-center gap-1.5 pb-2.5"><input type="checkbox" checked={pkg.isActive} onChange={(e) => updatePkg(i, { isActive: e.target.checked })} /> Active</label>
                 </div>
                 <div className="sm:col-span-4">
                   <label className="label">Short description</label>

@@ -12,7 +12,7 @@ export const GET = handler(async () => {
     where: { product: { isActive: true } },
     orderBy: [{ productId: 'asc' }, { sortOrder: 'asc' }],
     include: {
-      product: { select: { id: true, name: true, slug: true } },
+      product: { select: { id: true, name: true, slug: true, images: { orderBy: { sortOrder: 'asc' }, take: 1 } } },
     },
   });
   const [unsoldGroups, soldGroups, sold30Groups] = await Promise.all([
@@ -31,6 +31,7 @@ export const GET = handler(async () => {
     packageId: p.id,
     productId: p.product.id,
     productName: p.product.name,
+    productImage: p.product.images[0]?.url || null,
     productSlug: p.product.slug,
     packageName: p.name,
     autoDeliver: p.autoDeliver,
