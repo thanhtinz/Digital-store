@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 const MASK = '••••••••';
 const SECRET_KEYS = new Set([
   'stripe_secret_key', 'stripe_webhook_secret',
-  'paypal_client_secret', 'google_client_secret', 'smtp_pass', 'telegram_bot_token',
+  'paypal_client_secret', 'google_client_secret', 'smtp_pass', 'telegram_bot_token', 'customer_bot_token',
 ]);
 const ALL_KEYS = [
   // Site
@@ -28,7 +28,7 @@ const ALL_KEYS = [
   'loyalty_enabled', 'loyalty_earn_rate', 'loyalty_redeem_value', 'loyalty_min_redeem',
   'affiliate_enabled', 'affiliate_rate',
   // Telegram notifications
-  'telegram_enabled', 'telegram_bot_token', 'telegram_chat_id',
+  'telegram_enabled', 'telegram_bot_token', 'telegram_chat_id', 'customer_bot_token',
 ];
 
 export const GET = handler(async () => {
