@@ -24,7 +24,7 @@ export async function notifyRestock(packageId: number): Promise<number> {
   const html = emailLayout(
     siteName,
     title,
-    `<p><b>${pkg.product.name} — ${pkg.name}</b> is available again with instant delivery.</p>
+    `<p><b>${pkg.product.name} — ${pkg.name}</b> is available again.</p>
      <p>Stock is limited, so grab yours while it lasts.</p>
      ${buttonHtml(url, 'View product')}`
   );

@@ -157,6 +157,9 @@ model Package {
   comparePrice Decimal? @map("compare_price") @db.Decimal(10, 2) // strike-through price
   customFields Json?    @map("custom_fields")
   autoDeliver  Boolean  @default(false) @map("auto_deliver") // deliver from StockItem pool on payment
+  // Manual availability switch for manually-fulfilled packages. Automatic
+  // packages derive availability from their stock pool instead.
+  inStock      Boolean  @default(true) @map("in_stock")
   // Text automatically appended below the delivered codes (activation steps,
   // warranty info…). Only used when autoDeliver is on.
   deliveryNote String?  @map("delivery_note")

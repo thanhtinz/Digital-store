@@ -26,7 +26,7 @@ async function serializeCart(userId: number) {
   const stockFor = (id: number) => stockGroups.find((g) => g.packageId === id)?._count ?? 0;
   return items.map((item) => {
     const eff = effectivePrice(item.package, flash);
-    const stock = item.package.autoDeliver ? stockFor(item.packageId) : null;
+    const stock = item.package.autoDeliver ? stockFor(item.packageId) : item.package.inStock ? null : 0;
     return {
       id: item.id,
       packageId: item.packageId,
@@ -64,6 +64,8 @@ export const POST = handler(async (req: NextRequest) => {
   });
   if (!pkg) return jsonError(404, 'This item is not available');
 
+  if (!pkg.autoDeliver && !pkg.inStock) return jsonError(400, 'This package is out of stock');
+
   // Auto-delivered packages can only be bought while stock lasts.
   if (pkg.autoDeliver) {
     const [stock, existing] = await Promise.all([
@@ -94,6 +96,9 @@ export const PATCH = handler(async (req: NextRequest) => {
   if (!item) return jsonError(404, 'Cart item not found');
 
   const quantity = Math.floor(Number(body.quantity));
+  if (Number.isFinite(quantity) && quantity > 0 && !item.package.autoDeliver && !item.package.inStock) {
+    return jsonError(400, 'This package is out of stock');
+  }
   if (Number.isFinite(quantity) && quantity > 0 && item.package.autoDeliver) {
     const stock = await prisma.stockItem.count({ where: { packageId: item.packageId, isSold: false } });
     if (quantity > stock) return jsonError(400, stock === 0 ? 'This package is out of stock' : `Only ${stock} left in stock`);

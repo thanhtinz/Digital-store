@@ -62,6 +62,7 @@ export const POST = handler(async (req: NextRequest) => {
           comparePrice: p.comparePrice ? Number(p.comparePrice) : null,
           customFields: parseCustomFields(p.customFields),
           autoDeliver: !!p.autoDeliver,
+          inStock: p.inStock !== false,
           sortOrder: i,
           isActive: p.isActive !== false,
         })),

@@ -43,6 +43,9 @@ export async function createOrder(params: {
     : [];
   for (const item of items) {
     const pkg = packages.find((p) => p.id === item.packageId);
+    if (pkg && !pkg.autoDeliver && !pkg.inStock) {
+      throw new OrderError(`${pkg.product.name} — ${pkg.name} is out of stock`);
+    }
     if (!pkg?.autoDeliver) continue;
     const stock = stockGroups.find((g) => g.packageId === pkg.id)?._count ?? 0;
     const quantity = Math.min(Math.max(1, Math.floor(item.quantity || 1)), 100);

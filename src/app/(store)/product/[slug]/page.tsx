@@ -71,7 +71,8 @@ export default async function ProductPage({ params }: { params: { slug: string }
       onSale: eff.onSale,
       saleEndsAt: eff.onSale && flashInfo ? flashInfo.endsAt.toISOString() : null,
       customFields: parseCustomFields(pkg.customFields),
-      stock: pkg.autoDeliver ? stockFor(pkg.id) : null, // null = fulfilled manually, always available
+      // null = always available; 0 = sold out (empty pool, or manual package flagged out of stock)
+      stock: pkg.autoDeliver ? stockFor(pkg.id) : pkg.inStock ? null : 0,
     };
   });
 
