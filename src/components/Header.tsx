@@ -66,17 +66,19 @@ export default function Header({ siteName, logo, categories }: Props) {
           <Icon name="menu" size={22} />
         </button>
 
-        {/* Logo */}
+        {/* Logo — an uploaded image replaces the text entirely */}
         <Link href="/" className="flex shrink-0 items-center gap-2" onClick={closeAll}>
           {logo ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logo} alt={siteName} className="h-9 w-auto max-w-[150px] object-contain" />
+            <img src={logo} alt={siteName} className="h-9 w-auto max-w-[170px] object-contain" />
           ) : (
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-lg font-extrabold text-white">
-              {siteName.charAt(0)}
-            </span>
+            <>
+              <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-lg font-extrabold text-white">
+                {siteName.charAt(0)}
+              </span>
+              <span className="hidden text-lg font-extrabold tracking-tight sm:block">{siteName}</span>
+            </>
           )}
-          <span className="hidden text-lg font-extrabold tracking-tight sm:block">{siteName}</span>
         </Link>
 
         {/* Desktop nav — compact: Products / Categories dropdown / Flash Sale */}
