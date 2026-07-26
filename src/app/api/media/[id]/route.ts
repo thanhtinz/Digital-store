@@ -14,6 +14,9 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     headers: {
       'Content-Type': file.mimeType,
       'Cache-Control': 'public, max-age=86400, immutable',
+      'X-Content-Type-Options': 'nosniff',
+      // SVGs can embed scripts — sandbox them so they render but never execute.
+      ...(file.mimeType === 'image/svg+xml' ? { 'Content-Security-Policy': 'sandbox' } : {}),
     },
   });
 }
