@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useStore } from './Providers';
 import { api } from '@/lib/client';
+import Icon from './icons';
 
 type Props = {
   siteName: string;
@@ -64,8 +65,8 @@ export default function Header({ siteName, logo, categories }: Props) {
           <Link href="/products" className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">
             All Products
           </Link>
-          <Link href="/flash-sale" className="rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50">
-            ⚡ Flash Sale
+          <Link href="/flash-sale" className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50">
+            <Icon name="bolt" size={15} /> Flash Sale
           </Link>
           {categories.slice(0, 4).map((c) => (
             <Link
@@ -167,7 +168,7 @@ export default function Header({ siteName, logo, categories }: Props) {
           </form>
           <nav className="flex flex-col">
             <Link href="/products" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">All Products</Link>
-            <Link href="/flash-sale" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50">⚡ Flash Sale</Link>
+            <Link href="/flash-sale" onClick={() => setMobileOpen(false)} className="flex items-center gap-1.5 rounded-lg px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50"><Icon name="bolt" size={15} /> Flash Sale</Link>
             {categories.map((c) => (
               <Link key={c.id} href={`/category/${c.slug}`} onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
                 {c.name}

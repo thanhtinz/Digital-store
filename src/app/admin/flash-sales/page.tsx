@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useStore } from '@/components/Providers';
 import { api } from '@/lib/client';
 import { formatMoney } from '@/lib/utils';
+import Icon from '@/components/icons';
 
 type ItemForm = { packageId: string; salePrice: string; quantityLimit: string; label?: string };
 const EMPTY = { id: 0, name: '', startsAt: '', endsAt: '', isActive: true, items: [] as ItemForm[] };
@@ -71,7 +72,7 @@ export default function AdminFlashSalesPage() {
                   <div>
                     <p className="font-bold">
                       {s.name}
-                      {live && <span className="badge ml-2 bg-red-100 text-red-700">● LIVE</span>}
+                      {live && <span className="badge ml-2 gap-1 bg-red-100 text-red-700"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-600" /> LIVE</span>}
                       {!s.isActive && <span className="badge ml-2 bg-gray-200 text-gray-500">Off</span>}
                     </p>
                     <p className="text-xs text-gray-400">
@@ -138,7 +139,7 @@ export default function AdminFlashSalesPage() {
                     onChange={(e) => { const items = [...form.items]; items[i] = { ...item, salePrice: e.target.value }; setForm({ ...form, items }); }} />
                   <input className="input py-1.5 text-xs" type="number" placeholder="Qty limit (opt)" value={item.quantityLimit}
                     onChange={(e) => { const items = [...form.items]; items[i] = { ...item, quantityLimit: e.target.value }; setForm({ ...form, items }); }} />
-                  <button className="text-xs text-red-500" onClick={() => setForm({ ...form, items: form.items.filter((_: any, x: number) => x !== i) })}>✕</button>
+                  <button className="text-red-500" onClick={() => setForm({ ...form, items: form.items.filter((_: any, x: number) => x !== i) })}><Icon name="x" size={14} /></button>
                 </div>
               </div>
             ))}

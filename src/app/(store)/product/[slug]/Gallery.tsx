@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Icon from '@/components/icons';
 
 export default function Gallery({ images, name }: { images: string[]; name: string }) {
   const [active, setActive] = useState(0);
@@ -13,7 +14,7 @@ export default function Gallery({ images, name }: { images: string[]; name: stri
           // eslint-disable-next-line @next/next/no-img-element
           <img src={list[active]} alt={`${name} — image ${active + 1}`} className="h-full w-full object-cover" />
         ) : (
-          <div className="grid h-full place-items-center text-6xl text-gray-200">🛍️</div>
+          <div className="grid h-full place-items-center text-gray-200"><Icon name="bag" size={72} /></div>
         )}
       </div>
       {list.length > 1 && (

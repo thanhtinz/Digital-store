@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/client';
+import Icon from '@/components/icons';
 
 // After returning from Stripe/PayPal the webhook may land a moment later than
 // the buyer. Poll the status endpoint briefly and refresh once paid.
@@ -35,8 +36,8 @@ export default function PaymentWatcher({ code, initialStatus }: { code: string; 
   if (status !== 'PENDING') {
     if (flag === 'success') {
       return (
-        <div className="mt-4 rounded-xl bg-green-50 p-4 text-sm font-medium text-green-700">
-          🎉 Payment confirmed — thank you for your purchase!
+        <div className="mt-4 flex items-center gap-2 rounded-xl bg-green-50 p-4 text-sm font-medium text-green-700">
+          <Icon name="check" size={18} /> Payment confirmed — thank you for your purchase!
         </div>
       );
     }

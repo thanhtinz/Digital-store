@@ -5,6 +5,7 @@ import BannerCarousel from '@/components/BannerCarousel';
 import Countdown from '@/components/Countdown';
 import ProductCardView from '@/components/ProductCardView';
 import { formatMoney } from '@/lib/utils';
+import Icon from '@/components/icons';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,7 +63,7 @@ export default async function HomePage() {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={c.imageUrl} alt={c.name} className="h-10 w-10 rounded-lg object-cover" />
                 ) : (
-                  <span className="grid h-10 w-10 place-items-center rounded-lg bg-brand-50 text-lg">📦</span>
+                  <span className="grid h-10 w-10 place-items-center rounded-lg bg-brand-50 text-brand-600"><Icon name="folder" size={20} /></span>
                 )}
                 <span className="text-sm font-semibold group-hover:text-brand-600">{c.name}</span>
               </Link>
@@ -76,7 +77,7 @@ export default async function HomePage() {
         <section className="rounded-2xl bg-gradient-to-r from-red-600 to-orange-500 p-4 sm:p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 className="flex items-center gap-2 text-lg font-extrabold text-white sm:text-xl">
-              ⚡ {flashSale.name}
+              <Icon name="bolt" size={20} /> {flashSale.name}
             </h2>
             <div className="flex items-center gap-3">
               <span className="text-sm font-medium text-white/90">Ends in</span>
@@ -103,7 +104,7 @@ export default async function HomePage() {
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={item.package.product.images[0].url} alt={item.package.product.name} className="h-full w-full object-cover transition group-hover:scale-105" />
                     ) : (
-                      <div className="grid h-full place-items-center text-3xl text-gray-300">🛍️</div>
+                      <div className="grid h-full place-items-center text-gray-300"><Icon name="bag" size={36} /></div>
                     )}
                     {pct > 0 && <span className="badge absolute left-2 top-2 bg-red-600 text-white">-{pct}%</span>}
                     {soldOut && (
@@ -158,12 +159,12 @@ export default async function HomePage() {
       {/* Trust strip */}
       <section className="grid gap-4 sm:grid-cols-3">
         {[
-          ['⚡', 'Instant delivery', 'Most orders are delivered automatically, seconds after payment.'],
-          ['🔒', 'Secure checkout', 'Pay with Visa, Mastercard or PayPal through Stripe & PayPal.'],
-          ['💬', 'Real support', 'Questions or issues? Our support team answers fast.'],
+          ['bolt', 'Instant delivery', 'Most orders are delivered automatically, seconds after payment.'],
+          ['lock', 'Secure checkout', 'Pay with Visa, Mastercard or PayPal through Stripe & PayPal.'],
+          ['chat', 'Real support', 'Questions or issues? Our support team answers fast.'],
         ].map(([icon, title, desc]) => (
           <div key={title} className="card flex items-start gap-3 p-5">
-            <span className="text-2xl">{icon}</span>
+            <span className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600"><Icon name={icon} size={20} /></span>
             <div>
               <p className="font-semibold">{title}</p>
               <p className="mt-1 text-sm text-gray-500">{desc}</p>

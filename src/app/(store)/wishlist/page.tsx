@@ -4,6 +4,7 @@ import prisma from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
 import { toProductCards, productCardInclude } from '@/lib/catalog';
 import ProductCardView from '@/components/ProductCardView';
+import Icon from '@/components/icons';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Wishlist' };
@@ -24,7 +25,7 @@ export default async function WishlistPage() {
       <h1 className="text-2xl font-bold">Wishlist</h1>
       {products.length === 0 ? (
         <div className="card mt-6 p-16 text-center">
-          <p className="text-5xl">❤️</p>
+          <Icon name="heart" size={56} className="mx-auto text-gray-300" />
           <p className="mt-4 font-semibold">Your wishlist is empty</p>
           <Link href="/products" className="btn-primary mt-5 inline-flex">Browse products</Link>
         </div>

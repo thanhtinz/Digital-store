@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useStore } from '@/components/Providers';
 import { api } from '@/lib/client';
+import Icon from '@/components/icons';
 
 export default function AdminUsersPage() {
   const { user: me, toast } = useStore();
@@ -56,7 +57,7 @@ export default function AdminUsersPage() {
             {users.map((u) => (
               <tr key={u.id} className="border-b border-gray-100 last:border-0">
                 <td className="px-4 py-3">
-                  <p className="font-semibold">{u.name} {u.googleId && <span title="Google account">🔵</span>}</p>
+                  <p className="flex items-center gap-1.5 font-semibold">{u.name} {u.googleId && <span title="Google account" className="text-blue-600"><Icon name="google" size={14} /></span>}</p>
                   <p className="text-xs text-gray-400">{u.email}</p>
                 </td>
                 <td className="px-4 py-3">
@@ -70,8 +71,8 @@ export default function AdminUsersPage() {
                     <span className="badge bg-gray-100 text-gray-600">{u.role}</span>
                   )}
                 </td>
-                <td className="px-4 py-3">{u.emailVerifiedAt ? '✅' : '—'}</td>
-                <td className="px-4 py-3">{u.twoFactorEnabled ? '🔐' : '—'}</td>
+                <td className="px-4 py-3">{u.emailVerifiedAt ? <Icon name="check" size={16} className="text-green-600" /> : <span className="text-gray-300">—</span>}</td>
+                <td className="px-4 py-3">{u.twoFactorEnabled ? <Icon name="shield" size={16} className="text-brand-600" /> : <span className="text-gray-300">—</span>}</td>
                 <td className="px-4 py-3">{u._count.orders}</td>
                 <td className="whitespace-nowrap px-4 py-3 text-xs text-gray-500">{new Date(u.createdAt).toLocaleDateString('en-US')}</td>
                 <td className="px-4 py-3">

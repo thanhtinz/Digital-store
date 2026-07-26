@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useStore } from '@/components/Providers';
 import { api } from '@/lib/client';
 import type { CustomFieldDef } from '@/lib/utils';
+import Icon from '@/components/icons';
 
 export type EditableProduct = {
   id: number;
@@ -197,13 +198,13 @@ export default function ProductEditor({ product, categories, onClose }: {
                     title="Move first"
                     className="rounded bg-white/90 px-1.5 py-0.5 text-xs"
                     onClick={() => setImages((imgs) => [imgs[i], ...imgs.filter((_, x) => x !== i)])}
-                  >⭱</button>
+                  ><Icon name="chevron-left" size={13} className="rotate-90" /></button>
                 )}
                 <button
                   title="Remove"
                   className="rounded bg-white/90 px-1.5 py-0.5 text-xs text-red-600"
                   onClick={() => setImages((imgs) => imgs.filter((_, x) => x !== i))}
-                >✕</button>
+                ><Icon name="x" size={13} /></button>
               </div>
             </div>
           ))}
@@ -345,7 +346,7 @@ export default function ProductEditor({ product, categories, onClose }: {
               <div className="mt-3 flex items-center justify-between">
                 {pkg.id && pkg.autoDeliver ? (
                   <button className="btn-secondary px-3 py-1.5 text-xs" onClick={() => setStockFor(pkg)}>
-                    📦 Manage stock ({pkg.stockCount ?? 0} available)
+                    <Icon name="package" size={15} /> Manage stock ({pkg.stockCount ?? 0} available)
                   </button>
                 ) : <span className="text-xs text-gray-400">{pkg.autoDeliver && !pkg.id ? 'Save first, then add stock.' : ''}</span>}
                 {packages.length > 1 && (
