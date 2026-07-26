@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { handler, jsonError } from '@/lib/api';
 import { getSettings, setSettings } from '@/lib/settings';
+import { audit } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,5 +51,7 @@ export const POST = handler(async (req: NextRequest) => {
     updates[key] = value;
   }
   await setSettings(updates);
+  const changed = Object.keys(updates);
+  if (changed.length) audit(admin, 'settings.update', 'Site settings', `Changed: ${changed.join(', ')}`);
   return NextResponse.json({ ok: true });
 });

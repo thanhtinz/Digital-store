@@ -3,6 +3,7 @@ import prisma from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 import { handler, jsonError } from '@/lib/api';
 import { slugify, parseCustomFields } from '@/lib/utils';
+import { audit } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +24,7 @@ export const GET = handler(async (_req: NextRequest, { params }: { params: { id:
 // Packages referenced by past orders are never hard-deleted; missing ones
 // are deactivated instead.
 export const PATCH = handler(async (req: NextRequest, { params }: { params: { id: string } }) => {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = Number(params.id);
   const b = await req.json();
   const existing = await prisma.product.findUnique({ where: { id }, include: { packages: true } });
@@ -84,18 +85,22 @@ export const PATCH = handler(async (req: NextRequest, { params }: { params: { id
     where: { id },
     include: { images: { orderBy: { sortOrder: 'asc' } }, packages: { orderBy: { sortOrder: 'asc' } } },
   });
+  audit(admin, 'product.update', existing.name);
   return NextResponse.json({ ok: true, product });
 });
 
 export const DELETE = handler(async (_req: NextRequest, { params }: { params: { id: string } }) => {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = Number(params.id);
+  const target = await prisma.product.findUnique({ where: { id }, select: { name: true } });
   const orderCount = await prisma.orderItem.count({ where: { package: { productId: id } } });
   if (orderCount > 0) {
     // Keep order history intact — deactivate instead of destroying.
     await prisma.product.update({ where: { id }, data: { isActive: false } });
+    audit(admin, 'product.deactivate', target?.name);
     return NextResponse.json({ ok: true, deactivated: true });
   }
   await prisma.product.delete({ where: { id } });
+  audit(admin, 'product.delete', target?.name);
   return NextResponse.json({ ok: true });
 });

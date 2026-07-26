@@ -3,6 +3,7 @@ import prisma from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 import { handler, jsonError } from '@/lib/api';
 import { slugify, parseCustomFields, clampInt } from '@/lib/utils';
+import { audit } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,7 +30,7 @@ export const GET = handler(async (req: NextRequest) => {
 });
 
 export const POST = handler(async (req: NextRequest) => {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const b = await req.json();
   const name = String(b.name || '').trim().slice(0, 200);
   if (!name) return jsonError(400, 'Product name is required');
@@ -68,5 +69,6 @@ export const POST = handler(async (req: NextRequest) => {
     },
     include: { images: true, packages: true },
   });
+  audit(admin, 'product.create', product.name);
   return NextResponse.json({ ok: true, product });
 });

@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import prisma from '@/lib/db';
 import { getActiveFlashPrices, effectivePrice, toProductCards, productCardInclude } from '@/lib/catalog';
+import { getAppUrl } from '@/lib/settings';
 import { parseCustomFields } from '@/lib/utils';
 import ProductCardView, { Stars } from '@/components/ProductCardView';
 import Gallery from './Gallery';
@@ -12,8 +13,26 @@ import Icon from '@/components/icons';
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
-  const product = await prisma.product.findUnique({ where: { slug: params.slug } });
-  return { title: product?.name || 'Product', description: product?.shortDesc || undefined };
+  const product = await prisma.product.findUnique({
+    where: { slug: params.slug },
+    include: { images: { orderBy: { sortOrder: 'asc' }, take: 1 } },
+  });
+  if (!product) return { title: 'Product' };
+  const base = (await getAppUrl()).replace(/\/$/, '');
+  const image = product.images[0]?.url;
+  return {
+    title: product.name,
+    description: product.shortDesc || undefined,
+    alternates: { canonical: `${base}/product/${product.slug}` },
+    openGraph: {
+      title: product.name,
+      description: product.shortDesc || undefined,
+      url: `${base}/product/${product.slug}`,
+      type: 'website',
+      ...(image ? { images: [image.startsWith('http') ? image : `${base}${image}`] } : {}),
+    },
+    twitter: { card: 'summary_large_image' },
+  };
 }
 
 export default async function ProductPage({ params }: { params: { slug: string } }) {
@@ -64,8 +83,36 @@ export default async function ProductPage({ params }: { params: { slug: string }
   });
   const related = await toProductCards(relatedRaw);
 
+  // Product structured data for search engines (rich results).
+  const prices = packages.map((p) => p.price);
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description: product.shortDesc || undefined,
+    image: product.images.map((i) => i.url),
+    ...(product.ratingCount > 0
+      ? {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: product.ratingAvg,
+            reviewCount: product.ratingCount,
+          },
+        }
+      : {}),
+    offers: {
+      '@type': 'AggregateOffer',
+      priceCurrency: 'USD',
+      lowPrice: Math.min(...prices, Infinity) === Infinity ? 0 : Math.min(...prices),
+      highPrice: Math.max(...prices, 0),
+      offerCount: packages.length,
+      availability: 'https://schema.org/InStock',
+    },
+  };
+
   return (
     <div className="container py-8">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* Breadcrumb */}
       <nav className="mb-4 flex flex-wrap items-center gap-1.5 text-sm text-gray-500">
         <a href="/" className="hover:text-brand-600">Home</a>
@@ -125,6 +172,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
             rating: r.rating,
             content: r.content,
             adminReply: r.adminReply,
+            images: Array.isArray(r.images) ? (r.images as string[]) : [],
             userName: r.user.name,
             avatarUrl: r.user.avatarUrl,
             createdAt: r.createdAt.toISOString(),

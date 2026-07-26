@@ -168,6 +168,7 @@ model Package {
 
   product        Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
   stockItems     StockItem[]
+  stockAlerts    StockAlert[]
   cartItems      CartItem[]
   orderItems     OrderItem[]
   flashSaleItems FlashSaleItem[]
@@ -370,6 +371,7 @@ model Review {
   rating     Int      // 1..5
   content    String?
   adminReply String?  @map("admin_reply")
+  images     Json?    // array of media URLs attached by the reviewer (max 3)
   isApproved Boolean  @default(true) @map("is_approved")
   createdAt  DateTime @default(now()) @map("created_at")
 
@@ -509,4 +511,38 @@ model Setting {
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@map("settings")
+}
+
+// ─────────────────────────── Operations ───────────────────────────
+
+// Immutable trail of admin actions (who changed what, when, from where).
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?     @map("user_id")
+  userEmail String   @map("user_email") @db.VarChar(190)
+  action    String   @db.VarChar(80) // e.g. product.update, order.deliver
+  target    String?  @db.VarChar(190) // human-readable subject: "Order TYR8ZS", "StreamMax 4K"
+  detail    String? // extra context, plain text
+  ip        String?  @db.VarChar(64)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@index([action])
+  @@map("audit_logs")
+}
+
+// "Notify me when back in stock" subscriptions for auto-delivered packages.
+model StockAlert {
+  id         Int       @id @default(autoincrement())
+  packageId  Int       @map("package_id")
+  email      String    @db.VarChar(190)
+  userId     Int?      @map("user_id")
+  notifiedAt DateTime? @map("notified_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  package Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@unique([packageId, email])
+  @@index([packageId, notifiedAt])
+  @@map("stock_alerts")
 }

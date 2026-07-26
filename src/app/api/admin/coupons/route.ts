@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
+import { audit } from '@/lib/audit';
 import { handler, jsonError } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +13,7 @@ export const GET = handler(async () => {
 });
 
 export const POST = handler(async (req: NextRequest) => {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const b = await req.json();
   const code = String(b.code || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 60);
   if (!code) return jsonError(400, 'Coupon code is required');
@@ -35,5 +36,6 @@ export const POST = handler(async (req: NextRequest) => {
       isActive: b.isActive !== false,
     },
   });
+  audit(admin, 'coupon.create', String((coupon.code) ?? ''));
   return NextResponse.json({ ok: true, coupon });
 });

@@ -21,6 +21,60 @@ type PackageView = {
   stock: number | null; // null = manual fulfillment (always orderable)
 };
 
+// Shown when an auto-delivered package has no stock: explains the backorder
+// and lets the shopper subscribe to a restock email.
+function OutOfStockNotice({ packageId }: { packageId: number }) {
+  const { user, toast } = useStore();
+  const [email, setEmail] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const subscribe = async () => {
+    setBusy(true);
+    try {
+      await api('/api/stock-alerts', { method: 'POST', json: { packageId, email } });
+      setDone(true);
+      toast('We will email you as soon as this package is restocked');
+    } catch (e: any) {
+      toast(e.message, 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-3 rounded-lg bg-amber-50 p-3">
+      <p className="text-xs text-amber-700">
+        This package is temporarily out of auto-delivery stock — orders are fulfilled manually by our team, usually within a few hours.
+      </p>
+      {done ? (
+        <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-green-700">
+          <Icon name="check" size={13} /> Restock alert set — we will email you.
+        </p>
+      ) : (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          {!user && (
+            <input
+              className="input h-9 max-w-[220px] flex-1 text-xs"
+              type="email"
+              placeholder="you@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          )}
+          <button
+            className="flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 disabled:opacity-50"
+            onClick={subscribe}
+            disabled={busy || (!user && !email.trim())}
+          >
+            <Icon name="bell" size={13} /> {busy ? 'Saving…' : 'Notify me when back in stock'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function BuyBox({ productId, packages }: { productId: number; packages: PackageView[] }) {
   const { user, refreshCart, toast } = useStore();
   const router = useRouter();
@@ -158,11 +212,7 @@ export default function BuyBox({ productId, packages }: { productId: number; pac
         </div>
       )}
 
-      {pkg.stock !== null && pkg.stock === 0 && (
-        <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-700">
-          This package is temporarily out of auto-delivery stock — orders are fulfilled manually by our team, usually within a few hours.
-        </p>
-      )}
+      {pkg.stock !== null && pkg.stock === 0 && <OutOfStockNotice packageId={pkg.id} />}
 
       {/* Quantity + actions */}
       <div className="mt-5 flex flex-wrap items-center gap-3">

@@ -11,6 +11,7 @@ import { api } from '@/lib/client';
 // sidebar menu and footer. Settings are separate pages (no tabs).
 const NAV: Array<{ href: string; label: string; icon: string } | { section: string }> = [
   { href: '/admin', label: 'Dashboard', icon: 'dashboard' },
+  { href: '/admin/reports', label: 'Reports', icon: 'chart' },
   { href: '/admin/deliveries', label: 'Deliveries', icon: 'truck' },
   { href: '/admin/inventory', label: 'Auto delivery', icon: 'bolt' },
   { href: '/admin/orders', label: 'Orders', icon: 'box' },
@@ -27,6 +28,7 @@ const NAV: Array<{ href: string; label: string; icon: string } | { section: stri
   { href: '/admin/users', label: 'Users', icon: 'users' },
   { section: 'Configuration' },
   { href: '/admin/security', label: 'Security', icon: 'shield' },
+  { href: '/admin/audit', label: 'Audit log', icon: 'list' },
   { href: '/admin/settings', label: 'Site settings', icon: 'settings' },
   { href: '/admin/settings/payments', label: 'Payments', icon: 'credit-card' },
   { href: '/admin/settings/marketing', label: 'Rewards & affiliate', icon: 'star' },

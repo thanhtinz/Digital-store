@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
+import { audit } from '@/lib/audit';
 import { handler } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
 
 export const PATCH = handler(async (req: NextRequest, { params }: { params: { id: string } }) => {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const b = await req.json();
   const coupon = await prisma.coupon.update({
     where: { id: Number(params.id) },
@@ -22,11 +23,13 @@ export const PATCH = handler(async (req: NextRequest, { params }: { params: { id
       ...(b.isActive !== undefined ? { isActive: !!b.isActive } : {}),
     },
   });
+  audit(admin, 'coupon.update', coupon.code);
   return NextResponse.json({ ok: true, coupon });
 });
 
 export const DELETE = handler(async (_req: NextRequest, { params }: { params: { id: string } }) => {
-  await requireAdmin();
+  const admin = await requireAdmin();
   await prisma.coupon.delete({ where: { id: Number(params.id) } });
+  audit(admin, 'coupon.delete', `#${params.id}`);
   return NextResponse.json({ ok: true });
 });

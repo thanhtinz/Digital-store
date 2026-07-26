@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
+import { audit } from '@/lib/audit';
 import { handler, jsonError } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +13,7 @@ export const GET = handler(async () => {
 });
 
 export const POST = handler(async (req: NextRequest) => {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const b = await req.json();
   if (!b.imageUrl) return jsonError(400, 'Banner image is required');
   const banner = await prisma.banner.create({
@@ -25,5 +26,6 @@ export const POST = handler(async (req: NextRequest) => {
       isActive: b.isActive !== false,
     },
   });
+  audit(admin, 'banner.create', banner.title || `#${banner.id}`);
   return NextResponse.json({ ok: true, banner });
 });
