@@ -32,6 +32,9 @@ export default function SupportPage() {
   useEffect(() => {
     if (user === null) router.replace('/login?next=/support');
     if (user) api<{ tickets: any[] }>('/api/support').then((d) => setTickets(d.tickets)).catch(() => setTickets([]));
+    // Pre-fill the order code when arriving from an order page.
+    const fromOrder = new URLSearchParams(window.location.search).get('order');
+    if (fromOrder) setOrderCode(fromOrder.toUpperCase());
   }, [user, router]);
 
   const submit = async (e: React.FormEvent) => {

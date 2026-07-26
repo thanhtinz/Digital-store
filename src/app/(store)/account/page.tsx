@@ -3,35 +3,83 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/components/Providers';
+import Link from 'next/link';
 import { api } from '@/lib/client';
+import Icon from '@/components/icons';
+import { formatMoney } from '@/lib/utils';
 
 type LoginRow = { id: number; ip: string | null; userAgent: string | null; method: string; success: boolean; createdAt: string };
+
+type Overview = { orders: number; totalSpent: number; wishlist: number; tickets: number; memberSince: string };
 
 export default function AccountPage() {
   const { user, refreshUser, toast } = useStore();
   const router = useRouter();
   const [tab, setTab] = useState<'profile' | 'security' | 'logins'>('profile');
+  const [overview, setOverview] = useState<Overview | null>(null);
 
   useEffect(() => {
     if (user === null) router.replace('/login?next=/account');
+    if (user) api<Overview>('/api/account/overview').then(setOverview).catch(() => {});
   }, [user, router]);
 
   if (!user) return <div className="container py-16 text-center text-gray-400">Loading…</div>;
 
   return (
-    <div className="container max-w-3xl py-8">
-      <div className="flex items-center gap-4">
-        <span className="grid h-14 w-14 place-items-center overflow-hidden rounded-full bg-brand-100 text-xl font-bold text-brand-700">
-          {user.avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={user.avatarUrl} alt={user.name} className="h-full w-full object-cover" />
-          ) : (
-            user.name.charAt(0).toUpperCase()
-          )}
-        </span>
-        <div>
-          <h1 className="text-xl font-bold">{user.name}</h1>
-          <p className="text-sm text-gray-500">{user.email}</p>
+    <div className="container max-w-4xl py-8">
+      {/* Profile header card */}
+      <div className="card overflow-hidden">
+        <div className="h-20 bg-gradient-to-r from-brand-600 via-brand-500 to-purple-500" />
+        <div className="px-6 pb-5">
+          <div className="-mt-8 flex flex-wrap items-end justify-between gap-3">
+            <div className="flex items-end gap-4">
+              <span className="grid h-20 w-20 place-items-center overflow-hidden rounded-2xl border-4 border-white bg-brand-100 text-2xl font-bold text-brand-700 shadow">
+                {user.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={user.avatarUrl} alt={user.name} className="h-full w-full object-cover" />
+                ) : (
+                  user.name.charAt(0).toUpperCase()
+                )}
+              </span>
+              <div className="pb-1">
+                <h1 className="text-xl font-bold">{user.name}</h1>
+                <p className="text-sm text-gray-500">{user.email}</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1.5 pb-1">
+              {user.emailVerified && (
+                <span className="badge gap-1 bg-green-100 text-green-700"><Icon name="check" size={11} /> Verified</span>
+              )}
+              <span className={`badge gap-1 ${user.twoFactorEnabled ? 'bg-brand-100 text-brand-700' : 'bg-gray-100 text-gray-500'}`}>
+                <Icon name="shield" size={11} /> {user.twoFactorEnabled ? '2FA on' : '2FA off'}
+              </span>
+              {overview && (
+                <span className="badge bg-gray-100 text-gray-500">
+                  Member since {new Date(overview.memberSince).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Stat tiles */}
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {([
+              ['box', overview ? String(overview.orders) : '—', 'Orders', '/orders'],
+              ['credit-card', overview ? formatMoney(overview.totalSpent) : '—', 'Total spent', '/orders'],
+              ['heart', overview ? String(overview.wishlist) : '—', 'Wishlist', '/wishlist'],
+              ['chat', overview ? String(overview.tickets) : '—', 'Tickets', '/support'],
+            ] as const).map(([icon, value, label, href]) => (
+              <Link key={label} href={href} className="flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-3 transition hover:bg-brand-50">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white text-brand-600 shadow-sm">
+                  <Icon name={icon} size={17} />
+                </span>
+                <span>
+                  <span className="block text-base font-extrabold leading-tight">{value}</span>
+                  <span className="block text-xs text-gray-500">{label}</span>
+                </span>
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
 

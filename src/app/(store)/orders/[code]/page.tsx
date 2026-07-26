@@ -4,6 +4,7 @@ import { getSessionUser } from '@/lib/auth';
 import { formatMoney } from '@/lib/utils';
 import StatusBadge from '@/components/StatusBadge';
 import PaymentWatcher from './PaymentWatcher';
+import OrderActions from './OrderActions';
 import Icon from '@/components/icons';
 
 export const dynamic = 'force-dynamic';
@@ -34,6 +35,8 @@ export default async function OrderDetailPage({ params }: { params: { code: stri
 
       {/* Live status watcher after gateway redirect */}
       <PaymentWatcher code={order.code} initialStatus={order.status} />
+
+      <OrderActions code={order.code} />
 
       {/* Progress timeline */}
       {order.status !== 'CANCELLED' && order.status !== 'REFUNDED' && (

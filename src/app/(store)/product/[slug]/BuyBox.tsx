@@ -18,6 +18,7 @@ type PackageView = {
   onSale: boolean;
   saleEndsAt: string | null;
   customFields: CustomFieldDef[];
+  stock: number | null; // null = manual fulfillment (always orderable)
 };
 
 export default function BuyBox({ productId, packages }: { productId: number; packages: PackageView[] }) {
@@ -97,7 +98,14 @@ export default function BuyBox({ productId, packages }: { productId: number; pac
           >
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm font-semibold">{p.name}</span>
-              {p.onSale && <span className="badge gap-1 bg-red-100 text-red-700"><Icon name="bolt" size={11} /> Sale</span>}
+              <span className="flex gap-1">
+                {p.onSale && <span className="badge gap-1 bg-red-100 text-red-700"><Icon name="bolt" size={11} /> Sale</span>}
+                {p.stock === null ? null : p.stock > 0 ? (
+                  <span className="badge gap-1 bg-green-100 text-green-700">In stock</span>
+                ) : (
+                  <span className="badge bg-amber-100 text-amber-700">Backorder</span>
+                )}
+              </span>
             </div>
             <p className="mt-1 text-sm font-bold text-brand-700">{formatMoney(p.price)}</p>
             {p.description && <p className="mt-0.5 line-clamp-2 text-xs text-gray-500">{p.description}</p>}
@@ -148,6 +156,12 @@ export default function BuyBox({ productId, packages }: { productId: number; pac
             </div>
           ))}
         </div>
+      )}
+
+      {pkg.stock !== null && pkg.stock === 0 && (
+        <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-700">
+          This package is temporarily out of auto-delivery stock — orders are fulfilled manually by our team, usually within a few hours.
+        </p>
       )}
 
       {/* Quantity + actions */}
