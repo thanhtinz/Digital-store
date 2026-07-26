@@ -22,6 +22,7 @@ const NAV: Array<{ href: string; label: string; icon: string } | { section: stri
   { href: '/admin/coupons', label: 'Coupons', icon: 'ticket' },
   { href: '/admin/flash-sales', label: 'Flash sales', icon: 'bolt' },
   { href: '/admin/auto-coupons', label: 'Auto coupons', icon: 'gift' },
+  { href: '/admin/posts', label: 'News', icon: 'news' },
   { section: 'Community' },
   { href: '/admin/tickets', label: 'Support tickets', icon: 'chat' },
   { href: '/admin/reviews', label: 'Reviews', icon: 'star' },

@@ -4,12 +4,18 @@ import Icon from './icons';
 type Props = {
   siteName: string;
   tagline: string;
+  logo: string;
   footerText: string;
+  footerAbout: string;
   supportEmail: string;
+  socials: Record<string, string>;
   categories: Array<{ id: number; name: string; slug: string }>;
 };
 
-export default function Footer({ siteName, tagline, footerText, supportEmail, categories }: Props) {
+const SOCIAL_ORDER = ['facebook', 'twitter', 'instagram', 'youtube', 'telegram', 'discord'] as const;
+
+export default function Footer({ siteName, tagline, logo, footerText, footerAbout, supportEmail, socials, categories }: Props) {
+  const socialLinks = SOCIAL_ORDER.filter((k) => socials?.[k]);
   return (
     <footer className="mt-16 border-t border-gray-200 bg-white">
       {/* Trust strip */}
@@ -36,12 +42,33 @@ export default function Footer({ siteName, tagline, footerText, supportEmail, ca
 
       <div className="container grid gap-8 py-12 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <p className="text-lg font-extrabold">{siteName}</p>
-          <p className="mt-2 text-sm text-gray-500">{tagline}</p>
+          {logo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logo} alt={siteName} className="h-9 w-auto max-w-[170px] object-contain" />
+          ) : (
+            <p className="text-lg font-extrabold">{siteName}</p>
+          )}
+          <p className="mt-2 text-sm text-gray-500">{footerAbout || tagline}</p>
           {supportEmail && (
             <a href={`mailto:${supportEmail}`} className="mt-3 inline-flex items-center gap-1.5 text-sm text-brand-600 hover:underline">
               <Icon name="mail" size={15} /> {supportEmail}
             </a>
+          )}
+          {socialLinks.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {socialLinks.map((k) => (
+                <a
+                  key={k}
+                  href={socials[k]}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={k}
+                  className="grid h-9 w-9 place-items-center rounded-lg border border-gray-200 bg-gray-50 text-gray-500 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-600"
+                >
+                  <Icon name={k} size={17} />
+                </a>
+              ))}
+            </div>
           )}
         </div>
         <div>
@@ -49,6 +76,7 @@ export default function Footer({ siteName, tagline, footerText, supportEmail, ca
           <ul className="mt-3 space-y-2 text-sm">
             <li><Link href="/products" className="text-gray-600 hover:text-brand-600">All products</Link></li>
             <li><Link href="/flash-sale" className="text-gray-600 hover:text-brand-600">Flash sale</Link></li>
+            <li><Link href="/news" className="text-gray-600 hover:text-brand-600">News & updates</Link></li>
             {categories.slice(0, 4).map((c) => (
               <li key={c.id}>
                 <Link href={`/category/${c.slug}`} className="text-gray-600 hover:text-brand-600">{c.name}</Link>

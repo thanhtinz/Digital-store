@@ -32,6 +32,13 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   google_login_enabled: 'false',
   require_email_verification: 'true',
   footer_text: '',
+  footer_about: '',
+  social_facebook: '',
+  social_twitter: '',
+  social_instagram: '',
+  social_youtube: '',
+  social_telegram: '',
+  social_discord: '',
   loyalty_enabled: 'false',
   loyalty_earn_rate: '1',      // points per $1 spent
   loyalty_redeem_value: '0.01', // dollars per point
@@ -73,6 +80,7 @@ export async function getPublicSettings() {
   const s = await getSettings([
     'site_name', 'site_tagline', 'site_logo', 'currency', 'support_email',
     'stripe_enabled', 'paypal_enabled', 'google_login_enabled', 'footer_text',
+    'footer_about', 'social_facebook', 'social_twitter', 'social_instagram', 'social_youtube', 'social_telegram', 'social_discord',
   ]);
   return {
     siteName: s.site_name,
@@ -84,5 +92,14 @@ export async function getPublicSettings() {
     paypalEnabled: s.paypal_enabled === 'true',
     googleLoginEnabled: s.google_login_enabled === 'true',
     footerText: s.footer_text,
+    footerAbout: s.footer_about,
+    socials: {
+      facebook: s.social_facebook,
+      twitter: s.social_twitter,
+      instagram: s.social_instagram,
+      youtube: s.social_youtube,
+      telegram: s.social_telegram,
+      discord: s.social_discord,
+    },
   };
 }

@@ -13,7 +13,8 @@ const SECRET_KEYS = new Set([
 ]);
 const ALL_KEYS = [
   // Site
-  'site_name', 'site_tagline', 'site_logo', 'currency', 'support_email', 'footer_text', 'app_url',
+  'site_name', 'site_tagline', 'site_logo', 'currency', 'support_email', 'footer_text', 'footer_about', 'app_url',
+  'social_facebook', 'social_twitter', 'social_instagram', 'social_youtube', 'social_telegram', 'social_discord',
   'require_email_verification',
   // Stripe
   'stripe_enabled', 'stripe_secret_key', 'stripe_publishable_key', 'stripe_webhook_secret',
