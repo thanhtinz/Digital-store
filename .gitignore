@@ -1,36 +1,12 @@
-# Dependencies
 node_modules/
-
-# Build output
+.next/
+out/
+build/
 dist/
-
-# Environment variables
 .env
-.env.*
-!.env.example
-
-# Logs
-logs/
+.env.local
+.env.production
 *.log
-npm-debug.log*
-
-# Prisma local database
-*.db
-*.db-journal
-prisma/dev.db
-prisma/*.sqlite
-
-# Uploads (keep folder, ignore content)
-static/uploads/*
-!static/uploads/.gitkeep
-static/banners/*
-!static/banners/.gitkeep
-
-# OS / editor
 .DS_Store
-Thumbs.db
-.idea/
-.vscode/
-
-# PM2
-.pm2/
+*.tsbuildinfo
+next-env.d.ts

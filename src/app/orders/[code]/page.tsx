@@ -1,0 +1,92 @@
+import { notFound, redirect } from 'next/navigation';
+import prisma from '@/lib/db';
+import { getSessionUser } from '@/lib/auth';
+import { formatMoney } from '@/lib/utils';
+import StatusBadge from '@/components/StatusBadge';
+import PaymentWatcher from './PaymentWatcher';
+
+export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Order details' };
+
+export default async function OrderDetailPage({ params }: { params: { code: string } }) {
+  const user = await getSessionUser();
+  if (!user) redirect(`/login?next=/orders/${params.code}`);
+
+  const order = await prisma.order.findFirst({
+    where: { code: params.code, userId: user.id },
+    include: { items: true },
+  });
+  if (!order) notFound();
+
+  return (
+    <div className="container max-w-3xl py-8">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">Order #{order.code}</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Placed {order.createdAt.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
+            {order.paymentMethod && <> · paid via <b className="capitalize">{order.paymentMethod}</b></>}
+          </p>
+        </div>
+        <StatusBadge status={order.status} />
+      </div>
+
+      {/* Live status watcher after gateway redirect */}
+      <PaymentWatcher code={order.code} initialStatus={order.status} />
+
+      <div className="card mt-6 divide-y divide-gray-100">
+        {order.items.map((item) => (
+          <div key={item.id} className="p-4">
+            <div className="flex gap-4">
+              <div className="h-14 w-16 shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                {item.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={item.imageUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="grid h-full place-items-center text-xl text-gray-300">📦</div>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">{item.productName}</p>
+                <p className="text-xs text-gray-500">{item.packageName} × {item.quantity}</p>
+                {item.customFieldsData && Object.keys(item.customFieldsData as object).length > 0 && (
+                  <p className="mt-1 text-xs text-gray-400">
+                    {Object.entries(item.customFieldsData as Record<string, string>)
+                      .map(([k, v]) => `${k}: ${v}`)
+                      .join(' · ')}
+                  </p>
+                )}
+              </div>
+              <span className="text-sm font-bold">{formatMoney(Number(item.lineTotal), order.currency)}</span>
+            </div>
+            {/* Delivered content */}
+            {item.deliveryData && (
+              <div className="mt-3 rounded-lg bg-gray-900 p-3.5">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-green-400">✓ Delivered — your item</p>
+                <pre className="mt-1.5 select-all whitespace-pre-wrap break-all font-mono text-xs text-gray-100">{item.deliveryData}</pre>
+              </div>
+            )}
+            {!item.deliveryData && (order.status === 'PAID' || order.status === 'COMPLETED') && (
+              <p className="mt-3 rounded-lg bg-blue-50 p-3 text-xs text-blue-700">
+                ⏳ This item is being prepared — you&apos;ll receive it here and by email shortly.
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="card mt-4 space-y-1.5 p-5 text-sm">
+        <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>{formatMoney(Number(order.subtotal), order.currency)}</span></div>
+        {Number(order.discount) > 0 && (
+          <div className="flex justify-between text-green-600">
+            <span>Discount {order.couponCode ? `(${order.couponCode})` : ''}</span>
+            <span>−{formatMoney(Number(order.discount), order.currency)}</span>
+          </div>
+        )}
+        <div className="flex justify-between border-t border-gray-100 pt-2 text-base font-bold">
+          <span>Total</span><span>{formatMoney(Number(order.total), order.currency)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
