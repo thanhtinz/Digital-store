@@ -207,8 +207,9 @@ export default function Header({ siteName, logo, categories }: Props) {
           </div>
         ) : (
           <div className="flex items-center gap-2">
+            <Link href="/login" className="btn-primary px-3 py-2 sm:hidden">Sign in</Link>
             <Link href="/login" className="btn-secondary hidden px-3 py-2 sm:inline-flex">Sign in</Link>
-            <Link href="/register" className="btn-primary px-3 py-2">Sign up</Link>
+            <Link href="/register" className="btn-primary hidden px-3 py-2 sm:inline-flex">Sign up</Link>
           </div>
         )}
       </div>
