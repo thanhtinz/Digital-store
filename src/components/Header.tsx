@@ -55,7 +55,7 @@ export default function Header({ siteName, logo, categories }: Props) {
     <>
     {/* The drawer lives outside <header>: backdrop-blur would otherwise turn
         the header into the containing block for position:fixed children. */}
-    <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/95 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-gray-200/80 bg-white/95 shadow-[0_1px_12px_rgba(16,24,40,.05)] backdrop-blur">
       <div className="container flex h-16 items-center gap-2 sm:gap-3">
         {/* Burger (mobile) */}
         <button
@@ -144,9 +144,9 @@ export default function Header({ siteName, logo, categories }: Props) {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search products…"
-              className="input py-2 pl-9"
+              className="input rounded-full bg-gray-50 py-2 pl-10 focus:bg-white"
             />
-            <Icon name="search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Icon name="search" size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
           </div>
         </form>
 
