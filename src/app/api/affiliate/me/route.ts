@@ -29,13 +29,20 @@ export const GET = handler(async () => {
     }
   }
 
-  const [referredCount, commissionAgg, recent] = await Promise.all([
+  const [referredCount, commissionAgg, recent, customRates] = await Promise.all([
     prisma.user.count({ where: { referredById: user.id } }),
     prisma.walletTransaction.aggregate({ where: { userId: user.id, type: 'COMMISSION' }, _sum: { amount: true } }),
     prisma.walletTransaction.findMany({
       where: { userId: user.id, type: 'COMMISSION' },
       orderBy: { id: 'desc' },
       take: 20,
+    }),
+    // Products with their own commission rate, highest payout first.
+    prisma.product.findMany({
+      where: { isActive: true, affiliateRate: { not: null } },
+      orderBy: { affiliateRate: 'desc' },
+      take: 20,
+      select: { name: true, slug: true, affiliateRate: true },
     }),
   ]);
 
@@ -48,5 +55,6 @@ export const GET = handler(async () => {
     referredCount,
     totalCommission: Number(commissionAgg._sum.amount || 0),
     recent: recent.map((t) => ({ id: t.id, amount: Number(t.amount), note: t.note, createdAt: t.createdAt.toISOString() })),
+    productRates: customRates.map((p) => ({ name: p.name, slug: p.slug, rate: Number(p.affiliateRate) })),
   });
 });

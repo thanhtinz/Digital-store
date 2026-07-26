@@ -15,6 +15,7 @@ type Data = {
   referredCount: number;
   totalCommission: number;
   recent: { id: number; amount: number; note: string | null; createdAt: string }[];
+  productRates: { name: string; slug: string; rate: number }[];
 };
 
 export default function AffiliatePage() {
@@ -39,6 +40,7 @@ export default function AffiliatePage() {
       <h1 className="text-2xl font-bold">Affiliate program</h1>
       <p className="mt-1 text-sm text-gray-500">
         Share your link — earn <b>{data.rate}%</b> of every order your referrals pay for, credited straight to your wallet.
+        Some products pay a custom rate (see below).
       </p>
 
       {!data.enabled && (
@@ -79,6 +81,35 @@ export default function AffiliatePage() {
           </div>
         ))}
       </div>
+
+      {/* Per-product commission rates */}
+      {data.productRates.length > 0 && (
+        <div className="card mt-5">
+          <div className="border-b border-gray-100 p-4">
+            <h2 className="font-bold">Product commission rates</h2>
+            <p className="mt-0.5 text-xs text-gray-500">
+              These products pay their own rate instead of the standard {data.rate}%. Link straight to them to maximize earnings.
+            </p>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {data.productRates.map((p) => (
+              <a
+                key={p.slug}
+                href={`/product/${p.slug}?ref=${data.refCode}`}
+                className="flex items-center gap-3 px-4 py-3 transition hover:bg-gray-50"
+              >
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600">
+                  <Icon name="bag" size={16} />
+                </span>
+                <span className="min-w-0 flex-1 truncate text-sm font-medium">{p.name}</span>
+                <span className={`badge ${p.rate > data.rate ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                  {p.rate}% commission
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Recent commissions */}
       <div className="card mt-5">

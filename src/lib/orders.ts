@@ -210,7 +210,23 @@ async function grantRewards(orderId: number): Promise<void> {
   if (s.affiliate_enabled === 'true') {
     const buyer = await prisma.user.findUnique({ where: { id: order.userId } });
     if (buyer?.referredById && buyer.referredById !== buyer.id) {
-      const commission = Math.round(Number(order.total) * (Number(s.affiliate_rate) || 0)) / 100;
+      // Per-item commission: each product may override the global rate.
+      // Item amounts are scaled by total/subtotal so coupons and points
+      // reduce commissions proportionally.
+      const items = await prisma.orderItem.findMany({
+        where: { orderId },
+        include: { package: { select: { product: { select: { affiliateRate: true } } } } },
+      });
+      const defaultRate = Number(s.affiliate_rate) || 0;
+      const subtotal = Number(order.subtotal) || 0;
+      const scale = subtotal > 0 ? Number(order.total) / subtotal : 0;
+      let commission = 0;
+      for (const item of items) {
+        const override = item.package?.product.affiliateRate;
+        const rate = override !== null && override !== undefined ? Number(override) : defaultRate;
+        commission += Number(item.lineTotal) * scale * (rate / 100);
+      }
+      commission = Math.round(commission * 100) / 100;
       if (commission > 0) {
         await creditWallet(buyer.referredById, commission, 'COMMISSION', `Referral commission — order ${order.code}`);
       }
