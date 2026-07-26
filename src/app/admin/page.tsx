@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { api } from '@/lib/client';
 import { formatMoney } from '@/lib/utils';
 import StatusBadge from '@/components/StatusBadge';
+import Icon from '@/components/icons';
 
 type Stats = {
   revenue: { total: number; month: number; today: number };
@@ -30,17 +31,31 @@ export default function AdminDashboard() {
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {[
-          ['Revenue today', formatMoney(stats.revenue.today)],
-          ['Revenue this month', formatMoney(stats.revenue.month)],
-          ['Total revenue', formatMoney(stats.revenue.total)],
-          ['Awaiting delivery', String(stats.counts.awaitingDelivery)],
-        ].map(([label, value]) => (
-          <div key={label} className="card p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{label}</p>
-            <p className="mt-1.5 text-xl font-extrabold">{value}</p>
-          </div>
-        ))}
+        {([
+          ['clock', 'Revenue today', formatMoney(stats.revenue.today), ''],
+          ['dashboard', 'Revenue this month', formatMoney(stats.revenue.month), ''],
+          ['credit-card', 'Total revenue', formatMoney(stats.revenue.total), ''],
+          ['truck', 'Awaiting delivery', String(stats.counts.awaitingDelivery), '/admin/deliveries'],
+        ] as const).map(([icon, label, value, href]) => {
+          const inner = (
+            <>
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600">
+                <Icon name={icon} size={19} />
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-xs font-medium uppercase tracking-wide text-gray-400">{label}</span>
+                <span className="mt-0.5 block text-xl font-extrabold">{value}</span>
+              </span>
+            </>
+          );
+          return href ? (
+            <Link key={label} href={href} className="card flex items-center gap-3 p-4 transition hover:border-brand-300 hover:shadow-md">
+              {inner}
+            </Link>
+          ) : (
+            <div key={label} className="card flex items-center gap-3 p-4">{inner}</div>
+          );
+        })}
       </div>
 
       {/* Revenue chart (last 14 days) */}

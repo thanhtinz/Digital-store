@@ -185,6 +185,34 @@ export async function autoDeliver(orderId: number): Promise<void> {
   if (remaining === 0) {
     await prisma.order.update({ where: { id: orderId }, data: { status: 'COMPLETED' } });
   }
+
+  const deliveredAny = await prisma.orderItem.count({ where: { orderId, deliveryData: { not: null } } });
+  if (deliveredAny > 0) await sendDeliveryEmail(orderId).catch(() => {});
+}
+
+// Emails the buyer their delivered items (called after auto-delivery and
+// after each manual delivery from the admin panel).
+export async function sendDeliveryEmail(orderId: number): Promise<void> {
+  const order = await prisma.order.findUnique({ where: { id: orderId }, include: { items: true } });
+  if (!order) return;
+  const delivered = order.items.filter((i) => i.deliveryData);
+  if (!delivered.length) return;
+  const siteName = await getSetting('site_name');
+  const appUrl = (await getSetting('app_url')) || '';
+  const blocks = delivered
+    .map((i) => `<p style="margin:16px 0 4px"><b>${i.productName} — ${i.packageName}</b></p>
+      <pre style="background:#111827;color:#d1fae5;padding:12px;border-radius:8px;font-size:12px;white-space:pre-wrap;word-break:break-all">${i.deliveryData}</pre>`)
+    .join('');
+  const allDone = order.items.every((i) => i.deliveredAt);
+  const html = emailLayout(
+    siteName,
+    allDone ? `Your order ${order.code} has been delivered` : `Items delivered for order ${order.code}`,
+    `<p>Good news — your item${delivered.length > 1 ? 's are' : ' is'} ready:</p>
+     ${blocks}
+     <p>You can always find your items on the order page:<br>
+     <a href="${appUrl}/orders/${order.code}">${appUrl}/orders/${order.code}</a></p>`
+  );
+  await sendMail(order.email, `Your ${siteName} order ${order.code} is ready`, html);
 }
 
 async function sendOrderEmail(orderId: number): Promise<void> {
