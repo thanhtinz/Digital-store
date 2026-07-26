@@ -101,7 +101,7 @@ export default function BuyBox({ productId, packages }: { productId: number; pac
               <span className="flex gap-1">
                 {p.onSale && <span className="badge gap-1 bg-red-100 text-red-700"><Icon name="bolt" size={11} /> Sale</span>}
                 {p.stock === null ? null : p.stock > 0 ? (
-                  <span className="badge gap-1 bg-green-100 text-green-700">In stock</span>
+                  <span className="badge gap-1 bg-green-100 text-green-700"><Icon name="bolt" size={11} /> Instant</span>
                 ) : (
                   <span className="badge bg-amber-100 text-amber-700">Backorder</span>
                 )}

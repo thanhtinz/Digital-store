@@ -151,6 +151,11 @@ model Package {
   comparePrice Decimal? @map("compare_price") @db.Decimal(10, 2) // strike-through price
   customFields Json?    @map("custom_fields")
   autoDeliver  Boolean  @default(false) @map("auto_deliver") // deliver from StockItem pool on payment
+  // Text automatically appended below the delivered codes (activation steps,
+  // warranty info…). Only used when autoDeliver is on.
+  deliveryNote String?  @map("delivery_note")
+  // Email the store owner when unsold stock drops to/below this number.
+  lowStockAlert Int?    @map("low_stock_alert")
   sortOrder    Int      @default(0) @map("sort_order")
   isActive     Boolean  @default(true) @map("is_active")
   createdAt    DateTime @default(now()) @map("created_at")
