@@ -35,6 +35,11 @@ export default async function OrderDetailPage({ params }: { params: { code: stri
       {/* Live status watcher after gateway redirect */}
       <PaymentWatcher code={order.code} initialStatus={order.status} />
 
+      {/* Progress timeline */}
+      {order.status !== 'CANCELLED' && order.status !== 'REFUNDED' && (
+        <OrderTimeline status={order.status} />
+      )}
+
       <div className="card mt-6 divide-y divide-gray-100">
         {order.items.map((item) => (
           <div key={item.id} className="p-4">
@@ -87,6 +92,40 @@ export default async function OrderDetailPage({ params }: { params: { code: stri
         <div className="flex justify-between border-t border-gray-100 pt-2 text-base font-bold">
           <span>Total</span><span>{formatMoney(Number(order.total), order.currency)}</span>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function OrderTimeline({ status }: { status: string }) {
+  const steps = [
+    { key: 'placed', label: 'Order placed', icon: 'cart' },
+    { key: 'paid', label: 'Payment confirmed', icon: 'credit-card' },
+    { key: 'delivered', label: 'Delivered', icon: 'check' },
+  ];
+  const activeIndex = status === 'COMPLETED' ? 2 : status === 'PAID' ? 1 : 0;
+  return (
+    <div className="card mt-6 px-6 py-5">
+      <div className="flex items-center">
+        {steps.map((step, i) => (
+          <div key={step.key} className={`flex items-center ${i > 0 ? 'flex-1' : ''}`}>
+            {i > 0 && (
+              <div className={`mx-3 h-0.5 flex-1 rounded ${i <= activeIndex ? 'bg-brand-600' : 'bg-gray-200'}`} />
+            )}
+            <div className="flex flex-col items-center gap-1.5">
+              <span
+                className={`grid h-9 w-9 place-items-center rounded-full ${
+                  i <= activeIndex ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-400'
+                }`}
+              >
+                <Icon name={step.icon} size={16} />
+              </span>
+              <span className={`whitespace-nowrap text-[11px] font-semibold ${i <= activeIndex ? 'text-gray-900' : 'text-gray-400'}`}>
+                {step.label}
+              </span>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

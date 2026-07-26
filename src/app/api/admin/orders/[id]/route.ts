@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 import { handler, jsonError } from '@/lib/api';
-import { markOrderPaid } from '@/lib/orders';
+import { markOrderPaid, sendDeliveryEmail } from '@/lib/orders';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +28,8 @@ export const PATCH = handler(async (req: NextRequest, { params }: { params: { id
     if (remaining === 0 && (order.status === 'PAID' || order.status === 'COMPLETED')) {
       await prisma.order.update({ where: { id }, data: { status: 'COMPLETED' } });
     }
+    // Automatic email to the buyer with the delivered content.
+    sendDeliveryEmail(id).catch(() => {});
   } else if (b.action === 'markPaid') {
     if (order.status !== 'PENDING') return jsonError(400, 'Only pending orders can be marked paid');
     await markOrderPaid(id, 'manual');

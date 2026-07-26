@@ -13,7 +13,7 @@ export default async function HomePage() {
   const now = new Date();
   const [banners, categories, flashSale, featuredRaw, latestRaw] = await Promise.all([
     prisma.banner.findMany({ where: { isActive: true }, orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }], take: 6 }),
-    prisma.category.findMany({ where: { isActive: true }, orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] }),
+    prisma.category.findMany({ where: { isActive: true }, orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }], include: { _count: { select: { products: { where: { isActive: true } } } } } }),
     prisma.flashSale.findFirst({
       where: { isActive: true, startsAt: { lte: now }, endsAt: { gte: now } },
       orderBy: { endsAt: 'asc' },
@@ -51,7 +51,10 @@ export default async function HomePage() {
       {/* Categories */}
       {categories.length > 0 && (
         <section>
-          <h2 className="mb-4 text-xl font-bold">Browse categories</h2>
+          <div className="mb-4">
+            <h2 className="text-xl font-bold">Browse categories</h2>
+            <p className="mt-0.5 text-sm text-gray-500">Find exactly what you need, faster.</p>
+          </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {categories.map((c) => (
               <Link
@@ -65,7 +68,10 @@ export default async function HomePage() {
                 ) : (
                   <span className="grid h-10 w-10 place-items-center rounded-lg bg-brand-50 text-brand-600"><Icon name="folder" size={20} /></span>
                 )}
-                <span className="text-sm font-semibold group-hover:text-brand-600">{c.name}</span>
+                <span>
+                  <span className="block text-sm font-semibold group-hover:text-brand-600">{c.name}</span>
+                  <span className="block text-xs text-gray-400">{c._count.products} product{c._count.products === 1 ? '' : 's'}</span>
+                </span>
               </Link>
             ))}
           </div>
@@ -156,22 +162,7 @@ export default async function HomePage() {
         )}
       </section>
 
-      {/* Trust strip */}
-      <section className="grid gap-4 sm:grid-cols-3">
-        {[
-          ['bolt', 'Instant delivery', 'Most orders are delivered automatically, seconds after payment.'],
-          ['lock', 'Secure checkout', 'Pay with Visa, Mastercard or PayPal through Stripe & PayPal.'],
-          ['chat', 'Real support', 'Questions or issues? Our support team answers fast.'],
-        ].map(([icon, title, desc]) => (
-          <div key={title} className="card flex items-start gap-3 p-5">
-            <span className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600"><Icon name={icon} size={20} /></span>
-            <div>
-              <p className="font-semibold">{title}</p>
-              <p className="mt-1 text-sm text-gray-500">{desc}</p>
-            </div>
-          </div>
-        ))}
-      </section>
+
     </div>
   );
 }

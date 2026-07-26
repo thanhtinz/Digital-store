@@ -6,6 +6,7 @@ import ProductCardView, { Stars } from '@/components/ProductCardView';
 import Gallery from './Gallery';
 import BuyBox from './BuyBox';
 import ProductTabs from './ProductTabs';
+import Icon from '@/components/icons';
 
 export const dynamic = 'force-dynamic';
 
@@ -87,6 +88,17 @@ export default async function ProductPage({ params }: { params: { slug: string }
           {product.shortDesc && <p className="mt-3 text-sm leading-relaxed text-gray-600">{product.shortDesc}</p>}
           <div className="mt-5">
             <BuyBox productId={product.id} packages={packages} />
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            {([
+              ['bolt', 'Instant delivery'],
+              ['shield', 'Buyer protection'],
+              ['chat', '24/7 support'],
+            ] as const).map(([icon, label]) => (
+              <div key={label} className="flex items-center justify-center gap-1.5 rounded-lg bg-gray-50 px-2 py-2.5 text-xs font-medium text-gray-600">
+                <Icon name={icon} size={14} className="text-brand-600" /> {label}
+              </div>
+            ))}
           </div>
         </div>
       </div>
