@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useStore } from '@/components/Providers';
 import { api } from '@/lib/client';
 import { formatMoney, type CustomFieldDef } from '@/lib/utils';
+import Icon from '@/components/icons';
 
 type CartItemView = {
   id: number;
@@ -153,7 +154,7 @@ function CheckoutInner() {
                     method === 'stripe' && pay.stripeEnabled ? 'border-brand-600 bg-brand-50' : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  <span className="text-2xl">💳</span>
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700"><Icon name="credit-card" size={22} /></span>
                   <span className="flex-1">
                     <span className="block text-sm font-semibold">Credit / Debit card</span>
                     <span className="block text-xs text-gray-500">Visa, Mastercard, Amex — securely processed by Stripe</span>
@@ -167,7 +168,7 @@ function CheckoutInner() {
                     method === 'paypal' && pay.paypalEnabled ? 'border-brand-600 bg-brand-50' : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  <span className="text-2xl">🅿️</span>
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-blue-50 text-blue-700"><Icon name="paypal" size={22} /></span>
                   <span className="flex-1">
                     <span className="block text-sm font-semibold">PayPal</span>
                     <span className="block text-xs text-gray-500">Pay with your PayPal balance or linked cards</span>
@@ -195,8 +196,8 @@ function CheckoutInner() {
                 </button>
               </div>
               {applied && (
-                <p className="mt-2 text-sm font-medium text-green-600">
-                  ✓ {applied.code} applied — you save {formatMoney(applied.discount)}
+                <p className="mt-2 flex items-center gap-1 text-sm font-medium text-green-600">
+                  <Icon name="check" size={15} /> {applied.code} applied — you save {formatMoney(applied.discount)}
                   <button className="ml-2 text-xs text-gray-400 underline" onClick={() => setApplied(null)}>remove</button>
                 </p>
               )}
@@ -243,7 +244,7 @@ function CheckoutInner() {
             <button className="btn-primary mt-5 w-full" onClick={placeOrder} disabled={busy}>
               {busy ? 'Redirecting to payment…' : method === 'paypal' ? 'Pay with PayPal' : 'Pay with card'}
             </button>
-            <p className="mt-3 text-center text-xs text-gray-400">🔒 256-bit SSL secure payment</p>
+            <p className="mt-3 flex items-center justify-center gap-1 text-center text-xs text-gray-400"><Icon name="lock" size={13} /> 256-bit SSL secure payment</p>
           </div>
         </div>
       )}

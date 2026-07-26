@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useStore } from '@/components/Providers';
 import { api } from '@/lib/client';
 import { formatMoney, type CustomFieldDef } from '@/lib/utils';
+import Icon from '@/components/icons';
 
 type CartItemView = {
   id: number;
@@ -52,7 +53,7 @@ export default function CartPage() {
   if (user === null) {
     return (
       <div className="container py-16 text-center">
-        <p className="text-5xl">🛒</p>
+        <Icon name="cart" size={56} className="mx-auto text-gray-300" />
         <h1 className="mt-4 text-xl font-bold">Sign in to view your cart</h1>
         <Link href="/login" className="btn-primary mt-5 inline-flex">Sign in</Link>
       </div>
@@ -69,7 +70,7 @@ export default function CartPage() {
       <h1 className="text-2xl font-bold">Shopping cart</h1>
       {items.length === 0 ? (
         <div className="card mt-6 p-16 text-center">
-          <p className="text-5xl">🛒</p>
+          <Icon name="cart" size={56} className="mx-auto text-gray-300" />
           <p className="mt-4 font-semibold">Your cart is empty</p>
           <Link href="/products" className="btn-primary mt-5 inline-flex">Browse products</Link>
         </div>
@@ -83,7 +84,7 @@ export default function CartPage() {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={item.image} alt={item.productName} className="h-full w-full object-cover" />
                   ) : (
-                    <div className="grid h-full place-items-center text-2xl text-gray-300">🛍️</div>
+                    <div className="grid h-full place-items-center text-gray-300"><Icon name="bag" size={26} /></div>
                   )}
                 </Link>
                 <div className="min-w-0 flex-1">

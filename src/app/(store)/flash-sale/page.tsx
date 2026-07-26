@@ -2,6 +2,7 @@ import Link from 'next/link';
 import prisma from '@/lib/db';
 import Countdown from '@/components/Countdown';
 import { formatMoney } from '@/lib/utils';
+import Icon from '@/components/icons';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Flash Sale' };
@@ -22,7 +23,7 @@ export default async function FlashSalePage() {
 
   return (
     <div className="container py-8">
-      <h1 className="text-2xl font-bold">⚡ Flash Sale</h1>
+      <h1 className="flex items-center gap-2 text-2xl font-bold"><Icon name="bolt" size={24} className="text-red-600" /> Flash Sale</h1>
       <p className="mt-1 text-sm text-gray-500">Limited-time prices — once the timer hits zero, they&apos;re gone.</p>
 
       {sales.length === 0 && (
@@ -52,7 +53,7 @@ export default async function FlashSalePage() {
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={item.package.product.images[0].url} alt={item.package.product.name} className="h-full w-full object-cover transition group-hover:scale-105" />
                     ) : (
-                      <div className="grid h-full place-items-center text-3xl text-gray-300">🛍️</div>
+                      <div className="grid h-full place-items-center text-gray-300"><Icon name="bag" size={36} /></div>
                     )}
                     {pct > 0 && <span className="badge absolute left-2 top-2 bg-red-600 text-white">-{pct}%</span>}
                     {soldOut && <div className="absolute inset-0 grid place-items-center bg-black/50 text-sm font-bold text-white">SOLD OUT</div>}

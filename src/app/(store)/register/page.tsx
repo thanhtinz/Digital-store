@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/components/Providers';
 import { api } from '@/lib/client';
+import Icon from '@/components/icons';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -41,7 +42,7 @@ export default function RegisterPage() {
     return (
       <div className="container flex justify-center py-12">
         <div className="card w-full max-w-md p-8 text-center">
-          <p className="text-5xl">📬</p>
+          <Icon name="mail" size={56} className="mx-auto text-brand-500" />
           <h1 className="mt-4 text-xl font-bold">Check your inbox</h1>
           <p className="mt-2 text-sm text-gray-500">
             We sent a verification link to <b>{email}</b>. Click it to activate your account.

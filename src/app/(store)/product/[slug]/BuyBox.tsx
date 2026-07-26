@@ -6,6 +6,7 @@ import { useStore } from '@/components/Providers';
 import { api } from '@/lib/client';
 import { formatMoney, type CustomFieldDef } from '@/lib/utils';
 import Countdown from '@/components/Countdown';
+import Icon from '@/components/icons';
 
 type PackageView = {
   id: number;
@@ -96,7 +97,7 @@ export default function BuyBox({ productId, packages }: { productId: number; pac
           >
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm font-semibold">{p.name}</span>
-              {p.onSale && <span className="badge bg-red-100 text-red-700">⚡ Sale</span>}
+              {p.onSale && <span className="badge gap-1 bg-red-100 text-red-700"><Icon name="bolt" size={11} /> Sale</span>}
             </div>
             <p className="mt-1 text-sm font-bold text-brand-700">{formatMoney(p.price)}</p>
             {p.description && <p className="mt-0.5 line-clamp-2 text-xs text-gray-500">{p.description}</p>}
@@ -157,7 +158,7 @@ export default function BuyBox({ productId, packages }: { productId: number; pac
           <button className="px-3 py-2 text-lg leading-none hover:bg-gray-100" onClick={() => setQuantity((q) => Math.min(100, q + 1))}>+</button>
         </div>
         <button className="btn-secondary flex-1" onClick={addToCart} disabled={busy !== ''}>
-          {busy === 'cart' ? 'Adding…' : '🛒 Add to cart'}
+          {busy === 'cart' ? 'Adding…' : (<><Icon name="cart" size={17} /> Add to cart</>)}
         </button>
         <button className="btn-primary flex-1" onClick={buyNow} disabled={busy !== ''}>
           Buy now

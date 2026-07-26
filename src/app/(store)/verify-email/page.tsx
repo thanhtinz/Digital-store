@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useStore } from '@/components/Providers';
 import { api } from '@/lib/client';
+import Icon from '@/components/icons';
 
 export default function VerifyEmailPage() {
   return (
@@ -50,7 +51,7 @@ function VerifyInner() {
         )}
         {state === 'ok' && (
           <>
-            <p className="text-5xl">🎉</p>
+            <Icon name="check" size={56} className="mx-auto rounded-full bg-green-100 p-3 text-green-600" />
             <h1 className="mt-4 text-xl font-bold">Email verified!</h1>
             <p className="mt-2 text-sm text-gray-500">Your account is active and you&apos;re signed in.</p>
             <Link href="/products" className="btn-primary mt-6 inline-flex">Start shopping</Link>
@@ -58,7 +59,7 @@ function VerifyInner() {
         )}
         {state === 'error' && (
           <>
-            <p className="text-5xl">😕</p>
+            <Icon name="x" size={56} className="mx-auto rounded-full bg-red-100 p-3 text-red-500" />
             <h1 className="mt-4 text-xl font-bold">Verification failed</h1>
             <p className="mt-2 text-sm text-gray-500">{message}</p>
             <Link href="/login" className="btn-secondary mt-6 inline-flex">Back to sign in</Link>

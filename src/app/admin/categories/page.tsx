@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '@/components/Providers';
 import { api } from '@/lib/client';
+import Icon from '@/components/icons';
 
 export default function AdminCategoriesPage() {
   const { toast } = useStore();
@@ -52,7 +53,7 @@ export default function AdminCategoriesPage() {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={c.imageUrl} alt="" className="h-9 w-9 rounded-lg object-cover" />
               ) : (
-                <span className="grid h-9 w-9 place-items-center rounded-lg bg-gray-100">🗂️</span>
+                <span className="grid h-9 w-9 place-items-center rounded-lg bg-gray-100 text-gray-400"><Icon name="folder" size={18} /></span>
               )}
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold">{c.name} {!c.isActive && <span className="badge ml-1 bg-gray-200 text-gray-500">Hidden</span>}</p>

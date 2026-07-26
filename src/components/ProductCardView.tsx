@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ProductCard } from '@/lib/catalog';
 import { formatMoney } from '@/lib/utils';
+import Icon from './icons';
 
 export function Stars({ value, size = 14 }: { value: number; size?: number }) {
   return (
@@ -30,7 +31,7 @@ export default function ProductCardView({ product }: { product: ProductCard }) {
             loading="lazy"
           />
         ) : (
-          <div className="grid h-full w-full place-items-center text-4xl text-gray-300">🛍️</div>
+          <div className="grid h-full w-full place-items-center text-gray-300"><Icon name="bag" size={44} /></div>
         )}
         {product.onSale && (
           <span className="badge absolute left-2 top-2 bg-red-600 text-white">SALE</span>

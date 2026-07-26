@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/client';
 import { formatMoney } from '@/lib/utils';
 import ProductEditor, { type EditableProduct } from './ProductEditor';
+import Icon from '@/components/icons';
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -72,7 +73,7 @@ export default function AdminProductsPage() {
                         )}
                       </span>
                       <div className="min-w-0">
-                        <p className="line-clamp-1 font-semibold">{p.name} {p.isFeatured && '⭐'}</p>
+                        <p className="flex items-center gap-1.5 font-semibold"><span className="line-clamp-1">{p.name}</span> {p.isFeatured && <Icon name="star" size={14} className="shrink-0 text-amber-500" />}</p>
                         <p className="text-xs text-gray-400">/{p.slug}</p>
                       </div>
                     </div>

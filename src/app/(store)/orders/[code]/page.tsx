@@ -4,6 +4,7 @@ import { getSessionUser } from '@/lib/auth';
 import { formatMoney } from '@/lib/utils';
 import StatusBadge from '@/components/StatusBadge';
 import PaymentWatcher from './PaymentWatcher';
+import Icon from '@/components/icons';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Order details' };
@@ -43,7 +44,7 @@ export default async function OrderDetailPage({ params }: { params: { code: stri
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={item.imageUrl} alt="" className="h-full w-full object-cover" />
                 ) : (
-                  <div className="grid h-full place-items-center text-xl text-gray-300">📦</div>
+                  <div className="grid h-full place-items-center text-gray-300"><Icon name="box" size={24} /></div>
                 )}
               </div>
               <div className="min-w-0 flex-1">
@@ -62,13 +63,13 @@ export default async function OrderDetailPage({ params }: { params: { code: stri
             {/* Delivered content */}
             {item.deliveryData && (
               <div className="mt-3 rounded-lg bg-gray-900 p-3.5">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-green-400">✓ Delivered — your item</p>
+                <p className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-green-400"><Icon name="check" size={13} /> Delivered — your item</p>
                 <pre className="mt-1.5 select-all whitespace-pre-wrap break-all font-mono text-xs text-gray-100">{item.deliveryData}</pre>
               </div>
             )}
             {!item.deliveryData && (order.status === 'PAID' || order.status === 'COMPLETED') && (
-              <p className="mt-3 rounded-lg bg-blue-50 p-3 text-xs text-blue-700">
-                ⏳ This item is being prepared — you&apos;ll receive it here and by email shortly.
+              <p className="mt-3 flex items-center gap-1.5 rounded-lg bg-blue-50 p-3 text-xs text-blue-700">
+                <Icon name="clock" size={14} className="shrink-0" /> This item is being prepared — you&apos;ll receive it here and by email shortly.
               </p>
             )}
           </div>

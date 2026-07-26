@@ -4,6 +4,7 @@ import prisma from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
 import { formatMoney } from '@/lib/utils';
 import StatusBadge from '@/components/StatusBadge';
+import Icon from '@/components/icons';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'My Orders' };
@@ -24,7 +25,7 @@ export default async function OrdersPage() {
       <h1 className="text-2xl font-bold">Purchase history</h1>
       {orders.length === 0 ? (
         <div className="card mt-6 p-16 text-center">
-          <p className="text-5xl">📦</p>
+          <Icon name="box" size={56} className="mx-auto text-gray-300" />
           <p className="mt-4 font-semibold">You haven&apos;t placed any orders yet</p>
           <Link href="/products" className="btn-primary mt-5 inline-flex">Start shopping</Link>
         </div>
@@ -37,7 +38,7 @@ export default async function OrdersPage() {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={o.items[0].imageUrl} alt="" className="h-full w-full object-cover" />
                 ) : (
-                  <span className="text-xl text-gray-300">📦</span>
+                  <span className="text-gray-300"><Icon name="box" size={24} /></span>
                 )}
               </div>
               <div className="min-w-0 flex-1">
