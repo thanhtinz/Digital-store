@@ -116,6 +116,8 @@ model Product {
   guide        String?  // rich HTML — "How to use / activation guide"
   isActive     Boolean  @default(true) @map("is_active")
   isFeatured   Boolean  @default(false) @map("is_featured")
+  // Per-product affiliate commission % — null falls back to the global rate.
+  affiliateRate Decimal? @map("affiliate_rate") @db.Decimal(5, 2)
   soldCount    Int      @default(0) @map("sold_count")
   ratingAvg    Float    @default(0) @map("rating_avg")
   ratingCount  Int      @default(0) @map("rating_count")

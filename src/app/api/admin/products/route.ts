@@ -49,6 +49,7 @@ export const POST = handler(async (req: NextRequest) => {
       guide: b.guide ? String(b.guide) : null,
       isActive: b.isActive !== false,
       isFeatured: !!b.isFeatured,
+      affiliateRate: b.affiliateRate !== undefined && b.affiliateRate !== '' && b.affiliateRate !== null ? Number(b.affiliateRate) : null,
       images: {
         create: (Array.isArray(b.images) ? b.images : [])
           .slice(0, 10)

@@ -44,6 +44,7 @@ export const PATCH = handler(async (req: NextRequest, { params }: { params: { id
         ...(b.guide !== undefined ? { guide: b.guide ? String(b.guide) : null } : {}),
         ...(b.isActive !== undefined ? { isActive: !!b.isActive } : {}),
         ...(b.isFeatured !== undefined ? { isFeatured: !!b.isFeatured } : {}),
+        ...(b.affiliateRate !== undefined ? { affiliateRate: b.affiliateRate === '' || b.affiliateRate === null ? null : Number(b.affiliateRate) } : {}),
       },
     });
 

@@ -16,6 +16,7 @@ export type EditableProduct = {
   guide: string | null;
   isActive: boolean;
   isFeatured: boolean;
+  affiliateRate?: string | number | null;
   images: { url: string }[];
   packages: any[];
 };
@@ -47,6 +48,9 @@ export default function ProductEditor({ product, categories, onClose }: {
   const [guide, setGuide] = useState(product?.guide || '');
   const [isActive, setIsActive] = useState(product?.isActive ?? true);
   const [isFeatured, setIsFeatured] = useState(product?.isFeatured ?? false);
+  const [affiliateRate, setAffiliateRate] = useState(
+    product?.affiliateRate !== null && product?.affiliateRate !== undefined ? String(Number(product.affiliateRate)) : ''
+  );
   const [images, setImages] = useState<string[]>(product?.images.map((i) => i.url) || []);
   const [packages, setPackages] = useState<PkgForm[]>(
     product?.packages.map((p) => ({
@@ -93,7 +97,7 @@ export default function ProductEditor({ product, categories, onClose }: {
     try {
       const payload = {
         name, slug: slug || undefined, categoryId: categoryId ? Number(categoryId) : null,
-        shortDesc, description, guide, isActive, isFeatured, images,
+        shortDesc, description, guide, isActive, isFeatured, affiliateRate, images,
         packages: packages.map((p) => ({
           id: p.id,
           name: p.name,
@@ -172,6 +176,20 @@ export default function ProductEditor({ product, categories, onClose }: {
           <label className="flex items-center gap-2 text-sm font-medium">
             <input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} /> Featured on homepage
           </label>
+        </div>
+        <div>
+          <label className="label">Affiliate commission (%) — override</label>
+          <input
+            className="input"
+            type="number"
+            min="0"
+            max="100"
+            step="0.1"
+            placeholder="Default (global rate)"
+            value={affiliateRate}
+            onChange={(e) => setAffiliateRate(e.target.value)}
+          />
+          <p className="mt-1 text-xs text-gray-400">Leave blank to use the global rate from Rewards &amp; affiliate.</p>
         </div>
         <div className="sm:col-span-2">
           <label className="label">Short description (shown in listings)</label>
