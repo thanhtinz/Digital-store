@@ -59,6 +59,7 @@ export default function Footer({ siteName, tagline, footerText, supportEmail, ca
         <div>
           <p className="text-sm font-semibold uppercase tracking-wide text-gray-400">Help & legal</p>
           <ul className="mt-3 space-y-2 text-sm">
+            <li><Link href="/support" className="text-gray-600 hover:text-brand-600">Support center</Link></li>
             <li><Link href="/faq" className="text-gray-600 hover:text-brand-600">FAQ</Link></li>
             <li><Link href="/refund-policy" className="text-gray-600 hover:text-brand-600">Refund policy</Link></li>
             <li><Link href="/terms" className="text-gray-600 hover:text-brand-600">Terms of service</Link></li>

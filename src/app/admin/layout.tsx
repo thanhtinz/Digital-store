@@ -20,6 +20,7 @@ const NAV: Array<{ href: string; label: string; icon: string } | { section: stri
   { href: '/admin/coupons', label: 'Coupons', icon: 'ticket' },
   { href: '/admin/flash-sales', label: 'Flash sales', icon: 'bolt' },
   { section: 'Community' },
+  { href: '/admin/tickets', label: 'Support tickets', icon: 'chat' },
   { href: '/admin/reviews', label: 'Reviews', icon: 'star' },
   { href: '/admin/users', label: 'Users', icon: 'users' },
   { section: 'Configuration' },

@@ -186,6 +186,7 @@ export default function Header({ siteName, logo, categories }: Props) {
                   )}
                   <Link href="/orders" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">My orders</Link>
                   <Link href="/wishlist" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">Wishlist</Link>
+                  <Link href="/support" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">Support</Link>
                   <Link href="/account" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">Account & security</Link>
                   <button onClick={logout} className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50">
                     Sign out
@@ -269,6 +270,9 @@ export default function Header({ siteName, logo, categories }: Props) {
                     </Link>
                     <Link href="/wishlist" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
                       <Icon name="heart" size={17} className="text-gray-400" /> Wishlist
+                    </Link>
+                    <Link href="/support" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
+                      <Icon name="chat" size={17} className="text-gray-400" /> Support
                     </Link>
                     <Link href="/account" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
                       <Icon name="user" size={17} className="text-gray-400" /> Account & security
