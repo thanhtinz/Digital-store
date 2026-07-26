@@ -5,6 +5,7 @@ import { generateOrderCode, parseCustomFields } from './utils';
 import { getSetting, getSettings } from './settings';
 import { creditWallet } from './wallet';
 import { sendMail, emailLayout } from './mail';
+import { sendTelegram, escapeHtml } from './telegram';
 
 export type CheckoutItemInput = {
   packageId: number;
@@ -270,6 +271,14 @@ export async function markOrderPaid(orderId: number, paymentRef?: string): Promi
   await autoDeliver(orderId);
   await sendOrderEmail(orderId).catch(() => {});
   await grantRewards(orderId).catch(() => {});
+
+  // Ping the store owner on Telegram (no-op unless configured).
+  const itemsLabel = order.items.map((i) => `${i.productName} — ${i.packageName} ×${i.quantity}`).join(', ');
+  sendTelegram(
+    `<b>New paid order</b> ${order.code}\n` +
+    `${escapeHtml(itemsLabel)}\n` +
+    `Total: $${Number(order.total).toFixed(2)} · ${order.paymentMethod || 'unknown'} · ${escapeHtml(order.email)}`
+  ).catch(() => {});
 }
 
 // Loyalty points for the buyer + affiliate commission for their referrer.
@@ -367,6 +376,7 @@ export async function autoDeliver(orderId: number): Promise<void> {
     if (pkg.lowStockAlert != null && delivered.length > 0) {
       const left = await prisma.stockItem.count({ where: { packageId: pkg.id, isSold: false } });
       if (left <= pkg.lowStockAlert && left + delivered.length > pkg.lowStockAlert) {
+        sendTelegram(`<b>Low stock</b> — ${escapeHtml(`${pkg.product.name} — ${pkg.name}`)}: ${left} unit(s) left (threshold ${pkg.lowStockAlert})`).catch(() => {});
         notifyAdmin(
           `Low stock: ${pkg.product.name} — ${pkg.name}`,
           `<p><b>${pkg.product.name} — ${pkg.name}</b> is down to <b>${left}</b> unsold unit${left === 1 ? '' : 's'} (alert threshold: ${pkg.lowStockAlert}).</p>
@@ -378,6 +388,7 @@ export async function autoDeliver(orderId: number): Promise<void> {
 
   // Alert the owner when an order is stuck waiting for manual fulfillment.
   if (shortages.length > 0) {
+    sendTelegram(`<b>Manual fulfillment needed</b> — order ${order.code}\n${escapeHtml(shortages.join('; '))}`).catch(() => {});
     notifyAdmin(
       `Order ${order.code} needs manual delivery`,
       `<p>Auto-delivery ran out of stock for order <b>${order.code}</b>:</p>

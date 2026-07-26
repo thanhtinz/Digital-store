@@ -4,6 +4,7 @@ import { handler, jsonError } from '@/lib/api';
 import { getSettings } from '@/lib/settings';
 import { testStripeConnection } from '@/lib/stripe';
 import { testPaypalConnection } from '@/lib/paypal';
+import { testTelegram } from '@/lib/telegram';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +28,14 @@ export const POST = handler(async (req: NextRequest) => {
     return ok
       ? NextResponse.json({ ok: true, message: `PayPal connection verified (${s.paypal_mode})` })
       : jsonError(400, 'PayPal rejected the credentials');
+  }
+  if (gateway === 'telegram') {
+    const s = await getSettings(['telegram_bot_token', 'telegram_chat_id']);
+    if (!s.telegram_bot_token || !s.telegram_chat_id) return jsonError(400, 'Save your bot token and chat ID first');
+    const ok = await testTelegram(s.telegram_bot_token, s.telegram_chat_id);
+    return ok
+      ? NextResponse.json({ ok: true, message: 'Test message sent — check your Telegram' })
+      : jsonError(400, 'Telegram rejected the credentials — check the bot token and chat ID');
   }
   return jsonError(400, 'Unknown gateway');
 });

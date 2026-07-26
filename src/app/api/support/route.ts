@@ -3,6 +3,7 @@ import prisma from '@/lib/db';
 import { requireUser } from '@/lib/auth';
 import { handler, jsonError } from '@/lib/api';
 import { rateLimit } from '@/lib/rateLimit';
+import { sendTelegram, escapeHtml } from '@/lib/telegram';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,5 +50,8 @@ export const POST = handler(async (req: NextRequest) => {
       messages: { create: { content: message, isStaff: false, attachments: cleanAttachments(b.attachments) } },
     },
   });
+  sendTelegram(
+    `<b>New support ticket</b> #${ticket.id}\n${escapeHtml(subject)}\nFrom ${escapeHtml(user.email)}${orderCode ? ` · order ${orderCode}` : ''}`
+  ).catch(() => {});
   return NextResponse.json({ ok: true, ticket });
 });
