@@ -1,214 +1,85 @@
 # Digital Store
 
-Nền tảng thương mại điện tử **sản phẩm số** cho thị trường Việt Nam: bán tài khoản premium (Netflix, Spotify…), **nạp game/topup**, **gift card**, **dịch vụ tăng tương tác mạng xã hội (SMM)** và ví số dư nội bộ.
+A modern, full-featured e-commerce platform for **digital goods** (subscriptions, game top-ups, license keys) built for the US / European market. One codebase, one deployable service.
 
-Hệ thống gồm hai phần trong cùng một repo:
+**Stack:** Next.js 14 (App Router) · TypeScript · Prisma · PostgreSQL · Tailwind CSS
 
-- **Backend** — REST API viết bằng **Express + TypeScript + Prisma**.
-- **Frontend** — ứng dụng **Next.js + TypeScript + MUI** (hệ thiết kế *Minimal v4*): trang bán hàng (storefront), khu vực người dùng và **admin dashboard**.
+## Features
 
-Khi chạy production, cả hai gói chung **một container**: Next.js giữ cổng công khai và proxy `/api`, `/admin`, `/static` về Express nội bộ (same-origin, không cần CORS).
+**Storefront** (fully responsive — mobile, tablet, desktop)
+- Hero banner carousel, category browsing, search, sorting, pagination
+- Product pages with multi-image gallery, package/tier pricing, rich description & usage guide tabs, verified-purchase reviews with rating breakdown, related products
+- Per-package **custom checkout fields** (e.g. player ID, account email) defined by the admin and filled by the buyer
+- Cart (server-synced), buy-now, wishlist
+- **Flash sales** with live countdown, per-item quantity limits and automatic price override
+- **Coupons** (percent/fixed, min order, caps, usage & per-user limits, time windows)
 
----
+**Payments**
+- **Stripe Checkout** — Visa, Mastercard, Amex and more, with signature-verified webhooks
+- **PayPal** (Orders v2) — capture on return
+- Orders auto-deliver from a stock pool of keys/accounts, or manually from the admin panel; buyers get an email receipt and see delivered items on the order page
 
-## Tính năng chính
+**Accounts & security**
+- Email + password sign-up with **email verification**
+- **Google OAuth** login
+- Forgot / reset password, change password
+- **Two-factor authentication** (TOTP, QR enrollment)
+- **Login history** (IP, device, method, success/failure)
 
-**Bán hàng & sản phẩm**
-- Danh mục, sản phẩm nhiều gói (package), kho tự động giao (auto-delivery) hoặc giao tay
-- Phân loại sản phẩm: premium / topup (game) / gift card với layout chi tiết riêng
-- Giỏ hàng, mua ngay, mã giảm giá, flash sale, wishlist, tìm kiếm
-- **Đánh giá sản phẩm**: chỉ cho người đã mua, phân bố sao, lọc/sắp xếp/phân trang, ảnh đính kèm, admin phản hồi
+**Admin panel** (`/admin`)
+- Dashboard: revenue today/month/total, 14-day chart, recent orders
+- Products (packages, pricing, compare-at prices, custom fields builder, image uploads, auto-delivery stock manager)
+- Categories, banners, coupons, flash sales, reviews (approve/hide/reply), users (roles, block), orders (manual delivery, mark paid, cancel, refund)
+- Settings: site identity, currency, **payment gateways** (Stripe/PayPal with connection tests and webhook URLs), Google OAuth, SMTP
 
-**Thanh toán & số dư**
-- Cổng thanh toán **SePay** (VietQR, webhook xác nhận tự động)
-- Ví số dư nội bộ: nạp qua QR, mua bằng số dư, hoàn tiền tự động
-- **Nạp thẻ cào** đổi số dư, lịch sử giao dịch
+## Quick start (local)
 
-**Dịch vụ SMM**
-- Catalog theo nền tảng (Facebook / Instagram / TikTok / YouTube…)
-- Đặt đơn trừ số dư, tính VAT, nhiều loại dịch vụ (Custom Comments, Hashtag, SEO, Subscriptions, Package…)
-- Tích hợp API nhà cung cấp (SMM panel v2), refill, bảo hành
-- **Tự động xử lý đơn đặt lịch & đơn lặp lại** (scheduler)
-
-**Affiliate & marketing**
-- Affiliate: mã giới thiệu, hoa hồng, duyệt rút tiền
-- Blog (bài viết + danh mục), trang hỗ trợ, ticket, live chat
-- Banner, gift code, điểm thưởng (loyalty), thông báo hệ thống
-
-**Quản trị & vận hành**
-- Admin dashboard: thống kê, quản lý đơn / user / sản phẩm / số dư / SMM / cấu hình site
-- **Cấu hình site động** (tên web, mô tả, logo, liên hệ, mạng xã hội…) lấy từ backend, không hard-code
-- **Mail theo domain** (tự host): relay hoặc gửi trực tiếp có ký DKIM, sinh khóa DKIM + hướng dẫn DNS
-- **Bot Telegram đa kênh**: nhiều bot theo bộ phận, thông báo realtime + báo cáo định kỳ + lệnh quản trị nhanh
-- Đăng nhập OAuth Google + tài khoản local, 2FA (TOTP), quên/đặt lại mật khẩu qua email
-- Phân quyền admin/staff, rate limit
-
----
-
-## Công nghệ sử dụng
-
-### Backend (`src/`)
-| Thành phần | Công nghệ |
-|------------|-----------|
-| Ngôn ngữ | TypeScript (Node.js 20) |
-| Web framework | Express |
-| ORM / Database | Prisma — PostgreSQL hoặc MySQL (đổi qua `.env`) |
-| Xác thực | JWT (jsonwebtoken) + bcryptjs |
-| 2FA | otplib (TOTP) + qrcode |
-| Email | nodemailer (relay + direct SMTP, ký DKIM) |
-| Ảnh / Upload | sharp, multer |
-| Bảo mật | helmet, cors, express-rate-limit |
-
-### Frontend (`frontend/`)
-| Thành phần | Công nghệ |
-|------------|-----------|
-| Framework | Next.js 13 (pages router) + React 18 + TypeScript |
-| UI | MUI v5 + hệ thiết kế Minimal v4 (font *Public Sans*, accent `#00AB55`) |
-| State | Redux Toolkit |
-| Form | react-hook-form + yup |
-| Đa ngôn ngữ | i18next (VI/EN/…) |
-| HTTP | axios (interceptor adapt dữ liệu backend → component) |
-
-### Triển khai
-- **Docker** (multi-stage) + **Railway** (mặc định) — xem `Dockerfile`, `railway.json`, `docker-start.js`
-- Hoặc **VPS**: PM2 + Nginx + Let's Encrypt (xem `DEPLOY.md`)
-
----
-
-## Kiến trúc thư mục
-
-```
-Digital-store/
-├── src/                       # Backend Express + TypeScript
-│   ├── server.ts              # Điểm vào, mount router, khởi động scheduler
-│   ├── db.ts                  # Prisma client (singleton)
-│   ├── middleware/            # auth (JWT) + rate limit
-│   ├── routes/                # 19 nhóm route REST
-│   │   ├── auth.ts            # Đăng ký/đăng nhập, OAuth Google, 2FA
-│   │   ├── products.ts        # Sản phẩm + gói
-│   │   ├── orders.ts          # Đơn hàng, giao hàng, hủy
-│   │   ├── payment.ts         # SePay (link, webhook)
-│   │   ├── balance.ts         # Ví số dư, nạp, rút hoa hồng
-│   │   ├── smm.ts             # SMM panel (catalog, đặt đơn, refill, admin)
-│   │   ├── admin.ts           # Danh mục, banner, flash sale, cấu hình site, stats
-│   │   ├── misc.ts            # Blog, đánh giá, wishlist, support
-│   │   ├── cart.ts            # Giỏ hàng đồng bộ server
-│   │   ├── chat.ts            # Live chat
-│   │   ├── loyalty.ts         # Điểm thưởng
-│   │   ├── affiliate.ts       # Affiliate
-│   │   ├── integrations.ts    # API providers + AI sinh nội dung
-│   │   ├── cardCharge.ts      # Nạp thẻ cào
-│   │   ├── stock.ts           # Kho auto-delivery
-│   │   ├── telegram.ts        # Bot Telegram đa kênh
-│   │   ├── mail.ts            # Mail server theo domain
-│   │   ├── oauth.ts           # Cấu hình OAuth provider
-│   │   └── userNotifications.ts
-│   ├── services/              # Nghiệp vụ: orders, sepay, providers, telegram, mail, ai, scheduler
-│   └── utils/seed.ts          # Khởi tạo dữ liệu ban đầu
-│
-├── frontend/                  # Next.js + TypeScript + MUI
-│   └── src/
-│       ├── pages/             # Routes: storefront, /dashboard (user + admin), /auth
-│       ├── sections/          # UI theo trang (storefront, admin, @dashboard/e-commerce…)
-│       ├── layouts/           # Layout dashboard/storefront
-│       ├── hooks/             # vd useSiteSettings (lấy cấu hình site từ /api/settings)
-│       ├── redux/             # store + slices
-│       ├── components/        # component dùng chung (SiteHead, logo, hook-form…)
-│       └── utils/axios.ts     # axios instance + adapter dữ liệu
-│
-├── prisma/schema.prisma       # 44 models
-├── static/                    # Admin SPA legacy (/admin) + ảnh upload/banner
-├── scripts/                   # railway-start, db-switch…
-├── Dockerfile                 # Build multi-stage (backend + frontend + runner)
-├── docker-start.js            # prisma db push → chạy backend + frontend song song
-├── railway.json               # Cấu hình Railway (Dockerfile + healthcheck)
-├── DEPLOY.md                  # Hướng dẫn deploy VPS chi tiết
-└── .env.example
-```
-
-> Lưu ý: có **hai giao diện admin** — admin dashboard hiện đại trong Next.js (`frontend/src/pages/dashboard/admin/*`, đang phát triển chính) và một admin SPA legacy phục vụ tại `/admin` từ `static/`.
-
----
-
-## Chạy ở máy local
-
-Yêu cầu: **Node.js 20+**, **PostgreSQL 13+** (hoặc MySQL).
-
-### 1. Backend (API — cổng 4000/3000)
+Requirements: Node.js 20+, PostgreSQL 13+.
 
 ```bash
 npm install
-cp .env.example .env          # điền DATABASE_URL, JWT_SECRET…
-npx prisma generate
-npx prisma db push            # tạo bảng theo schema
-npm run db:seed               # tạo admin + dữ liệu mẫu
-npm run dev                   # tsx watch src/server.ts
+cp .env.example .env        # set DATABASE_URL, AUTH_SECRET
+npx prisma db push          # create tables
+npm run db:seed             # admin account + demo catalog
+npm run dev                 # http://localhost:3000
 ```
 
-### 2. Frontend (Next.js — cổng 8081)
+Default admin: `admin@example.com` / `Admin12345!` (override with `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`; change it after first login).
+
+## Configuration
+
+Everything can be configured from **Admin → Settings** — no code changes needed:
+
+| Area | What you set |
+|------|--------------|
+| Site | Name, tagline, logo, currency (USD default), support email, public URL |
+| Stripe | Secret/publishable keys, webhook secret. Webhook endpoint: `<APP_URL>/api/webhooks/stripe`, event `checkout.session.completed` |
+| PayPal | Client ID/secret, sandbox or live mode |
+| Google login | OAuth client ID/secret. Redirect URI: `<APP_URL>/api/auth/google/callback` |
+| Email | SMTP host/port/credentials. Empty host = emails logged to console (dev) |
+
+Environment variables with the same meaning (see `.env.example`) always override DB settings — useful for pinning secrets at deploy time.
+
+## Deploy (Docker)
 
 ```bash
-cd frontend
-npm install --legacy-peer-deps
-npm run dev                   # next dev -p 8081
+docker build -t digital-store .
+docker run -p 3000:3000 \
+  -e DATABASE_URL=postgresql://… \
+  -e AUTH_SECRET=$(openssl rand -hex 32) \
+  -e APP_URL=https://yourstore.com \
+  digital-store
 ```
 
-Frontend proxy `/api`, `/admin`, `/static` sang backend qua `next.config.js`
-(`BACKEND_INTERNAL_URL`, mặc định `http://127.0.0.1:4000`). Khi chạy tách, đặt
-biến này (hoặc `PORT` backend) cho khớp.
+The container runs `prisma db push` at boot (schema migrates automatically) and then starts the standalone Next.js server. Works out of the box on Railway, Render, Fly.io or any VPS with Docker.
 
-### Đổi loại database (PostgreSQL ↔ MySQL)
+## Project layout
 
-```bash
-npm run db:switch postgresql   # hoặc: mysql
-# cập nhật DATABASE_URL trong .env rồi:
-npx prisma generate && npx prisma db push
 ```
-
-Các kiểu dữ liệu trong schema (`@db.VarChar`, `@db.Decimal`, `Json`) tương thích cả hai họ SQL.
-
-### Tài khoản admin mặc định (sau seed)
-- Email: `admin@sweetstore.vn`
-- Mật khẩu: `Admin@123456` — **đổi ngay sau lần đăng nhập đầu**
-  (cấu hình qua `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`).
-
----
-
-## Triển khai
-
-### Docker / Railway (mặc định)
-Repo có sẵn `Dockerfile` multi-stage và `railway.json`. Khi deploy, `docker-start.js`:
-1. chạy `prisma db push` (đồng bộ schema, **không chặn** server nếu lỗi),
-2. khởi động **backend** (Express, `BACKEND_PORT=4000`) và **frontend** (Next.js, `PORT` công khai) song song.
-
-> Vì schema được `db push` tự động lúc khởi động, sau khi sửa `prisma/schema.prisma`
-> chỉ cần deploy — không cần migration thủ công.
-
-Healthcheck: `/healthz`. Marker phiên bản frontend: `/build-info.json`.
-
-### VPS thủ công
-Xem hướng dẫn từng bước (trỏ domain → cài Node/PostgreSQL/Nginx/PM2 → `.env` → `bash deploy.sh` → HTTPS) trong **[DEPLOY.md](DEPLOY.md)**.
-
----
-
-## Cấu hình sau khi chạy
-
-Mọi tích hợp cấu hình ngay trong **Admin** (không sửa code):
-
-- **Cấu hình site**: tên web, mô tả, logo, liên hệ, mạng xã hội → áp dụng toàn site (tiêu đề tab, meta, footer, logo)
-- **SePay**: API key + số TK + mã ngân hàng, copy link webhook
-- **Mail theo domain**: chọn relay/direct, tạo khóa DKIM, xem bản ghi DNS cần thêm
-- **Telegram**: thêm bot theo bộ phận, chọn loại thông báo, đăng ký webhook
-- **OAuth, AI, nhà cung cấp API SMM**: cấu hình trực tiếp
-
-Mọi mục có webhook/callback đều hiển thị sẵn URL + nút copy + hướng dẫn.
-
----
-
-## Ghi chú kỹ thuật
-
-- Frontend và backend **same-origin** trong production nhờ Next.js rewrites — không cần CORS.
-- `utils/axios.ts` có interceptor adapt dữ liệu backend (snake_case / cấu trúc thật) sang shape mà component MUI cần; adapter **chỉ** áp cho endpoint sản phẩm để không làm hỏng dữ liệu khác.
-- Cấu hình site công khai lấy qua hook `useSiteSettings()` → `/api/settings`; `SiteHead` đồng bộ tiêu đề tab + meta description theo cấu hình đó.
-- Sau khi đổi `prisma/schema.prisma`: chạy lại `npx prisma generate && npx prisma db push` (local) — production tự `db push` khi khởi động.
-- Build sạch: cả backend (`tsc`) và frontend (`next build` / `tsc --noEmit`) không lỗi.
+prisma/schema.prisma      # data model (users, catalog, orders, promos…)
+prisma/seed.ts            # admin + demo data
+src/lib/                  # domain logic: auth, orders, coupons, stripe, paypal, mail…
+src/app/                  # storefront + auth + account + orders pages
+src/app/admin/            # admin panel (guarded by role)
+src/app/api/              # REST API route handlers (auth, cart, checkout, webhooks, admin CRUD)
+```
