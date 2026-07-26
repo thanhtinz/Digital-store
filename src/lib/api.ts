@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { AuthError } from './auth';
 import { OrderError } from './orders';
+import { RateLimitError } from './rateLimit';
 
 export function jsonError(status: number, message: string) {
   return NextResponse.json({ error: message }, { status });
@@ -13,6 +14,7 @@ export function handler<T extends (...args: any[]) => Promise<Response>>(fn: T):
       return await fn(...args);
     } catch (e: any) {
       if (e instanceof AuthError) return jsonError(e.status, e.message);
+      if (e instanceof RateLimitError) return jsonError(429, e.message);
       if (e instanceof OrderError) return jsonError(400, e.message);
       console.error('API error:', e);
       return jsonError(500, 'Something went wrong. Please try again.');

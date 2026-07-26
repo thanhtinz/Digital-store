@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticator } from 'otplib';
 import prisma from '@/lib/db';
-import { requireUser } from '@/lib/auth';
+import { requireUser, bumpSessionVersion, setSessionCookie } from '@/lib/auth';
 import { handler, jsonError } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
@@ -15,5 +15,7 @@ export const POST = handler(async (req: NextRequest) => {
     return jsonError(400, 'Incorrect authentication code — check your authenticator app');
   }
   await prisma.user.update({ where: { id: user.id }, data: { twoFactorEnabled: true } });
+  const fresh = await bumpSessionVersion(user.id);
+  setSessionCookie(fresh);
   return NextResponse.json({ ok: true });
 });

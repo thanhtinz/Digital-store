@@ -23,6 +23,7 @@ const NAV: Array<{ href: string; label: string; icon: string } | { section: stri
   { href: '/admin/reviews', label: 'Reviews', icon: 'star' },
   { href: '/admin/users', label: 'Users', icon: 'users' },
   { section: 'Configuration' },
+  { href: '/admin/security', label: 'Security', icon: 'shield' },
   { href: '/admin/settings', label: 'Site settings', icon: 'settings' },
   { href: '/admin/settings/payments', label: 'Payments', icon: 'credit-card' },
   { href: '/admin/settings/google', label: 'Google login', icon: 'key' },

@@ -17,7 +17,7 @@ function authSecret(): string {
   return 'dev-only-insecure-secret';
 }
 
-export type SessionPayload = { uid: number; role: string };
+export type SessionPayload = { uid: number; role: string; sv?: number };
 
 export function hashPassword(password: string): string {
   return bcrypt.hashSync(password, 10);
@@ -31,13 +31,13 @@ export function verifyPassword(password: string, hash: string): boolean {
   }
 }
 
-export function createSessionToken(user: Pick<User, 'id' | 'role'>): string {
-  return jwt.sign({ uid: user.id, role: user.role } satisfies SessionPayload, authSecret(), {
+export function createSessionToken(user: Pick<User, 'id' | 'role' | 'sessionVersion'>): string {
+  return jwt.sign({ uid: user.id, role: user.role, sv: user.sessionVersion } satisfies SessionPayload, authSecret(), {
     expiresIn: `${SESSION_DAYS}d`,
   });
 }
 
-export function setSessionCookie(user: Pick<User, 'id' | 'role'>): void {
+export function setSessionCookie(user: Pick<User, 'id' | 'role' | 'sessionVersion'>): void {
   cookies().set(SESSION_COOKIE, createSessionToken(user), {
     httpOnly: true,
     sameSite: 'lax',
@@ -58,6 +58,8 @@ export async function getSessionUser(): Promise<User | null> {
     const payload = jwt.verify(token, authSecret()) as SessionPayload;
     const user = await prisma.user.findUnique({ where: { id: payload.uid } });
     if (!user || user.isBlocked) return null;
+    // Reject tokens minted before the last credential change.
+    if ((payload.sv ?? 0) !== user.sessionVersion) return null;
     return user;
   } catch {
     return null;
@@ -116,3 +118,28 @@ export async function recordLogin(userId: number, method: string, success: boole
     // Never fail a login because history logging failed.
   }
 }
+
+// ── Security helpers ───────────────────────────────────────────────────
+
+// Invalidates every session for the user (call after password/2FA changes),
+// returning the fresh user so the caller can re-issue its own cookie.
+export async function bumpSessionVersion(userId: number): Promise<User> {
+  return prisma.user.update({ where: { id: userId }, data: { sessionVersion: { increment: 1 } } });
+}
+
+const LOCKOUT_ATTEMPTS = 5;
+const LOCKOUT_WINDOW_MIN = 15;
+
+// True when the account has had too many failed password attempts recently.
+export async function isAccountLocked(userId: number): Promise<boolean> {
+  const failures = await prisma.loginHistory.count({
+    where: {
+      userId,
+      success: false,
+      createdAt: { gte: new Date(Date.now() - LOCKOUT_WINDOW_MIN * 60_000) },
+    },
+  });
+  return failures >= LOCKOUT_ATTEMPTS;
+}
+
+export const LOCKOUT_MESSAGE = `Too many failed sign-in attempts. This account is temporarily locked — try again in ${LOCKOUT_WINDOW_MIN} minutes or reset your password.`;

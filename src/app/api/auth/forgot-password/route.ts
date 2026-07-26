@@ -3,11 +3,13 @@ import prisma from '@/lib/db';
 import { issueToken } from '@/lib/auth';
 import { handler } from '@/lib/api';
 import { getSettings, getAppUrl } from '@/lib/settings';
+import { rateLimit } from '@/lib/rateLimit';
 import { sendMail, emailLayout, buttonHtml } from '@/lib/mail';
 
 export const dynamic = 'force-dynamic';
 
 export const POST = handler(async (req: NextRequest) => {
+  rateLimit('forgot', 5, 60 * 60); // 5 reset emails / hour per IP
   const { email } = await req.json();
   const user = await prisma.user.findUnique({ where: { email: String(email || '').trim().toLowerCase() } });
   // Always answer OK — do not reveal whether an account exists.

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
-import { requireUser, verifyPassword, hashPassword } from '@/lib/auth';
+import { requireUser, verifyPassword, hashPassword, bumpSessionVersion, setSessionCookie } from '@/lib/auth';
 import { handler, jsonError } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
@@ -16,5 +16,8 @@ export const POST = handler(async (req: NextRequest) => {
   }
 
   await prisma.user.update({ where: { id: user.id }, data: { passwordHash: hashPassword(String(newPassword)) } });
+  // Sign out every other device; keep this session alive with a fresh token.
+  const fresh = await bumpSessionVersion(user.id);
+  setSessionCookie(fresh);
   return NextResponse.json({ ok: true });
 });
