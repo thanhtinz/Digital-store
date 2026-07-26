@@ -108,7 +108,7 @@ export default function ProductActions({
         aria-label="Share product"
         className="grid h-10 w-10 place-items-center rounded-lg border border-gray-300 bg-white text-gray-400 transition hover:border-brand-300 hover:text-brand-600"
       >
-        <Icon name="send" size={17} />
+        <Icon name="share" size={17} />
       </button>
     </div>
   );
