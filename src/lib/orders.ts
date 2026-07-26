@@ -198,6 +198,23 @@ export async function releaseOrderResources(orderId: number): Promise<void> {
     }
   }
 
+  // Wallet safety net: a balance order that was debited but never marked
+  // paid (crash between the two steps) gets its money back on release.
+  if (order.paymentMethod === 'balance') {
+    const debit = await prisma.walletTransaction.findFirst({
+      where: { userId: order.userId, type: 'PURCHASE', note: `Order ${order.code}` },
+    });
+    const refunded = debit
+      ? await prisma.walletTransaction.findFirst({
+          where: { userId: order.userId, type: 'REFUND', note: `Refund — order ${order.code}` },
+        })
+      : null;
+    if (debit && !refunded) {
+      const { creditWallet } = await import('./wallet');
+      await creditWallet(order.userId, Number(order.total), 'REFUND', `Refund — order ${order.code}`).catch(() => {});
+    }
+  }
+
   // Loyalty: give redeemed points back.
   if (order.pointsUsed > 0) {
     await prisma.user.update({
@@ -232,10 +249,13 @@ export async function markOrderPaid(orderId: number, paymentRef?: string): Promi
   const order = await prisma.order.findUnique({ where: { id: orderId }, include: { items: true } });
   if (!order || order.status !== 'PENDING') return;
 
-  await prisma.order.update({
-    where: { id: orderId },
+  // Atomic transition — loses the race cleanly if the order was cancelled
+  // or expired between the read above and this write.
+  const flipped = await prisma.order.updateMany({
+    where: { id: orderId, status: 'PENDING' },
     data: { status: 'PAID', paidAt: new Date(), ...(paymentRef ? { paymentRef } : {}) },
   });
+  if (flipped.count !== 1) return;
 
   // Update sold counters on products.
   const pkgIds = order.items.map((i) => i.packageId).filter((v): v is number => v != null);
