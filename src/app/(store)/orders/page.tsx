@@ -37,7 +37,8 @@ export default async function OrdersPage({ searchParams }: { searchParams: { sta
 
   return (
     <div className="container max-w-4xl py-8">
-      <h1 className="text-2xl font-bold">Purchase history</h1>
+      <p className="section-eyebrow">Account</p>
+      <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Purchase history</h1>
       <p className="mt-1 text-sm text-gray-500">Every order, its live status and delivered items in one place.</p>
 
       {/* Status filter chips */}

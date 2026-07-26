@@ -3,6 +3,7 @@ import prisma from '@/lib/db';
 import { toProductCards, productCardInclude } from '@/lib/catalog';
 import ProductCardView from '@/components/ProductCardView';
 import { clampInt } from '@/lib/utils';
+import Icon from '@/components/icons';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'All Products' };
@@ -54,15 +55,16 @@ export default async function ProductsPage({ searchParams }: { searchParams: Sea
     <div className="container py-8">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">{q ? `Search: “${q}”` : 'All Products'}</h1>
-          <p className="mt-1 text-sm text-gray-500">{total.toLocaleString('en-US')} product{total === 1 ? '' : 's'}</p>
+          <p className="section-eyebrow">{q ? 'Search results' : 'Store'}</p>
+          <h1 className="mt-1 text-2xl font-bold sm:text-3xl">{q ? `“${q}”` : 'All Products'}</h1>
+          <p className="mt-1 text-sm text-gray-500">{total.toLocaleString('en-US')} product{total === 1 ? '' : 's'} available</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex rounded-full border border-gray-200 bg-white p-1 shadow-sm">
           {(['popular', 'newest', 'rating'] as const).map((s) => (
             <Link
               key={s}
               href={buildUrl({ sort: s, page: '1' })}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium ${sort === s ? 'bg-brand-600 text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'}`}
+              className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${sort === s ? 'bg-brand-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
             >
               {s === 'popular' ? 'Best selling' : s === 'newest' ? 'Newest' : 'Top rated'}
             </Link>
@@ -75,7 +77,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Sea
         <div className="mb-6 flex flex-wrap gap-2">
           <Link
             href={buildUrl({ category: undefined as any, page: '1' })}
-            className={`rounded-full px-3.5 py-1.5 text-sm font-medium ${!searchParams.category ? 'bg-gray-900 text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'}`}
+            className={`rounded-full px-4 py-1.5 text-sm font-semibold shadow-sm transition ${!searchParams.category ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300 hover:text-gray-900'}`}
           >
             All
           </Link>
@@ -83,7 +85,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Sea
             <Link
               key={c.id}
               href={buildUrl({ category: c.slug, page: '1' })}
-              className={`rounded-full px-3.5 py-1.5 text-sm font-medium ${searchParams.category === c.slug ? 'bg-gray-900 text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'}`}
+              className={`rounded-full px-4 py-1.5 text-sm font-semibold shadow-sm transition ${searchParams.category === c.slug ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300 hover:text-gray-900'}`}
             >
               {c.name}
             </Link>
@@ -96,7 +98,12 @@ export default async function ProductsPage({ searchParams }: { searchParams: Sea
           {products.map((p) => <ProductCardView key={p.id} product={p} />)}
         </div>
       ) : (
-        <div className="card p-16 text-center text-gray-500">No products match your search.</div>
+        <div className="card p-16 text-center">
+          <Icon name="search" size={44} className="mx-auto text-gray-300" />
+          <p className="mt-4 font-semibold text-gray-700">No products match your search</p>
+          <p className="mt-1 text-sm text-gray-500">Try different keywords or clear the filters.</p>
+          <Link href="/products" className="btn-secondary mt-5 inline-flex">Clear filters</Link>
+        </div>
       )}
 
       {/* Pagination */}
@@ -106,7 +113,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Sea
             <Link
               key={p}
               href={buildUrl({ page: String(p) })}
-              className={`grid h-9 w-9 place-items-center rounded-lg text-sm font-semibold ${p === page ? 'bg-brand-600 text-white' : 'bg-white border border-gray-300 hover:bg-gray-100'}`}
+              className={`grid h-10 w-10 place-items-center rounded-full text-sm font-semibold shadow-sm transition ${p === page ? 'bg-brand-600 text-white' : 'bg-white border border-gray-200 hover:border-brand-300 hover:text-brand-700'}`}
             >
               {p}
             </Link>
