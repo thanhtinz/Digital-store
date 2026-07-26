@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
+import Icon from '@/components/icons';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useStore } from '@/components/Providers';
 import { api } from '@/lib/client';
@@ -89,8 +90,11 @@ function LoginInner() {
       <div className="card w-full max-w-md p-6 sm:p-8">
         {challenge ? (
           <>
-            <h1 className="text-xl font-bold">Two-factor authentication</h1>
-            <p className="mt-1 text-sm text-gray-500">Enter the 6-digit code from your authenticator app.</p>
+            <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-[0_8px_20px_-8px_rgba(79,70,229,.6)]">
+              <Icon name="shield" size={22} />
+            </div>
+            <h1 className="mt-4 text-center text-2xl font-bold">Two-factor authentication</h1>
+            <p className="mt-1 text-center text-sm text-gray-500">Enter the 6-digit code from your authenticator app.</p>
             <form onSubmit={submit2fa} className="mt-6 space-y-4">
               <input
                 className="input text-center text-2xl tracking-[0.5em]"
@@ -110,8 +114,11 @@ function LoginInner() {
           </>
         ) : (
           <>
-            <h1 className="text-xl font-bold">Welcome back</h1>
-            <p className="mt-1 text-sm text-gray-500">Sign in to your account to continue.</p>
+            <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-[0_8px_20px_-8px_rgba(79,70,229,.6)]">
+              <Icon name="user" size={22} />
+            </div>
+            <h1 className="mt-4 text-center text-2xl font-bold">Welcome back</h1>
+            <p className="mt-1 text-center text-sm text-gray-500">Sign in to your account to continue.</p>
 
             {googleEnabled && (
               <>

@@ -68,11 +68,15 @@ export default function CartPage() {
 
   return (
     <div className="container py-8">
-      <h1 className="text-2xl font-bold">Shopping cart</h1>
+      <p className="section-eyebrow">Checkout</p>
+      <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Shopping cart</h1>
       {items.length === 0 ? (
         <div className="card mt-6 p-16 text-center">
-          <Icon name="cart" size={56} className="mx-auto text-gray-300" />
-          <p className="mt-4 font-semibold">Your cart is empty</p>
+          <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-gray-100 text-gray-300">
+            <Icon name="cart" size={30} />
+          </span>
+          <p className="mt-4 text-lg font-bold">Your cart is empty</p>
+          <p className="mt-1 text-sm text-gray-500">Find something you love and it will show up here.</p>
           <Link href="/products" className="btn-primary mt-5 inline-flex">Browse products</Link>
         </div>
       ) : (

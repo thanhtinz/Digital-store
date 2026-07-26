@@ -56,7 +56,10 @@ export default function RegisterPage() {
   return (
     <div className="container flex justify-center py-12">
       <div className="card w-full max-w-md p-6 sm:p-8">
-        <h1 className="text-xl font-bold">Create your account</h1>
+        <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-[0_8px_20px_-8px_rgba(79,70,229,.6)]">
+          <Icon name="spark" size={22} />
+        </div>
+        <h1 className="mt-4 text-center text-2xl font-bold">Create your account</h1>
         <p className="mt-1 text-sm text-gray-500">Track orders, get instant delivery and exclusive deals.</p>
         <form onSubmit={submit} className="mt-6 space-y-4">
           <div>
