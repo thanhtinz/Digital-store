@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import prisma from '@/lib/db';
 import Icon from '@/components/icons';
+import { notFound } from 'next/navigation';
+import { featureEnabled } from '@/lib/features';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +11,8 @@ export const metadata = { title: 'News' };
 const PAGE_SIZE = 9;
 
 export default async function NewsPage({ searchParams }: { searchParams: { page?: string } }) {
+  if (!(await featureEnabled('news'))) notFound();
+
   const page = Math.max(1, Number(searchParams.page) || 1);
   const where = { isPublished: true };
   const [posts, total] = await Promise.all([

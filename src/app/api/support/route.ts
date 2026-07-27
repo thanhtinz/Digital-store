@@ -29,6 +29,8 @@ export const GET = handler(async () => {
 });
 
 export const POST = handler(async (req: NextRequest) => {
+  const { featureEnabled } = await import('@/lib/features');
+  if (!(await featureEnabled('support'))) return jsonError(404, 'Support is not available');
   const user = await requireUser();
   rateLimit('ticket-create', 5, 60 * 60, String(user.id)); // 5 tickets/hour per user
   const b = await req.json();

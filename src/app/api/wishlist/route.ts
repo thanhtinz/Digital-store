@@ -13,6 +13,8 @@ export const GET = handler(async () => {
 
 // Toggle a product in the wishlist.
 export const POST = handler(async (req: NextRequest) => {
+  const { featureEnabled } = await import('@/lib/features');
+  if (!(await featureEnabled('wishlist'))) return jsonError(404, 'Wishlist is not available');
   const user = await requireUser();
   const productId = Number((await req.json()).productId);
   if (!productId) return jsonError(400, 'productId is required');

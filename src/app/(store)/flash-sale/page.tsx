@@ -3,11 +3,15 @@ import prisma from '@/lib/db';
 import Countdown from '@/components/Countdown';
 import { formatMoney } from '@/lib/utils';
 import Icon from '@/components/icons';
+import { notFound } from 'next/navigation';
+import { featureEnabled } from '@/lib/features';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Flash Sale' };
 
 export default async function FlashSalePage() {
+  if (!(await featureEnabled('flash_sale'))) notFound();
+
   const now = new Date();
   const sales = await prisma.flashSale.findMany({
     where: { isActive: true, startsAt: { lte: now }, endsAt: { gte: now } },

@@ -18,6 +18,8 @@ function cleanImages(raw: unknown): string[] {
 // Post (or update) a review. Only buyers with a paid order containing the
 // product may review it — "verified purchase" reviews only.
 export const POST = handler(async (req: NextRequest) => {
+  const { featureEnabled } = await import('@/lib/features');
+  if (!(await featureEnabled('reviews'))) return jsonError(404, 'Reviews are not available');
   const user = await requireUser();
   rateLimit('review-post', 10, 60 * 60, String(user.id));
   const body = await req.json();

@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 // Storefront chrome: public header + footer around every shop page.
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
-  let settings = { siteName: 'Digital Store', tagline: '', logo: '', footerText: '', footerAbout: '', supportEmail: '', socials: {} } as any;
+  let settings = { siteName: 'Digital Store', tagline: '', logo: '', footerText: '', footerAbout: '', supportEmail: '', socials: {}, features: {} } as any;
   let categories: Array<{ id: number; name: string; slug: string }> = [];
   try {
     [settings, categories] = await Promise.all([
@@ -25,9 +25,9 @@ export default async function StoreLayout({ children }: { children: React.ReactN
 
   return (
     <>
-      <Header siteName={settings.siteName} logo={settings.logo} categories={categories} />
+      <Header siteName={settings.siteName} logo={settings.logo} categories={categories} features={settings.features || {}} />
       <main className="flex-1">{children}</main>
-      <LiveChat />
+      {settings.features?.livechat !== false && settings.features?.support !== false && <LiveChat />}
       <Footer
         siteName={settings.siteName}
         tagline={settings.tagline}
@@ -37,6 +37,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
         supportEmail={settings.supportEmail}
         socials={settings.socials || {}}
         categories={categories}
+        features={settings.features || {}}
       />
     </>
   );

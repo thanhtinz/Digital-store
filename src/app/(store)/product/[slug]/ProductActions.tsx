@@ -12,10 +12,12 @@ export default function ProductActions({
   productId,
   slug,
   affiliate,
+  wishlistEnabled = true,
 }: {
   productId: number;
   slug: string;
   affiliate: { enabled: boolean; rate: number };
+  wishlistEnabled?: boolean;
 }) {
   const { user, toast } = useStore();
   const [inWishlist, setInWishlist] = useState(false);
@@ -71,18 +73,20 @@ export default function ProductActions({
           <Icon name="gift" size={15} /> Earn {affiliate.rate}%
         </button>
       )}
-      <button
-        onClick={toggle}
-        disabled={busy}
-        aria-label="Toggle wishlist"
-        className={`grid h-10 w-10 place-items-center rounded-lg border transition ${
-          inWishlist
-            ? 'border-red-200 bg-red-50 text-red-500'
-            : 'border-gray-300 bg-white text-gray-400 hover:border-red-200 hover:text-red-400'
-        }`}
-      >
-        <Icon name="heart" size={18} fill={inWishlist ? 'currentColor' : 'none'} />
-      </button>
+      {wishlistEnabled && (
+        <button
+          onClick={toggle}
+          disabled={busy}
+          aria-label="Toggle wishlist"
+          className={`grid h-10 w-10 place-items-center rounded-lg border transition ${
+            inWishlist
+              ? 'border-red-200 bg-red-50 text-red-500'
+              : 'border-gray-300 bg-white text-gray-400 hover:border-red-200 hover:text-red-400'
+          }`}
+        >
+          <Icon name="heart" size={18} fill={inWishlist ? 'currentColor' : 'none'} />
+        </button>
+      )}
       <button
         onClick={share}
         aria-label="Share product"

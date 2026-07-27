@@ -13,9 +13,11 @@ type Props = {
   siteName: string;
   logo: string;
   categories: Category[];
+  features?: Record<string, boolean>;
 };
 
-export default function Header({ siteName, logo, categories }: Props) {
+export default function Header({ siteName, logo, categories, features = {} }: Props) {
+  const on = (k: string) => features[k] !== false;
   const { user, cartCount, refreshUser } = useStore();
   const router = useRouter();
   const [q, setQ] = useState('');
@@ -129,12 +131,16 @@ export default function Header({ siteName, logo, categories }: Props) {
             </div>
           )}
 
-          <Link href="/flash-sale" className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50">
-            <Icon name="bolt" size={15} /> Flash Sale
-          </Link>
-          <Link href="/news" className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">
-            News
-          </Link>
+          {on('flash_sale') && (
+            <Link href="/flash-sale" className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50">
+              <Icon name="bolt" size={15} /> Flash Sale
+            </Link>
+          )}
+          {on('news') && (
+            <Link href="/news" className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">
+              News
+            </Link>
+          )}
         </nav>
 
         {/* Search (desktop) */}
@@ -190,14 +196,16 @@ export default function Header({ siteName, logo, categories }: Props) {
                     </Link>
                   )}
                   <Link href="/orders" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">My orders</Link>
-                  <Link href="/wallet" onClick={closeAll} className="flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-50">
-                    Wallet
-                    <span className="text-xs font-bold text-brand-600">${(user.balance ?? 0).toFixed(2)}</span>
-                  </Link>
-                  <Link href="/gift-cards" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">Gift cards</Link>
+                  {on('wallet') && (
+                    <Link href="/wallet" onClick={closeAll} className="flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-50">
+                      Wallet
+                      <span className="text-xs font-bold text-brand-600">${(user.balance ?? 0).toFixed(2)}</span>
+                    </Link>
+                  )}
+                  {on('giftcards') && <Link href="/gift-cards" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">Gift cards</Link>}
                   <Link href="/affiliate" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">Affiliate program</Link>
-                  <Link href="/wishlist" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">Wishlist</Link>
-                  <Link href="/support" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">Support</Link>
+                  {on('wishlist') && <Link href="/wishlist" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">Wishlist</Link>}
+                  {on('support') && <Link href="/support" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">Support</Link>}
                   <Link href="/account" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">Account & security</Link>
                   <button onClick={logout} className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50">
                     Sign out
@@ -240,12 +248,16 @@ export default function Header({ siteName, logo, categories }: Props) {
                 <Link href="/products" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
                   <Icon name="bag" size={17} className="text-gray-400" /> All Products
                 </Link>
-                <Link href="/flash-sale" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50">
-                  <Icon name="bolt" size={17} /> Flash Sale
-                </Link>
-                <Link href="/news" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
-                  <Icon name="news" size={17} className="text-gray-400" /> News
-                </Link>
+                {on('flash_sale') && (
+                  <Link href="/flash-sale" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50">
+                    <Icon name="bolt" size={17} /> Flash Sale
+                  </Link>
+                )}
+                {on('news') && (
+                  <Link href="/news" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
+                    <Icon name="news" size={17} className="text-gray-400" /> News
+                  </Link>
+                )}
 
                 {/* Categories dropdown (accordion) */}
                 {categories.length > 0 && (
@@ -283,15 +295,21 @@ export default function Header({ siteName, logo, categories }: Props) {
                     <Link href="/orders" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
                       <Icon name="box" size={17} className="text-gray-400" /> My orders
                     </Link>
-                    <Link href="/wallet" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
-                      <Icon name="credit-card" size={17} className="text-gray-400" /> Wallet
-                    </Link>
-                    <Link href="/wishlist" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
-                      <Icon name="heart" size={17} className="text-gray-400" /> Wishlist
-                    </Link>
-                    <Link href="/support" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
-                      <Icon name="chat" size={17} className="text-gray-400" /> Support
-                    </Link>
+                    {on('wallet') && (
+                      <Link href="/wallet" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
+                        <Icon name="credit-card" size={17} className="text-gray-400" /> Wallet
+                      </Link>
+                    )}
+                    {on('wishlist') && (
+                      <Link href="/wishlist" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
+                        <Icon name="heart" size={17} className="text-gray-400" /> Wishlist
+                      </Link>
+                    )}
+                    {on('support') && (
+                      <Link href="/support" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
+                        <Icon name="chat" size={17} className="text-gray-400" /> Support
+                      </Link>
+                    )}
                     <Link href="/account" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
                       <Icon name="user" size={17} className="text-gray-400" /> Account & security
                     </Link>

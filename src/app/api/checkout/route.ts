@@ -50,6 +50,11 @@ export const POST = handler(async (req: NextRequest) => {
 
   // ── Pay with wallet balance: settle instantly, no gateway redirect ──
   if (paymentMethod === 'balance') {
+    const { featureEnabled } = await import('@/lib/features');
+    if (!(await featureEnabled('wallet'))) {
+      await cancelOrder(order.id);
+      return jsonError(400, 'Wallet payments are not available');
+    }
     const ok = await debitWallet(user.id, Number(order.total), 'PURCHASE', `Order ${order.code}`);
     if (!ok) {
       await cancelOrder(order.id);

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import prisma from '@/lib/db';
 import Icon from '@/components/icons';
+import { featureEnabled } from '@/lib/features';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 }
 
 export default async function NewsPostPage({ params }: { params: { slug: string } }) {
+  if (!(await featureEnabled('news'))) notFound();
+
   const post = await prisma.post.findUnique({ where: { slug: params.slug } });
   if (!post || !post.isPublished) notFound();
 

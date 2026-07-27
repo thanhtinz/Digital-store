@@ -15,6 +15,8 @@ const MAX_TOPUP = 1000;
 
 // Creates a wallet top-up and returns the gateway redirect URL.
 export const POST = handler(async (req: NextRequest) => {
+  const { featureEnabled } = await import('@/lib/features');
+  if (!(await featureEnabled('wallet'))) return jsonError(404, 'The wallet is not available');
   const user = await requireUser();
   rateLimit('topup', 10, 60 * 60, String(user.id));
   const b = await req.json();

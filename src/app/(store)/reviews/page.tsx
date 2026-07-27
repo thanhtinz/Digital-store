@@ -2,12 +2,16 @@ import Link from 'next/link';
 import prisma from '@/lib/db';
 import { Stars } from '@/components/ProductCardView';
 import Icon from '@/components/icons';
+import { notFound } from 'next/navigation';
+import { featureEnabled } from '@/lib/features';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Customer reviews' };
 
 // Public wall of recent verified reviews across every product.
 export default async function ReviewsPage() {
+  if (!(await featureEnabled('reviews'))) notFound();
+
   const [reviews, agg, count5] = await Promise.all([
     prisma.review.findMany({
       where: { isApproved: true },
