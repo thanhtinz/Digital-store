@@ -30,6 +30,8 @@ const NAV: Array<{ href: string; label: string; icon: string } | { section: stri
   { section: 'Configuration' },
   { href: '/admin/security', label: 'Security', icon: 'shield' },
   { href: '/admin/audit', label: 'Audit log', icon: 'list' },
+  { href: '/admin/api-keys', label: 'API keys', icon: 'key' },
+  { href: '/admin/backup', label: 'Backup', icon: 'download' },
   { href: '/admin/settings', label: 'Site settings', icon: 'settings' },
   { href: '/admin/settings/payments', label: 'Payments', icon: 'credit-card' },
   { href: '/admin/settings/marketing', label: 'Rewards & affiliate', icon: 'star' },

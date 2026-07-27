@@ -29,6 +29,8 @@ const ALL_KEYS = [
   'affiliate_enabled', 'affiliate_rate',
   // Telegram notifications
   'telegram_enabled', 'telegram_bot_token', 'telegram_chat_id', 'customer_bot_token',
+  // SEO
+  'indexnow_key',
 ];
 
 export const GET = handler(async () => {

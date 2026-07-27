@@ -79,6 +79,7 @@ export default function AdminSiteSettingsPage() {
 
         {field(s, set, { k: 'currency', label: 'Currency (ISO code)', help: 'USD, EUR, GBP… affects prices and payment gateways.' })}
         {field(s, set, { k: 'app_url', label: 'Public site URL', placeholder: 'https://yourstore.com', help: 'Used in emails, OAuth and payment redirects.' })}
+        {field(s, set, { k: 'indexnow_key', label: 'IndexNow key (SEO)', placeholder: 'any random 32+ char string', help: 'Publishing news auto-pings Bing/Yandex via IndexNow. Served at /indexnow.txt.' })}
         {toggle(s, set, 'require_email_verification', 'Require email verification for new accounts')}
       </div>
 

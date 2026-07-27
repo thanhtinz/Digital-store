@@ -77,6 +77,8 @@ export default function Footer({ siteName, tagline, logo, footerText, footerAbou
             <li><Link href="/products" className="text-gray-600 hover:text-brand-600">All products</Link></li>
             <li><Link href="/flash-sale" className="text-gray-600 hover:text-brand-600">Flash sale</Link></li>
             <li><Link href="/news" className="text-gray-600 hover:text-brand-600">News & updates</Link></li>
+            <li><Link href="/gift-cards" className="text-gray-600 hover:text-brand-600">Gift cards</Link></li>
+            <li><Link href="/reviews" className="text-gray-600 hover:text-brand-600">Customer reviews</Link></li>
             {categories.slice(0, 4).map((c) => (
               <li key={c.id}>
                 <Link href={`/category/${c.slug}`} className="text-gray-600 hover:text-brand-600">{c.name}</Link>
@@ -92,6 +94,7 @@ export default function Footer({ siteName, tagline, logo, footerText, footerAbou
             <li><Link href="/refund-policy" className="text-gray-600 hover:text-brand-600">Refund policy</Link></li>
             <li><Link href="/terms" className="text-gray-600 hover:text-brand-600">Terms of service</Link></li>
             <li><Link href="/privacy" className="text-gray-600 hover:text-brand-600">Privacy policy</Link></li>
+            <li><Link href="/status" className="text-gray-600 hover:text-brand-600">System status</Link></li>
           </ul>
         </div>
         <div>
