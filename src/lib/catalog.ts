@@ -4,6 +4,8 @@ import prisma from './db';
 // Returns a map packageId → { salePrice, flashSaleId, endsAt } for every
 // package currently discounted by a running flash sale.
 export async function getActiveFlashPrices(packageIds?: number[]) {
+  const { featureEnabled } = await import('./features');
+  if (!(await featureEnabled('flash_sale'))) return new Map<number, { price: number; endsAt: Date; flashSaleItemId: number }>() as any;
   const now = new Date();
   const items = await prisma.flashSaleItem.findMany({
     where: {

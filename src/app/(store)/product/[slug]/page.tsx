@@ -76,6 +76,8 @@ export default async function ProductPage({ params }: { params: { slug: string }
     };
   });
 
+  const { getFeatures } = await import('@/lib/features');
+  const feats = await getFeatures();
   const aff = await getSettings(['affiliate_enabled', 'affiliate_rate']);
   const affiliate = {
     enabled: aff.affiliate_enabled === 'true',
@@ -138,7 +140,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
         <div className="lg:sticky lg:top-20 lg:self-start">
           <div className="flex items-start justify-between gap-3">
             <h1 className="text-2xl font-bold sm:text-3xl">{product.name}</h1>
-            <ProductActions productId={product.id} slug={product.slug} affiliate={affiliate} />
+            <ProductActions productId={product.id} slug={product.slug} affiliate={affiliate} wishlistEnabled={feats.wishlist} />
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-500">
             <span className="flex items-center gap-1.5">
@@ -169,6 +171,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
 
       <div className="mt-10">
         <ProductTabs
+          reviewsEnabled={feats.reviews}
           productId={product.id}
           description={product.description}
           guide={product.guide}

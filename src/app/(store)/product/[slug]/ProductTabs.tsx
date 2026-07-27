@@ -18,6 +18,7 @@ type ReviewView = {
 };
 
 type Props = {
+  reviewsEnabled?: boolean;
   productId: number;
   description: string | null;
   guide: string | null;
@@ -26,13 +27,13 @@ type Props = {
   reviews: ReviewView[];
 };
 
-export default function ProductTabs({ productId, description, guide, ratingAvg, ratingCount, reviews }: Props) {
+export default function ProductTabs({ reviewsEnabled = true, productId, description, guide, ratingAvg, ratingCount, reviews }: Props) {
   const tabs = [
     { key: 'description', label: 'Description', show: !!description },
     { key: 'guide', label: 'How to use', show: !!guide },
-    { key: 'reviews', label: `Reviews (${ratingCount})`, show: true },
+    { key: 'reviews', label: `Reviews (${ratingCount})`, show: reviewsEnabled },
   ].filter((t) => t.show);
-  const [tab, setTab] = useState(tabs[0]?.key || 'reviews');
+  const [tab, setTab] = useState(tabs[0]?.key || 'description');
 
   return (
     <div className="card overflow-hidden">

@@ -35,6 +35,8 @@ export const GET = handler(async () => {
 
 // POST { amount, method: balance|stripe|paypal } — buy a gift card.
 export const POST = handler(async (req: NextRequest) => {
+  const { featureEnabled } = await import('@/lib/features');
+  if (!(await featureEnabled('giftcards'))) return jsonError(404, 'Gift cards are not available');
   const user = await requireUser();
   rateLimit('giftcard-buy', 10, 60 * 60, String(user.id));
   const b = await req.json();

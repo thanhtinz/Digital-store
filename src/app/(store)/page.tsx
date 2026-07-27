@@ -11,10 +11,12 @@ export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
   const now = new Date();
+  const { featureEnabled } = await import('@/lib/features');
+  const flashOn = await featureEnabled('flash_sale');
   const [banners, categories, flashSale, featuredRaw, latestRaw] = await Promise.all([
     prisma.banner.findMany({ where: { isActive: true }, orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }], take: 6 }),
     prisma.category.findMany({ where: { isActive: true }, orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }], include: { _count: { select: { products: { where: { isActive: true } } } } } }),
-    prisma.flashSale.findFirst({
+    !flashOn ? Promise.resolve(null) : prisma.flashSale.findFirst({
       where: { isActive: true, startsAt: { lte: now }, endsAt: { gte: now } },
       orderBy: { endsAt: 'asc' },
       include: {

@@ -49,6 +49,14 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   telegram_chat_id: '',
   customer_bot_token: '',
   indexnow_key: '',
+  feature_wallet: 'true',
+  feature_giftcards: 'true',
+  feature_reviews: 'true',
+  feature_wishlist: 'true',
+  feature_news: 'true',
+  feature_flash_sale: 'true',
+  feature_livechat: 'true',
+  feature_support: 'true',
   affiliate_rate: '10',         // commission percent
 };
 
@@ -86,6 +94,7 @@ export async function getPublicSettings() {
     'site_name', 'site_tagline', 'site_logo', 'currency', 'support_email',
     'stripe_enabled', 'paypal_enabled', 'google_login_enabled', 'footer_text',
     'footer_about', 'social_facebook', 'social_twitter', 'social_instagram', 'social_youtube', 'social_telegram', 'social_discord',
+    'feature_wallet', 'feature_giftcards', 'feature_reviews', 'feature_wishlist', 'feature_news', 'feature_flash_sale', 'feature_livechat', 'feature_support',
   ]);
   return {
     siteName: s.site_name,
@@ -105,6 +114,16 @@ export async function getPublicSettings() {
       youtube: s.social_youtube,
       telegram: s.social_telegram,
       discord: s.social_discord,
+    },
+    features: {
+      wallet: s.feature_wallet !== 'false',
+      giftcards: s.feature_giftcards !== 'false',
+      reviews: s.feature_reviews !== 'false',
+      wishlist: s.feature_wishlist !== 'false',
+      news: s.feature_news !== 'false',
+      flash_sale: s.feature_flash_sale !== 'false',
+      livechat: s.feature_livechat !== 'false',
+      support: s.feature_support !== 'false',
     },
   };
 }

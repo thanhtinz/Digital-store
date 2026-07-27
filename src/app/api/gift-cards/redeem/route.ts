@@ -8,6 +8,8 @@ export const dynamic = 'force-dynamic';
 
 // POST { code } — redeem a gift card into the wallet.
 export const POST = handler(async (req: NextRequest) => {
+  const { featureEnabled } = await import('@/lib/features');
+  if (!(await featureEnabled('giftcards'))) return jsonError(404, 'Gift cards are not available');
   const user = await requireUser();
   rateLimit('giftcard-redeem', 10, 60 * 60, String(user.id));
   const code = String((await req.json()).code || '');

@@ -10,12 +10,14 @@ type Props = {
   supportEmail: string;
   socials: Record<string, string>;
   categories: Array<{ id: number; name: string; slug: string }>;
+  features?: Record<string, boolean>;
 };
 
 const SOCIAL_ORDER = ['facebook', 'twitter', 'instagram', 'youtube', 'telegram', 'discord'] as const;
 
-export default function Footer({ siteName, tagline, logo, footerText, footerAbout, supportEmail, socials, categories }: Props) {
+export default function Footer({ siteName, tagline, logo, footerText, footerAbout, supportEmail, socials, categories, features = {} }: Props) {
   const socialLinks = SOCIAL_ORDER.filter((k) => socials?.[k]);
+  const on = (k: string) => features[k] !== false;
   return (
     <footer className="mt-16 border-t border-gray-200 bg-white">
       {/* Trust strip */}
@@ -75,10 +77,10 @@ export default function Footer({ siteName, tagline, logo, footerText, footerAbou
           <p className="text-sm font-semibold uppercase tracking-wide text-gray-400">Shop</p>
           <ul className="mt-3 space-y-2 text-sm">
             <li><Link href="/products" className="text-gray-600 hover:text-brand-600">All products</Link></li>
-            <li><Link href="/flash-sale" className="text-gray-600 hover:text-brand-600">Flash sale</Link></li>
-            <li><Link href="/news" className="text-gray-600 hover:text-brand-600">News & updates</Link></li>
-            <li><Link href="/gift-cards" className="text-gray-600 hover:text-brand-600">Gift cards</Link></li>
-            <li><Link href="/reviews" className="text-gray-600 hover:text-brand-600">Customer reviews</Link></li>
+            {on('flash_sale') && <li><Link href="/flash-sale" className="text-gray-600 hover:text-brand-600">Flash sale</Link></li>}
+            {on('news') && <li><Link href="/news" className="text-gray-600 hover:text-brand-600">News & updates</Link></li>}
+            {on('giftcards') && <li><Link href="/gift-cards" className="text-gray-600 hover:text-brand-600">Gift cards</Link></li>}
+            {on('reviews') && <li><Link href="/reviews" className="text-gray-600 hover:text-brand-600">Customer reviews</Link></li>}
             {categories.slice(0, 4).map((c) => (
               <li key={c.id}>
                 <Link href={`/category/${c.slug}`} className="text-gray-600 hover:text-brand-600">{c.name}</Link>
@@ -89,7 +91,7 @@ export default function Footer({ siteName, tagline, logo, footerText, footerAbou
         <div>
           <p className="text-sm font-semibold uppercase tracking-wide text-gray-400">Help & legal</p>
           <ul className="mt-3 space-y-2 text-sm">
-            <li><Link href="/support" className="text-gray-600 hover:text-brand-600">Support center</Link></li>
+            {on('support') && <li><Link href="/support" className="text-gray-600 hover:text-brand-600">Support center</Link></li>}
             <li><Link href="/faq" className="text-gray-600 hover:text-brand-600">FAQ</Link></li>
             <li><Link href="/refund-policy" className="text-gray-600 hover:text-brand-600">Refund policy</Link></li>
             <li><Link href="/terms" className="text-gray-600 hover:text-brand-600">Terms of service</Link></li>
