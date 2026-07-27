@@ -55,6 +55,7 @@ model User {
   tickets      SupportTicket[]
   walletTxns   WalletTransaction[]
   topups       Topup[]
+  apiKeys      ApiKey[]
 
   @@map("users")
 }
@@ -575,4 +576,41 @@ model Post {
 
   @@index([isPublished, publishedAt])
   @@map("posts")
+}
+
+// ─────────────────────────── Gift cards & API keys ───────────────────────────
+
+// Prepaid wallet-credit cards: bought via any payment method, redeemed by
+// anyone into their wallet balance.
+model GiftCard {
+  id           Int       @id @default(autoincrement())
+  code         String    @unique @db.VarChar(40)
+  amount       Decimal   @db.Decimal(10, 2)
+  status       String    @default("PENDING") @db.VarChar(10) // PENDING | ACTIVE | REDEEMED
+  buyerId      Int?      @map("buyer_id")
+  redeemedById Int?      @map("redeemed_by_id")
+  redeemedAt   DateTime? @map("redeemed_at")
+  method       String?   @db.VarChar(20)
+  paymentRef   String?   @map("payment_ref")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  @@index([buyerId])
+  @@map("gift_cards")
+}
+
+// Reseller API keys — orders placed through /api/v1 pay from the key
+// owner's wallet balance.
+model ApiKey {
+  id         Int       @id @default(autoincrement())
+  userId     Int       @map("user_id")
+  name       String    @db.VarChar(120)
+  prefix     String    @db.VarChar(16) // displayed identifier, e.g. dsk_ab12cd34
+  keyHash    String    @unique @map("key_hash") @db.VarChar(64)
+  isActive   Boolean   @default(true) @map("is_active")
+  lastUsedAt DateTime? @map("last_used_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("api_keys")
 }

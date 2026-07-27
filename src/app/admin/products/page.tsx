@@ -2,17 +2,38 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/client';
+import { useStore } from '@/components/Providers';
 import { formatMoney } from '@/lib/utils';
 import ProductEditor, { type EditableProduct } from './ProductEditor';
 import Icon from '@/components/icons';
 
 export default function AdminProductsPage() {
+  const { toast } = useStore();
   const [products, setProducts] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [q, setQ] = useState('');
   const [editing, setEditing] = useState<EditableProduct | null | 'new'>(null);
   const [categories, setCategories] = useState<any[]>([]);
+  const [importing, setImporting] = useState(false);
+
+  const importCsv = async (file: File) => {
+    setImporting(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/admin/products/import', { method: 'POST', body: fd });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'Import failed');
+      toast(`Imported: ${d.createdProducts} new product(s), ${d.createdPackages} new + ${d.updatedPackages} updated package(s)${d.errors.length ? ` — ${d.errors.length} row error(s)` : ''}`);
+      if (d.errors.length) console.warn('CSV import errors:', d.errors);
+      await load();
+    } catch (e: any) {
+      toast(e.message, 'error');
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const load = useCallback(async () => {
     const d = await api<{ products: any[]; total: number }>(`/api/admin/products?page=${page}&q=${encodeURIComponent(q)}`);
@@ -39,8 +60,18 @@ export default function AdminProductsPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Products <span className="text-sm font-normal text-gray-400">({total})</span></h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <input className="input w-48" placeholder="Search…" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />
+          <a href="/api/admin/products/export" className="btn-secondary">Export CSV</a>
+          <label className="btn-secondary cursor-pointer">
+            {importing ? 'Importing…' : 'Import CSV'}
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={(e) => { if (e.target.files?.[0]) importCsv(e.target.files[0]); e.target.value = ''; }}
+            />
+          </label>
           <button className="btn-primary" onClick={() => setEditing('new')}>+ New product</button>
         </div>
       </div>

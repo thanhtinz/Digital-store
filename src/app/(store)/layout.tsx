@@ -2,6 +2,7 @@ import prisma from '@/lib/db';
 import { getPublicSettings } from '@/lib/settings';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import LiveChat from '@/components/LiveChat';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +27,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
     <>
       <Header siteName={settings.siteName} logo={settings.logo} categories={categories} />
       <main className="flex-1">{children}</main>
+      <LiveChat />
       <Footer
         siteName={settings.siteName}
         tagline={settings.tagline}

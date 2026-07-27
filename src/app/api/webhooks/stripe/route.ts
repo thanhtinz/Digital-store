@@ -3,6 +3,7 @@ import prisma from '@/lib/db';
 import { getStripeConfig, verifyStripeSignature } from '@/lib/stripe';
 import { markOrderPaid } from '@/lib/orders';
 import { completeTopup } from '@/lib/wallet';
+import { activateGiftCard } from '@/lib/giftcards';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,6 +38,12 @@ export async function POST(req: NextRequest) {
       if (session.metadata?.topup_code) {
         const topup = await prisma.topup.findUnique({ where: { code: String(session.metadata.topup_code) } });
         if (topup && topup.paymentRef === session.id) await completeTopup(topup.id);
+        return NextResponse.json({ received: true });
+      }
+      // Gift card purchases carry a gift_card_id.
+      if (session.metadata?.gift_card_id) {
+        const card = await prisma.giftCard.findUnique({ where: { id: Number(session.metadata.gift_card_id) } });
+        if (card && card.paymentRef === session.id) await activateGiftCard(card.id);
         return NextResponse.json({ received: true });
       }
       const orderCode = session.metadata?.order_code || session.client_reference_id;

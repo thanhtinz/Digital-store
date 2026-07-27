@@ -194,6 +194,7 @@ export default function Header({ siteName, logo, categories }: Props) {
                     Wallet
                     <span className="text-xs font-bold text-brand-600">${(user.balance ?? 0).toFixed(2)}</span>
                   </Link>
+                  <Link href="/gift-cards" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">Gift cards</Link>
                   <Link href="/affiliate" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">Affiliate program</Link>
                   <Link href="/wishlist" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">Wishlist</Link>
                   <Link href="/support" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">Support</Link>

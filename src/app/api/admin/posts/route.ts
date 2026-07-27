@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/auth';
 import { audit } from '@/lib/audit';
 import { handler, jsonError } from '@/lib/api';
 import { slugify, clampInt } from '@/lib/utils';
+import { pingSearchEngines } from '@/lib/seoPing';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,5 +40,6 @@ export const POST = handler(async (req: NextRequest) => {
     },
   });
   audit(admin, 'post.create', post.title);
+  if (post.isPublished) pingSearchEngines(`/news/${post.slug}`).catch(() => {});
   return NextResponse.json({ ok: true, post });
 });

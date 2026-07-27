@@ -101,9 +101,67 @@ export default function AccountPage() {
           <ChangePassword hasPassword={user.hasPassword} />
           <TwoFactor enabled={user.twoFactorEnabled} hasPassword={user.hasPassword} onChanged={refreshUser} toast={toast} />
           <TelegramLink toast={toast} />
+          {user.role === 'CUSTOMER' && <DeleteAccount hasPassword={user.hasPassword} />}
         </div>
       )}
       {tab === 'logins' && <LoginHistory />}
+    </div>
+  );
+}
+
+// GDPR: permanent account deletion with anonymized order history.
+function DeleteAccount({ hasPassword }: { hasPassword: boolean }) {
+  const { toast, refreshUser } = useStore();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    setBusy(true);
+    try {
+      await api('/api/auth/delete-account', { method: 'POST', json: { password, confirm } });
+      toast('Your account has been deleted');
+      await refreshUser();
+      router.push('/');
+    } catch (e: any) {
+      toast(e.message, 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="card border-red-100 p-5">
+      <h2 className="font-bold text-red-600">Delete account</h2>
+      <p className="mt-1 text-sm text-gray-500">
+        Permanently removes your personal data (profile, cart, wishlist, sessions, Telegram link). Order records
+        are kept anonymized for legal bookkeeping. This cannot be undone — any remaining wallet balance and
+        loyalty points are lost.
+      </p>
+      {!open ? (
+        <button className="btn-danger mt-4" onClick={() => setOpen(true)}>Delete my account</button>
+      ) : (
+        <div className="mt-4 max-w-md space-y-3 rounded-xl bg-red-50 p-4">
+          {hasPassword && (
+            <div>
+              <label className="label">Your password</label>
+              <input className="input bg-white" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+            </div>
+          )}
+          <div>
+            <label className="label">Type DELETE to confirm</label>
+            <input className="input bg-white" placeholder="DELETE" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+          </div>
+          <div className="flex gap-2">
+            <button className="btn-danger" onClick={submit} disabled={busy || confirm.trim().toUpperCase() !== 'DELETE'}>
+              {busy ? 'Deleting…' : 'Permanently delete'}
+            </button>
+            <button className="btn-secondary" onClick={() => setOpen(false)}>Cancel</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
