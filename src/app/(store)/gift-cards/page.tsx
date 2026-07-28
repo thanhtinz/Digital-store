@@ -18,6 +18,7 @@ export default function GiftCardsPage() {
   const params = useSearchParams();
   const [cards, setCards] = useState<Card[]>([]);
   const [pay, setPay] = useState<Pay | null>(null);
+  const [walletOn, setWalletOn] = useState(true);
   const [amount, setAmount] = useState('25');
   const [method, setMethod] = useState('stripe');
   const [buyBusy, setBuyBusy] = useState(false);
@@ -28,11 +29,14 @@ export default function GiftCardsPage() {
     if (user === null) router.replace('/login?next=/gift-cards');
     if (user) {
       api<{ cards: Card[] }>('/api/gift-cards').then((d) => setCards(d.cards)).catch(() => {});
-      api<{ payments: Pay }>('/api/public/config')
+      api<{ payments: Pay; features?: Record<string, boolean> }>('/api/public/config')
         .then((d) => {
           setPay(d.payments);
-          if (!d.payments.stripeEnabled && d.payments.paypalEnabled) setMethod('paypal');
-          else if (!d.payments.stripeEnabled && !d.payments.paypalEnabled) setMethod('balance');
+          const wallet = d.features?.wallet !== false;
+          setWalletOn(wallet);
+          if (d.payments.stripeEnabled) setMethod('stripe');
+          else if (d.payments.paypalEnabled) setMethod('paypal');
+          else if (wallet) setMethod('balance');
         })
         .catch(() => setPay({ stripeEnabled: false, paypalEnabled: false }));
     }
@@ -131,7 +135,7 @@ export default function GiftCardsPage() {
                   {([
                     ['stripe', 'Card', pay?.stripeEnabled],
                     ['paypal', 'PayPal', pay?.paypalEnabled],
-                    ['balance', 'Wallet', true],
+                    ['balance', 'Wallet', walletOn],
                   ] as const).map(([value, label, enabled]) => (
                     <button
                       key={value}

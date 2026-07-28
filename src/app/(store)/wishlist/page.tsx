@@ -1,6 +1,7 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import prisma from '@/lib/db';
+import { featureEnabled } from '@/lib/features';
 import { getSessionUser } from '@/lib/auth';
 import { toProductCards, productCardInclude } from '@/lib/catalog';
 import ProductCardView from '@/components/ProductCardView';
@@ -10,6 +11,7 @@ export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Wishlist' };
 
 export default async function WishlistPage() {
+  if (!(await featureEnabled('wishlist'))) notFound();
   const user = await getSessionUser();
   if (!user) redirect('/login?next=/wishlist');
 

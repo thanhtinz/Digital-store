@@ -42,6 +42,7 @@ function CheckoutInner() {
   const [items, setItems] = useState<CartItemView[] | null>(null);
   const [buyNow, setBuyNow] = useState<{ packageId: number; quantity: number; customFieldsData: Record<string, string> } | null>(null);
   const [pay, setPay] = useState<PublicPay>({ stripeEnabled: false, paypalEnabled: false });
+  const [walletOn, setWalletOn] = useState(true);
   const [method, setMethod] = useState<'stripe' | 'paypal' | 'balance'>('stripe');
   const [loyalty, setLoyalty] = useState<LoyaltyInfo | null>(null);
   const [usePoints, setUsePoints] = useState(false);
@@ -52,11 +53,15 @@ function CheckoutInner() {
 
   useEffect(() => {
     api<LoyaltyInfo>('/api/loyalty/me').then(setLoyalty).catch(() => {});
-    api<{ payments: PublicPay }>('/api/public/config')
+    api<{ payments: PublicPay; features?: Record<string, boolean> }>('/api/public/config')
       .then((d) => {
         setPay(d.payments);
-        if (!d.payments.stripeEnabled && d.payments.paypalEnabled) setMethod('paypal');
-        else if (!d.payments.stripeEnabled && !d.payments.paypalEnabled) setMethod('balance');
+        const wallet = d.features?.wallet !== false;
+        setWalletOn(wallet);
+        // Preselect a method that is actually offered.
+        if (d.payments.stripeEnabled) setMethod('stripe');
+        else if (d.payments.paypalEnabled) setMethod('paypal');
+        else if (wallet) setMethod('balance');
       })
       .catch(() => {});
   }, []);
@@ -120,8 +125,16 @@ function CheckoutInner() {
   };
 
   const placeOrder = async () => {
+    if (!pay.stripeEnabled && !pay.paypalEnabled && !walletOn) {
+      toast('No payment method is available. Please contact support.', 'error');
+      return;
+    }
     if (method !== 'balance' && !pay.stripeEnabled && !pay.paypalEnabled) {
       toast('No payment method is available. Please contact support.', 'error');
+      return;
+    }
+    if (method === 'balance' && !walletOn) {
+      toast('Wallet payments are unavailable. Choose another method.', 'error');
       return;
     }
     if (method === 'balance' && !buyNow && balance < total) {
@@ -164,23 +177,25 @@ function CheckoutInner() {
             <div className="card p-5">
               <h2 className="font-bold">Payment method</h2>
               <div className="mt-4 space-y-2.5">
-                <button
-                  onClick={() => setMethod('balance')}
-                  className={`flex w-full items-center gap-3 rounded-xl border-2 p-4 text-left transition ${
-                    method === 'balance' ? 'border-brand-600 bg-brand-50' : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-green-50 text-green-700"><Icon name="credit-card" size={22} /></span>
-                  <span className="flex-1">
-                    <span className="block text-sm font-semibold">Wallet balance</span>
-                    <span className="block text-xs text-gray-500">
-                      Available: <b className={balance >= total ? 'text-green-600' : 'text-red-500'}>{formatMoney(balance)}</b> — instant, no redirect
+                {walletOn && (
+                  <button
+                    onClick={() => setMethod('balance')}
+                    className={`flex w-full items-center gap-3 rounded-xl border-2 p-4 text-left transition ${
+                      method === 'balance' ? 'border-brand-600 bg-brand-50' : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-green-50 text-green-700"><Icon name="credit-card" size={22} /></span>
+                    <span className="flex-1">
+                      <span className="block text-sm font-semibold">Wallet balance</span>
+                      <span className="block text-xs text-gray-500">
+                        Available: <b className={balance >= total ? 'text-green-600' : 'text-red-500'}>{formatMoney(balance)}</b> — instant, no redirect
+                      </span>
                     </span>
-                  </span>
-                  {balance < total && !buyNow && (
-                    <a href="/wallet" onClick={(e) => e.stopPropagation()} className="text-xs font-semibold text-brand-600 hover:underline">Top up</a>
-                  )}
-                </button>
+                    {balance < total && !buyNow && (
+                      <a href="/wallet" onClick={(e) => e.stopPropagation()} className="text-xs font-semibold text-brand-600 hover:underline">Top up</a>
+                    )}
+                  </button>
+                )}
                 <button
                   onClick={() => setMethod('stripe')}
                   disabled={!pay.stripeEnabled}
