@@ -1,13 +1,16 @@
-// Background scheduler (Node runtime only): evaluates auto-coupon rules
-// (abandoned cart, win-back) and expires abandoned PENDING orders every
-// 30 minutes.
+// Server boot work (Node runtime only): create the first admin account on a
+// fresh deployment, then run the background scheduler — auto-coupon rules
+// (abandoned cart, win-back) and abandoned PENDING order expiry every 30 min.
 import { runAutoCouponRules } from './lib/autoCoupons';
 import { expireStaleOrders } from './lib/orders';
+import { ensureAdminAccount } from './lib/bootstrap';
 
 const globalAny = globalThis as any;
 
 if (!globalAny.__dsSchedulerStarted) {
   globalAny.__dsSchedulerStarted = true;
+
+  ensureAdminAccount().catch((e) => console.error('[bootstrap] admin check failed:', e));
 
   const run = async () => {
     try {
