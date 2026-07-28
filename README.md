@@ -73,6 +73,26 @@ docker run -p 3000:3000 \
 
 The container runs `prisma db push` at boot (schema migrates automatically) and then starts the standalone Next.js server. Works out of the box on Railway, Render, Fly.io or any VPS with Docker.
 
+On first boot with no admin in the database, the app creates one from `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`. If no password is configured it generates a random one and prints it to the deploy logs once — sign in and change it immediately. Demo catalog data is only created by `npm run db:seed`, so a deployed store starts empty.
+
+## Deploy (Railway)
+
+1. **New Project → Deploy from GitHub repo**, then add a **PostgreSQL** database to the same project.
+2. On the app service, set variables:
+
+   | Variable | Value |
+   |----------|-------|
+   | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (reference the Postgres service) |
+   | `AUTH_SECRET` | a long random string — `openssl rand -hex 32` |
+   | `APP_URL` | your public URL, e.g. `https://yourstore.up.railway.app` |
+   | `SEED_ADMIN_EMAIL` | your admin email (optional) |
+   | `SEED_ADMIN_PASSWORD` | your admin password (optional — random if unset) |
+
+3. Deploy. `railway.json` selects the Dockerfile builder and points the health check at `/api/health`; the schema is pushed automatically on boot.
+4. Generate a domain under **Settings → Networking**, set `APP_URL` to it, then configure Stripe/PayPal/SMTP in **Admin → Settings**.
+
+Keep the service at **1 replica**: the background scheduler and API rate limiter hold state in memory, so multiple replicas would duplicate scheduled runs. Uploaded images live in Postgres, not on disk, so no volume is needed and redeploys keep every asset.
+
 ## Project layout
 
 ```
