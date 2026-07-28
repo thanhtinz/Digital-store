@@ -30,7 +30,12 @@ export async function createOrder(params: {
   if (!items.length) throw new OrderError('Your cart is empty');
   if (items.length > 50) throw new OrderError('Too many items in one order');
 
+  // Reject non-numeric ids before they reach the query layer, which would
+  // throw an opaque driver error and surface as a 500.
   const packageIds = items.map((i) => i.packageId);
+  if (packageIds.some((id) => !Number.isInteger(id) || id <= 0)) {
+    throw new OrderError('One of the items is no longer available');
+  }
   const packages = await prisma.package.findMany({
     where: { id: { in: packageIds }, isActive: true, product: { isActive: true } },
     include: { product: { include: { images: { orderBy: { sortOrder: 'asc' }, take: 1 } } } },

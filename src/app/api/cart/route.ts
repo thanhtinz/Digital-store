@@ -58,6 +58,7 @@ export const POST = handler(async (req: NextRequest) => {
   const body = await req.json();
   const packageId = Number(body.packageId);
   const quantity = Math.min(Math.max(1, Math.floor(Number(body.quantity) || 1)), 100);
+  if (!Number.isInteger(packageId) || packageId <= 0) return jsonError(400, 'A valid packageId is required');
 
   const pkg = await prisma.package.findFirst({
     where: { id: packageId, isActive: true, product: { isActive: true } },
@@ -92,6 +93,7 @@ export const PATCH = handler(async (req: NextRequest) => {
   const user = await requireUser();
   const body = await req.json();
   const id = Number(body.id);
+  if (!Number.isInteger(id) || id <= 0) return jsonError(400, 'A valid cart item id is required');
   const item = await prisma.cartItem.findFirst({ where: { id, userId: user.id }, include: { package: true } });
   if (!item) return jsonError(404, 'Cart item not found');
 

@@ -12,5 +12,6 @@ export const GET = handler(async () => {
     currency: s.currency,
     googleLoginEnabled: s.googleLoginEnabled,
     payments: { stripeEnabled: s.stripeEnabled, paypalEnabled: s.paypalEnabled },
+    features: s.features,
   });
 });

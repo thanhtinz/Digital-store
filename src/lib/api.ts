@@ -16,6 +16,8 @@ export function handler<T extends (...args: any[]) => Promise<Response>>(fn: T):
       if (e instanceof AuthError) return jsonError(e.status, e.message);
       if (e instanceof RateLimitError) return jsonError(429, e.message);
       if (e instanceof OrderError) return jsonError(400, e.message);
+      // A malformed request body is the caller's fault, not a server fault.
+      if (e instanceof SyntaxError) return jsonError(400, 'Invalid JSON body');
       console.error('API error:', e);
       return jsonError(500, 'Something went wrong. Please try again.');
     }

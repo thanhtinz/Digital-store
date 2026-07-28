@@ -17,7 +17,7 @@ export const POST = handler(async (req: NextRequest) => {
   if (!(await featureEnabled('wishlist'))) return jsonError(404, 'Wishlist is not available');
   const user = await requireUser();
   const productId = Number((await req.json()).productId);
-  if (!productId) return jsonError(400, 'productId is required');
+  if (!Number.isInteger(productId) || productId <= 0) return jsonError(400, 'A valid productId is required');
 
   const existing = await prisma.wishlistItem.findUnique({
     where: { userId_productId: { userId: user.id, productId } },

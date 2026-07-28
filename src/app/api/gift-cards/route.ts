@@ -52,6 +52,10 @@ export const POST = handler(async (req: NextRequest) => {
 
   // ── Wallet balance: settle instantly ──
   if (method === 'balance') {
+    if (!(await featureEnabled('wallet'))) {
+      await prisma.giftCard.delete({ where: { id: card.id } }).catch(() => {});
+      return jsonError(400, 'Wallet payments are not available');
+    }
     const ok = await debitWallet(user.id, amount, 'PURCHASE', `Gift card ${card.code}`);
     if (!ok) {
       await prisma.giftCard.delete({ where: { id: card.id } }).catch(() => {});

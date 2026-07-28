@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import prisma from '@/lib/db';
+import { getFeatures } from '@/lib/features';
 import { getAppUrl } from '@/lib/settings';
 
 export const dynamic = 'force-dynamic';
@@ -7,15 +8,22 @@ export const dynamic = 'force-dynamic';
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = (await getAppUrl()).replace(/\/$/, '');
   try {
+    // Disabled features answer 404, so their URLs must stay out of the sitemap.
+    const feats = await getFeatures();
     const [products, categories, posts] = await Promise.all([
       prisma.product.findMany({ where: { isActive: true }, select: { slug: true, updatedAt: true } }),
       prisma.category.findMany({ where: { isActive: true }, select: { slug: true } }),
-      prisma.post.findMany({ where: { isPublished: true }, select: { slug: true, updatedAt: true } }),
+      feats.news
+        ? prisma.post.findMany({ where: { isPublished: true }, select: { slug: true, updatedAt: true } })
+        : Promise.resolve([]),
     ]);
     return [
       { url: base, changeFrequency: 'daily', priority: 1 },
       { url: `${base}/products`, changeFrequency: 'daily', priority: 0.9 },
-      { url: `${base}/flash-sale`, changeFrequency: 'daily', priority: 0.8 },
+      ...(feats.flash_sale
+        ? [{ url: `${base}/flash-sale`, changeFrequency: 'daily' as const, priority: 0.8 }]
+        : []),
+      ...(feats.reviews ? [{ url: `${base}/reviews`, changeFrequency: 'weekly' as const, priority: 0.6 }] : []),
       ...categories.map((c) => ({
         url: `${base}/category/${c.slug}`,
         changeFrequency: 'weekly' as const,
@@ -27,7 +35,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: 'weekly' as const,
         priority: 0.8,
       })),
-      { url: `${base}/news`, changeFrequency: 'weekly', priority: 0.6 },
+      ...(feats.news ? [{ url: `${base}/news`, changeFrequency: 'weekly' as const, priority: 0.6 }] : []),
       ...posts.map((p) => ({
         url: `${base}/news/${p.slug}`,
         lastModified: p.updatedAt,
