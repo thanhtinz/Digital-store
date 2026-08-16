@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useStore } from './Providers';
+import { useStore, useT } from './Providers';
 import { api } from '@/lib/client';
 import Icon from './icons';
 import { formatTime } from '@/lib/utils';
@@ -15,6 +15,7 @@ type Message = { id: number; content: string; isStaff: boolean; createdAt: strin
 // rolling "Live chat" ticket per customer, polled while the panel is open.
 export default function LiveChat() {
   const { user, toast, locale } = useStore();
+  const t = useT();
   const intlLocale = INTL_LOCALE[locale];
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -57,8 +58,8 @@ export default function LiveChat() {
   // Poll for staff replies while the panel is open.
   useEffect(() => {
     if (!open || !ticketId) return;
-    const t = setInterval(() => loadMessages(ticketId).catch(() => {}), 5000);
-    return () => clearInterval(t);
+    const timer = setInterval(() => loadMessages(ticketId).catch(() => {}), 5000);
+    return () => clearInterval(timer);
   }, [open, ticketId]);
 
   useEffect(scrollDown, [messages.length]);
@@ -94,7 +95,7 @@ export default function LiveChat() {
     <>
       {/* Bubble */}
       <button
-        aria-label={open ? 'Close chat' : 'Chat with us'}
+        aria-label={open ? t('chat.closeChat') : t('chat.title')}
         onClick={() => setOpen((v) => !v)}
         className="fixed bottom-5 right-5 z-[60] grid h-14 w-14 place-items-center rounded-full bg-gradient-to-b from-brand-500 to-brand-700 text-white shadow-[0_10px_30px_-8px_rgba(79,70,229,.7)] transition hover:scale-105 print:hidden"
       >
@@ -109,18 +110,18 @@ export default function LiveChat() {
               <Icon name="chat" size={18} />
             </span>
             <div className="min-w-0">
-              <p className="text-sm font-bold">Chat with us</p>
-              <p className="text-[11px] text-white/70">We reply as fast as we can — replies also land in your email.</p>
+              <p className="text-sm font-bold">{t('chat.title')}</p>
+              <p className="text-[11px] text-white/70">{t('chat.subtitle')}</p>
             </div>
           </div>
 
           {!user ? (
             <div className="p-6 text-center">
               <Icon name="user" size={32} className="mx-auto text-gray-300" />
-              <p className="mt-2 text-sm font-semibold">Sign in to start chatting</p>
-              <p className="mt-1 text-xs text-gray-500">So we know where to send our reply.</p>
+              <p className="mt-2 text-sm font-semibold">{t('chat.signInTitle')}</p>
+              <p className="mt-1 text-xs text-gray-500">{t('chat.signInText')}</p>
               <Link href={`/login?next=${encodeURIComponent(pathname)}`} className="btn-primary mt-4 inline-flex">
-                Sign in
+                {t('nav.signIn')}
               </Link>
             </div>
           ) : (
@@ -128,7 +129,7 @@ export default function LiveChat() {
               <div ref={bodyRef} className="flex-1 space-y-2.5 overflow-y-auto bg-gray-50 p-3">
                 {messages.length === 0 && (
                   <p className="py-6 text-center text-xs text-gray-400">
-                    Ask us anything — orders, payments, delivery. This chat is saved to your support tickets.
+                    {t('chat.empty')}
                   </p>
                 )}
                 {messages.map((m) => (
@@ -151,12 +152,12 @@ export default function LiveChat() {
               <div className="flex gap-2 border-t border-gray-100 p-3">
                 <input
                   className="input flex-1 py-2"
-                  placeholder="Type a message…"
+                  placeholder={t('chat.placeholder')}
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
                 />
-                <button className="btn-primary shrink-0 px-3" onClick={send} disabled={busy || !text.trim()} aria-label="Send">
+                <button className="btn-primary shrink-0 px-3" onClick={send} disabled={busy || !text.trim()} aria-label={t('chat.send')}>
                   <Icon name="send" size={16} />
                 </button>
               </div>

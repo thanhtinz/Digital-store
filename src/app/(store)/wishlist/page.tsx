@@ -14,6 +14,7 @@ export async function generateMetadata() {
 }
 
 export default async function WishlistPage() {
+  const t = getT();
   if (!(await featureEnabled('wishlist'))) notFound();
   const user = await getSessionUser();
   if (!user) redirect('/login?next=/wishlist');
@@ -27,13 +28,13 @@ export default async function WishlistPage() {
 
   return (
     <div className="container py-8">
-      <p className="section-eyebrow">Saved for later</p>
-      <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Wishlist</h1>
+      <p className="section-eyebrow">{t('wishlist.eyebrow')}</p>
+      <h1 className="mt-1 text-2xl font-bold sm:text-3xl">{t('nav.wishlist')}</h1>
       {products.length === 0 ? (
         <div className="card mt-6 p-16 text-center">
           <Icon name="heart" size={56} className="mx-auto text-gray-300" />
-          <p className="mt-4 font-semibold">Your wishlist is empty</p>
-          <Link href="/products" className="btn-primary mt-5 inline-flex">Browse products</Link>
+          <p className="mt-4 font-semibold">{t('wishlist.empty')}</p>
+          <Link href="/products" className="btn-primary mt-5 inline-flex">{t('cart.browse')}</Link>
         </div>
       ) : (
         <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:[grid-template-columns:repeat(auto-fill,minmax(240px,1fr))]">

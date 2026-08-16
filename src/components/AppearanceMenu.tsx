@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useStore } from './Providers';
+import { useStore, useT } from './Providers';
 import { COLOR_PRESETS, FONT_PRESETS, TEXT_SIZES, serializeThemeCookie, type Theme } from '@/lib/theme';
 import Icon from './icons';
 
@@ -9,6 +9,7 @@ import Icon from './icons';
 // lives in their own cookie, so it never affects anyone else.
 export default function AppearanceMenu() {
   const { theme, allowThemeOverride } = useStore();
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Theme>(theme);
   const box = useRef<HTMLDivElement>(null);
@@ -45,18 +46,20 @@ export default function AppearanceMenu() {
         onClick={() => setOpen((v) => !v)}
         className="inline-flex items-center gap-1.5 text-sm text-gray-400 transition hover:text-white"
       >
-        <Icon name="spark" size={15} /> Appearance
+        <Icon name="spark" size={15} /> {t('footer.appearance')}
       </button>
 
+      {/* Anchored right: the trigger sits at the footer's right edge, so a
+          left-anchored panel would run off the viewport. */}
       {open && (
-        <div className="absolute bottom-full left-0 z-50 mb-2 w-72 rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 shadow-2xl">
-          <p className="text-xs font-bold uppercase tracking-wide text-gray-500">Colour</p>
+        <div className="absolute bottom-full right-0 z-50 mb-2 w-72 rounded-2xl border border-gray-200 bg-white p-4 text-gray-900 shadow-2xl">
+          <p className="text-xs font-bold uppercase tracking-wide text-gray-500">{t('appearance.colour')}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {COLOR_PRESETS.map((c) => (
               <button
                 key={c.key}
-                aria-label={c.name}
-                title={c.name}
+                aria-label={t(`theme.color.${c.key}`)}
+                title={t(`theme.color.${c.key}`)}
                 onClick={() => apply({ ...draft, color: c.key })}
                 className={`h-7 w-7 rounded-full ring-2 ring-offset-2 transition ${
                   draft.color === c.key ? 'ring-gray-900' : 'ring-transparent hover:ring-gray-300'
@@ -66,32 +69,35 @@ export default function AppearanceMenu() {
             ))}
           </div>
 
-          <p className="mt-4 text-xs font-bold uppercase tracking-wide text-gray-500">Typeface</p>
+          <p className="mt-4 text-xs font-bold uppercase tracking-wide text-gray-500">{t('appearance.typeface')}</p>
           <select
             className="input mt-2"
             value={draft.font}
             onChange={(e) => apply({ ...draft, font: e.target.value })}
           >
-            {FONT_PRESETS.map((f) => <option key={f.key} value={f.key}>{f.name}</option>)}
+            {/* Typeface names are brand names; only the generic option is translated. */}
+            {FONT_PRESETS.map((f) => (
+              <option key={f.key} value={f.key}>{f.key === 'system' ? t('theme.font.system') : f.name}</option>
+            ))}
           </select>
 
-          <p className="mt-4 text-xs font-bold uppercase tracking-wide text-gray-500">Text size</p>
+          <p className="mt-4 text-xs font-bold uppercase tracking-wide text-gray-500">{t('appearance.textSize')}</p>
           <div className="mt-2 grid grid-cols-3 gap-2">
-            {TEXT_SIZES.map((t) => (
+            {TEXT_SIZES.map((size) => (
               <button
-                key={t.key}
-                onClick={() => apply({ ...draft, textSize: t.key })}
+                key={size.key}
+                onClick={() => apply({ ...draft, textSize: size.key })}
                 className={`rounded-lg border py-1.5 text-xs font-semibold transition ${
-                  draft.textSize === t.key ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-gray-300 hover:bg-gray-50'
+                  draft.textSize === size.key ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-gray-300 hover:bg-gray-50'
                 }`}
               >
-                {t.name}
+                {t(`theme.size.${size.key}`)}
               </button>
             ))}
           </div>
 
           <button onClick={reset} className="mt-4 text-xs font-semibold text-gray-500 hover:text-brand-600">
-            Reset to the store default
+            {t('appearance.reset')}
           </button>
         </div>
       )}

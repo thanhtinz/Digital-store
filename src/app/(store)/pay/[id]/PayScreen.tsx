@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useStore, useMoney, useT } from '@/components/Providers';
 import { api } from '@/lib/client';
-import { AttachmentPicker } from '@/components/TicketParts';
+import { AttachmentPicker, useAttachmentLabels } from '@/components/TicketParts';
 import Icon from '@/components/icons';
 
 type Instructions = {
@@ -51,6 +51,7 @@ export default function PayScreen({ id }: { id: string }) {
   const { user, toast, refreshUser } = useStore();
   const money = useMoney();
   const t = useT();
+  const attachLabels = useAttachmentLabels();
   const router = useRouter();
   const [payment, setPayment] = useState<Payment | null>(null);
   const [error, setError] = useState('');
@@ -272,7 +273,7 @@ export default function PayScreen({ id }: { id: string }) {
                       onChange={(e) => setNote(e.target.value)}
                     />
                     <div className="mt-3">
-                      <AttachmentPicker attachments={proof} onChange={setProof} toast={toast} />
+                      <AttachmentPicker attachments={proof} onChange={setProof} toast={toast} labels={attachLabels} />
                     </div>
                     <button className="btn-primary mt-4 w-full" onClick={submitProof} disabled={busy}>
                       {busy ? t('pay.sending') : t('pay.confirmButton')}

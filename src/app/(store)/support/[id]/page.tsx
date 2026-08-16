@@ -3,13 +3,15 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useStore } from '@/components/Providers';
+import { useStore, useT } from '@/components/Providers';
 import { api } from '@/lib/client';
 import Icon from '@/components/icons';
-import { AttachmentPicker, MessageBubble } from '@/components/TicketParts';
+import { AttachmentPicker, MessageBubble, useAttachmentLabels } from '@/components/TicketParts';
 
 export default function TicketThreadPage() {
   const { user, toast } = useStore();
+  const t = useT();
+  const attachLabels = useAttachmentLabels();
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const [ticket, setTicket] = useState<any | null>(null);
@@ -43,12 +45,12 @@ export default function TicketThreadPage() {
     }
   };
 
-  if (!ticket) return <div className="container py-16 text-center text-gray-400">Loading ticket…</div>;
+  if (!ticket) return <div className="container py-16 text-center text-gray-400">{t('support.loadingTicket')}</div>;
 
   return (
     <div className="container max-w-3xl py-8">
       <Link href="/support" className="flex items-center gap-1 text-sm text-gray-500 hover:text-brand-600">
-        <Icon name="chevron-left" size={15} /> All tickets
+        <Icon name="chevron-left" size={15} /> {t('support.allTickets')}
       </Link>
 
       {/* Framed conversation card */}
@@ -59,7 +61,7 @@ export default function TicketThreadPage() {
             <h1 className="text-lg font-bold">#{ticket.id} · {ticket.subject}</h1>
             {ticket.orderCode && (
               <p className="mt-0.5 text-sm text-gray-500">
-                Related order:{' '}
+                {t('support.relatedOrder')}{' '}
                 <Link href={`/orders/${ticket.orderCode}`} className="font-mono font-semibold text-brand-600 hover:underline">
                   #{ticket.orderCode}
                 </Link>
@@ -67,7 +69,7 @@ export default function TicketThreadPage() {
             )}
           </div>
           <span className={`badge ${ticket.status === 'ANSWERED' ? 'bg-green-100 text-green-700' : ticket.status === 'CLOSED' ? 'bg-gray-200 text-gray-500' : 'bg-amber-100 text-amber-700'}`}>
-            {ticket.status === 'ANSWERED' ? 'Support replied' : ticket.status === 'CLOSED' ? 'Closed' : 'Waiting for support'}
+            {t(`support.status${ticket.status}`)}
           </span>
         </div>
 
@@ -78,7 +80,7 @@ export default function TicketThreadPage() {
               key={m.id}
               message={m}
               mine={!m.isStaff}
-              authorLabel={m.isStaff ? 'Support team' : 'You'}
+              authorLabel={m.isStaff ? t('support.staff') : t('support.you')}
             />
           ))}
         </div>
@@ -89,14 +91,14 @@ export default function TicketThreadPage() {
             className="input"
             rows={3}
             maxLength={5000}
-            placeholder={ticket.status === 'CLOSED' ? 'This ticket is closed — replying will reopen it.' : 'Write a reply…'}
+            placeholder={ticket.status === 'CLOSED' ? t('support.closedPlaceholder') : t('support.replyPlaceholder')}
             value={reply}
             onChange={(e) => setReply(e.target.value)}
           />
           <div className="mt-2.5 flex flex-wrap items-center justify-between gap-3">
-            <AttachmentPicker attachments={attachments} onChange={setAttachments} toast={toast} />
+            <AttachmentPicker attachments={attachments} onChange={setAttachments} toast={toast} labels={attachLabels} />
             <button className="btn-primary" disabled={busy || (!reply.trim() && !attachments.length)}>
-              <Icon name="send" size={15} /> {busy ? 'Sending…' : 'Send reply'}
+              <Icon name="send" size={15} /> {busy ? t('support.sending') : t('support.sendReply')}
             </button>
           </div>
         </form>
