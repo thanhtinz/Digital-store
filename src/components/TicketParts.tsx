@@ -2,6 +2,9 @@
 
 import { useState } from 'react';
 import Icon from './icons';
+import { formatDateTime } from '@/lib/utils';
+import { INTL_LOCALE } from '@/i18n';
+import { useStore } from '@/components/Providers';
 
 // ── Attachment picker: uploads to the ticket media endpoint, returns URLs ──
 export function AttachmentPicker({ attachments, onChange, toast }: {
@@ -70,6 +73,7 @@ export function MessageBubble({ message, mine, authorLabel }: {
   mine: boolean; // rendered on the right in brand color
   authorLabel: string;
 }) {
+  const intlLocale = INTL_LOCALE[useStore().locale];
   const attachments = Array.isArray(message.attachments) ? (message.attachments as string[]) : [];
   return (
     <div className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
@@ -91,7 +95,7 @@ export function MessageBubble({ message, mine, authorLabel }: {
           </div>
         )}
         <p className={`mt-1.5 text-[10px] ${mine ? 'text-white/60' : 'text-gray-400'}`}>
-          {new Date(message.createdAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
+          {formatDateTime(message.createdAt, intlLocale, { dateStyle: 'medium', timeStyle: 'short' })}
         </p>
       </div>
     </div>

@@ -68,6 +68,21 @@ export function useMoney() {
   );
 }
 
+// Shows an API failure in the shopper's language when the server tagged it
+// with a code, and otherwise falls back to the server's own English text.
+export function useErrorToast() {
+  const { toast, t } = useContext(StoreContext);
+  return useCallback(
+    (e: unknown) => {
+      const err = e as { message?: string; code?: string };
+      const translated = err?.code ? t(`error.${err.code}`) : '';
+      const message = translated && translated !== `error.${err.code}` ? translated : err?.message || '';
+      toast(message || t('error.invalidJson'), 'error');
+    },
+    [toast, t]
+  );
+}
+
 export default function Providers({
   children,
   money = DEFAULT_MONEY_FORMAT,

@@ -3,14 +3,20 @@ import prisma from '@/lib/db';
 import Icon from '@/components/icons';
 import { notFound } from 'next/navigation';
 import { featureEnabled } from '@/lib/features';
+import { formatDate } from '@/lib/utils';
+import { INTL_LOCALE } from '@/i18n';
+import { getLocale, getT } from '@/i18n/server';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'News' };
+export async function generateMetadata() {
+  return { title: getT()('meta.news') };
+}
 
 const PAGE_SIZE = 9;
 
 export default async function NewsPage({ searchParams }: { searchParams: { page?: string } }) {
+  const intlLocale = INTL_LOCALE[getLocale()];
   if (!(await featureEnabled('news'))) notFound();
 
   const page = Math.max(1, Number(searchParams.page) || 1);
@@ -54,7 +60,7 @@ export default async function NewsPage({ searchParams }: { searchParams: { page?
               <div className="p-4">
                 {p.publishedAt && (
                   <p className="text-xs text-gray-400">
-                    {p.publishedAt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    {formatDate(p.publishedAt, intlLocale, { year: 'numeric', month: 'long', day: 'numeric' })}
                   </p>
                 )}
                 <h2 className="mt-1 line-clamp-2 font-bold leading-snug group-hover:text-brand-700">{p.title}</h2>

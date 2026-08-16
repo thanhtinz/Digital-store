@@ -6,9 +6,12 @@ import { getSessionUser } from '@/lib/auth';
 import { toProductCards, productCardInclude } from '@/lib/catalog';
 import ProductCardView from '@/components/ProductCardView';
 import Icon from '@/components/icons';
+import { getT } from '@/i18n/server';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Wishlist' };
+export async function generateMetadata() {
+  return { title: getT()('meta.wishlist') };
+}
 
 export default async function WishlistPage() {
   if (!(await featureEnabled('wishlist'))) notFound();

@@ -6,6 +6,8 @@ import { useStore, useMoney } from '@/components/Providers';
 import { api } from '@/lib/client';
 
 import Icon from '@/components/icons';
+import { formatDateTime } from '@/lib/utils';
+import { INTL_LOCALE } from '@/i18n';
 
 type Txn = { id: number; type: string; amount: number; note: string | null; createdAt: string };
 
@@ -18,7 +20,8 @@ const TXN_META: Record<string, { label: string; icon: string; cls: string }> = {
 };
 
 export default function WalletPage() {
-  const { user, toast, refreshUser } = useStore();
+  const { user, toast, refreshUser, locale } = useStore();
+  const intlLocale = INTL_LOCALE[locale];
   const money = useMoney();
   const router = useRouter();
   const [balance, setBalance] = useState<number | null>(null);
@@ -168,7 +171,7 @@ export default function WalletPage() {
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-semibold">{meta.label}</span>
                     <span className="block truncate text-xs text-gray-400">
-                      {t.note || '—'} · {new Date(t.createdAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
+                      {t.note || '—'} · {formatDateTime(t.createdAt, intlLocale, { dateStyle: 'medium', timeStyle: 'short' })}
                     </span>
                   </span>
                   <span className={`text-sm font-bold ${t.amount >= 0 ? 'text-green-600' : 'text-gray-900'}`}>

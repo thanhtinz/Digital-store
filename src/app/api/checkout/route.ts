@@ -40,7 +40,7 @@ export const POST = handler(async (req: NextRequest) => {
       customFieldsData: (c.customFieldsData as Record<string, string>) || undefined,
     }));
   }
-  if (!items.length) return jsonError(400, 'Your cart is empty');
+  if (!items.length) return jsonError(400, 'Your cart is empty', 'cartEmpty');
 
   const order = await createOrder({
     userId: user.id,
@@ -58,12 +58,12 @@ export const POST = handler(async (req: NextRequest) => {
     const { featureEnabled } = await import('@/lib/features');
     if (!(await featureEnabled('wallet'))) {
       await cancelOrder(order.id);
-      return jsonError(400, 'Wallet payments are not available');
+      return jsonError(400, 'Wallet payments are not available', 'walletUnavailable');
     }
     const ok = await debitWallet(user.id, Number(order.total), 'PURCHASE', `Order ${order.code}`);
     if (!ok) {
       await cancelOrder(order.id);
-      return jsonError(402, 'Insufficient wallet balance — top up or choose another method');
+      return jsonError(402, 'Insufficient wallet balance — top up or choose another method', 'insufficientBalance');
     }
     if (fromCart) await prisma.cartItem.deleteMany({ where: { userId: user.id } });
     await markOrderPaid(order.id, 'wallet');
@@ -108,7 +108,7 @@ export const POST = handler(async (req: NextRequest) => {
   } catch (e: any) {
     // Payment session failed — cancel the order so coupons/flash stock free up.
     await cancelOrder(order.id);
-    return jsonError(502, e.message || 'Could not start the payment. Please try again.');
+    return jsonError(502, e.message || 'Could not start the payment. Please try again.', 'paymentStartFailed');
   }
 });
 

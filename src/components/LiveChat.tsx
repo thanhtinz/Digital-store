@@ -6,13 +6,16 @@ import { usePathname } from 'next/navigation';
 import { useStore } from './Providers';
 import { api } from '@/lib/client';
 import Icon from './icons';
+import { formatTime } from '@/lib/utils';
+import { INTL_LOCALE } from '@/i18n';
 
 type Message = { id: number; content: string; isStaff: boolean; createdAt: string };
 
 // Floating live-chat bubble backed by the support-ticket system: one
 // rolling "Live chat" ticket per customer, polled while the panel is open.
 export default function LiveChat() {
-  const { user, toast } = useStore();
+  const { user, toast, locale } = useStore();
+  const intlLocale = INTL_LOCALE[locale];
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [ticketId, setTicketId] = useState<number | null>(null);
@@ -139,7 +142,7 @@ export default function LiveChat() {
                     >
                       <p className="whitespace-pre-wrap">{m.content}</p>
                       <p className={`mt-0.5 text-[10px] ${m.isStaff ? 'text-gray-400' : 'text-white/60'}`}>
-                        {new Date(m.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                        {formatTime(m.createdAt, intlLocale)}
                       </p>
                     </div>
                   </div>

@@ -6,13 +6,16 @@ import { useStore, useMoney } from '@/components/Providers';
 import Link from 'next/link';
 import { api } from '@/lib/client';
 import Icon from '@/components/icons';
+import { formatDate, formatDateTime } from '@/lib/utils';
+import { INTL_LOCALE } from '@/i18n';
 
 type LoginRow = { id: number; ip: string | null; userAgent: string | null; method: string; success: boolean; createdAt: string };
 
 type Overview = { orders: number; totalSpent: number; wishlist: number; tickets: number; memberSince: string };
 
 export default function AccountPage() {
-  const { user, refreshUser, toast } = useStore();
+  const { user, refreshUser, toast, locale } = useStore();
+  const intlLocale = INTL_LOCALE[locale];
   const money = useMoney();
   const router = useRouter();
   const [tab, setTab] = useState<'profile' | 'security' | 'logins'>('profile');
@@ -55,7 +58,7 @@ export default function AccountPage() {
               </span>
               {overview && (
                 <span className="badge bg-gray-100 text-gray-500">
-                  Member since {new Date(overview.memberSince).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                  Member since {formatDate(overview.memberSince, intlLocale, { month: 'short', year: 'numeric' })}
                 </span>
               )}
             </div>
@@ -477,6 +480,7 @@ function TwoFactor({ enabled, hasPassword, onChanged, toast }: {
 }
 
 function LoginHistory() {
+  const intlLocale = INTL_LOCALE[useStore().locale];
   const [rows, setRows] = useState<LoginRow[] | null>(null);
 
   useEffect(() => {
@@ -502,7 +506,7 @@ function LoginHistory() {
         <tbody>
           {rows.map((r) => (
             <tr key={r.id} className="border-b border-gray-100 last:border-0">
-              <td className="whitespace-nowrap px-4 py-3">{new Date(r.createdAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</td>
+              <td className="whitespace-nowrap px-4 py-3">{formatDateTime(r.createdAt, intlLocale, { dateStyle: 'medium', timeStyle: 'short' })}</td>
               <td className="px-4 py-3 capitalize">{r.method}</td>
               <td className="px-4 py-3 font-mono text-xs">{r.ip || '—'}</td>
               <td className="max-w-[220px] truncate px-4 py-3 text-xs text-gray-500">{r.userAgent || '—'}</td>

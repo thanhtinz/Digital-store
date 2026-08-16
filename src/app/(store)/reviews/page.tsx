@@ -4,12 +4,18 @@ import { Stars } from '@/components/ProductCardView';
 import Icon from '@/components/icons';
 import { notFound } from 'next/navigation';
 import { featureEnabled } from '@/lib/features';
+import { formatDate } from '@/lib/utils';
+import { INTL_LOCALE } from '@/i18n';
+import { getLocale, getT } from '@/i18n/server';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Customer reviews' };
+export async function generateMetadata() {
+  return { title: getT()('meta.reviews') };
+}
 
 // Public wall of recent verified reviews across every product.
 export default async function ReviewsPage() {
+  const intlLocale = INTL_LOCALE[getLocale()];
   if (!(await featureEnabled('reviews'))) notFound();
 
   const [reviews, agg, count5] = await Promise.all([
@@ -73,7 +79,7 @@ export default async function ReviewsPage() {
                   <p className="truncate text-sm font-semibold">{r.user.name}</p>
                   <div className="flex items-center gap-2 text-xs text-gray-400">
                     <Stars value={r.rating} size={12} />
-                    {r.createdAt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                    {formatDate(r.createdAt, intlLocale, { year: 'numeric', month: 'short', day: 'numeric' })}
                   </div>
                 </div>
               </div>

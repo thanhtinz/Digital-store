@@ -39,7 +39,7 @@ export const GET = handler(async () => {
 // POST { amount, method: balance|stripe|paypal } — buy a gift card.
 export const POST = handler(async (req: NextRequest) => {
   const { featureEnabled } = await import('@/lib/features');
-  if (!(await featureEnabled('giftcards'))) return jsonError(404, 'Gift cards are not available');
+  if (!(await featureEnabled('giftcards'))) return jsonError(404, 'Gift cards are not available', 'giftcardUnavailable');
   const user = await requireUser();
   rateLimit('giftcard-buy', 10, 60 * 60, String(user.id));
   const b = await req.json();
@@ -57,12 +57,12 @@ export const POST = handler(async (req: NextRequest) => {
   if (method === 'balance') {
     if (!(await featureEnabled('wallet'))) {
       await prisma.giftCard.delete({ where: { id: card.id } }).catch(() => {});
-      return jsonError(400, 'Wallet payments are not available');
+      return jsonError(400, 'Wallet payments are not available', 'walletUnavailable');
     }
     const ok = await debitWallet(user.id, amount, 'PURCHASE', `Gift card ${card.code}`);
     if (!ok) {
       await prisma.giftCard.delete({ where: { id: card.id } }).catch(() => {});
-      return jsonError(402, 'Insufficient wallet balance');
+      return jsonError(402, 'Insufficient wallet balance', 'insufficientBalance');
     }
     await activateGiftCard(card.id);
     return NextResponse.json({ ok: true, paid: true });

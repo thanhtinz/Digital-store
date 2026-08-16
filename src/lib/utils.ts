@@ -81,6 +81,40 @@ export function formatMoney(value: number | string, fmt?: MoneyFormat | string):
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: code }).format(safe);
 }
 
+// Dates always take an explicit locale. Letting Intl fall back to the
+// browser's would make the server and client render different text and break
+// hydration — the same class of bug the flash-sale countdown had.
+export function formatDate(
+  value: Date | string,
+  locale: string,
+  opts: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' }
+): string {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat(locale, opts).format(date);
+}
+
+export function formatDateTime(
+  value: Date | string,
+  locale: string,
+  opts: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeStyle: 'short' }
+): string {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat(locale, opts).format(date);
+}
+
+// Thousands separators differ by locale (1,000 vs 1.000), so counts need it too.
+export function formatNumber(value: number, locale: string): string {
+  return new Intl.NumberFormat(locale).format(Number.isFinite(value) ? value : 0);
+}
+
+export function formatTime(value: Date | string, locale: string): string {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(date);
+}
+
 export function slugify(text: string): string {
   return text
     .toLowerCase()

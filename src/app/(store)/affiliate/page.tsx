@@ -6,6 +6,8 @@ import { useStore, useMoney } from '@/components/Providers';
 import { api } from '@/lib/client';
 
 import Icon from '@/components/icons';
+import { formatDateTime } from '@/lib/utils';
+import { INTL_LOCALE } from '@/i18n';
 
 type Data = {
   enabled: boolean;
@@ -19,7 +21,8 @@ type Data = {
 };
 
 export default function AffiliatePage() {
-  const { user, toast } = useStore();
+  const { user, toast, locale } = useStore();
+  const intlLocale = INTL_LOCALE[locale];
   const money = useMoney();
   const router = useRouter();
   const [data, setData] = useState<Data | null>(null);
@@ -125,7 +128,7 @@ export default function AffiliatePage() {
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm">{t.note || 'Commission'}</span>
                 <span className="block text-xs text-gray-400">
-                  {new Date(t.createdAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
+                  {formatDateTime(t.createdAt, intlLocale, { dateStyle: 'medium', timeStyle: 'short' })}
                 </span>
               </span>
               <span className="text-sm font-bold text-green-600">+{money(t.amount)}</span>

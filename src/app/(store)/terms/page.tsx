@@ -1,6 +1,11 @@
 import LegalPage from '@/components/LegalPage';
+import { getT } from '@/i18n/server';
 
-export const metadata = { title: 'Terms of Service' };
+export const dynamic = 'force-dynamic';
+
+export async function generateMetadata() {
+  return { title: getT()('meta.terms') };
+}
 
 export default function TermsPage() {
   return (

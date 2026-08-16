@@ -5,6 +5,9 @@ import type { ProductCard } from '@/lib/catalog';
 
 import Icon from './icons';
 import { useMoney } from '@/components/Providers';
+import { formatNumber } from '@/lib/utils';
+import { INTL_LOCALE } from '@/i18n';
+import { useStore } from '@/components/Providers';
 
 export function Stars({ value, size = 14 }: { value: number; size?: number }) {
   return (
@@ -19,6 +22,7 @@ export function Stars({ value, size = 14 }: { value: number; size?: number }) {
 }
 
 export default function ProductCardView({ product }: { product: ProductCard }) {
+  const intlLocale = INTL_LOCALE[useStore().locale];
   const money = useMoney();
   return (
     <Link
@@ -51,7 +55,7 @@ export default function ProductCardView({ product }: { product: ProductCard }) {
         <div className="mt-1.5 flex items-center gap-1.5 text-xs text-gray-500">
           <Stars value={product.ratingAvg} />
           <span>({product.ratingCount})</span>
-          {product.soldCount > 0 && <span>· {product.soldCount.toLocaleString('en-US')} sold</span>}
+          {product.soldCount > 0 && <span>· {formatNumber(product.soldCount, intlLocale)} sold</span>}
         </div>
         <div className="mt-auto flex items-center justify-between gap-2 pt-3">
           <span className="flex items-baseline gap-2">

@@ -3,6 +3,9 @@ import { notFound } from 'next/navigation';
 import prisma from '@/lib/db';
 import Icon from '@/components/icons';
 import { featureEnabled } from '@/lib/features';
+import { formatDate } from '@/lib/utils';
+import { INTL_LOCALE } from '@/i18n';
+import { getLocale } from '@/i18n/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +25,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 }
 
 export default async function NewsPostPage({ params }: { params: { slug: string } }) {
+  const intlLocale = INTL_LOCALE[getLocale()];
   if (!(await featureEnabled('news'))) notFound();
 
   const post = await prisma.post.findUnique({ where: { slug: params.slug } });
@@ -52,7 +56,7 @@ export default async function NewsPostPage({ params }: { params: { slug: string 
         <div className="p-6 sm:p-8">
           {post.publishedAt && (
             <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
-              {post.publishedAt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+              {formatDate(post.publishedAt, intlLocale, { year: 'numeric', month: 'long', day: 'numeric' })}
             </p>
           )}
           <h1 className="mt-1 text-2xl font-bold leading-tight sm:text-3xl">{post.title}</h1>

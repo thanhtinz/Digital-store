@@ -10,6 +10,9 @@ import Icon from '@/components/icons';
 import { getMoneyFormatter } from '@/lib/currency';
 import { getT } from '@/i18n/server';
 import type { TFunction } from '@/i18n';
+import { formatNumber } from '@/lib/utils';
+import { INTL_LOCALE } from '@/i18n';
+import { getLocale } from '@/i18n/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,6 +51,7 @@ function steps(t: TFunction) {
 }
 
 export default async function HomePage() {
+  const intlLocale = INTL_LOCALE[getLocale()];
   const t = getT();
   const money = await getMoneyFormatter();
   const now = new Date();
@@ -115,8 +119,8 @@ export default async function HomePage() {
   ]);
 
   const heroStats = [
-    { value: productCount.toLocaleString('en-US'), label: t('home.statProducts') },
-    { value: orderCount > 0 ? `${orderCount.toLocaleString('en-US')}+` : 'Instant', label: orderCount > 0 ? t('home.statOrders') : t('home.statAutomated') },
+    { value: formatNumber(productCount, intlLocale), label: t('home.statProducts') },
+    { value: orderCount > 0 ? `${formatNumber(orderCount, intlLocale)}+` : 'Instant', label: orderCount > 0 ? t('home.statOrders') : t('home.statAutomated') },
     { value: avgRating > 0 ? `${avgRating}/5` : '24/7', label: avgRating > 0 ? t('home.statReviews', { count: ratingAgg._count }) : t('home.statHuman') },
   ];
 

@@ -5,8 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useStore, useMoney } from '@/components/Providers';
 import { api } from '@/lib/client';
-import { type CustomFieldDef } from '@/lib/utils';
+import { type CustomFieldDef, formatNumber } from '@/lib/utils';
 import Icon from '@/components/icons';
+import { INTL_LOCALE } from '@/i18n';
 
 type CartItemView = {
   id: number;
@@ -35,7 +36,8 @@ export default function CheckoutPage() {
 type LoyaltyInfo = { enabled: boolean; points: number; redeemValue: number; minRedeem: number };
 
 function CheckoutInner() {
-  const { user, toast } = useStore();
+  const { user, toast, locale } = useStore();
+  const intlLocale = INTL_LOCALE[locale];
   const money = useMoney();
   const router = useRouter();
   const params = useSearchParams();
@@ -258,7 +260,7 @@ function CheckoutInner() {
                     </span>
                     {vnd && (
                       <span className="whitespace-nowrap text-xs font-semibold text-gray-600">
-                        ~ {(Math.ceil((total * vnd.rate) / 1000) * 1000).toLocaleString('en-US')} {vnd.code}
+                        ~ {formatNumber((Math.ceil((total * vnd.rate) / 1000) * 1000), intlLocale)} {vnd.code}
                       </span>
                     )}
                   </button>
@@ -269,7 +271,7 @@ function CheckoutInner() {
                   <input type="checkbox" checked={usePoints} onChange={(e) => setUsePoints(e.target.checked)} />
                   <span className="flex-1">
                     <span className="block text-sm font-semibold text-amber-800">
-                      Use my {loyalty.points.toLocaleString('en-US')} loyalty points
+                      Use my {formatNumber(loyalty.points, intlLocale)} loyalty points
                     </span>
                     <span className="block text-xs text-amber-700">
                       Save up to {money(Math.min(loyalty.points * loyalty.redeemValue, Math.max(0, subtotal - discount - 0.5)))} on this order

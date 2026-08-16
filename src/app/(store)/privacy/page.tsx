@@ -1,6 +1,11 @@
 import LegalPage from '@/components/LegalPage';
+import { getT } from '@/i18n/server';
 
-export const metadata = { title: 'Privacy Policy' };
+export const dynamic = 'force-dynamic';
+
+export async function generateMetadata() {
+  return { title: getT()('meta.privacy') };
+}
 
 export default function PrivacyPage() {
   return (
