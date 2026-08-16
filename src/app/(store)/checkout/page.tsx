@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useStore, useMoney } from '@/components/Providers';
+import { useStore, useMoney, useT } from '@/components/Providers';
 import { api } from '@/lib/client';
 import { type CustomFieldDef, formatNumber } from '@/lib/utils';
 import Icon from '@/components/icons';
@@ -27,7 +27,7 @@ type Method = 'stripe' | 'paypal' | 'balance' | 'sepay' | 'payos' | 'bank';
 
 export default function CheckoutPage() {
   return (
-    <Suspense fallback={<div className="container py-16 text-center text-gray-400">Loading…</div>}>
+    <Suspense fallback={<div className="container py-16 text-center text-gray-400" />}>
       <CheckoutInner />
     </Suspense>
   );
@@ -37,6 +37,7 @@ type LoyaltyInfo = { enabled: boolean; points: number; redeemValue: number; minR
 
 function CheckoutInner() {
   const { user, toast, locale } = useStore();
+  const t = useT();
   const intlLocale = INTL_LOCALE[locale];
   const money = useMoney();
   const router = useRouter();
@@ -101,7 +102,7 @@ function CheckoutInner() {
   }, [user, isBuyNow, router]);
 
   if (user === undefined || items === null) {
-    return <div className="container py-16 text-center text-gray-400">Loading checkout…</div>;
+    return <div className="container py-16 text-center text-gray-400">{t('checkout.loading')}</div>;
   }
 
   // Buy-now mode shows the item from sessionStorage matched against cart-style pricing is not possible;
@@ -126,7 +127,7 @@ function CheckoutInner() {
         json: { code: coupon, subtotal },
       });
       setApplied({ code: d.code, discount: d.discount });
-      toast(`Coupon ${d.code} applied — you save ${money(d.discount)}`);
+      toast(t('checkout.couponApplied', { code: d.code, amount: money(d.discount) }));
     } catch (e: any) {
       setApplied(null);
       toast(e.message, 'error');
@@ -137,23 +138,23 @@ function CheckoutInner() {
 
   const placeOrder = async () => {
     if (!pay.stripeEnabled && !pay.paypalEnabled && !walletOn && !pay.sepayEnabled && !pay.payosEnabled && !pay.bankEnabled) {
-      toast('No payment method is available. Please contact support.', 'error');
+      toast(t('checkout.noMethod'), 'error');
       return;
     }
     if (method === 'stripe' && !pay.stripeEnabled) {
-      toast('Card payments are unavailable. Choose another method.', 'error');
+      toast(t('checkout.cardUnavailable'), 'error');
       return;
     }
     if (method === 'paypal' && !pay.paypalEnabled) {
-      toast('PayPal is unavailable. Choose another method.', 'error');
+      toast(t('checkout.paypalUnavailable'), 'error');
       return;
     }
     if (method === 'balance' && !walletOn) {
-      toast('Wallet payments are unavailable. Choose another method.', 'error');
+      toast(t('checkout.walletUnavailable'), 'error');
       return;
     }
     if (method === 'balance' && !buyNow && balance < total) {
-      toast('Insufficient wallet balance — top up first', 'error');
+      toast(t('checkout.insufficient'), 'error');
       return;
     }
     setBusy(true);
@@ -177,20 +178,20 @@ function CheckoutInner() {
 
   return (
     <div className="container py-8">
-      <p className="section-eyebrow">Almost there</p>
-      <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Checkout</h1>
+      <p className="section-eyebrow">{t('checkout.eyebrow')}</p>
+      <h1 className="mt-1 text-2xl font-bold sm:text-3xl">{t('checkout.title')}</h1>
 
       {nothingToBuy ? (
         <div className="card mt-6 p-16 text-center">
-          <p className="font-semibold">Nothing to check out</p>
-          <Link href="/products" className="btn-primary mt-5 inline-flex">Browse products</Link>
+          <p className="font-semibold">{t('checkout.nothing')}</p>
+          <Link href="/products" className="btn-primary mt-5 inline-flex">{t('cart.browse')}</Link>
         </div>
       ) : (
         <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_380px]">
           {/* Payment method */}
           <div className="space-y-6">
             <div className="card p-5">
-              <h2 className="font-bold">Payment method</h2>
+              <h2 className="font-bold">{t('checkout.paymentMethod')}</h2>
               <div className="mt-4 space-y-2.5">
                 {walletOn && (
                   <button
@@ -201,13 +202,13 @@ function CheckoutInner() {
                   >
                     <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-green-50 text-green-700"><Icon name="credit-card" size={22} /></span>
                     <span className="flex-1">
-                      <span className="block text-sm font-semibold">Wallet balance</span>
+                      <span className="block text-sm font-semibold">{t('checkout.wallet')}</span>
                       <span className="block text-xs text-gray-500">
-                        Available: <b className={balance >= total ? 'text-green-600' : 'text-red-500'}>{money(balance)}</b> — instant, no redirect
+                        {t('checkout.walletSub', { balance: money(balance) })}
                       </span>
                     </span>
                     {balance < total && !buyNow && (
-                      <a href="/wallet" onClick={(e) => e.stopPropagation()} className="text-xs font-semibold text-brand-600 hover:underline">Top up</a>
+                      <a href="/wallet" onClick={(e) => e.stopPropagation()} className="text-xs font-semibold text-brand-600 hover:underline">{t('checkout.topUp')}</a>
                     )}
                   </button>
                 )}
@@ -220,10 +221,10 @@ function CheckoutInner() {
                 >
                   <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700"><Icon name="credit-card" size={22} /></span>
                   <span className="flex-1">
-                    <span className="block text-sm font-semibold">Credit / Debit card</span>
-                    <span className="block text-xs text-gray-500">Visa, Mastercard, Amex — securely processed by Stripe</span>
+                    <span className="block text-sm font-semibold">{t('checkout.card')}</span>
+                    <span className="block text-xs text-gray-500">{t('checkout.cardSub')}</span>
                   </span>
-                  {!pay.stripeEnabled && <span className="text-xs text-gray-400">Unavailable</span>}
+                  {!pay.stripeEnabled && <span className="text-xs text-gray-400">{t('checkout.unavailable')}</span>}
                 </button>
                 <button
                   onClick={() => setMethod('paypal')}
@@ -235,16 +236,16 @@ function CheckoutInner() {
                   <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-blue-50 text-blue-700"><Icon name="paypal" size={22} /></span>
                   <span className="flex-1">
                     <span className="block text-sm font-semibold">PayPal</span>
-                    <span className="block text-xs text-gray-500">Pay with your PayPal balance or linked cards</span>
+                    <span className="block text-xs text-gray-500">{t('checkout.paypalSub')}</span>
                   </span>
-                  {!pay.paypalEnabled && <span className="text-xs text-gray-400">Unavailable</span>}
+                  {!pay.paypalEnabled && <span className="text-xs text-gray-400">{t('checkout.unavailable')}</span>}
                 </button>
 
                 {/* Vietnamese bank transfer methods */}
                 {([
-                  ['sepay', pay.sepayEnabled, 'Bank transfer (instant)', 'Scan a VietQR code — confirmed automatically within a minute', 'bolt', 'bg-emerald-50 text-emerald-700'],
-                  ['payos', pay.payosEnabled, 'PayOS', 'Pay by bank app, card or e-wallet on the PayOS page', 'credit-card', 'bg-sky-50 text-sky-700'],
-                  ['bank', pay.bankEnabled, 'Bank transfer (manual)', 'Transfer and we confirm it by hand, usually within a few hours', 'store', 'bg-amber-50 text-amber-700'],
+                  ['sepay', pay.sepayEnabled, t('checkout.sepay'), t('checkout.sepaySub'), 'bolt', 'bg-emerald-50 text-emerald-700'],
+                  ['payos', pay.payosEnabled, 'PayOS', t('checkout.payosSub'), 'credit-card', 'bg-sky-50 text-sky-700'],
+                  ['bank', pay.bankEnabled, t('checkout.bank'), t('checkout.bankSub'), 'store', 'bg-amber-50 text-amber-700'],
                 ] as const).filter(([, enabled]) => enabled).map(([value, , title, desc, icon, tint]) => (
                   <button
                     key={value}
@@ -271,38 +272,38 @@ function CheckoutInner() {
                   <input type="checkbox" checked={usePoints} onChange={(e) => setUsePoints(e.target.checked)} />
                   <span className="flex-1">
                     <span className="block text-sm font-semibold text-amber-800">
-                      Use my {formatNumber(loyalty.points, intlLocale)} loyalty points
+                      {t('checkout.usePoints', { points: formatNumber(loyalty.points, intlLocale) })}
                     </span>
                     <span className="block text-xs text-amber-700">
-                      Save up to {money(Math.min(loyalty.points * loyalty.redeemValue, Math.max(0, subtotal - discount - 0.5)))} on this order
+                      {t('checkout.pointsSave', {
+                        amount: money(Math.min(loyalty.points * loyalty.redeemValue, Math.max(0, subtotal - discount - 0.5))),
+                      })}
                     </span>
                   </span>
                   <Icon name="star" size={18} className="text-amber-500" />
                 </label>
               )}
-              <p className="mt-4 text-xs text-gray-400">
-                You&apos;ll be redirected to a secure hosted payment page. We never see or store your card details.
-              </p>
+              <p className="mt-4 text-xs text-gray-400">{t('checkout.redirectNote')}</p>
             </div>
 
             {/* Coupon */}
             <div className="card p-5">
-              <h2 className="font-bold">Coupon code</h2>
+              <h2 className="font-bold">{t('checkout.couponCode')}</h2>
               <div className="mt-3 flex gap-2">
                 <input
                   className="input flex-1 uppercase"
-                  placeholder="e.g. WELCOME10"
+                  placeholder={t('checkout.couponPlaceholder')}
                   value={coupon}
                   onChange={(e) => setCoupon(e.target.value.toUpperCase())}
                 />
                 <button className="btn-secondary" onClick={applyCoupon} disabled={applying}>
-                  {applying ? 'Checking…' : 'Apply'}
+                  {applying ? t('checkout.checking') : t('checkout.apply')}
                 </button>
               </div>
               {applied && (
                 <p className="mt-2 flex items-center gap-1 text-sm font-medium text-green-600">
-                  <Icon name="check" size={15} /> {applied.code} applied — you save {money(applied.discount)}
-                  <button className="ml-2 text-xs text-gray-400 underline" onClick={() => setApplied(null)}>remove</button>
+                  <Icon name="check" size={15} /> {t('checkout.couponInline', { code: applied.code, amount: money(applied.discount) })}
+                  <button className="ml-2 text-xs text-gray-400 underline" onClick={() => setApplied(null)}>{t('checkout.removeCoupon')}</button>
                 </p>
               )}
             </div>
@@ -310,10 +311,10 @@ function CheckoutInner() {
 
           {/* Summary */}
           <div className="card h-fit p-5">
-            <h2 className="font-bold">Order summary</h2>
+            <h2 className="font-bold">{t('checkout.orderSummary')}</h2>
             {buyNow ? (
               <p className="mt-3 rounded-lg bg-brand-50 p-3 text-sm text-brand-800">
-                Buy-now item — final total is confirmed on the payment page.
+                {t('checkout.buyNowNote')}
               </p>
             ) : (
               <div className="mt-4 space-y-3">
@@ -337,21 +338,31 @@ function CheckoutInner() {
             <div className="mt-4 space-y-1.5 border-t border-gray-100 pt-4 text-sm">
               {!buyNow && (
                 <>
-                  <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>{money(subtotal)}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">{t('cart.subtotal')}</span><span>{money(subtotal)}</span></div>
                   {discount > 0 && (
-                    <div className="flex justify-between text-green-600"><span>Discount</span><span>−{money(discount)}</span></div>
+                    <div className="flex justify-between text-green-600"><span>{t('checkout.discount')}</span><span>−{money(discount)}</span></div>
                   )}
                   {pointsDiscount > 0 && (
-                    <div className="flex justify-between text-amber-600"><span>Loyalty points</span><span>−{money(pointsDiscount)}</span></div>
+                    <div className="flex justify-between text-amber-600"><span>{t('checkout.loyaltyPoints')}</span><span>−{money(pointsDiscount)}</span></div>
                   )}
-                  <div className="flex justify-between pt-1 text-base font-bold"><span>Total</span><span>{money(total)}</span></div>
+                  <div className="flex justify-between pt-1 text-base font-bold"><span>{t('checkout.total')}</span><span>{money(total)}</span></div>
                 </>
               )}
             </div>
             <button className="btn-primary mt-5 w-full" onClick={placeOrder} disabled={busy}>
-              {busy ? 'Processing…' : method === 'balance' ? `Pay ${buyNow ? 'with balance' : money(total)} from wallet` : method === 'paypal' ? 'Pay with PayPal' : method === 'stripe' ? 'Pay with card' : 'Continue to payment'}
+              {busy
+                ? t('checkout.processing')
+                : method === 'balance'
+                ? buyNow
+                  ? t('checkout.payWalletBalance')
+                  : t('checkout.payWallet', { amount: money(total) })
+                : method === 'paypal'
+                ? t('checkout.payPaypal')
+                : method === 'stripe'
+                ? t('checkout.payCard')
+                : t('checkout.continue')}
             </button>
-            <p className="mt-3 flex items-center justify-center gap-1 text-center text-xs text-gray-400"><Icon name="lock" size={13} /> 256-bit SSL secure payment</p>
+            <p className="mt-3 flex items-center justify-center gap-1 text-center text-xs text-gray-400"><Icon name="lock" size={13} /> {t('checkout.securePayment')}</p>
           </div>
         </div>
       )}

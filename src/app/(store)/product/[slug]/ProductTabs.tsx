@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useStore } from '@/components/Providers';
+import { useStore, useT } from '@/components/Providers';
 import { api } from '@/lib/client';
 import { Stars } from '@/components/ProductCardView';
 import { AttachmentPicker } from '@/components/TicketParts';
@@ -30,25 +30,26 @@ type Props = {
 };
 
 export default function ProductTabs({ reviewsEnabled = true, productId, description, guide, ratingAvg, ratingCount, reviews }: Props) {
+  const t = useT();
   const tabs = [
-    { key: 'description', label: 'Description', show: !!description },
-    { key: 'guide', label: 'How to use', show: !!guide },
-    { key: 'reviews', label: `Reviews (${ratingCount})`, show: reviewsEnabled },
-  ].filter((t) => t.show);
+    { key: 'description', label: t('product.description'), show: !!description },
+    { key: 'guide', label: t('product.guide'), show: !!guide },
+    { key: 'reviews', label: `${t('product.reviews')} (${ratingCount})`, show: reviewsEnabled },
+  ].filter((item) => item.show);
   const [tab, setTab] = useState(tabs[0]?.key || 'description');
 
   return (
     <div className="card overflow-hidden">
       <div className="flex overflow-x-auto border-b border-gray-200">
-        {tabs.map((t) => (
+        {tabs.map((item) => (
           <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
+            key={item.key}
+            onClick={() => setTab(item.key)}
             className={`whitespace-nowrap px-5 py-3.5 text-sm font-semibold transition ${
-              tab === t.key ? 'border-b-2 border-brand-600 text-brand-700' : 'text-gray-500 hover:text-gray-800'
+              tab === item.key ? 'border-b-2 border-brand-600 text-brand-700' : 'text-gray-500 hover:text-gray-800'
             }`}
           >
-            {t.label}
+            {item.label}
           </button>
         ))}
       </div>
@@ -69,6 +70,7 @@ export default function ProductTabs({ reviewsEnabled = true, productId, descript
 
 function ReviewsSection({ productId, ratingAvg, ratingCount, reviews }: Omit<Props, 'description' | 'guide'>) {
   const { user, toast, locale } = useStore();
+  const t = useT();
   const intlLocale = INTL_LOCALE[locale];
   const [rating, setRating] = useState(5);
   const [content, setContent] = useState('');
@@ -85,7 +87,7 @@ function ReviewsSection({ productId, ratingAvg, ratingCount, reviews }: Omit<Pro
     setBusy(true);
     try {
       await api('/api/reviews', { method: 'POST', json: { productId, rating, content, images } });
-      toast('Thank you for your review!');
+      toast(t('catalog.reviewThanks'));
       setSubmitted(true);
     } catch (e: any) {
       toast(e.message, 'error');
@@ -101,7 +103,9 @@ function ReviewsSection({ productId, ratingAvg, ratingCount, reviews }: Omit<Pro
         <div className="text-center lg:text-left">
           <p className="text-4xl font-extrabold">{ratingAvg || '—'}</p>
           <div className="mt-1"><Stars value={ratingAvg} size={18} /></div>
-          <p className="mt-1 text-sm text-gray-500">{ratingCount} review{ratingCount === 1 ? '' : 's'}</p>
+          <p className="mt-1 text-sm text-gray-500">
+            {ratingCount === 1 ? t('catalog.reviewCountOne') : t('catalog.reviewCount', { count: ratingCount })}
+          </p>
         </div>
         <div className="mt-4 space-y-1.5">
           {distribution.map(({ star, count }) => (
@@ -121,11 +125,11 @@ function ReviewsSection({ productId, ratingAvg, ratingCount, reviews }: Omit<Pro
 
         {user && !submitted && (
           <div className="mt-6 rounded-xl bg-gray-50 p-4">
-            <p className="text-sm font-semibold">Write a review</p>
-            <p className="mt-0.5 text-xs text-gray-500">Available after you purchase this product.</p>
+            <p className="text-sm font-semibold">{t('catalog.writeReview')}</p>
+            <p className="mt-0.5 text-xs text-gray-500">{t('catalog.reviewAfterPurchase')}</p>
             <div className="mt-2 flex gap-1">
               {[1, 2, 3, 4, 5].map((i) => (
-                <button key={i} onClick={() => setRating(i)} aria-label={`${i} stars`}>
+                <button key={i} onClick={() => setRating(i)} aria-label={t('catalog.stars', { count: i })}>
                   <svg width="24" height="24" viewBox="0 0 24 24" fill={i <= rating ? '#f59e0b' : '#e5e7eb'}>
                     <path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3l-6.1 3.3 1.4-6.8L2.2 9.1l6.9-.8L12 2z" />
                   </svg>
@@ -135,7 +139,7 @@ function ReviewsSection({ productId, ratingAvg, ratingCount, reviews }: Omit<Pro
             <textarea
               className="input mt-2"
               rows={3}
-              placeholder="Share your experience…"
+              placeholder={t('catalog.reviewPlaceholder')}
               value={content}
               onChange={(e) => setContent(e.target.value)}
             />
@@ -143,7 +147,7 @@ function ReviewsSection({ productId, ratingAvg, ratingCount, reviews }: Omit<Pro
               <AttachmentPicker attachments={images} onChange={setImages} toast={toast} />
             </div>
             <button className="btn-primary mt-2 w-full" onClick={submit} disabled={busy}>
-              {busy ? 'Submitting…' : 'Submit review'}
+              {busy ? t('catalog.submitting') : t('catalog.submitReview')}
             </button>
           </div>
         )}
@@ -152,7 +156,7 @@ function ReviewsSection({ productId, ratingAvg, ratingCount, reviews }: Omit<Pro
       {/* Review list */}
       <div className="space-y-5">
         {reviews.length === 0 && (
-          <p className="py-8 text-center text-sm text-gray-500">No reviews yet — be the first to review this product.</p>
+          <p className="py-8 text-center text-sm text-gray-500">{t('catalog.noReviews')}</p>
         )}
         {reviews.map((r) => (
           <div key={r.id} className="border-b border-gray-100 pb-5 last:border-0">
@@ -168,7 +172,7 @@ function ReviewsSection({ productId, ratingAvg, ratingCount, reviews }: Omit<Pro
               <div>
                 <p className="text-sm font-semibold">
                   {r.userName}
-                  <span className="badge ml-2 bg-green-100 text-green-700">Verified purchase</span>
+                  <span className="badge ml-2 bg-green-100 text-green-700">{t('catalog.verifiedPurchase')}</span>
                 </p>
                 <div className="flex items-center gap-2 text-xs text-gray-400">
                   <Stars value={r.rating} size={12} />
@@ -182,14 +186,14 @@ function ReviewsSection({ productId, ratingAvg, ratingCount, reviews }: Omit<Pro
                 {r.images.map((url) => (
                   <a key={url} href={url} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg border border-gray-200">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={url} alt="review photo" className="h-20 w-auto max-w-[160px] object-cover transition hover:scale-105" />
+                    <img src={url} alt={t('catalog.reviewPhoto')} className="h-20 w-auto max-w-[160px] object-cover transition hover:scale-105" />
                   </a>
                 ))}
               </div>
             )}
             {r.adminReply && (
               <div className="mt-3 rounded-lg bg-gray-50 p-3 text-sm">
-                <p className="text-xs font-bold text-brand-700">Store response</p>
+                <p className="text-xs font-bold text-brand-700">{t('catalog.storeResponse')}</p>
                 <p className="mt-1 text-gray-600">{r.adminReply}</p>
               </div>
             )}

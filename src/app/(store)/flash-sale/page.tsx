@@ -15,6 +15,7 @@ export async function generateMetadata() {
 
 export default async function FlashSalePage() {
   const money = await getMoneyFormatter();
+  const t = getT();
   if (!(await featureEnabled('flash_sale'))) notFound();
 
   const now = new Date();
@@ -32,13 +33,13 @@ export default async function FlashSalePage() {
 
   return (
     <div className="container py-8">
-      <p className="section-eyebrow text-red-600">Limited-time deals</p>
-      <h1 className="mt-1 flex items-center gap-2 text-2xl font-bold sm:text-3xl"><Icon name="bolt" size={26} className="text-red-600" /> Flash Sale</h1>
-      <p className="mt-1 text-sm text-gray-500">Limited-time prices — once the timer hits zero, they&apos;re gone.</p>
+      <p className="section-eyebrow text-red-600">{t('home.limitedDeals')}</p>
+      <h1 className="mt-1 flex items-center gap-2 text-2xl font-bold sm:text-3xl"><Icon name="bolt" size={26} className="text-red-600" /> {t('nav.flashSale')}</h1>
+      <p className="mt-1 text-sm text-gray-500">{t('catalog.flashIntro')}</p>
 
       {sales.length === 0 && (
         <div className="card mt-8 p-16 text-center text-gray-500">
-          No flash sale is running right now. Check back soon!
+          {t('catalog.flashNone')}
         </div>
       )}
 
@@ -46,7 +47,7 @@ export default async function FlashSalePage() {
         <section key={sale.id} className="mt-8">
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <h2 className="text-lg font-bold">{sale.name}</h2>
-            <span className="text-sm text-gray-500">ends in</span>
+            <span className="text-sm text-gray-500">{t('catalog.endsIn')}</span>
             <Countdown until={sale.endsAt.toISOString()} />
           </div>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:[grid-template-columns:repeat(auto-fill,minmax(190px,1fr))]">
@@ -66,7 +67,7 @@ export default async function FlashSalePage() {
                       <div className="grid h-full place-items-center text-gray-300"><Icon name="bag" size={36} /></div>
                     )}
                     {pct > 0 && <span className="badge absolute left-2 top-2 bg-red-600 text-white">-{pct}%</span>}
-                    {soldOut && <div className="absolute inset-0 grid place-items-center bg-black/50 text-sm font-bold text-white">SOLD OUT</div>}
+                    {soldOut && <div className="absolute inset-0 grid place-items-center bg-black/50 text-sm font-bold text-white">{t('catalog.soldOutBadge')}</div>}
                   </div>
                   <div className="p-3">
                     <p className="line-clamp-1 text-sm font-semibold">{item.package.product.name}</p>
@@ -76,7 +77,7 @@ export default async function FlashSalePage() {
                       <span className="text-xs text-gray-400 line-through">{money(Number(item.package.price))}</span>
                     </div>
                     {left != null && !soldOut && (
-                      <p className="mt-1.5 text-[11px] font-medium text-orange-600">Only {left} left at this price</p>
+                      <p className="mt-1.5 text-[11px] font-medium text-orange-600">{t('catalog.onlyLeftPrice', { count: left })}</p>
                     )}
                   </div>
                 </Link>
