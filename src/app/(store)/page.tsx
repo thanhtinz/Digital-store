@@ -8,6 +8,8 @@ import ProductCardView, { Stars } from '@/components/ProductCardView';
 
 import Icon from '@/components/icons';
 import { getMoneyFormatter } from '@/lib/currency';
+import { getT } from '@/i18n/server';
+import type { TFunction } from '@/i18n';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,13 +39,16 @@ function flashCols(n: number) {
   return 'grid-cols-2';
 }
 
-const STEPS = [
-  { icon: 'bag', title: 'Pick your package', text: 'Every product lists its tiers and exactly what you receive.' },
-  { icon: 'credit-card', title: 'Pay your way', text: 'Card, PayPal or wallet balance — checkout takes under a minute.' },
-  { icon: 'bolt', title: 'Get it instantly', text: 'Codes land on your order page and inbox the moment payment clears.' },
-];
+function steps(t: TFunction) {
+  return [
+    { icon: 'bag', title: t('home.step1'), text: t('home.step1Text') },
+    { icon: 'credit-card', title: t('home.step2'), text: t('home.step2Text') },
+    { icon: 'bolt', title: t('home.step3'), text: t('home.step3Text') },
+  ];
+}
 
 export default async function HomePage() {
+  const t = getT();
   const money = await getMoneyFormatter();
   const now = new Date();
   const feats = await getFeatures();
@@ -110,9 +115,9 @@ export default async function HomePage() {
   ]);
 
   const heroStats = [
-    { value: productCount.toLocaleString('en-US'), label: 'Products in stock' },
-    { value: orderCount > 0 ? `${orderCount.toLocaleString('en-US')}+` : 'Instant', label: orderCount > 0 ? 'Orders delivered' : 'Automated delivery' },
-    { value: avgRating > 0 ? `${avgRating}/5` : '24/7', label: avgRating > 0 ? `From ${ratingAgg._count} reviews` : 'Human support' },
+    { value: productCount.toLocaleString('en-US'), label: t('home.statProducts') },
+    { value: orderCount > 0 ? `${orderCount.toLocaleString('en-US')}+` : 'Instant', label: orderCount > 0 ? t('home.statOrders') : t('home.statAutomated') },
+    { value: avgRating > 0 ? `${avgRating}/5` : '24/7', label: avgRating > 0 ? t('home.statReviews', { count: ratingAgg._count }) : t('home.statHuman') },
   ];
 
   return (
@@ -140,16 +145,15 @@ export default async function HomePage() {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
               </span>
-              Automated delivery, live right now
+              {t('home.badge')}
             </span>
 
             <h1 className="mt-5 text-4xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
-              Digital goods,
-              <span className="bg-gradient-to-r from-brand-200 via-brand-300 to-brand-100 bg-clip-text text-transparent"> delivered in seconds</span>
+              {t('home.titleA')}
+              <span className="bg-gradient-to-r from-brand-200 via-brand-300 to-brand-100 bg-clip-text text-transparent"> {t('home.titleB')}</span>
             </h1>
             <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-gray-300 sm:text-lg">
-              Streaming subscriptions, game credits and software licenses — paid for securely and sent to you the moment
-              your payment clears.
+              {t('home.subtitle')}
             </p>
 
             {/* Search is the primary action: shoppers arrive knowing what they want */}
@@ -158,20 +162,20 @@ export default async function HomePage() {
                 <Icon name="search" size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   name="q"
-                  placeholder="Search for a subscription, game or license..."
-                  aria-label="Search products"
+                  placeholder={t('home.searchPlaceholder')}
+                  aria-label={t('home.searchAria')}
                   className="h-12 w-full rounded-xl border border-white/15 bg-white/10 pl-11 pr-4 text-sm text-white outline-none backdrop-blur transition placeholder:text-gray-400 focus:border-brand-400 focus:bg-white/15"
                 />
               </div>
-              <button className="btn-primary h-12 shrink-0 px-5">Search</button>
+              <button className="btn-primary h-12 shrink-0 px-5">{t('home.search')}</button>
             </form>
 
             <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-medium text-gray-300">
               {[
-                ['bolt', 'Instant delivery'],
-                ['shield', 'Buyer protection'],
-                ['lock', 'Encrypted checkout'],
-                ['chat', '24/7 human support'],
+                ['bolt', t('home.trustInstant')],
+                ['shield', t('home.trustProtection')],
+                ['lock', t('home.trustEncrypted')],
+                ['chat', t('home.trustSupport')],
               ].map(([icon, label]) => (
                 <span key={label} className="inline-flex items-center gap-1.5">
                   <Icon name={icon} size={14} className="text-brand-300" /> {label}
@@ -201,10 +205,10 @@ export default async function HomePage() {
           <section>
             <div className="mb-5 flex items-end justify-between gap-3">
               <div>
-                <p className="section-eyebrow">Catalog</p>
-                <h2 className="mt-1 text-xl font-bold sm:text-2xl">Shop by category</h2>
+                <p className="section-eyebrow">{t('home.catalog')}</p>
+                <h2 className="mt-1 text-xl font-bold sm:text-2xl">{t('home.shopByCategory')}</h2>
               </div>
-              <Link href="/products" className="view-all">All products <Icon name="arrow-right" size={14} /></Link>
+              <Link href="/products" className="view-all">{t('home.allProducts')} <Icon name="arrow-right" size={14} /></Link>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {categories.map((c, i) => (
@@ -229,7 +233,7 @@ export default async function HomePage() {
                     <span>
                       <span className="block text-lg font-bold drop-shadow-sm">{c.name}</span>
                       <span className="block text-xs text-white/80">
-                        {c._count.products} product{c._count.products === 1 ? '' : 's'}
+                        {c._count.products === 1 ? t('home.productCountOne') : t('home.productCount', { count: c._count.products })}
                       </span>
                     </span>
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/20 backdrop-blur transition group-hover:bg-white group-hover:text-gray-900">
@@ -251,15 +255,15 @@ export default async function HomePage() {
             <div className="relative mb-6 flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="inline-flex items-center gap-1.5 rounded-full bg-red-600/20 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[.14em] text-red-300">
-                  <Icon name="bolt" size={12} /> Limited-time deals
+                  <Icon name="bolt" size={12} /> {t('home.limitedDeals')}
                 </p>
                 <h2 className="mt-2 text-2xl font-extrabold text-white sm:text-3xl">{flashSale.name}</h2>
               </div>
               <div className="flex flex-wrap items-center gap-3">
-                <span className="text-sm font-medium text-gray-400">Ends in</span>
+                <span className="text-sm font-medium text-gray-400">{t('home.endsIn')}</span>
                 <Countdown until={flashSale.endsAt.toISOString()} />
                 <Link href="/flash-sale" className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-bold text-gray-900 shadow-md transition hover:bg-gray-100">
-                  View all <Icon name="arrow-right" size={14} />
+                  {t('home.viewAll')} <Icon name="arrow-right" size={14} />
                 </Link>
               </div>
             </div>
@@ -288,7 +292,7 @@ export default async function HomePage() {
                         <span className="badge absolute left-2 top-2 bg-red-600 text-white shadow-sm">-{pct}%</span>
                       )}
                       {soldOut && (
-                        <div className="absolute inset-0 grid place-items-center bg-gray-950/70 text-xs font-bold uppercase tracking-wider text-white">Sold out</div>
+                        <div className="absolute inset-0 grid place-items-center bg-gray-950/70 text-xs font-bold uppercase tracking-wider text-white">{t('home.soldOut')}</div>
                       )}
                     </div>
                     <div className="p-3">
@@ -306,7 +310,7 @@ export default async function HomePage() {
                               style={{ width: `${Math.min(100, Math.round((item.soldCount / item.quantityLimit!) * 100))}%` }}
                             />
                           </div>
-                          <p className="mt-1 text-[10px] font-medium text-gray-400">{left} left at this price</p>
+                          <p className="mt-1 text-[10px] font-medium text-gray-400">{t('home.leftAtPrice', { count: left })}</p>
                         </div>
                       )}
                     </div>
@@ -322,10 +326,10 @@ export default async function HomePage() {
           <section>
             <div className="mb-5 flex items-end justify-between gap-3">
               <div>
-                <p className="section-eyebrow">Hand-picked</p>
-                <h2 className="mt-1 text-xl font-bold sm:text-2xl">Featured products</h2>
+                <p className="section-eyebrow">{t('home.handPicked')}</p>
+                <h2 className="mt-1 text-xl font-bold sm:text-2xl">{t('home.featured')}</h2>
               </div>
-              <Link href="/products" className="view-all">View all <Icon name="arrow-right" size={14} /></Link>
+              <Link href="/products" className="view-all">{t('home.viewAll')} <Icon name="arrow-right" size={14} /></Link>
             </div>
             <div className={`grid gap-4 ${productCols(Math.min(8, featured.length))}`}>
               {featured.slice(0, 8).map((p) => <ProductCardView key={p.id} product={p} />)}
@@ -336,11 +340,11 @@ export default async function HomePage() {
         {/* ── How it works ────────────────────────────────────────── */}
         <section className="rounded-3xl border border-gray-200/80 bg-white p-6 sm:p-8">
           <div className="mb-6 text-center">
-            <p className="section-eyebrow">How it works</p>
-            <h2 className="mt-1 text-xl font-bold sm:text-2xl">From checkout to code in three steps</h2>
+            <p className="section-eyebrow">{t('home.howItWorks')}</p>
+            <h2 className="mt-1 text-xl font-bold sm:text-2xl">{t('home.threeSteps')}</h2>
           </div>
           <div className="grid gap-5 sm:grid-cols-3">
-            {STEPS.map((s, i) => (
+            {steps(t).map((s, i) => (
               <div key={s.title} className="relative rounded-2xl bg-gray-50 p-5">
                 <span className="absolute right-4 top-3 text-4xl font-extrabold text-gray-200/90">{i + 1}</span>
                 <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand-600 text-white shadow-[0_8px_20px_-10px_rgba(79,70,229,.9)]">
@@ -357,10 +361,10 @@ export default async function HomePage() {
         <section>
           <div className="mb-5 flex items-end justify-between gap-3">
             <div>
-              <p className="section-eyebrow">Just added</p>
-              <h2 className="mt-1 text-xl font-bold sm:text-2xl">New arrivals</h2>
+              <p className="section-eyebrow">{t('home.justAdded')}</p>
+              <h2 className="mt-1 text-xl font-bold sm:text-2xl">{t('home.newArrivals')}</h2>
             </div>
-            <Link href="/products?sort=newest" className="view-all">View all <Icon name="arrow-right" size={14} /></Link>
+            <Link href="/products?sort=newest" className="view-all">{t('home.viewAll')} <Icon name="arrow-right" size={14} /></Link>
           </div>
           {latest.length > 0 ? (
             <div className={`grid gap-4 ${productCols(Math.min(8, latest.length))}`}>
@@ -378,10 +382,10 @@ export default async function HomePage() {
           <section>
             <div className="mb-5 flex items-end justify-between gap-3">
               <div>
-                <p className="section-eyebrow">Social proof</p>
-                <h2 className="mt-1 text-xl font-bold sm:text-2xl">What customers say</h2>
+                <p className="section-eyebrow">{t('home.socialProof')}</p>
+                <h2 className="mt-1 text-xl font-bold sm:text-2xl">{t('home.whatCustomersSay')}</h2>
               </div>
-              <Link href="/reviews" className="view-all">All reviews <Icon name="arrow-right" size={14} /></Link>
+              <Link href="/reviews" className="view-all">{t('home.allReviews')} <Icon name="arrow-right" size={14} /></Link>
             </div>
             <div className={`grid gap-4 ${testimonials.length >= 3 ? 'sm:grid-cols-3' : testimonials.length === 2 ? 'sm:grid-cols-2' : ''}`}>
               {testimonials.map((r) => (
@@ -411,17 +415,17 @@ export default async function HomePage() {
         <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-700 via-brand-600 to-brand-500 px-6 py-10 text-center sm:px-10 sm:py-12">
           <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-white/10" />
           <div className="pointer-events-none absolute -bottom-24 -left-10 h-64 w-64 rounded-full bg-white/[.07]" />
-          <h2 className="relative text-2xl font-extrabold text-white sm:text-3xl">Ready when you are</h2>
+          <h2 className="relative text-2xl font-extrabold text-white sm:text-3xl">{t('home.ctaTitle')}</h2>
           <p className="relative mx-auto mt-2 max-w-lg text-sm text-white/85 sm:text-base">
-            Browse the full catalog, or send someone a gift card and let them pick.
+            {t('home.ctaText')}
           </p>
           <div className="relative mt-6 flex flex-wrap items-center justify-center gap-3">
             <Link href="/products" className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-brand-700 shadow-lg transition hover:bg-gray-50">
-              <Icon name="bag" size={16} /> Browse all products
+              <Icon name="bag" size={16} /> {t('home.ctaBrowse')}
             </Link>
             {feats.giftcards && (
               <Link href="/gift-cards" className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/20">
-                <Icon name="gift" size={16} /> Send a gift card
+                <Icon name="gift" size={16} /> {t('home.ctaGift')}
               </Link>
             )}
           </div>

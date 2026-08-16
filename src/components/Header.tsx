@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { useStore, useMoney } from './Providers';
+import { useStore, useMoney, useT } from './Providers';
 import { api } from '@/lib/client';
 import Icon from './icons';
 
@@ -20,6 +20,7 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
   const on = (k: string) => features[k] !== false;
   const { user, cartCount, refreshUser } = useStore();
   const money = useMoney();
+  const t = useT();
   const router = useRouter();
   const [q, setQ] = useState('');
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -87,7 +88,7 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
         {/* Desktop nav — compact: Products / Categories dropdown / Flash Sale */}
         <nav className="ml-3 hidden items-center gap-0.5 lg:flex">
           <Link href="/products" className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">
-            Products
+            {t('nav.products')}
           </Link>
 
           {categories.length > 0 && (
@@ -98,7 +99,7 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
                   catMenu ? 'bg-gray-100 text-gray-900' : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                Categories
+                {t('nav.categories')}
                 <Icon name="chevron-right" size={14} className={`transition-transform ${catMenu ? '-rotate-90' : 'rotate-90'}`} />
               </button>
               {catMenu && (
@@ -134,12 +135,12 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
 
           {on('flash_sale') && (
             <Link href="/flash-sale" className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50">
-              <Icon name="bolt" size={15} /> Flash Sale
+              <Icon name="bolt" size={15} /> {t('nav.flashSale')}
             </Link>
           )}
           {on('news') && (
             <Link href="/news" className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">
-              News
+              {t('nav.news')}
             </Link>
           )}
         </nav>
@@ -150,7 +151,7 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search products…"
+              placeholder={t('nav.search')}
               className="input rounded-full bg-gray-50 py-2 pl-10 focus:bg-white"
             />
             <Icon name="search" size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -196,20 +197,20 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
                       Admin console
                     </Link>
                   )}
-                  <Link href="/orders" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">My orders</Link>
+                  <Link href="/orders" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">{t('nav.myOrders')}</Link>
                   {on('wallet') && (
                     <Link href="/wallet" onClick={closeAll} className="flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-50">
-                      Wallet
+                      {t('nav.wallet')}
                       <span className="text-xs font-bold text-brand-600">{money(user.balance ?? 0)}</span>
                     </Link>
                   )}
-                  {on('giftcards') && <Link href="/gift-cards" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">Gift cards</Link>}
-                  <Link href="/affiliate" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">Affiliate program</Link>
-                  {on('wishlist') && <Link href="/wishlist" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">Wishlist</Link>}
-                  {on('support') && <Link href="/support" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">Support</Link>}
-                  <Link href="/account" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">Account & security</Link>
+                  {on('giftcards') && <Link href="/gift-cards" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">{t('nav.giftCards')}</Link>}
+                  <Link href="/affiliate" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">{t('nav.affiliate')}</Link>
+                  {on('wishlist') && <Link href="/wishlist" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">{t('nav.wishlist')}</Link>}
+                  {on('support') && <Link href="/support" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">{t('nav.support')}</Link>}
+                  <Link href="/account" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">{t('nav.account')}</Link>
                   <button onClick={logout} className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50">
-                    Sign out
+                    {t('nav.signOut')}
                   </button>
                 </div>
               </>
@@ -217,9 +218,9 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
           </div>
         ) : (
           <div className="flex items-center gap-2">
-            <Link href="/login" className="btn-primary px-3 py-2 sm:hidden">Sign in</Link>
-            <Link href="/login" className="btn-secondary hidden px-3 py-2 sm:inline-flex">Sign in</Link>
-            <Link href="/register" className="btn-primary hidden px-3 py-2 sm:inline-flex">Sign up</Link>
+            <Link href="/login" className="btn-primary px-3 py-2 sm:hidden">{t('nav.signIn')}</Link>
+            <Link href="/login" className="btn-secondary hidden px-3 py-2 sm:inline-flex">{t('nav.signIn')}</Link>
+            <Link href="/register" className="btn-primary hidden px-3 py-2 sm:inline-flex">{t('nav.signUp')}</Link>
           </div>
         )}
       </div>
@@ -240,23 +241,23 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
             <div className="flex-1 overflow-y-auto px-3 py-3">
               <form onSubmit={search} className="mb-3">
                 <div className="relative">
-                  <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search products…" className="input py-2 pl-9" />
+                  <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('nav.search')} className="input py-2 pl-9" />
                   <Icon name="search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 </div>
               </form>
 
               <nav className="flex flex-col">
                 <Link href="/products" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
-                  <Icon name="bag" size={17} className="text-gray-400" /> All Products
+                  <Icon name="bag" size={17} className="text-gray-400" /> {t('footer.allProducts')}
                 </Link>
                 {on('flash_sale') && (
                   <Link href="/flash-sale" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50">
-                    <Icon name="bolt" size={17} /> Flash Sale
+                    <Icon name="bolt" size={17} /> {t('nav.flashSale')}
                   </Link>
                 )}
                 {on('news') && (
                   <Link href="/news" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
-                    <Icon name="news" size={17} className="text-gray-400" /> News
+                    <Icon name="news" size={17} className="text-gray-400" /> {t('nav.news')}
                   </Link>
                 )}
 
@@ -268,7 +269,7 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
                       className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100"
                     >
                       <span className="flex items-center gap-2.5">
-                        <Icon name="folder" size={17} className="text-gray-400" /> Categories
+                        <Icon name="folder" size={17} className="text-gray-400" /> {t('nav.categories')}
                       </span>
                       <Icon name="chevron-right" size={15} className={`text-gray-400 transition-transform ${catAccordion ? 'rotate-90' : ''}`} />
                     </button>
@@ -294,30 +295,30 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
                 {user ? (
                   <>
                     <Link href="/orders" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
-                      <Icon name="box" size={17} className="text-gray-400" /> My orders
+                      <Icon name="box" size={17} className="text-gray-400" /> {t('nav.myOrders')}
                     </Link>
                     {on('wallet') && (
                       <Link href="/wallet" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
-                        <Icon name="credit-card" size={17} className="text-gray-400" /> Wallet
+                        <Icon name="credit-card" size={17} className="text-gray-400" /> {t('nav.wallet')}
                       </Link>
                     )}
                     {on('wishlist') && (
                       <Link href="/wishlist" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
-                        <Icon name="heart" size={17} className="text-gray-400" /> Wishlist
+                        <Icon name="heart" size={17} className="text-gray-400" /> {t('nav.wishlist')}
                       </Link>
                     )}
                     {on('support') && (
                       <Link href="/support" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
-                        <Icon name="chat" size={17} className="text-gray-400" /> Support
+                        <Icon name="chat" size={17} className="text-gray-400" /> {t('nav.support')}
                       </Link>
                     )}
                     <Link href="/account" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
-                      <Icon name="user" size={17} className="text-gray-400" /> Account & security
+                      <Icon name="user" size={17} className="text-gray-400" /> {t('nav.account')}
                     </Link>
                   </>
                 ) : (
                   <Link href="/login" onClick={closeAll} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
-                    <Icon name="user" size={17} className="text-gray-400" /> Sign in
+                    <Icon name="user" size={17} className="text-gray-400" /> {t('nav.signIn')}
                   </Link>
                 )}
               </nav>
@@ -326,7 +327,7 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
             {user && (
               <div className="border-t border-gray-100 p-3">
                 <button onClick={logout} className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50">
-                  <Icon name="logout" size={17} /> Sign out
+                  <Icon name="logout" size={17} /> {t('nav.signOut')}
                 </button>
               </div>
             )}

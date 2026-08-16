@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import Icon from './icons';
 import AppearanceMenu from './AppearanceMenu';
+import LanguageSwitcher from './LanguageSwitcher';
+import type { TFunction } from '@/i18n';
 
 type Props = {
   siteName: string;
@@ -16,7 +18,7 @@ type Props = {
 
 const SOCIAL_ORDER = ['facebook', 'twitter', 'instagram', 'youtube', 'telegram', 'discord'] as const;
 
-export default function Footer({ siteName, tagline, logo, footerText, footerAbout, supportEmail, socials, categories, features = {} }: Props) {
+export default function Footer({ siteName, tagline, logo, footerText, footerAbout, supportEmail, socials, categories, features = {}, t }: Props & { t: TFunction }) {
   const socialLinks = SOCIAL_ORDER.filter((k) => socials?.[k]);
   const on = (k: string) => features[k] !== false;
   return (
@@ -25,10 +27,10 @@ export default function Footer({ siteName, tagline, logo, footerText, footerAbou
       <div className="border-b border-gray-100">
         <div className="container grid grid-cols-2 gap-4 py-6 sm:grid-cols-4">
           {([
-            ['bolt', 'Instant delivery', 'Digital goods in seconds'],
-            ['lock', 'Secure payments', 'Stripe & PayPal protected'],
-            ['refresh', 'Easy refunds', 'Fair refund policy'],
-            ['chat', 'Human support', 'Real answers, fast'],
+            ['bolt', t('trust.instant'), t('trust.instantSub')],
+            ['lock', t('trust.secure'), t('trust.secureSub')],
+            ['refresh', t('trust.refund'), t('trust.refundSub')],
+            ['chat', t('trust.human'), t('trust.humanSub')],
           ] as const).map(([icon, title, desc]) => (
             <div key={title} className="flex items-center gap-3">
               <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600">
@@ -75,13 +77,13 @@ export default function Footer({ siteName, tagline, logo, footerText, footerAbou
           )}
         </div>
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-gray-400">Shop</p>
+          <p className="text-sm font-semibold uppercase tracking-wide text-gray-400">{t('footer.shop')}</p>
           <ul className="mt-3 space-y-2 text-sm">
-            <li><Link href="/products" className="text-gray-600 hover:text-brand-600">All products</Link></li>
-            {on('flash_sale') && <li><Link href="/flash-sale" className="text-gray-600 hover:text-brand-600">Flash sale</Link></li>}
-            {on('news') && <li><Link href="/news" className="text-gray-600 hover:text-brand-600">News & updates</Link></li>}
-            {on('giftcards') && <li><Link href="/gift-cards" className="text-gray-600 hover:text-brand-600">Gift cards</Link></li>}
-            {on('reviews') && <li><Link href="/reviews" className="text-gray-600 hover:text-brand-600">Customer reviews</Link></li>}
+            <li><Link href="/products" className="text-gray-600 hover:text-brand-600">{t('footer.allProducts')}</Link></li>
+            {on('flash_sale') && <li><Link href="/flash-sale" className="text-gray-600 hover:text-brand-600">{t('footer.flashSale')}</Link></li>}
+            {on('news') && <li><Link href="/news" className="text-gray-600 hover:text-brand-600">{t('footer.news')}</Link></li>}
+            {on('giftcards') && <li><Link href="/gift-cards" className="text-gray-600 hover:text-brand-600">{t('footer.giftCards')}</Link></li>}
+            {on('reviews') && <li><Link href="/reviews" className="text-gray-600 hover:text-brand-600">{t('footer.reviews')}</Link></li>}
             {categories.slice(0, 4).map((c) => (
               <li key={c.id}>
                 <Link href={`/category/${c.slug}`} className="text-gray-600 hover:text-brand-600">{c.name}</Link>
@@ -90,18 +92,18 @@ export default function Footer({ siteName, tagline, logo, footerText, footerAbou
           </ul>
         </div>
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-gray-400">Help & legal</p>
+          <p className="text-sm font-semibold uppercase tracking-wide text-gray-400">{t('footer.help')}</p>
           <ul className="mt-3 space-y-2 text-sm">
-            {on('support') && <li><Link href="/support" className="text-gray-600 hover:text-brand-600">Support center</Link></li>}
-            <li><Link href="/faq" className="text-gray-600 hover:text-brand-600">FAQ</Link></li>
-            <li><Link href="/refund-policy" className="text-gray-600 hover:text-brand-600">Refund policy</Link></li>
-            <li><Link href="/terms" className="text-gray-600 hover:text-brand-600">Terms of service</Link></li>
-            <li><Link href="/privacy" className="text-gray-600 hover:text-brand-600">Privacy policy</Link></li>
-            <li><Link href="/status" className="text-gray-600 hover:text-brand-600">System status</Link></li>
+            {on('support') && <li><Link href="/support" className="text-gray-600 hover:text-brand-600">{t('footer.support')}</Link></li>}
+            <li><Link href="/faq" className="text-gray-600 hover:text-brand-600">{t('footer.faq')}</Link></li>
+            <li><Link href="/refund-policy" className="text-gray-600 hover:text-brand-600">{t('footer.refund')}</Link></li>
+            <li><Link href="/terms" className="text-gray-600 hover:text-brand-600">{t('footer.terms')}</Link></li>
+            <li><Link href="/privacy" className="text-gray-600 hover:text-brand-600">{t('footer.privacy')}</Link></li>
+            <li><Link href="/status" className="text-gray-600 hover:text-brand-600">{t('footer.status')}</Link></li>
           </ul>
         </div>
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-gray-400">We accept</p>
+          <p className="text-sm font-semibold uppercase tracking-wide text-gray-400">{t('footer.accept')}</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {['VISA', 'Mastercard', 'AMEX', 'PayPal', 'Stripe'].map((brand) => (
               <span
@@ -113,7 +115,7 @@ export default function Footer({ siteName, tagline, logo, footerText, footerAbou
             ))}
           </div>
           <p className="mt-3 flex items-center gap-1.5 text-xs text-gray-400">
-            <Icon name="lock" size={13} /> 256-bit SSL encrypted checkout
+            <Icon name="lock" size={13} /> {t('footer.ssl')}
           </p>
         </div>
       </div>
@@ -121,7 +123,10 @@ export default function Footer({ siteName, tagline, logo, footerText, footerAbou
       <div className="border-t border-gray-100 py-5">
         <div className="container flex flex-wrap items-center justify-between gap-3 text-xs text-gray-400">
           <span>{footerText || `© ${new Date().getFullYear()} ${siteName}. All rights reserved.`}</span>
-          <AppearanceMenu />
+          <span className="flex items-center gap-4">
+            <LanguageSwitcher />
+            <AppearanceMenu />
+          </span>
         </div>
       </div>
     </footer>
