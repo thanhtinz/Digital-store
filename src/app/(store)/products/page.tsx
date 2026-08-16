@@ -22,6 +22,7 @@ type Search = { q?: string; category?: string; sort?: string; page?: string };
 
 export default async function ProductsPage({ searchParams }: { searchParams: Search }) {
   const intlLocale = INTL_LOCALE[getLocale()];
+  const t = getT();
   const q = (searchParams.q || '').trim();
   const sort = SORTS[searchParams.sort || ''] ? searchParams.sort! : 'popular';
   const page = clampInt(searchParams.page, 1, 10_000, 1);
@@ -60,9 +61,11 @@ export default async function ProductsPage({ searchParams }: { searchParams: Sea
     <div className="container py-8">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="section-eyebrow">{q ? 'Search results' : 'Store'}</p>
-          <h1 className="mt-1 text-2xl font-bold sm:text-3xl">{q ? `“${q}”` : 'All Products'}</h1>
-          <p className="mt-1 text-sm text-gray-500">{formatNumber(total, intlLocale)} product{total === 1 ? '' : 's'} available</p>
+          <p className="section-eyebrow">{q ? t('catalog.searchResults') : t('catalog.store')}</p>
+          <h1 className="mt-1 text-2xl font-bold sm:text-3xl">{q ? `“${q}”` : t('catalog.allProducts')}</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            {total === 1 ? t('catalog.availableOne') : t('catalog.available', { count: formatNumber(total, intlLocale) })}
+          </p>
         </div>
         <div className="flex rounded-full border border-gray-200 bg-white p-1 shadow-sm">
           {(['popular', 'newest', 'rating'] as const).map((s) => (
@@ -71,7 +74,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Sea
               href={buildUrl({ sort: s, page: '1' })}
               className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${sort === s ? 'bg-brand-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
             >
-              {s === 'popular' ? 'Best selling' : s === 'newest' ? 'Newest' : 'Top rated'}
+              {s === 'popular' ? t('catalog.sortPopular') : s === 'newest' ? t('catalog.sortNewest') : t('catalog.sortRating')}
             </Link>
           ))}
         </div>
@@ -84,7 +87,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Sea
             href={buildUrl({ category: undefined as any, page: '1' })}
             className={`rounded-full px-4 py-1.5 text-sm font-semibold shadow-sm transition ${!searchParams.category ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300 hover:text-gray-900'}`}
           >
-            All
+            {t('catalog.all')}
           </Link>
           {categories.map((c) => (
             <Link
@@ -105,9 +108,9 @@ export default async function ProductsPage({ searchParams }: { searchParams: Sea
       ) : (
         <div className="card p-16 text-center">
           <Icon name="search" size={44} className="mx-auto text-gray-300" />
-          <p className="mt-4 font-semibold text-gray-700">No products match your search</p>
-          <p className="mt-1 text-sm text-gray-500">Try different keywords or clear the filters.</p>
-          <Link href="/products" className="btn-secondary mt-5 inline-flex">Clear filters</Link>
+          <p className="mt-4 font-semibold text-gray-700">{t('catalog.noMatch')}</p>
+          <p className="mt-1 text-sm text-gray-500">{t('catalog.tryOther')}</p>
+          <Link href="/products" className="btn-secondary mt-5 inline-flex">{t('catalog.clearFilters')}</Link>
         </div>
       )}
 

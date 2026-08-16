@@ -1,3 +1,5 @@
+// Storefront callers pass a translated `label`; the admin console keeps the
+// English defaults below.
 const STYLES: Record<string, { label: string; cls: string }> = {
   PENDING: { label: 'Awaiting payment', cls: 'bg-amber-100 text-amber-700' },
   PAID: { label: 'Awaiting delivery', cls: 'bg-blue-100 text-blue-700' },
@@ -6,7 +8,7 @@ const STYLES: Record<string, { label: string; cls: string }> = {
   REFUNDED: { label: 'Refunded', cls: 'bg-purple-100 text-purple-700' },
 };
 
-export default function StatusBadge({ status }: { status: string }) {
+export default function StatusBadge({ status, label }: { status: string; label?: string }) {
   const s = STYLES[status] || { label: status, cls: 'bg-gray-100 text-gray-600' };
-  return <span className={`badge ${s.cls}`}>{s.label}</span>;
+  return <span className={`badge ${s.cls}`}>{label || s.label}</span>;
 }

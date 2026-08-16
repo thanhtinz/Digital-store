@@ -11,7 +11,7 @@ import ProductTabs from './ProductTabs';
 import Icon from '@/components/icons';
 import { getMoneyConfig } from '@/lib/currency';
 import { INTL_LOCALE } from '@/i18n';
-import { getLocale } from '@/i18n/server';
+import { getLocale, getT } from '@/i18n/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,6 +40,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
 export default async function ProductPage({ params }: { params: { slug: string } }) {
   const intlLocale = INTL_LOCALE[getLocale()];
+  const t = getT();
   const product = await prisma.product.findUnique({
     where: { slug: params.slug },
     include: {
@@ -129,7 +130,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* Breadcrumb */}
       <nav className="mb-4 flex flex-wrap items-center gap-1.5 text-sm text-gray-500">
-        <a href="/" className="hover:text-brand-600">Home</a>
+        <a href="/" className="hover:text-brand-600">{t('catalog.home')}</a>
         <span>/</span>
         {product.category && (
           <>
@@ -151,10 +152,10 @@ export default async function ProductPage({ params }: { params: { slug: string }
             <span className="flex items-center gap-1.5">
               <Stars value={product.ratingAvg} />
               <b className="text-gray-800">{product.ratingAvg || '—'}</b>
-              ({product.ratingCount} review{product.ratingCount === 1 ? '' : 's'})
+              ({product.ratingCount === 1 ? t('catalog.reviewCountOne') : t('catalog.reviewCount', { count: product.ratingCount })})
             </span>
             <span>·</span>
-            <span>{formatNumber(product.soldCount, intlLocale)} sold</span>
+            <span>{t('product.sold', { count: formatNumber(product.soldCount, intlLocale) })}</span>
           </div>
           {product.shortDesc && <p className="mt-3 text-sm leading-relaxed text-gray-600">{product.shortDesc}</p>}
           <div className="mt-5">
@@ -162,9 +163,9 @@ export default async function ProductPage({ params }: { params: { slug: string }
           </div>
           <div className="mt-4 grid grid-cols-3 gap-2">
             {([
-              ['bolt', 'Instant delivery'],
-              ['shield', 'Buyer protection'],
-              ['chat', '24/7 support'],
+              ['bolt', t('trust.instant')],
+              ['shield', t('home.trustProtection')],
+              ['chat', t('catalog.support247')],
             ] as const).map(([icon, label]) => (
               <div key={label} className="flex items-center justify-center gap-1.5 rounded-lg bg-gray-50 px-2 py-2.5 text-xs font-medium text-gray-600">
                 <Icon name={icon} size={14} className="text-brand-600" /> {label}
@@ -197,7 +198,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
 
       {related.length > 0 && (
         <section className="mt-12">
-          <h2 className="mb-4 text-xl font-bold">Related products</h2>
+          <h2 className="mb-4 text-xl font-bold">{t('product.related')}</h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:[grid-template-columns:repeat(auto-fill,minmax(240px,1fr))]">
             {related.map((p) => <ProductCardView key={p.id} product={p} />)}
           </div>

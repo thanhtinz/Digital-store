@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import Icon from '@/components/icons';
+import { useT } from '@/components/Providers';
 
 export default function Gallery({ images, name }: { images: string[]; name: string }) {
+  const t = useT();
   const [active, setActive] = useState(0);
   const list = images.length ? images : [];
 
@@ -12,7 +14,7 @@ export default function Gallery({ images, name }: { images: string[]; name: stri
       <div className="card aspect-[4/3] overflow-hidden">
         {list[active] ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={list[active]} alt={`${name} — image ${active + 1}`} className="h-full w-full object-cover" />
+          <img src={list[active]} alt={t('catalog.imageAlt', { name, index: active + 1 })} className="h-full w-full object-cover" />
         ) : (
           <div className="grid h-full place-items-center text-gray-200"><Icon name="bag" size={72} /></div>
         )}
@@ -28,7 +30,7 @@ export default function Gallery({ images, name }: { images: string[]; name: stri
               }`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={url} alt={`${name} thumbnail ${i + 1}`} className="h-full w-full object-cover" />
+              <img src={url} alt={t('catalog.thumbAlt', { name, index: i + 1 })} className="h-full w-full object-cover" />
             </button>
           ))}
         </div>

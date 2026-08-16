@@ -16,15 +16,16 @@ export async function generateMetadata() {
 }
 
 const FILTERS = [
-  { key: '', label: 'All' },
-  { key: 'PENDING', label: 'Awaiting payment' },
-  { key: 'PAID', label: 'Awaiting delivery' },
-  { key: 'COMPLETED', label: 'Delivered' },
-  { key: 'CANCELLED', label: 'Cancelled' },
+  { key: '', labelKey: 'orders.filterAll' },
+  { key: 'PENDING', labelKey: 'orders.status.PENDING' },
+  { key: 'PAID', labelKey: 'orders.status.PAID' },
+  { key: 'COMPLETED', labelKey: 'orders.status.COMPLETED' },
+  { key: 'CANCELLED', labelKey: 'orders.status.CANCELLED' },
 ] as const;
 
 export default async function OrdersPage({ searchParams }: { searchParams: { status?: string } }) {
   const intlLocale = INTL_LOCALE[getLocale()];
+  const t = getT();
   const money = await getMoneyFormatter();
   const user = await getSessionUser();
   if (!user) redirect('/login?next=/orders');
@@ -45,9 +46,9 @@ export default async function OrdersPage({ searchParams }: { searchParams: { sta
 
   return (
     <div className="container max-w-4xl py-8">
-      <p className="section-eyebrow">Account</p>
-      <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Purchase history</h1>
-      <p className="mt-1 text-sm text-gray-500">Every order, its live status and delivered items in one place.</p>
+      <p className="section-eyebrow">{t('orders.eyebrow')}</p>
+      <h1 className="mt-1 text-2xl font-bold sm:text-3xl">{t('orders.pageTitle')}</h1>
+      <p className="mt-1 text-sm text-gray-500">{t('orders.intro')}</p>
 
       {/* Status filter chips */}
       <div className="mt-5 flex flex-wrap gap-2">
@@ -62,7 +63,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: { sta
                 active ? 'bg-gray-900 text-white' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-100'
               }`}
             >
-              {f.label}
+              {t(f.labelKey)}
               <span className={`rounded-full px-1.5 text-xs font-bold ${active ? 'bg-white/20' : 'bg-gray-100 text-gray-500'}`}>
                 {count}
               </span>
@@ -74,8 +75,8 @@ export default async function OrdersPage({ searchParams }: { searchParams: { sta
       {orders.length === 0 ? (
         <div className="card mt-6 p-16 text-center">
           <Icon name="box" size={56} className="mx-auto text-gray-300" />
-          <p className="mt-4 font-semibold">{status ? 'No orders with this status' : "You haven't placed any orders yet"}</p>
-          <Link href="/products" className="btn-primary mt-5 inline-flex">Start shopping</Link>
+          <p className="mt-4 font-semibold">{status ? t('orders.noneWithStatus') : t('orders.empty')}</p>
+          <Link href="/products" className="btn-primary mt-5 inline-flex">{t('orders.startShopping')}</Link>
         </div>
       ) : (
         <div className="mt-5 space-y-3">
@@ -107,12 +108,16 @@ export default async function OrdersPage({ searchParams }: { searchParams: { sta
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="hidden text-right sm:block">
-                      <p className="text-xs text-gray-400">{itemCount} item{itemCount === 1 ? '' : 's'}</p>
+                      <p className="text-xs text-gray-400">
+                        {itemCount === 1 ? t('orders.itemCountOne') : t('orders.itemCount', { count: itemCount })}
+                      </p>
                       {o.status === 'PAID' && (
-                        <p className="text-xs font-medium text-blue-600">{deliveredCount}/{o.items.length} delivered</p>
+                        <p className="text-xs font-medium text-blue-600">
+                          {t('orders.deliveredCount', { done: deliveredCount, total: o.items.length })}
+                        </p>
                       )}
                     </div>
-                    <StatusBadge status={o.status} />
+                    <StatusBadge status={o.status} label={t(`orders.status.${o.status}`)} />
                     <span className="w-20 text-right text-sm font-bold">{money(Number(o.total), o.currency)}</span>
                     <Icon name="chevron-right" size={16} className="text-gray-300" />
                   </div>

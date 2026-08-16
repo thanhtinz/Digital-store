@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useStore, useMoney } from '@/components/Providers';
+import { useStore, useMoney, useT } from '@/components/Providers';
 import { api } from '@/lib/client';
 
 import Icon from '@/components/icons';
@@ -12,12 +12,15 @@ import { INTL_LOCALE } from '@/i18n';
 type Card = { id: number; code: string | null; amount: number; status: string; createdAt: string };
 type Pay = { stripeEnabled: boolean; paypalEnabled: boolean; sepayEnabled?: boolean; payosEnabled?: boolean; bankEnabled?: boolean };
 
-const PRESETS = ['10', '25', '50', '100'];
+const PRESETS = [10, 25, 50, 100];
+const MIN = 5;
+const MAX = 500;
 
 export default function GiftCardsPage() {
-  const { user, toast, refreshUser, locale } = useStore();
+  const { user, toast, refreshUser, locale, money: fmt } = useStore();
   const intlLocale = INTL_LOCALE[locale];
   const money = useMoney();
+  const t = useT();
   const router = useRouter();
   const params = useSearchParams();
   const [cards, setCards] = useState<Card[]>([]);
@@ -48,12 +51,12 @@ export default function GiftCardsPage() {
 
   useEffect(() => {
     const flag = params.get('purchase');
-    if (flag === 'success') toast('Gift card purchased — the code is in your list below');
-    if (flag === 'pending') toast('Payment is processing — the code appears once confirmed');
-    if (flag === 'error') toast('Payment failed — please try again', 'error');
-  }, [params, toast]);
+    if (flag === 'success') toast(t('gift.purchased'));
+    if (flag === 'pending') toast(t('gift.paymentPending'));
+    if (flag === 'error') toast(t('gift.paymentFailed'), 'error');
+  }, [params, toast, t]);
 
-  if (!user) return <div className="container py-16 text-center text-gray-400">Loading…</div>;
+  if (!user) return <div className="container py-16 text-center text-gray-400">{t('common.loading')}</div>;
 
   const buy = async () => {
     setBuyBusy(true);
@@ -66,7 +69,7 @@ export default function GiftCardsPage() {
         window.location.href = d.redirectUrl;
         return;
       }
-      toast('Gift card purchased — the code is in your list below');
+      toast(t('gift.purchased'));
       await refreshUser();
       await api<{ cards: Card[] }>('/api/gift-cards').then((x) => setCards(x.cards));
     } catch (e: any) {
@@ -80,7 +83,7 @@ export default function GiftCardsPage() {
     setRedeemBusy(true);
     try {
       const d = await api<{ amount: number }>('/api/gift-cards/redeem', { method: 'POST', json: { code: redeemCode } });
-      toast(`${money(d.amount)} added to your wallet`);
+      toast(t('gift.redeemed', { amount: money(d.amount) }));
       setRedeemCode('');
       await refreshUser();
     } catch (e: any) {
@@ -92,16 +95,14 @@ export default function GiftCardsPage() {
 
   const copy = async (code: string) => {
     await navigator.clipboard.writeText(code);
-    toast('Code copied');
+    toast(t('gift.codeCopied'));
   };
 
   return (
     <div className="container py-8">
-      <p className="section-eyebrow">Give the gift of choice</p>
-      <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Gift cards</h1>
-      <p className="mt-1 text-sm text-gray-500">
-        Buy a code, send it to anyone — they redeem it into wallet balance and spend it on anything in the store. Never expires.
-      </p>
+      <p className="section-eyebrow">{t('gift.eyebrow')}</p>
+      <h1 className="mt-1 text-2xl font-bold sm:text-3xl">{t('gift.title')}</h1>
+      <p className="mt-1 text-sm text-gray-500">{t('gift.intro')}</p>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[380px_1fr]">
         <div className="space-y-5">
@@ -109,40 +110,40 @@ export default function GiftCardsPage() {
           <div className="card overflow-hidden">
             <div className="relative overflow-hidden bg-gradient-to-br from-pink-500 via-rose-500 to-orange-400 p-5 text-white">
               <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10" />
-              <p className="text-xs font-semibold uppercase tracking-wider text-white/80">Digital gift card</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-white/80">{t('gift.digital')}</p>
               <p className="relative mt-1 text-3xl font-extrabold">{money(Number(amount) || 0)}</p>
               <Icon name="gift" size={38} className="absolute bottom-4 right-4 text-white/30" />
             </div>
             <div className="space-y-3 p-5">
               <div>
-                <label className="label">Amount (USD)</label>
+                <label className="label">{t('gift.amountLabel', { currency: fmt.code })}</label>
                 <div className="flex gap-2">
                   {PRESETS.map((v) => (
                     <button
                       key={v}
                       type="button"
-                      onClick={() => setAmount(v)}
+                      onClick={() => setAmount(String(v))}
                       className={`flex-1 rounded-lg border py-2 text-sm font-semibold transition ${
-                        amount === v ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-gray-300 hover:bg-gray-50'
+                        amount === String(v) ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-gray-300 hover:bg-gray-50'
                       }`}
                     >
-                      ${v}
+                      {money(v)}
                     </button>
                   ))}
                 </div>
-                <input className="input mt-2" type="number" min="5" max="500" value={amount} onChange={(e) => setAmount(e.target.value)} />
-                <p className="mt-1 text-xs text-gray-400">Between $5 and $500.</p>
+                <input className="input mt-2" type="number" min={MIN} max={MAX} value={amount} onChange={(e) => setAmount(e.target.value)} />
+                <p className="mt-1 text-xs text-gray-400">{t('gift.range', { min: money(MIN), max: money(MAX) })}</p>
               </div>
               <div>
-                <label className="label">Payment method</label>
+                <label className="label">{t('checkout.paymentMethod')}</label>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {([
-                    ['stripe', 'Card', pay?.stripeEnabled],
+                    ['stripe', t('wallet.methodCard'), pay?.stripeEnabled],
                     ['paypal', 'PayPal', pay?.paypalEnabled],
-                    ['balance', 'Wallet', walletOn],
-                    ['sepay', 'Bank (instant)', pay?.sepayEnabled],
+                    ['balance', t('wallet.methodWallet'), walletOn],
+                    ['sepay', t('wallet.methodBankInstant'), pay?.sepayEnabled],
                     ['payos', 'PayOS', pay?.payosEnabled],
-                    ['bank', 'Bank (manual)', pay?.bankEnabled],
+                    ['bank', t('wallet.methodBankManual'), pay?.bankEnabled],
                   ] as const).filter(([, , enabled]) => enabled).map(([value, label, enabled]) => (
                     <button
                       key={value}
@@ -159,15 +160,15 @@ export default function GiftCardsPage() {
                 </div>
               </div>
               <button className="btn-primary w-full" onClick={buy} disabled={buyBusy}>
-                <Icon name="gift" size={16} /> {buyBusy ? 'Processing…' : 'Buy gift card'}
+                <Icon name="gift" size={16} /> {buyBusy ? t('checkout.processing') : t('gift.buy')}
               </button>
             </div>
           </div>
 
           {/* Redeem */}
           <div className="card p-5">
-            <h2 className="font-bold">Redeem a code</h2>
-            <p className="mt-0.5 text-xs text-gray-500">The amount is added to your wallet instantly.</p>
+            <h2 className="font-bold">{t('gift.redeemTitle')}</h2>
+            <p className="mt-0.5 text-xs text-gray-500">{t('gift.redeemIntro')}</p>
             <div className="mt-3 flex gap-2">
               <input
                 className="input flex-1 font-mono uppercase"
@@ -176,7 +177,7 @@ export default function GiftCardsPage() {
                 onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
               />
               <button className="btn-primary shrink-0" onClick={redeem} disabled={redeemBusy || !redeemCode.trim()}>
-                {redeemBusy ? '…' : 'Redeem'}
+                {redeemBusy ? '…' : t('gift.redeem')}
               </button>
             </div>
           </div>
@@ -184,7 +185,7 @@ export default function GiftCardsPage() {
 
         {/* Purchased cards */}
         <div className="card">
-          <h2 className="border-b border-gray-100 p-4 font-bold">Your purchased gift cards</h2>
+          <h2 className="border-b border-gray-100 p-4 font-bold">{t('gift.yourCards')}</h2>
           <div className="divide-y divide-gray-100">
             {cards.map((c) => (
               <div key={c.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
@@ -192,7 +193,7 @@ export default function GiftCardsPage() {
                   <Icon name="gift" size={17} />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block font-mono text-sm font-semibold">{c.code || 'Processing…'}</span>
+                  <span className="block font-mono text-sm font-semibold">{c.code || t('gift.processingCode')}</span>
                   <span className="block text-xs text-gray-400">
                     {formatDate(c.createdAt, intlLocale, { year: 'numeric', month: 'short', day: 'numeric' })}
                   </span>
@@ -200,19 +201,19 @@ export default function GiftCardsPage() {
                 <span className="text-sm font-bold">{money(c.amount)}</span>
                 {c.status === 'ACTIVE' && (
                   <>
-                    <span className="badge bg-green-100 text-green-700">Active</span>
+                    <span className="badge bg-green-100 text-green-700">{t('gift.statusActive')}</span>
                     {c.code && (
-                      <button className="btn-secondary px-3 py-1.5 text-xs" onClick={() => copy(c.code!)}>Copy</button>
+                      <button className="btn-secondary px-3 py-1.5 text-xs" onClick={() => copy(c.code!)}>{t('common.copy')}</button>
                     )}
                   </>
                 )}
-                {c.status === 'REDEEMED' && <span className="badge bg-gray-100 text-gray-500">Redeemed</span>}
-                {c.status === 'PENDING' && <span className="badge bg-amber-100 text-amber-700">Awaiting payment</span>}
+                {c.status === 'REDEEMED' && <span className="badge bg-gray-100 text-gray-500">{t('gift.statusRedeemed')}</span>}
+                {c.status === 'PENDING' && <span className="badge bg-amber-100 text-amber-700">{t('gift.statusPending')}</span>}
               </div>
             ))}
             {cards.length === 0 && (
               <p className="px-4 py-12 text-center text-sm text-gray-400">
-                No gift cards yet — buy one on the left and share the code with anyone.
+                {t('gift.none')}
               </p>
             )}
           </div>
