@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useStore, useT } from '@/components/Providers';
 import { api } from '@/lib/client';
 import { Stars } from '@/components/ProductCardView';
-import { AttachmentPicker } from '@/components/TicketParts';
+import { AttachmentPicker, useAttachmentLabels } from '@/components/TicketParts';
 import { formatDate } from '@/lib/utils';
 import { INTL_LOCALE } from '@/i18n';
 
@@ -71,6 +71,7 @@ export default function ProductTabs({ reviewsEnabled = true, productId, descript
 function ReviewsSection({ productId, ratingAvg, ratingCount, reviews }: Omit<Props, 'description' | 'guide'>) {
   const { user, toast, locale } = useStore();
   const t = useT();
+  const attachLabels = useAttachmentLabels();
   const intlLocale = INTL_LOCALE[locale];
   const [rating, setRating] = useState(5);
   const [content, setContent] = useState('');
@@ -144,7 +145,7 @@ function ReviewsSection({ productId, ratingAvg, ratingCount, reviews }: Omit<Pro
               onChange={(e) => setContent(e.target.value)}
             />
             <div className="mt-2">
-              <AttachmentPicker attachments={images} onChange={setImages} toast={toast} />
+              <AttachmentPicker attachments={images} onChange={setImages} toast={toast} labels={attachLabels} />
             </div>
             <button className="btn-primary mt-2 w-full" onClick={submit} disabled={busy}>
               {busy ? t('catalog.submitting') : t('catalog.submitReview')}

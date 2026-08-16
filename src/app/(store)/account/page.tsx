@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useStore, useMoney } from '@/components/Providers';
+import { useStore, useMoney, useT } from '@/components/Providers';
 import Link from 'next/link';
 import { api } from '@/lib/client';
 import Icon from '@/components/icons';
@@ -15,6 +15,7 @@ type Overview = { orders: number; totalSpent: number; wishlist: number; tickets:
 
 export default function AccountPage() {
   const { user, refreshUser, toast, locale } = useStore();
+  const t = useT();
   const intlLocale = INTL_LOCALE[locale];
   const money = useMoney();
   const router = useRouter();
@@ -26,7 +27,7 @@ export default function AccountPage() {
     if (user) api<Overview>('/api/account/overview').then(setOverview).catch(() => {});
   }, [user, router]);
 
-  if (!user) return <div className="container py-16 text-center text-gray-400">Loading…</div>;
+  if (!user) return <div className="container py-16 text-center text-gray-400">{t('common.loading')}</div>;
 
   return (
     <div className="container max-w-4xl py-8">
@@ -51,14 +52,16 @@ export default function AccountPage() {
             </div>
             <div className="flex flex-wrap gap-1.5 pb-1">
               {user.emailVerified && (
-                <span className="badge gap-1 bg-green-100 text-green-700"><Icon name="check" size={11} /> Verified</span>
+                <span className="badge gap-1 bg-green-100 text-green-700"><Icon name="check" size={11} /> {t('account.verified')}</span>
               )}
               <span className={`badge gap-1 ${user.twoFactorEnabled ? 'bg-brand-100 text-brand-700' : 'bg-gray-100 text-gray-500'}`}>
-                <Icon name="shield" size={11} /> {user.twoFactorEnabled ? '2FA on' : '2FA off'}
+                <Icon name="shield" size={11} /> {user.twoFactorEnabled ? t('account.twoFaOn') : t('account.twoFaOff')}
               </span>
               {overview && (
                 <span className="badge bg-gray-100 text-gray-500">
-                  Member since {formatDate(overview.memberSince, intlLocale, { month: 'short', year: 'numeric' })}
+                  {t('account.memberSince', {
+                    date: formatDate(overview.memberSince, intlLocale, { month: 'short', year: 'numeric' }),
+                  })}
                 </span>
               )}
             </div>
@@ -67,10 +70,10 @@ export default function AccountPage() {
           {/* Stat tiles */}
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {([
-              ['box', overview ? String(overview.orders) : '—', 'Orders', '/orders'],
-              ['credit-card', overview ? money(overview.totalSpent) : '—', 'Total spent', '/orders'],
-              ['heart', overview ? String(overview.wishlist) : '—', 'Wishlist', '/wishlist'],
-              ['chat', overview ? String(overview.tickets) : '—', 'Tickets', '/support'],
+              ['box', overview ? String(overview.orders) : '—', t('account.orders'), '/orders'],
+              ['credit-card', overview ? money(overview.totalSpent) : '—', t('account.totalSpent'), '/orders'],
+              ['heart', overview ? String(overview.wishlist) : '—', t('account.wishlist'), '/wishlist'],
+              ['chat', overview ? String(overview.tickets) : '—', t('account.tickets'), '/support'],
             ] as const).map(([icon, value, label, href]) => (
               <Link key={label} href={href} className="flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-3 transition hover:bg-brand-50">
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white text-brand-600 shadow-sm">
@@ -87,7 +90,11 @@ export default function AccountPage() {
       </div>
 
       <div className="mt-6 flex gap-2 border-b border-gray-200">
-        {([['profile', 'Profile'], ['security', 'Security'], ['logins', 'Login history']] as const).map(([key, label]) => (
+        {([
+          ['profile', t('account.tabProfile')],
+          ['security', t('account.tabSecurity')],
+          ['logins', t('account.tabLogins')],
+        ] as const).map(([key, label]) => (
           <button
             key={key}
             onClick={() => setTab(key)}
@@ -115,6 +122,7 @@ export default function AccountPage() {
 // GDPR: permanent account deletion with anonymized order history.
 function DeleteAccount({ hasPassword }: { hasPassword: boolean }) {
   const { toast, refreshUser } = useStore();
+  const t = useT();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState('');
@@ -125,7 +133,7 @@ function DeleteAccount({ hasPassword }: { hasPassword: boolean }) {
     setBusy(true);
     try {
       await api('/api/auth/delete-account', { method: 'POST', json: { password, confirm } });
-      toast('Your account has been deleted');
+      toast(t('account.deleted'));
       await refreshUser();
       router.push('/');
     } catch (e: any) {
@@ -137,31 +145,27 @@ function DeleteAccount({ hasPassword }: { hasPassword: boolean }) {
 
   return (
     <div className="card border-red-100 p-5">
-      <h2 className="font-bold text-red-600">Delete account</h2>
-      <p className="mt-1 text-sm text-gray-500">
-        Permanently removes your personal data (profile, cart, wishlist, sessions, Telegram link). Order records
-        are kept anonymized for legal bookkeeping. This cannot be undone — any remaining wallet balance and
-        loyalty points are lost.
-      </p>
+      <h2 className="font-bold text-red-600">{t('account.deleteTitle')}</h2>
+      <p className="mt-1 text-sm text-gray-500">{t('account.deleteText')}</p>
       {!open ? (
-        <button className="btn-danger mt-4" onClick={() => setOpen(true)}>Delete my account</button>
+        <button className="btn-danger mt-4" onClick={() => setOpen(true)}>{t('account.deleteButton')}</button>
       ) : (
         <div className="mt-4 max-w-md space-y-3 rounded-xl bg-red-50 p-4">
           {hasPassword && (
             <div>
-              <label className="label">Your password</label>
+              <label className="label">{t('account.yourPassword')}</label>
               <input className="input bg-white" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
           )}
           <div>
-            <label className="label">Type DELETE to confirm</label>
+            <label className="label">{t('account.typeDelete')}</label>
             <input className="input bg-white" placeholder="DELETE" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
           </div>
           <div className="flex gap-2">
             <button className="btn-danger" onClick={submit} disabled={busy || confirm.trim().toUpperCase() !== 'DELETE'}>
-              {busy ? 'Deleting…' : 'Permanently delete'}
+              {busy ? t('account.deleting') : t('account.deleteConfirmButton')}
             </button>
-            <button className="btn-secondary" onClick={() => setOpen(false)}>Cancel</button>
+            <button className="btn-secondary" onClick={() => setOpen(false)}>{t('common.cancel')}</button>
           </div>
         </div>
       )}
@@ -171,6 +175,7 @@ function DeleteAccount({ hasPassword }: { hasPassword: boolean }) {
 
 // Connect a Telegram chat and pick where notifications are delivered.
 function TelegramLink({ toast }: { toast: (m: string, k?: 'success' | 'error') => void }) {
+  const t = useT();
   const [state, setState] = useState<{ available: boolean; linked: boolean; channel: string } | null>(null);
   const [link, setLink] = useState('');
   const [busy, setBusy] = useState(false);
@@ -207,42 +212,40 @@ function TelegramLink({ toast }: { toast: (m: string, k?: 'success' | 'error') =
     try {
       await api('/api/telegram/link', { method: 'PATCH', json: { channel } });
       setState((s) => (s ? { ...s, channel } : s));
-      toast('Notification preference saved');
+      toast(t('account.notifSaved'));
     } catch (e: any) {
       toast(e.message, 'error');
     }
   };
 
   const unlink = async () => {
-    if (!confirm('Disconnect Telegram? Notifications will go back to email.')) return;
+    if (!confirm(t('account.disconnectConfirm'))) return;
     await api('/api/telegram/link', { method: 'DELETE' });
     setLink('');
     await load();
-    toast('Telegram disconnected');
+    toast(t('account.telegramDisconnected'));
   };
 
   return (
     <div className="card p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 font-bold">
-          <Icon name="telegram" className="text-sky-500" /> Telegram notifications
+          <Icon name="telegram" className="text-sky-500" /> {t('account.telegramTitle')}
         </h2>
-        {state.linked && <span className="badge bg-green-100 text-green-700">Connected</span>}
+        {state.linked && <span className="badge bg-green-100 text-green-700">{t('account.connected')}</span>}
       </div>
-      <p className="mt-1 text-sm text-gray-500">
-        Link your Telegram to check orders and balance from the bot, and get order updates as instant messages.
-      </p>
+      <p className="mt-1 text-sm text-gray-500">{t('account.telegramIntro')}</p>
 
       {!state.linked ? (
         <div className="mt-4">
           {/* Step-by-step guide */}
           <div className="rounded-xl bg-gray-50 p-4">
-            <p className="text-xs font-bold uppercase tracking-wide text-gray-500">How to link — 3 steps</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-gray-500">{t('account.telegramHow')}</p>
             <ol className="mt-2 space-y-2">
               {[
-                <>Press <b>Connect Telegram</b> below — a Telegram chat with our bot opens automatically.</>,
-                <>In that chat, tap the <b>Start</b> button (or send the pre-filled /start message).</>,
-                <>Done — this card switches to <b>Connected</b> by itself and you can pick where notifications go.</>,
+                t('account.telegramStep1'),
+                t('account.telegramStep2'),
+                t('account.telegramStep3'),
               ].map((step, i) => (
                 <li key={i} className="flex items-start gap-2.5 text-sm text-gray-600">
                   <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand-600 text-[11px] font-bold text-white">{i + 1}</span>
@@ -250,24 +253,19 @@ function TelegramLink({ toast }: { toast: (m: string, k?: 'success' | 'error') =
                 </li>
               ))}
             </ol>
-            <p className="mt-2.5 text-xs text-gray-400">
-              Works on phone and desktop — you just need the Telegram app or web.telegram.org.
-            </p>
+            <p className="mt-2.5 text-xs text-gray-400">{t('account.telegramWorks')}</p>
           </div>
 
           <button className="btn-primary mt-4" onClick={startLink} disabled={busy}>
-            <Icon name="telegram" size={16} /> {busy ? 'Preparing…' : 'Connect Telegram'}
+            <Icon name="telegram" size={16} /> {busy ? t('account.preparing') : t('account.connectTelegram')}
           </button>
           {link && (
             <div className="mt-3 rounded-lg bg-sky-50 p-3 text-xs text-sky-800">
-              <p>
-                Waiting for you to tap <b>Start</b> in the chat with{' '}
-                {botUsername ? <b>@{botUsername}</b> : 'our bot'}…
-              </p>
+              <p>{t('account.telegramWaiting', { bot: botUsername ? `@${botUsername}` : t('account.ourBot') })}</p>
               <p className="mt-1">
-                Chat didn&apos;t open?{' '}
-                <a href={link} target="_blank" rel="noreferrer" className="font-semibold underline">Open it manually</a>
-                {' '}— or copy this link to your phone:
+                {t('account.chatNotOpen')}{' '}
+                <a href={link} target="_blank" rel="noreferrer" className="font-semibold underline">{t('account.openManually')}</a>
+                {' '}{t('account.copyLinkPhone')}
               </p>
               <input
                 className="input mt-1.5 bg-white py-1.5 font-mono text-[11px]"
@@ -275,16 +273,20 @@ function TelegramLink({ toast }: { toast: (m: string, k?: 'success' | 'error') =
                 value={link}
                 onFocus={(e) => e.target.select()}
               />
-              <p className="mt-1.5 text-sky-600">This card updates automatically once connected.</p>
+              <p className="mt-1.5 text-sky-600">{t('account.telegramAutoUpdate')}</p>
             </div>
           )}
         </div>
       ) : (
         <div className="mt-4 space-y-4">
           <div>
-            <p className="label">Send order updates via</p>
+            <p className="label">{t('account.sendUpdatesVia')}</p>
             <div className="flex flex-wrap gap-2">
-              {([['email', 'Email only'], ['telegram', 'Telegram only'], ['both', 'Email + Telegram']] as const).map(([value, label]) => (
+              {([
+                ['email', t('account.emailOnly')],
+                ['telegram', t('account.telegramOnly')],
+                ['both', t('account.emailAndTelegram')],
+              ] as const).map(([value, label]) => (
                 <button
                   key={value}
                   onClick={() => setChannel(value)}
@@ -296,15 +298,13 @@ function TelegramLink({ toast }: { toast: (m: string, k?: 'success' | 'error') =
                 </button>
               ))}
             </div>
-            <p className="mt-1.5 text-xs text-gray-400">
-              Security emails (verification, password reset) always go to email.
-            </p>
+            <p className="mt-1.5 text-xs text-gray-400">{t('account.securityEmails')}</p>
           </div>
           <div className="rounded-xl bg-gray-50 p-3 text-xs text-gray-600">
-            <p className="font-bold text-gray-700">Bot commands</p>
+            <p className="font-bold text-gray-700">{t('account.botCommands')}</p>
             <p className="mt-1">/orders · /order CODE · /balance · /unlink</p>
           </div>
-          <button className="text-xs text-red-500 hover:underline" onClick={unlink}>Disconnect Telegram</button>
+          <button className="text-xs text-red-500 hover:underline" onClick={unlink}>{t('account.disconnectTelegram')}</button>
         </div>
       )}
     </div>
@@ -313,6 +313,7 @@ function TelegramLink({ toast }: { toast: (m: string, k?: 'success' | 'error') =
 
 function ChangePassword({ hasPassword }: { hasPassword: boolean }) {
   const { toast, refreshUser } = useStore();
+  const t = useT();
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -320,11 +321,11 @@ function ChangePassword({ hasPassword }: { hasPassword: boolean }) {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (next !== confirm) { toast('Passwords do not match', 'error'); return; }
+    if (next !== confirm) { toast(t('account.passwordMismatch'), 'error'); return; }
     setBusy(true);
     try {
       await api('/api/auth/change-password', { method: 'POST', json: { currentPassword: current, newPassword: next } });
-      toast('Password updated');
+      toast(t('account.passwordUpdated'));
       setCurrent(''); setNext(''); setConfirm('');
       await refreshUser();
     } catch (e: any) {
@@ -336,27 +337,25 @@ function ChangePassword({ hasPassword }: { hasPassword: boolean }) {
 
   return (
     <div className="card p-5">
-      <h2 className="font-bold">{hasPassword ? 'Change password' : 'Set a password'}</h2>
-      {!hasPassword && (
-        <p className="mt-1 text-xs text-gray-500">You signed up with Google — set a password to also sign in with email.</p>
-      )}
+      <h2 className="font-bold">{hasPassword ? t('account.changePassword') : t('account.setPassword')}</h2>
+      {!hasPassword && <p className="mt-1 text-xs text-gray-500">{t('account.googleNote')}</p>}
       <form onSubmit={submit} className="mt-4 grid gap-4 sm:grid-cols-3">
         {hasPassword && (
           <div>
-            <label className="label">Current password</label>
+            <label className="label">{t('account.currentPassword')}</label>
             <input className="input" type="password" required value={current} onChange={(e) => setCurrent(e.target.value)} />
           </div>
         )}
         <div>
-          <label className="label">New password</label>
+          <label className="label">{t('account.newPassword')}</label>
           <input className="input" type="password" required minLength={8} value={next} onChange={(e) => setNext(e.target.value)} />
         </div>
         <div>
-          <label className="label">Confirm new password</label>
+          <label className="label">{t('account.confirmPassword')}</label>
           <input className="input" type="password" required minLength={8} value={confirm} onChange={(e) => setConfirm(e.target.value)} />
         </div>
         <div className="sm:col-span-3">
-          <button className="btn-primary" disabled={busy}>{busy ? 'Saving…' : 'Update password'}</button>
+          <button className="btn-primary" disabled={busy}>{busy ? t('account.saving') : t('account.updatePassword')}</button>
         </div>
       </form>
     </div>
@@ -369,6 +368,7 @@ function TwoFactor({ enabled, hasPassword, onChanged, toast }: {
   onChanged: () => Promise<void>;
   toast: (m: string, k?: 'success' | 'error') => void;
 }) {
+  const t = useT();
   const [setup, setSetup] = useState<{ qrDataUrl: string; secret: string } | null>(null);
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
@@ -391,7 +391,7 @@ function TwoFactor({ enabled, hasPassword, onChanged, toast }: {
     setBusy(true);
     try {
       await api('/api/auth/2fa/enable', { method: 'POST', json: { code } });
-      toast('Two-factor authentication enabled');
+      toast(t('account.twoFaEnabled'));
       setSetup(null);
       setCode('');
       await onChanged();
@@ -407,7 +407,7 @@ function TwoFactor({ enabled, hasPassword, onChanged, toast }: {
     setBusy(true);
     try {
       await api('/api/auth/2fa/disable', { method: 'POST', json: { password, code } });
-      toast('Two-factor authentication disabled');
+      toast(t('account.twoFaDisabled'));
       setPassword(''); setCode('');
       await onChanged();
     } catch (e: any) {
@@ -421,29 +421,29 @@ function TwoFactor({ enabled, hasPassword, onChanged, toast }: {
     <div className="card p-5">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-bold">Two-factor authentication (2FA)</h2>
-          <p className="mt-0.5 text-xs text-gray-500">Adds a 6-digit code from an authenticator app at sign-in.</p>
+          <h2 className="font-bold">{t('account.twoFaTitle')}</h2>
+          <p className="mt-0.5 text-xs text-gray-500">{t('account.twoFaIntro')}</p>
         </div>
         <span className={`badge ${enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-          {enabled ? 'Enabled' : 'Off'}
+          {enabled ? t('account.enabled') : t('account.off')}
         </span>
       </div>
 
       {!enabled && !setup && (
         <button className="btn-primary mt-4" onClick={start} disabled={busy}>
-          {busy ? 'Preparing…' : 'Enable 2FA'}
+          {busy ? t('account.preparing') : t('account.enable2fa')}
         </button>
       )}
 
       {!enabled && setup && (
         <form onSubmit={enable} className="mt-4 grid items-start gap-5 sm:grid-cols-[auto_1fr]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={setup.qrDataUrl} alt="2FA QR code" className="h-40 w-40 rounded-lg border border-gray-200" />
+          <img src={setup.qrDataUrl} alt={t('account.qrAlt')} className="h-40 w-40 rounded-lg border border-gray-200" />
           <div>
             <p className="text-sm">
-              1. Scan the QR with Google Authenticator, 1Password, Authy…<br />
-              2. Or enter the key manually: <code className="rounded bg-gray-100 px-1.5 py-0.5 text-xs">{setup.secret}</code><br />
-              3. Enter the 6-digit code to confirm.
+              {t('account.twoFaStep1')}<br />
+              {t('account.twoFaStep2')} <code className="rounded bg-gray-100 px-1.5 py-0.5 text-xs">{setup.secret}</code><br />
+              {t('account.twoFaStep3')}
             </p>
             <div className="mt-3 flex gap-2">
               <input
@@ -453,7 +453,7 @@ function TwoFactor({ enabled, hasPassword, onChanged, toast }: {
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
               />
-              <button className="btn-primary" disabled={busy || code.length !== 6}>Confirm</button>
+              <button className="btn-primary" disabled={busy || code.length !== 6}>{t('account.confirm')}</button>
             </div>
           </div>
         </form>
@@ -463,16 +463,16 @@ function TwoFactor({ enabled, hasPassword, onChanged, toast }: {
         <form onSubmit={disable} className="mt-4 flex flex-wrap items-end gap-3">
           {hasPassword ? (
             <div>
-              <label className="label">Confirm with password</label>
+              <label className="label">{t('account.confirmWithPassword')}</label>
               <input className="input w-56" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
           ) : (
             <div>
-              <label className="label">Confirm with a 2FA code</label>
+              <label className="label">{t('account.confirmWithCode')}</label>
               <input className="input w-36 text-center" inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} />
             </div>
           )}
-          <button className="btn-danger" disabled={busy}>Disable 2FA</button>
+          <button className="btn-danger" disabled={busy}>{t('account.disable2fa')}</button>
         </form>
       )}
     </div>
@@ -480,6 +480,7 @@ function TwoFactor({ enabled, hasPassword, onChanged, toast }: {
 }
 
 function LoginHistory() {
+  const t = useT();
   const intlLocale = INTL_LOCALE[useStore().locale];
   const [rows, setRows] = useState<LoginRow[] | null>(null);
 
@@ -489,18 +490,18 @@ function LoginHistory() {
       .catch(() => setRows([]));
   }, []);
 
-  if (rows === null) return <div className="py-10 text-center text-gray-400">Loading…</div>;
+  if (rows === null) return <div className="py-10 text-center text-gray-400">{t('common.loading')}</div>;
 
   return (
     <div className="card mt-6 overflow-x-auto">
       <table className="w-full min-w-[560px] text-sm">
         <thead>
           <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wide text-gray-400">
-            <th className="px-4 py-3">Date</th>
-            <th className="px-4 py-3">Method</th>
-            <th className="px-4 py-3">IP address</th>
-            <th className="px-4 py-3">Device</th>
-            <th className="px-4 py-3">Result</th>
+            <th className="px-4 py-3">{t('account.colDate')}</th>
+            <th className="px-4 py-3">{t('account.colMethod')}</th>
+            <th className="px-4 py-3">{t('account.colIp')}</th>
+            <th className="px-4 py-3">{t('account.colDevice')}</th>
+            <th className="px-4 py-3">{t('account.colResult')}</th>
           </tr>
         </thead>
         <tbody>
@@ -512,13 +513,13 @@ function LoginHistory() {
               <td className="max-w-[220px] truncate px-4 py-3 text-xs text-gray-500">{r.userAgent || '—'}</td>
               <td className="px-4 py-3">
                 <span className={`badge ${r.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  {r.success ? 'Success' : 'Failed'}
+                  {r.success ? t('account.success') : t('account.failed')}
                 </span>
               </td>
             </tr>
           ))}
           {rows.length === 0 && (
-            <tr><td colSpan={5} className="px-4 py-10 text-center text-gray-400">No login activity yet.</td></tr>
+            <tr><td colSpan={5} className="px-4 py-10 text-center text-gray-400">{t('account.noLogins')}</td></tr>
           )}
         </tbody>
       </table>
@@ -532,6 +533,7 @@ function ProfileEditor({ initialName, initialAvatar, onSaved }: {
   onSaved: () => Promise<void>;
 }) {
   const { toast } = useStore();
+  const t = useT();
   const [name, setName] = useState(initialName);
   const [avatarUrl, setAvatarUrl] = useState(initialAvatar);
   const [busy, setBusy] = useState(false);
@@ -541,7 +543,7 @@ function ProfileEditor({ initialName, initialAvatar, onSaved }: {
     setBusy(true);
     try {
       await api('/api/account/profile', { method: 'POST', json: { name, avatarUrl } });
-      toast('Profile updated');
+      toast(t('account.profileUpdated'));
       await onSaved();
     } catch (err: any) {
       toast(err.message, 'error');
@@ -552,18 +554,18 @@ function ProfileEditor({ initialName, initialAvatar, onSaved }: {
 
   return (
     <div className="card mt-6 p-5">
-      <h2 className="font-bold">Profile</h2>
+      <h2 className="font-bold">{t('account.profileTitle')}</h2>
       <form onSubmit={submit} className="mt-4 grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="label">Display name</label>
+          <label className="label">{t('account.displayName')}</label>
           <input className="input" required maxLength={120} value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <div>
-          <label className="label">Avatar URL</label>
-          <input className="input" placeholder="https://… (optional)" value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} />
+          <label className="label">{t('account.avatarUrl')}</label>
+          <input className="input" placeholder={t('account.avatarPlaceholder')} value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} />
         </div>
         <div className="sm:col-span-2">
-          <button className="btn-primary" disabled={busy}>{busy ? 'Saving…' : 'Save profile'}</button>
+          <button className="btn-primary" disabled={busy}>{busy ? t('account.saving') : t('account.saveProfile')}</button>
         </div>
       </form>
     </div>

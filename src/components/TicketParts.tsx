@@ -4,19 +4,45 @@ import { useState } from 'react';
 import Icon from './icons';
 import { formatDateTime } from '@/lib/utils';
 import { INTL_LOCALE } from '@/i18n';
-import { useStore } from '@/components/Providers';
+import { useStore, useT } from '@/components/Providers';
+
+// Storefront callers pass translated `labels`; the admin console omits them
+// and keeps these English defaults.
+const DEFAULT_LABELS = {
+  tooMany: 'Maximum 3 images per message',
+  uploading: 'Uploading…',
+  attach: 'Attach image',
+  attachmentAlt: (i: number) => `Attachment ${i}`,
+  remove: 'Remove attachment',
+};
+
+export type AttachmentLabels = Partial<typeof DEFAULT_LABELS>;
+
+// Storefront helper — one call instead of repeating the label map per page.
+export function useAttachmentLabels(): AttachmentLabels {
+  const t = useT();
+  return {
+    tooMany: t('support.maxImages'),
+    uploading: t('support.uploading'),
+    attach: t('support.attach'),
+    attachmentAlt: (i: number) => t('support.attachmentAlt', { index: i }),
+    remove: t('support.removeAttachment'),
+  };
+}
 
 // ── Attachment picker: uploads to the ticket media endpoint, returns URLs ──
-export function AttachmentPicker({ attachments, onChange, toast }: {
+export function AttachmentPicker({ attachments, onChange, toast, labels }: {
   attachments: string[];
   onChange: (urls: string[]) => void;
   toast: (m: string, k?: 'success' | 'error') => void;
+  labels?: AttachmentLabels;
 }) {
+  const l = { ...DEFAULT_LABELS, ...labels };
   const [uploading, setUploading] = useState(false);
 
   const upload = async (file: File) => {
     if (attachments.length >= 3) {
-      toast('Maximum 3 images per message', 'error');
+      toast(l.tooMany, 'error');
       return;
     }
     setUploading(true);
@@ -39,10 +65,10 @@ export function AttachmentPicker({ attachments, onChange, toast }: {
       {attachments.map((url, i) => (
         <span key={url} className="group relative">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={url} alt={`attachment ${i + 1}`} className="h-14 w-14 rounded-lg border border-gray-200 object-cover" />
+          <img src={url} alt={l.attachmentAlt(i + 1)} className="h-14 w-14 rounded-lg border border-gray-200 object-cover" />
           <button
             type="button"
-            aria-label="Remove attachment"
+            aria-label={l.remove}
             className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-gray-900 text-white opacity-0 transition group-hover:opacity-100"
             onClick={() => onChange(attachments.filter((_, x) => x !== i))}
           >
@@ -52,7 +78,7 @@ export function AttachmentPicker({ attachments, onChange, toast }: {
       ))}
       <label className={`flex cursor-pointer items-center gap-1.5 rounded-lg border border-dashed border-gray-300 px-3 py-2 text-xs font-medium text-gray-500 hover:border-brand-400 hover:text-brand-600 ${attachments.length >= 3 ? 'pointer-events-none opacity-40' : ''}`}>
         <Icon name="image" size={15} />
-        {uploading ? 'Uploading…' : 'Attach image'}
+        {uploading ? l.uploading : l.attach}
         <input
           type="file"
           accept="image/jpeg,image/png,image/webp,image/gif"
