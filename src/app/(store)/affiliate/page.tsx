@@ -67,7 +67,8 @@ export default function AffiliatePage() {
       </div>
 
       {/* Stats */}
-      <div className="mt-5 grid grid-cols-3 gap-4">
+      {/* Three tiles side by side do not fit a phone — stack them there. */}
+      <div className="mt-5 grid gap-4 sm:grid-cols-3">
         {([
           ['users', String(data.referredCount), t('affiliate.referredUsers')],
           ['credit-card', money(data.totalCommission), t('affiliate.totalEarned')],
@@ -77,9 +78,9 @@ export default function AffiliatePage() {
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600">
               <Icon name={icon} size={18} />
             </span>
-            <span>
+            <span className="min-w-0">
               <span className="block text-lg font-extrabold leading-tight">{value}</span>
-              <span className="block text-xs text-gray-500">{label}</span>
+              <span className="block truncate text-xs text-gray-500">{label}</span>
             </span>
           </div>
         ))}

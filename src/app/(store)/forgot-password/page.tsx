@@ -4,8 +4,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/client';
 import Icon from '@/components/icons';
+import { useT } from '@/components/Providers';
 
 export default function ForgotPasswordPage() {
+  const t = useT();
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
@@ -27,22 +29,20 @@ export default function ForgotPasswordPage() {
         {sent ? (
           <div className="text-center">
             <Icon name="mail" size={56} className="mx-auto text-brand-500" />
-            <h1 className="mt-4 text-xl font-bold">Check your inbox</h1>
-            <p className="mt-2 text-sm text-gray-500">
-              If an account exists for <b>{email}</b>, we sent a link to reset the password. The link expires in 1 hour.
-            </p>
-            <Link href="/login" className="btn-secondary mt-6 inline-flex">Back to sign in</Link>
+            <h1 className="mt-4 text-xl font-bold">{t('auth.checkInbox')}</h1>
+            <p className="mt-2 text-sm text-gray-500">{t('auth.resetSent', { email })}</p>
+            <Link href="/login" className="btn-secondary mt-6 inline-flex">{t('auth.backToSignIn')}</Link>
           </div>
         ) : (
           <>
-            <h1 className="text-xl font-bold">Forgot your password?</h1>
-            <p className="mt-1 text-sm text-gray-500">Enter your email and we&apos;ll send you a reset link.</p>
+            <h1 className="text-xl font-bold">{t('auth.forgotTitle')}</h1>
+            <p className="mt-1 text-sm text-gray-500">{t('auth.forgotSub')}</p>
             <form onSubmit={submit} className="mt-6 space-y-4">
               <input className="input" type="email" required placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-              <button className="btn-primary w-full" disabled={busy}>{busy ? 'Sending…' : 'Send reset link'}</button>
+              <button className="btn-primary w-full" disabled={busy}>{busy ? t('auth.sending') : t('auth.sendResetLink')}</button>
             </form>
             <p className="mt-5 text-center text-sm">
-              <Link href="/login" className="text-gray-500 hover:underline">← Back to sign in</Link>
+              <Link href="/login" className="text-gray-500 hover:underline">← {t('auth.backToSignIn')}</Link>
             </p>
           </>
         )}

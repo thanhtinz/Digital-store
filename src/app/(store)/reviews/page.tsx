@@ -16,6 +16,7 @@ export async function generateMetadata() {
 // Public wall of recent verified reviews across every product.
 export default async function ReviewsPage() {
   const intlLocale = INTL_LOCALE[getLocale()];
+  const t = getT();
   if (!(await featureEnabled('reviews'))) notFound();
 
   const [reviews, agg, count5] = await Promise.all([
@@ -35,9 +36,9 @@ export default async function ReviewsPage() {
 
   return (
     <div className="container py-8">
-      <p className="section-eyebrow">Social proof</p>
-      <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Customer reviews</h1>
-      <p className="mt-1 text-sm text-gray-500">Every review is from a verified purchase — no exceptions.</p>
+      <p className="section-eyebrow">{t('reviews.eyebrow')}</p>
+      <h1 className="mt-1 text-2xl font-bold sm:text-3xl">{t('reviews.title')}</h1>
+      <p className="mt-1 text-sm text-gray-500">{t('reviews.intro')}</p>
 
       {/* Summary strip */}
       <div className="card mt-5 flex flex-wrap items-center gap-6 p-5">
@@ -48,19 +49,19 @@ export default async function ReviewsPage() {
         <div className="h-12 w-px bg-gray-100" />
         <div>
           <p className="text-2xl font-extrabold">{agg._count}</p>
-          <p className="text-xs text-gray-500">verified reviews</p>
+          <p className="text-xs text-gray-500">{t('reviews.verified')}</p>
         </div>
         <div className="h-12 w-px bg-gray-100" />
         <div>
           <p className="text-2xl font-extrabold">{agg._count ? Math.round((count5 / agg._count) * 100) : 0}%</p>
-          <p className="text-xs text-gray-500">rate us 5 stars</p>
+          <p className="text-xs text-gray-500">{t('reviews.fiveStar')}</p>
         </div>
       </div>
 
       {reviews.length === 0 ? (
         <div className="card mt-6 p-16 text-center text-gray-400">
           <Icon name="star" size={40} className="mx-auto text-gray-300" />
-          <p className="mt-3 font-semibold text-gray-600">No reviews yet</p>
+          <p className="mt-3 font-semibold text-gray-600">{t('reviews.empty')}</p>
         </div>
       ) : (
         <div className="mt-6 columns-1 gap-4 sm:columns-2 lg:columns-3 [&>*]:mb-4">
@@ -89,7 +90,7 @@ export default async function ReviewsPage() {
                   {(r.images as string[]).map((url) => (
                     <a key={url} href={url} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg border border-gray-200">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={url} alt="review photo" className="h-16 w-auto max-w-[120px] object-cover" />
+                      <img src={url} alt={t('catalog.reviewPhoto')} className="h-16 w-auto max-w-[120px] object-cover" />
                     </a>
                   ))}
                 </div>

@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useStore } from '@/components/Providers';
+import { useStore, useT } from '@/components/Providers';
 import { api } from '@/lib/client';
 
 export default function ResetPasswordPage() {
@@ -17,6 +17,7 @@ function ResetInner() {
   const router = useRouter();
   const params = useSearchParams();
   const { refreshUser, toast } = useStore();
+  const t = useT();
   const token = params.get('token') || '';
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -25,14 +26,14 @@ function ResetInner() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirm) {
-      toast('Passwords do not match', 'error');
+      toast(t('auth.passwordMismatch'), 'error');
       return;
     }
     setBusy(true);
     try {
       await api('/api/auth/reset-password', { method: 'POST', json: { token, password } });
       await refreshUser();
-      toast('Password updated — you are signed in');
+      toast(t('auth.passwordReset'));
       router.push('/');
       router.refresh();
     } catch (e: any) {
@@ -45,17 +46,17 @@ function ResetInner() {
   return (
     <div className="container flex justify-center py-12">
       <div className="card w-full max-w-md p-6 sm:p-8">
-        <h1 className="text-xl font-bold">Choose a new password</h1>
+        <h1 className="text-xl font-bold">{t('auth.newPasswordTitle')}</h1>
         <form onSubmit={submit} className="mt-6 space-y-4">
           <div>
-            <label className="label">New password</label>
+            <label className="label">{t('auth.newPassword')}</label>
             <input className="input" type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
           <div>
-            <label className="label">Confirm password</label>
+            <label className="label">{t('auth.confirmPassword')}</label>
             <input className="input" type="password" required minLength={8} value={confirm} onChange={(e) => setConfirm(e.target.value)} />
           </div>
-          <button className="btn-primary w-full" disabled={busy}>{busy ? 'Saving…' : 'Set new password'}</button>
+          <button className="btn-primary w-full" disabled={busy}>{busy ? t('auth.saving') : t('auth.setNewPassword')}</button>
         </form>
       </div>
     </div>
