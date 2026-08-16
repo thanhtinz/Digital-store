@@ -1,10 +1,16 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  /* Fallback palette. The server overrides these per request from settings. */
+  :root {
+    --brand-50: 238 242 255; --brand-100: 224 231 255; --brand-200: 199 210 254;
+    --brand-300: 165 180 252; --brand-400: 129 140 248; --brand-500: 99 102 241;
+    --brand-600: 79 70 229; --brand-700: 67 56 202; --brand-800: 55 48 163;
+    --brand-900: 49 46 129;
+    --font-sans: 'Inter';
+  }
   html {
     -webkit-tap-highlight-color: transparent;
     scroll-behavior: smooth;
@@ -22,7 +28,7 @@
     @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[.98];
   }
   .btn-primary {
-    @apply btn bg-gradient-to-b from-brand-500 to-brand-700 text-white shadow-[0_2px_8px_-2px_rgba(79,70,229,.5),inset_0_1px_0_rgba(255,255,255,.2)] hover:from-brand-600 hover:to-brand-800;
+    @apply btn bg-gradient-to-b from-brand-500 to-brand-700 text-white shadow-[0_2px_8px_-2px_rgb(var(--brand-600)/.5),inset_0_1px_0_rgba(255,255,255,.2)] hover:from-brand-600 hover:to-brand-800;
   }
   .btn-secondary {
     @apply btn bg-white text-gray-800 border border-gray-300 shadow-sm hover:border-gray-400 hover:bg-gray-50;

@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { api } from '@/lib/client';
 import { DEFAULT_MONEY_FORMAT, formatMoneyWith, type MoneyFormat } from '@/lib/utils';
+import { DEFAULT_THEME, type Theme } from '@/lib/theme';
 
 export type SessionUser = {
   id: number;
@@ -26,6 +27,8 @@ type StoreContextValue = {
   refreshCart: () => Promise<void>;
   toast: (message: string, kind?: 'success' | 'error') => void;
   money: MoneyFormat;
+  theme: Theme;
+  allowThemeOverride: boolean;
 };
 
 const StoreContext = createContext<StoreContextValue>({
@@ -35,6 +38,8 @@ const StoreContext = createContext<StoreContextValue>({
   refreshCart: async () => {},
   toast: () => {},
   money: DEFAULT_MONEY_FORMAT,
+  theme: DEFAULT_THEME,
+  allowThemeOverride: true,
 });
 
 export const useStore = () => useContext(StoreContext);
@@ -55,7 +60,17 @@ export function useMoney() {
   );
 }
 
-export default function Providers({ children, money = DEFAULT_MONEY_FORMAT }: { children: ReactNode; money?: MoneyFormat }) {
+export default function Providers({
+  children,
+  money = DEFAULT_MONEY_FORMAT,
+  theme = DEFAULT_THEME,
+  allowThemeOverride = true,
+}: {
+  children: ReactNode;
+  money?: MoneyFormat;
+  theme?: Theme;
+  allowThemeOverride?: boolean;
+}) {
   const [user, setUser] = useState<SessionUser | null | undefined>(undefined);
   const [cartCount, setCartCount] = useState(0);
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -95,8 +110,8 @@ export default function Providers({ children, money = DEFAULT_MONEY_FORMAT }: { 
   }, []);
 
   const value = useMemo(
-    () => ({ user, refreshUser, cartCount, refreshCart, toast, money }),
-    [user, refreshUser, cartCount, refreshCart, toast, money]
+    () => ({ user, refreshUser, cartCount, refreshCart, toast, money, theme, allowThemeOverride }),
+    [user, refreshUser, cartCount, refreshCart, toast, money, theme, allowThemeOverride]
   );
 
   return (

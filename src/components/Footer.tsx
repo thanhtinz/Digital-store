@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Icon from './icons';
+import AppearanceMenu from './AppearanceMenu';
 
 type Props = {
   siteName: string;
@@ -117,8 +118,11 @@ export default function Footer({ siteName, tagline, logo, footerText, footerAbou
         </div>
       </div>
 
-      <div className="border-t border-gray-100 py-5 text-center text-xs text-gray-400">
-        {footerText || `© ${new Date().getFullYear()} ${siteName}. All rights reserved.`}
+      <div className="border-t border-gray-100 py-5">
+        <div className="container flex flex-wrap items-center justify-between gap-3 text-xs text-gray-400">
+          <span>{footerText || `© ${new Date().getFullYear()} ${siteName}. All rights reserved.`}</span>
+          <AppearanceMenu />
+        </div>
       </div>
     </footer>
   );
