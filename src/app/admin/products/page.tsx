@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/client';
-import { useStore } from '@/components/Providers';
-import { formatMoney } from '@/lib/utils';
+import { useStore, useMoney } from '@/components/Providers';
+
 import ProductEditor, { type EditableProduct } from './ProductEditor';
 import Icon from '@/components/icons';
 
 export default function AdminProductsPage() {
   const { toast } = useStore();
+  const money = useMoney();
   const [products, setProducts] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -111,7 +112,7 @@ export default function AdminProductsPage() {
                   </td>
                   <td className="px-4 py-3 text-gray-500">{p.category?.name || '—'}</td>
                   <td className="px-4 py-3">{p.packages.length}</td>
-                  <td className="px-4 py-3 font-medium">{prices.length ? formatMoney(Math.min(...prices)) : '—'}</td>
+                  <td className="px-4 py-3 font-medium">{prices.length ? money(Math.min(...prices)) : '—'}</td>
                   <td className="px-4 py-3">{stock}</td>
                   <td className="px-4 py-3">
                     <span className={`badge ${p.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}>

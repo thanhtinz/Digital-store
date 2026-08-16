@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { handler, jsonError } from '@/lib/api';
 import { getSettings, setSettings } from '@/lib/settings';
+import { validateRatesJson } from '@/lib/currency';
 import { audit } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
@@ -14,6 +15,10 @@ const SECRET_KEYS = new Set([
 const ALL_KEYS = [
   // Site
   'site_name', 'site_tagline', 'site_logo', 'currency', 'support_email', 'footer_text', 'footer_about', 'app_url',
+  // Currency and money format
+  'currency_decimals', 'currency_symbol', 'currency_symbol_position',
+  'currency_thousand_sep', 'currency_decimal_sep', 'currency_rates',
+  'currency_round_step', 'payment_currency', 'payment_min',
   'social_facebook', 'social_twitter', 'social_instagram', 'social_youtube', 'social_telegram', 'social_discord',
   'require_email_verification',
   // Stripe
@@ -57,6 +62,16 @@ export const POST = handler(async (req: NextRequest) => {
     if (SECRET_KEYS.has(key) && (value === MASK || value === '')) continue;
     updates[key] = value;
   }
+
+  // Exchange rates are the one setting where a typo silently breaks checkout,
+  // so validate and normalize them here rather than at payment time.
+  if (updates.currency_rates !== undefined) {
+    const base = updates.currency || (await getSettings(['currency'])).currency;
+    const check = validateRatesJson(updates.currency_rates, base);
+    if (!check.ok) return jsonError(400, check.reason);
+    updates.currency_rates = JSON.stringify(check.rates);
+  }
+
   await setSettings(updates);
   const changed = Object.keys(updates);
   if (changed.length) audit(admin, 'settings.update', 'Site settings', `Changed: ${changed.join(', ')}`);

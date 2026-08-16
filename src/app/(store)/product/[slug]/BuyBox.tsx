@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useStore } from '@/components/Providers';
+import { useStore, useMoney } from '@/components/Providers';
 import { api } from '@/lib/client';
-import { formatMoney, type CustomFieldDef } from '@/lib/utils';
+import { type CustomFieldDef } from '@/lib/utils';
 import Countdown from '@/components/Countdown';
 import Icon from '@/components/icons';
 
@@ -79,6 +79,7 @@ function OutOfStockNotice({ packageId }: { packageId: number }) {
 }
 
 export default function BuyBox({ productId, packages }: { productId: number; packages: PackageView[] }) {
+  const money = useMoney();
   const { user, refreshCart, toast } = useStore();
   const router = useRouter();
   const [selectedId, setSelectedId] = useState(packages[0]?.id ?? 0);
@@ -169,7 +170,7 @@ export default function BuyBox({ productId, packages }: { productId: number; pac
                 )}
               </span>
             </div>
-            <p className="mt-1 text-sm font-bold text-brand-700">{formatMoney(p.price)}</p>
+            <p className="mt-1 text-sm font-bold text-brand-700">{money(p.price)}</p>
             {p.description && <p className="mt-0.5 line-clamp-2 text-xs text-gray-500">{p.description}</p>}
           </button>
         ))}
@@ -177,9 +178,9 @@ export default function BuyBox({ productId, packages }: { productId: number; pac
 
       {/* Price */}
       <div className="mt-4 flex flex-wrap items-baseline gap-2">
-        <span className="text-3xl font-extrabold text-gray-900">{formatMoney(pkg.price * quantity)}</span>
+        <span className="text-3xl font-extrabold text-gray-900">{money(pkg.price * quantity)}</span>
         {strike && strike > pkg.price && (
-          <span className="text-base text-gray-400 line-through">{formatMoney(strike * quantity)}</span>
+          <span className="text-base text-gray-400 line-through">{money(strike * quantity)}</span>
         )}
         {pkg.onSale && pkg.saleEndsAt && (
           <span className="ml-auto flex items-center gap-2 text-xs text-red-600">

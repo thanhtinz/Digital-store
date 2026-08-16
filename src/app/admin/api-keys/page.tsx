@@ -1,10 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useStore } from '@/components/Providers';
+import { useStore, useMoney } from '@/components/Providers';
 import { api } from '@/lib/client';
 import Icon from '@/components/icons';
-import { formatMoney } from '@/lib/utils';
 
 type Key = {
   id: number;
@@ -18,6 +17,7 @@ type Key = {
 
 export default function AdminApiKeysPage() {
   const { toast } = useStore();
+  const money = useMoney();
   const [keys, setKeys] = useState<Key[]>([]);
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
@@ -92,7 +92,7 @@ export default function AdminApiKeysPage() {
                       <p className="font-mono text-xs text-gray-400">{k.prefix}_…</p>
                     </td>
                     <td className="max-w-[200px] truncate px-4 py-2.5">{k.user.email}</td>
-                    <td className="px-4 py-2.5 font-semibold">{formatMoney(k.user.balance)}</td>
+                    <td className="px-4 py-2.5 font-semibold">{money(k.user.balance)}</td>
                     <td className="whitespace-nowrap px-4 py-2.5 text-xs text-gray-500">
                       {k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'Never'}
                     </td>

@@ -1,10 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useStore } from '@/components/Providers';
+import { useStore, useMoney } from '@/components/Providers';
 import { api } from '@/lib/client';
 import Icon from '@/components/icons';
-import { formatMoney } from '@/lib/utils';
 
 const EMPTY = {
   id: 0, name: '', trigger: 'ABANDONED_CART', delayHours: '24', inactiveDays: '30',
@@ -15,6 +14,7 @@ const EMPTY = {
 // Automatic coupon campaigns: configurable triggers + conditions.
 export default function AdminAutoCouponsPage() {
   const { toast } = useStore();
+  const money = useMoney();
   const [rules, setRules] = useState<any[]>([]);
   const [form, setForm] = useState<any>(EMPTY);
   const [busy, setBusy] = useState(false);
@@ -97,11 +97,11 @@ export default function AdminAutoCouponsPage() {
                   </p>
                   <p className="mt-1 text-xs text-gray-500">
                     {r.trigger === 'ABANDONED_CART'
-                      ? <>Cart idle ≥ {r.delayHours}h{r.minCartValue ? ` · cart ≥ ${formatMoney(Number(r.minCartValue))}` : ''}</>
-                      : <>Inactive ≥ {r.inactiveDays} days{r.minSpentTotal ? ` · lifetime spend ≥ ${formatMoney(Number(r.minSpentTotal))}` : ''}</>}
+                      ? <>Cart idle ≥ {r.delayHours}h{r.minCartValue ? ` · cart ≥ ${money(Number(r.minCartValue))}` : ''}</>
+                      : <>Inactive ≥ {r.inactiveDays} days{r.minSpentTotal ? ` · lifetime spend ≥ ${money(Number(r.minSpentTotal))}` : ''}</>}
                     {' · '}
-                    {r.discountType === 'FIXED' ? formatMoney(Number(r.value)) : `${Number(r.value)}%`} off
-                    {r.maxDiscount ? ` (max ${formatMoney(Number(r.maxDiscount))})` : ''}
+                    {r.discountType === 'FIXED' ? money(Number(r.value)) : `${Number(r.value)}%`} off
+                    {r.maxDiscount ? ` (max ${money(Number(r.maxDiscount))})` : ''}
                     {' · '}expires in {r.expiresDays}d · cooldown {r.cooldownDays}d
                   </p>
                 </div>

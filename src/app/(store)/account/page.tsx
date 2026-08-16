@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useStore } from '@/components/Providers';
+import { useStore, useMoney } from '@/components/Providers';
 import Link from 'next/link';
 import { api } from '@/lib/client';
 import Icon from '@/components/icons';
-import { formatMoney } from '@/lib/utils';
 
 type LoginRow = { id: number; ip: string | null; userAgent: string | null; method: string; success: boolean; createdAt: string };
 
@@ -14,6 +13,7 @@ type Overview = { orders: number; totalSpent: number; wishlist: number; tickets:
 
 export default function AccountPage() {
   const { user, refreshUser, toast } = useStore();
+  const money = useMoney();
   const router = useRouter();
   const [tab, setTab] = useState<'profile' | 'security' | 'logins'>('profile');
   const [overview, setOverview] = useState<Overview | null>(null);
@@ -65,7 +65,7 @@ export default function AccountPage() {
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {([
               ['box', overview ? String(overview.orders) : '—', 'Orders', '/orders'],
-              ['credit-card', overview ? formatMoney(overview.totalSpent) : '—', 'Total spent', '/orders'],
+              ['credit-card', overview ? money(overview.totalSpent) : '—', 'Total spent', '/orders'],
               ['heart', overview ? String(overview.wishlist) : '—', 'Wishlist', '/wishlist'],
               ['chat', overview ? String(overview.tickets) : '—', 'Tickets', '/support'],
             ] as const).map(([icon, value, label, href]) => (

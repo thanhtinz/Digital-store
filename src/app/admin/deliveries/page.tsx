@@ -1,9 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useStore } from '@/components/Providers';
+import { useStore, useMoney } from '@/components/Providers';
 import { api } from '@/lib/client';
-import { formatMoney } from '@/lib/utils';
+
 import Icon from '@/components/icons';
 
 // Delivery queue: every paid order waiting for fulfillment. Enter the
@@ -11,6 +11,7 @@ import Icon from '@/components/icons';
 // the order auto-completes once every item is delivered.
 export default function AdminDeliveriesPage() {
   const { toast } = useStore();
+  const money = useMoney();
   const [orders, setOrders] = useState<any[] | null>(null);
   const [text, setText] = useState<Record<number, string>>({});
   const [busyItem, setBusyItem] = useState<number | null>(null);
@@ -78,7 +79,7 @@ export default function AdminDeliveriesPage() {
                   <Icon name="clock" size={13} />
                   paid {o.paidAt ? new Date(o.paidAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : '—'}
                 </span>
-                <span className="ml-auto text-sm font-bold">{formatMoney(Number(o.total), o.currency)}</span>
+                <span className="ml-auto text-sm font-bold">{money(Number(o.total), o.currency)}</span>
               </div>
 
               {/* Items */}

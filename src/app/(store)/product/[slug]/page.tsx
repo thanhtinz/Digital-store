@@ -9,6 +9,7 @@ import ProductActions from './ProductActions';
 import BuyBox from './BuyBox';
 import ProductTabs from './ProductTabs';
 import Icon from '@/components/icons';
+import { getMoneyConfig } from '@/lib/currency';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,6 +77,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
     };
   });
 
+  const moneyCfg = await getMoneyConfig();
   const { getFeatures } = await import('@/lib/features');
   const feats = await getFeatures();
   const aff = await getSettings(['affiliate_enabled', 'affiliate_rate']);
@@ -111,7 +113,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
       : {}),
     offers: {
       '@type': 'AggregateOffer',
-      priceCurrency: 'USD',
+      priceCurrency: moneyCfg.base.code,
       lowPrice: Math.min(...prices, Infinity) === Infinity ? 0 : Math.min(...prices),
       highPrice: Math.max(...prices, 0),
       offerCount: packages.length,

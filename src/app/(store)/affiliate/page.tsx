@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useStore } from '@/components/Providers';
+import { useStore, useMoney } from '@/components/Providers';
 import { api } from '@/lib/client';
-import { formatMoney } from '@/lib/utils';
+
 import Icon from '@/components/icons';
 
 type Data = {
@@ -20,6 +20,7 @@ type Data = {
 
 export default function AffiliatePage() {
   const { user, toast } = useStore();
+  const money = useMoney();
   const router = useRouter();
   const [data, setData] = useState<Data | null>(null);
 
@@ -68,7 +69,7 @@ export default function AffiliatePage() {
       <div className="mt-5 grid grid-cols-3 gap-4">
         {([
           ['users', String(data.referredCount), 'Referred users'],
-          ['credit-card', formatMoney(data.totalCommission), 'Total earned'],
+          ['credit-card', money(data.totalCommission), 'Total earned'],
           ['bolt', `${data.rate}%`, 'Commission rate'],
         ] as const).map(([icon, value, label]) => (
           <div key={label} className="card flex items-center gap-3 p-4">
@@ -127,7 +128,7 @@ export default function AffiliatePage() {
                   {new Date(t.createdAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
                 </span>
               </span>
-              <span className="text-sm font-bold text-green-600">+{formatMoney(t.amount)}</span>
+              <span className="text-sm font-bold text-green-600">+{money(t.amount)}</span>
             </div>
           ))}
           {data.recent.length === 0 && (
