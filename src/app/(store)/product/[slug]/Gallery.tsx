@@ -10,7 +10,7 @@ export default function Gallery({ images, name }: { images: string[]; name: stri
   const list = images.length ? images : [];
 
   return (
-    <div>
+    <div className="min-w-0">
       <div className="card aspect-[4/3] overflow-hidden">
         {list[active] ? (
           // eslint-disable-next-line @next/next/no-img-element

@@ -3,13 +3,14 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useStore } from '@/components/Providers';
+import { useStore, useT } from '@/components/Providers';
 import { api } from '@/lib/client';
 import Icon from '@/components/icons';
 
 export default function RegisterPage() {
   const router = useRouter();
   const { refreshUser, toast } = useStore();
+  const t = useT();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -43,11 +44,9 @@ export default function RegisterPage() {
       <div className="container flex justify-center py-12">
         <div className="card w-full max-w-md p-8 text-center">
           <Icon name="mail" size={56} className="mx-auto text-brand-500" />
-          <h1 className="mt-4 text-xl font-bold">Check your inbox</h1>
-          <p className="mt-2 text-sm text-gray-500">
-            We sent a verification link to <b>{email}</b>. Click it to activate your account.
-          </p>
-          <Link href="/login" className="btn-secondary mt-6 inline-flex">Back to sign in</Link>
+          <h1 className="mt-4 text-xl font-bold">{t('auth.checkInbox')}</h1>
+          <p className="mt-2 text-sm text-gray-500">{t('auth.verifySent', { email })}</p>
+          <Link href="/login" className="btn-secondary mt-6 inline-flex">{t('auth.backToSignIn')}</Link>
         </div>
       </div>
     );
@@ -59,28 +58,28 @@ export default function RegisterPage() {
         <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-[0_8px_20px_-8px_rgba(79,70,229,.6)]">
           <Icon name="spark" size={22} />
         </div>
-        <h1 className="mt-4 text-center text-2xl font-bold">Create your account</h1>
-        <p className="mt-1 text-sm text-gray-500">Track orders, get instant delivery and exclusive deals.</p>
+        <h1 className="mt-4 text-center text-2xl font-bold">{t('auth.createTitle')}</h1>
+        <p className="mt-1 text-sm text-gray-500">{t('auth.createSub')}</p>
         <form onSubmit={submit} className="mt-6 space-y-4">
           <div>
-            <label className="label">Full name</label>
+            <label className="label">{t('auth.fullName')}</label>
             <input className="input" required maxLength={120} value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div>
-            <label className="label">Email</label>
+            <label className="label">{t('auth.email')}</label>
             <input className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
           <div>
-            <label className="label">Password</label>
+            <label className="label">{t('auth.password')}</label>
             <input className="input" type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
-            <p className="mt-1 text-xs text-gray-400">At least 8 characters.</p>
+            <p className="mt-1 text-xs text-gray-400">{t('auth.passwordHint')}</p>
           </div>
           <button className="btn-primary w-full" disabled={busy}>
-            {busy ? 'Creating account…' : 'Create account'}
+            {busy ? t('auth.creating') : t('auth.createAccount')}
           </button>
         </form>
         <p className="mt-5 text-center text-sm text-gray-500">
-          Already have an account? <Link href="/login" className="font-semibold text-brand-600 hover:underline">Sign in</Link>
+          {t('auth.haveAccount')} <Link href="/login" className="font-semibold text-brand-600 hover:underline">{t('nav.signIn')}</Link>
         </p>
       </div>
     </div>

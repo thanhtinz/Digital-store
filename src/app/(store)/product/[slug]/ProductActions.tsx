@@ -64,7 +64,7 @@ export default function ProductActions({
   };
 
   return (
-    <div className="flex gap-2">
+    <div className="flex shrink-0 gap-2">
       {affiliate.enabled && affiliate.rate > 0 && (
         <button
           onClick={() => setAffOpen(true)}

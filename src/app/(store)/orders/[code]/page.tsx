@@ -121,12 +121,12 @@ function OrderTimeline({ status }: { status: string }) {
   ];
   const activeIndex = status === 'COMPLETED' ? 3 : status === 'PAID' ? 2 : 0;
   return (
-    <div className="card mt-6 px-6 py-5">
+    <div className="card mt-6 px-3 py-5 sm:px-6">
       <div className="flex items-center">
         {steps.map((step, i) => (
           <div key={step.key} className={`flex items-center ${i > 0 ? 'flex-1' : ''}`}>
             {i > 0 && (
-              <div className={`mx-3 h-0.5 flex-1 rounded ${i <= activeIndex ? 'bg-brand-600' : 'bg-gray-200'}`} />
+              <div className={`mx-1.5 h-0.5 flex-1 rounded sm:mx-3 ${i <= activeIndex ? 'bg-brand-600' : 'bg-gray-200'}`} />
             )}
             <div className="flex flex-col items-center gap-1.5">
               <span
@@ -136,7 +136,9 @@ function OrderTimeline({ status }: { status: string }) {
               >
                 <Icon name={step.icon} size={16} />
               </span>
-              <span className={`whitespace-nowrap text-[11px] font-semibold ${i <= activeIndex ? 'text-gray-900' : 'text-gray-400'}`}>
+              {/* The labels only fit on one line on wider screens — let them
+                  wrap on a phone instead of scrolling the page sideways. */}
+              <span className={`max-w-[72px] text-center text-[10px] font-semibold leading-tight sm:max-w-none sm:whitespace-nowrap sm:text-[11px] ${i <= activeIndex ? 'text-gray-900' : 'text-gray-400'}`}>
                 {step.label}
               </span>
             </div>

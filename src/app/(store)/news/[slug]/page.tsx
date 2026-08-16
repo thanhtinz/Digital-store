@@ -5,7 +5,7 @@ import Icon from '@/components/icons';
 import { featureEnabled } from '@/lib/features';
 import { formatDate } from '@/lib/utils';
 import { INTL_LOCALE } from '@/i18n';
-import { getLocale } from '@/i18n/server';
+import { getLocale, getT } from '@/i18n/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +26,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
 export default async function NewsPostPage({ params }: { params: { slug: string } }) {
   const intlLocale = INTL_LOCALE[getLocale()];
+  const t = getT();
   if (!(await featureEnabled('news'))) notFound();
 
   const post = await prisma.post.findUnique({ where: { slug: params.slug } });
@@ -41,9 +42,9 @@ export default async function NewsPostPage({ params }: { params: { slug: string 
   return (
     <div className="container max-w-3xl py-8">
       <nav className="mb-4 flex items-center gap-1.5 text-sm text-gray-500">
-        <Link href="/" className="hover:text-brand-600">Home</Link>
+        <Link href="/" className="hover:text-brand-600">{t('catalog.home')}</Link>
         <span>/</span>
-        <Link href="/news" className="hover:text-brand-600">News</Link>
+        <Link href="/news" className="hover:text-brand-600">{t('nav.news')}</Link>
         <span>/</span>
         <span className="truncate font-medium text-gray-900">{post.title}</span>
       </nav>
@@ -67,7 +68,7 @@ export default async function NewsPostPage({ params }: { params: { slug: string 
 
       {more.length > 0 && (
         <section className="mt-10">
-          <h2 className="mb-4 text-lg font-bold">More from the blog</h2>
+          <h2 className="mb-4 text-lg font-bold">{t('news.more')}</h2>
           <div className="grid gap-4 sm:grid-cols-3">
             {more.map((p) => (
               <Link key={p.slug} href={`/news/${p.slug}`} className="card group overflow-hidden transition hover:shadow-md">

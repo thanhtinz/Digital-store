@@ -143,9 +143,13 @@ export default async function ProductPage({ params }: { params: { slug: string }
 
       <div className="grid gap-8 lg:grid-cols-2">
         <Gallery images={product.images.map((i) => i.url)} name={product.name} />
-        <div className="lg:sticky lg:top-20 lg:self-start">
+        {/* min-w-0: without it the grid item takes its content's min-content
+            width, which pushes the whole page wider than a phone viewport. */}
+        <div className="min-w-0 lg:sticky lg:top-20 lg:self-start">
           <div className="flex items-start justify-between gap-3">
-            <h1 className="text-2xl font-bold sm:text-3xl">{product.name}</h1>
+            {/* min-w-0 lets a long product name wrap instead of forcing the
+                whole grid wider than a phone viewport. */}
+            <h1 className="min-w-0 break-words text-2xl font-bold sm:text-3xl">{product.name}</h1>
             <ProductActions productId={product.id} slug={product.slug} affiliate={affiliate} wishlistEnabled={feats.wishlist} />
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-500">

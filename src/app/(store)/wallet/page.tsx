@@ -90,9 +90,11 @@ export default function WalletPage() {
       <h1 className="mt-1 text-2xl font-bold sm:text-3xl">{t('wallet.title')}</h1>
       <p className="mt-1 text-sm text-gray-500">{t('wallet.intro')}</p>
 
+      {/* min-w-0 on both columns: the transaction notes are long, and without
+          it the grid takes their full width and scrolls the page sideways. */}
       <div className="mt-5 grid gap-5 lg:grid-cols-[380px_1fr]">
         {/* Balance + top-up */}
-        <div className="space-y-5">
+        <div className="min-w-0 space-y-5">
           <div className="card overflow-hidden">
             <div className="relative overflow-hidden bg-gradient-to-br from-brand-600 via-brand-700 to-purple-700 p-5 text-white">
               <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10" />
@@ -162,7 +164,7 @@ export default function WalletPage() {
         </div>
 
         {/* Transactions */}
-        <div className="card">
+        <div className="card min-w-0">
           <h2 className="border-b border-gray-100 p-4 font-bold">{t('wallet.history')}</h2>
           <div className="divide-y divide-gray-100">
             {txns.map((txn) => {

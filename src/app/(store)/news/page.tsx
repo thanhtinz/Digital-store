@@ -17,6 +17,7 @@ const PAGE_SIZE = 9;
 
 export default async function NewsPage({ searchParams }: { searchParams: { page?: string } }) {
   const intlLocale = INTL_LOCALE[getLocale()];
+  const t = getT();
   if (!(await featureEnabled('news'))) notFound();
 
   const page = Math.max(1, Number(searchParams.page) || 1);
@@ -35,15 +36,15 @@ export default async function NewsPage({ searchParams }: { searchParams: { page?
 
   return (
     <div className="container py-8">
-      <p className="section-eyebrow">Blog</p>
-      <h1 className="mt-1 text-2xl font-bold sm:text-3xl">News & updates</h1>
-      <p className="mt-1 text-sm text-gray-500">Product launches, promotions and announcements from the store.</p>
+      <p className="section-eyebrow">{t('news.eyebrow')}</p>
+      <h1 className="mt-1 text-2xl font-bold sm:text-3xl">{t('news.title')}</h1>
+      <p className="mt-1 text-sm text-gray-500">{t('news.intro')}</p>
 
       {posts.length === 0 ? (
         <div className="mt-10 rounded-2xl border border-dashed border-gray-200 py-20 text-center text-gray-400">
           <Icon name="news" size={40} className="mx-auto text-gray-300" />
-          <p className="mt-3 font-semibold text-gray-600">Nothing here yet</p>
-          <p className="mt-1 text-sm">Check back soon for announcements.</p>
+          <p className="mt-3 font-semibold text-gray-600">{t('news.emptyTitle')}</p>
+          <p className="mt-1 text-sm">{t('news.emptyText')}</p>
         </div>
       ) : (
         <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:[grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
@@ -66,7 +67,7 @@ export default async function NewsPage({ searchParams }: { searchParams: { page?
                 <h2 className="mt-1 line-clamp-2 font-bold leading-snug group-hover:text-brand-700">{p.title}</h2>
                 {p.excerpt && <p className="mt-1.5 line-clamp-3 text-sm text-gray-500">{p.excerpt}</p>}
                 <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-brand-600">
-                  Read more <Icon name="arrow-right" size={14} />
+                  {t('news.readMore')} <Icon name="arrow-right" size={14} />
                 </span>
               </div>
             </Link>
