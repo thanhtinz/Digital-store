@@ -1,9 +1,14 @@
 import prisma from '@/lib/db';
 import { getSettings } from '@/lib/settings';
 import Icon from '@/components/icons';
+import { formatDateTime } from '@/lib/utils';
+import { INTL_LOCALE } from '@/i18n';
+import { getLocale, getT } from '@/i18n/server';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'System status' };
+export async function generateMetadata() {
+  return { title: getT()('meta.status') };
+}
 
 async function check<T>(fn: () => Promise<T>): Promise<boolean> {
   try {
@@ -16,6 +21,7 @@ async function check<T>(fn: () => Promise<T>): Promise<boolean> {
 
 // Public status page — live checks against the store's own subsystems.
 export default async function StatusPage() {
+  const intlLocale = INTL_LOCALE[getLocale()];
   const dbOk = await check(() => prisma.$queryRaw`SELECT 1`);
   const s = dbOk
     ? await getSettings(['stripe_enabled', 'paypal_enabled', 'smtp_host', 'customer_bot_token']).catch(() => null)
@@ -48,7 +54,7 @@ export default async function StatusPage() {
         <div>
           <p className="text-lg font-bold">{allUp ? 'All systems operational' : 'Partial service degradation'}</p>
           <p className="text-xs text-gray-500">
-            Checked live at {new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'medium', timeZone: 'UTC' })} UTC
+            Checked live at {formatDateTime(new Date(), intlLocale, { dateStyle: 'medium', timeStyle: 'medium', timeZone: 'UTC' })} UTC
           </p>
         </div>
       </div>

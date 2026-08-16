@@ -18,7 +18,7 @@ const MAX_TOPUP = 1000;
 // Creates a wallet top-up and returns the gateway redirect URL.
 export const POST = handler(async (req: NextRequest) => {
   const { featureEnabled } = await import('@/lib/features');
-  if (!(await featureEnabled('wallet'))) return jsonError(404, 'The wallet is not available');
+  if (!(await featureEnabled('wallet'))) return jsonError(404, 'The wallet is not available', 'walletUnavailable');
   const user = await requireUser();
   rateLimit('topup', 10, 60 * 60, String(user.id));
   const b = await req.json();
@@ -105,6 +105,6 @@ export const POST = handler(async (req: NextRequest) => {
     return NextResponse.json({ ok: true, redirectUrl });
   } catch (e: any) {
     await prisma.topup.update({ where: { id: topup.id }, data: { status: 'CANCELLED' } }).catch(() => {});
-    return jsonError(502, e.message || 'Could not start the payment');
+    return jsonError(502, e.message || 'Could not start the payment', 'paymentStartFailed');
   }
 });

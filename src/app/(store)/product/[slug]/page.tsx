@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import prisma from '@/lib/db';
 import { getActiveFlashPrices, effectivePrice, toProductCards, productCardInclude } from '@/lib/catalog';
 import { getAppUrl, getSettings } from '@/lib/settings';
-import { parseCustomFields } from '@/lib/utils';
+import { parseCustomFields, formatNumber } from '@/lib/utils';
 import ProductCardView, { Stars } from '@/components/ProductCardView';
 import Gallery from './Gallery';
 import ProductActions from './ProductActions';
@@ -10,6 +10,8 @@ import BuyBox from './BuyBox';
 import ProductTabs from './ProductTabs';
 import Icon from '@/components/icons';
 import { getMoneyConfig } from '@/lib/currency';
+import { INTL_LOCALE } from '@/i18n';
+import { getLocale } from '@/i18n/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,6 +39,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 }
 
 export default async function ProductPage({ params }: { params: { slug: string } }) {
+  const intlLocale = INTL_LOCALE[getLocale()];
   const product = await prisma.product.findUnique({
     where: { slug: params.slug },
     include: {
@@ -151,7 +154,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
               ({product.ratingCount} review{product.ratingCount === 1 ? '' : 's'})
             </span>
             <span>·</span>
-            <span>{product.soldCount.toLocaleString('en-US')} sold</span>
+            <span>{formatNumber(product.soldCount, intlLocale)} sold</span>
           </div>
           {product.shortDesc && <p className="mt-3 text-sm leading-relaxed text-gray-600">{product.shortDesc}</p>}
           <div className="mt-5">

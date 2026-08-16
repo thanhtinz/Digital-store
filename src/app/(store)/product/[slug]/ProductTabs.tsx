@@ -5,6 +5,8 @@ import { useStore } from '@/components/Providers';
 import { api } from '@/lib/client';
 import { Stars } from '@/components/ProductCardView';
 import { AttachmentPicker } from '@/components/TicketParts';
+import { formatDate } from '@/lib/utils';
+import { INTL_LOCALE } from '@/i18n';
 
 type ReviewView = {
   id: number;
@@ -66,7 +68,8 @@ export default function ProductTabs({ reviewsEnabled = true, productId, descript
 }
 
 function ReviewsSection({ productId, ratingAvg, ratingCount, reviews }: Omit<Props, 'description' | 'guide'>) {
-  const { user, toast } = useStore();
+  const { user, toast, locale } = useStore();
+  const intlLocale = INTL_LOCALE[locale];
   const [rating, setRating] = useState(5);
   const [content, setContent] = useState('');
   const [images, setImages] = useState<string[]>([]);
@@ -169,7 +172,7 @@ function ReviewsSection({ productId, ratingAvg, ratingCount, reviews }: Omit<Pro
                 </p>
                 <div className="flex items-center gap-2 text-xs text-gray-400">
                   <Stars value={r.rating} size={12} />
-                  {new Date(r.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                  {formatDate(r.createdAt, intlLocale, { year: 'numeric', month: 'short', day: 'numeric' })}
                 </div>
               </div>
             </div>

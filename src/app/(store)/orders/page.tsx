@@ -6,9 +6,14 @@ import { getSessionUser } from '@/lib/auth';
 import StatusBadge from '@/components/StatusBadge';
 import Icon from '@/components/icons';
 import { getMoneyFormatter } from '@/lib/currency';
+import { formatDate } from '@/lib/utils';
+import { INTL_LOCALE } from '@/i18n';
+import { getLocale, getT } from '@/i18n/server';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'My Orders' };
+export async function generateMetadata() {
+  return { title: getT()('meta.orders') };
+}
 
 const FILTERS = [
   { key: '', label: 'All' },
@@ -19,6 +24,7 @@ const FILTERS = [
 ] as const;
 
 export default async function OrdersPage({ searchParams }: { searchParams: { status?: string } }) {
+  const intlLocale = INTL_LOCALE[getLocale()];
   const money = await getMoneyFormatter();
   const user = await getSessionUser();
   if (!user) redirect('/login?next=/orders');
@@ -91,7 +97,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: { sta
                     <p className="text-sm font-semibold">
                       <span className="font-mono">#{o.code}</span>
                       <span className="ml-2 text-xs font-normal text-gray-400">
-                        {o.createdAt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                        {formatDate(o.createdAt, intlLocale, { year: 'numeric', month: 'short', day: 'numeric' })}
                         {o.paymentMethod && <> · <span className="capitalize">{o.paymentMethod}</span></>}
                       </span>
                     </p>

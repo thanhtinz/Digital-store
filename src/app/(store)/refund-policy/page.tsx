@@ -1,6 +1,11 @@
 import LegalPage from '@/components/LegalPage';
+import { getT } from '@/i18n/server';
 
-export const metadata = { title: 'Refund Policy' };
+export const dynamic = 'force-dynamic';
+
+export async function generateMetadata() {
+  return { title: getT()('meta.refund') };
+}
 
 export default function RefundPolicyPage() {
   return (

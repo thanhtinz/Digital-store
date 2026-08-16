@@ -6,6 +6,8 @@ import { useStore, useMoney } from '@/components/Providers';
 import { api } from '@/lib/client';
 
 import Icon from '@/components/icons';
+import { formatDate } from '@/lib/utils';
+import { INTL_LOCALE } from '@/i18n';
 
 type Card = { id: number; code: string | null; amount: number; status: string; createdAt: string };
 type Pay = { stripeEnabled: boolean; paypalEnabled: boolean; sepayEnabled?: boolean; payosEnabled?: boolean; bankEnabled?: boolean };
@@ -13,7 +15,8 @@ type Pay = { stripeEnabled: boolean; paypalEnabled: boolean; sepayEnabled?: bool
 const PRESETS = ['10', '25', '50', '100'];
 
 export default function GiftCardsPage() {
-  const { user, toast, refreshUser } = useStore();
+  const { user, toast, refreshUser, locale } = useStore();
+  const intlLocale = INTL_LOCALE[locale];
   const money = useMoney();
   const router = useRouter();
   const params = useSearchParams();
@@ -191,7 +194,7 @@ export default function GiftCardsPage() {
                 <span className="min-w-0 flex-1">
                   <span className="block font-mono text-sm font-semibold">{c.code || 'Processing…'}</span>
                   <span className="block text-xs text-gray-400">
-                    {new Date(c.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                    {formatDate(c.createdAt, intlLocale, { year: 'numeric', month: 'short', day: 'numeric' })}
                   </span>
                 </span>
                 <span className="text-sm font-bold">{money(c.amount)}</span>

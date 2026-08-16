@@ -6,9 +6,12 @@ import Icon from '@/components/icons';
 import { notFound } from 'next/navigation';
 import { featureEnabled } from '@/lib/features';
 import { getMoneyFormatter } from '@/lib/currency';
+import { getT } from '@/i18n/server';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Flash Sale' };
+export async function generateMetadata() {
+  return { title: getT()('meta.flashSale') };
+}
 
 export default async function FlashSalePage() {
   const money = await getMoneyFormatter();

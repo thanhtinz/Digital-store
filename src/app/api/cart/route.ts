@@ -63,9 +63,9 @@ export const POST = handler(async (req: NextRequest) => {
   const pkg = await prisma.package.findFirst({
     where: { id: packageId, isActive: true, product: { isActive: true } },
   });
-  if (!pkg) return jsonError(404, 'This item is not available');
+  if (!pkg) return jsonError(404, 'This item is not available', 'itemUnavailable');
 
-  if (!pkg.autoDeliver && !pkg.inStock) return jsonError(400, 'This package is out of stock');
+  if (!pkg.autoDeliver && !pkg.inStock) return jsonError(400, 'This package is out of stock', 'outOfStock');
 
   // Auto-delivered packages can only be bought while stock lasts.
   if (pkg.autoDeliver) {
@@ -74,7 +74,7 @@ export const POST = handler(async (req: NextRequest) => {
       prisma.cartItem.findUnique({ where: { userId_packageId: { userId: user.id, packageId } } }),
     ]);
     const wanted = (existing?.quantity || 0) + quantity;
-    if (stock === 0) return jsonError(400, 'This package is out of stock');
+    if (stock === 0) return jsonError(400, 'This package is out of stock', 'outOfStock');
     if (wanted > stock) return jsonError(400, `Only ${stock} left in stock`);
   }
 
@@ -99,7 +99,7 @@ export const PATCH = handler(async (req: NextRequest) => {
 
   const quantity = Math.floor(Number(body.quantity));
   if (Number.isFinite(quantity) && quantity > 0 && !item.package.autoDeliver && !item.package.inStock) {
-    return jsonError(400, 'This package is out of stock');
+    return jsonError(400, 'This package is out of stock', 'outOfStock');
   }
   if (Number.isFinite(quantity) && quantity > 0 && item.package.autoDeliver) {
     const stock = await prisma.stockItem.count({ where: { packageId: item.packageId, isSold: false } });

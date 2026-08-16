@@ -7,11 +7,17 @@ import PaymentWatcher from './PaymentWatcher';
 import OrderActions from './OrderActions';
 import Icon from '@/components/icons';
 import { getMoneyFormatter } from '@/lib/currency';
+import { formatDateTime } from '@/lib/utils';
+import { INTL_LOCALE } from '@/i18n';
+import { getLocale, getT } from '@/i18n/server';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Order details' };
+export async function generateMetadata() {
+  return { title: getT()('meta.orderDetails') };
+}
 
 export default async function OrderDetailPage({ params }: { params: { code: string } }) {
+  const intlLocale = INTL_LOCALE[getLocale()];
   const money = await getMoneyFormatter();
   const user = await getSessionUser();
   if (!user) redirect(`/login?next=/orders/${params.code}`);
@@ -28,7 +34,7 @@ export default async function OrderDetailPage({ params }: { params: { code: stri
         <div>
           <h1 className="text-2xl font-bold">Order #{order.code}</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Placed {order.createdAt.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
+            Placed {formatDateTime(order.createdAt, intlLocale, { dateStyle: 'medium', timeStyle: 'short' })}
             {order.paymentMethod && <> · paid via <b className="capitalize">{order.paymentMethod}</b></>}
           </p>
         </div>

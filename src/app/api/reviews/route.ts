@@ -19,15 +19,21 @@ function cleanImages(raw: unknown): string[] {
 // product may review it — "verified purchase" reviews only.
 export const POST = handler(async (req: NextRequest) => {
   const { featureEnabled } = await import('@/lib/features');
-  if (!(await featureEnabled('reviews'))) return jsonError(404, 'Reviews are not available');
+  if (!(await featureEnabled('reviews'))) return jsonError(404, 'Reviews are not available', 'reviewsUnavailable');
   const user = await requireUser();
   rateLimit('review-post', 10, 60 * 60, String(user.id));
   const body = await req.json();
   const productId = Number(body.productId);
   const images = body.images !== undefined ? cleanImages(body.images) : undefined;
-  const rating = Math.min(5, Math.max(1, Math.floor(Number(body.rating) || 0)));
+  // Validate before clamping: clamping first would turn a missing rating into
+  // a silent 1-star review instead of a rejected request.
+  const rawRating = Math.floor(Number(body.rating));
   const content = String(body.content || '').trim().slice(0, 2000);
-  if (!productId || !rating) return jsonError(400, 'Rating is required');
+  if (!productId) return jsonError(400, 'A valid productId is required', 'itemUnavailable');
+  if (!Number.isInteger(rawRating) || rawRating < 1 || rawRating > 5) {
+    return jsonError(400, 'A rating between 1 and 5 is required', 'ratingRequired');
+  }
+  const rating = rawRating;
 
   const purchased = await prisma.orderItem.findFirst({
     where: {
@@ -35,7 +41,7 @@ export const POST = handler(async (req: NextRequest) => {
       package: { productId },
     },
   });
-  if (!purchased) return jsonError(403, 'Only customers who purchased this product can review it');
+  if (!purchased) return jsonError(403, 'Only customers who purchased this product can review it', 'reviewNotPurchased');
 
   await prisma.review.upsert({
     where: { productId_userId: { productId, userId: user.id } },

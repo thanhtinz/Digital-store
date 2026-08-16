@@ -30,14 +30,14 @@ export const GET = handler(async () => {
 
 export const POST = handler(async (req: NextRequest) => {
   const { featureEnabled } = await import('@/lib/features');
-  if (!(await featureEnabled('support'))) return jsonError(404, 'Support is not available');
+  if (!(await featureEnabled('support'))) return jsonError(404, 'Support is not available', 'supportUnavailable');
   const user = await requireUser();
   rateLimit('ticket-create', 5, 60 * 60, String(user.id)); // 5 tickets/hour per user
   const b = await req.json();
   const subject = String(b.subject || '').trim().slice(0, 200);
   const message = String(b.message || '').trim().slice(0, 5000);
   const orderCode = b.orderCode ? String(b.orderCode).trim().toUpperCase().slice(0, 20) : null;
-  if (!subject || !message) return jsonError(400, 'Subject and message are required');
+  if (!subject || !message) return jsonError(400, 'Subject and message are required', 'ticketFields');
 
   if (orderCode) {
     const order = await prisma.order.findFirst({ where: { code: orderCode, userId: user.id } });

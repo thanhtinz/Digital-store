@@ -7,6 +7,8 @@ import { useStore } from '@/components/Providers';
 import { api } from '@/lib/client';
 import Icon from '@/components/icons';
 import { AttachmentPicker } from '@/components/TicketParts';
+import { formatDate } from '@/lib/utils';
+import { INTL_LOCALE } from '@/i18n';
 
 const STATUS_BADGE: Record<string, string> = {
   OPEN: 'bg-amber-100 text-amber-700',
@@ -20,7 +22,8 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default function SupportPage() {
-  const { user, toast } = useStore();
+  const { user, toast, locale } = useStore();
+  const intlLocale = INTL_LOCALE[locale];
   const router = useRouter();
   const [tickets, setTickets] = useState<any[] | null>(null);
   const [subject, setSubject] = useState('');
@@ -107,7 +110,7 @@ export default function SupportPage() {
                     <span className="line-clamp-1 text-sm font-semibold">#{t.id} · {t.subject}</span>
                     <span className="text-xs text-gray-400">
                       {t._count.messages} message{t._count.messages === 1 ? '' : 's'} · updated{' '}
-                      {new Date(t.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      {formatDate(t.updatedAt, intlLocale, { month: 'short', day: 'numeric' })}
                       {t.orderCode && <> · order {t.orderCode}</>}
                     </span>
                   </span>

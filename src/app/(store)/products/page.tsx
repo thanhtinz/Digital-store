@@ -2,11 +2,15 @@ import Link from 'next/link';
 import prisma from '@/lib/db';
 import { toProductCards, productCardInclude } from '@/lib/catalog';
 import ProductCardView from '@/components/ProductCardView';
-import { clampInt } from '@/lib/utils';
+import { clampInt, formatNumber } from '@/lib/utils';
 import Icon from '@/components/icons';
+import { INTL_LOCALE } from '@/i18n';
+import { getLocale, getT } from '@/i18n/server';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'All Products' };
+export async function generateMetadata() {
+  return { title: getT()('meta.products') };
+}
 
 const SORTS: Record<string, any> = {
   newest: { id: 'desc' },
@@ -17,6 +21,7 @@ const SORTS: Record<string, any> = {
 type Search = { q?: string; category?: string; sort?: string; page?: string };
 
 export default async function ProductsPage({ searchParams }: { searchParams: Search }) {
+  const intlLocale = INTL_LOCALE[getLocale()];
   const q = (searchParams.q || '').trim();
   const sort = SORTS[searchParams.sort || ''] ? searchParams.sort! : 'popular';
   const page = clampInt(searchParams.page, 1, 10_000, 1);
@@ -57,7 +62,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Sea
         <div>
           <p className="section-eyebrow">{q ? 'Search results' : 'Store'}</p>
           <h1 className="mt-1 text-2xl font-bold sm:text-3xl">{q ? `“${q}”` : 'All Products'}</h1>
-          <p className="mt-1 text-sm text-gray-500">{total.toLocaleString('en-US')} product{total === 1 ? '' : 's'} available</p>
+          <p className="mt-1 text-sm text-gray-500">{formatNumber(total, intlLocale)} product{total === 1 ? '' : 's'} available</p>
         </div>
         <div className="flex rounded-full border border-gray-200 bg-white p-1 shadow-sm">
           {(['popular', 'newest', 'rating'] as const).map((s) => (
