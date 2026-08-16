@@ -1,5 +1,6 @@
 import prisma from '@/lib/db';
 import { getPublicSettings } from '@/lib/settings';
+import { getT } from '@/i18n/server';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import LiveChat from '@/components/LiveChat';
@@ -23,6 +24,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
     // DB not reachable (e.g. first boot) — render the shell anyway.
   }
 
+  const t = getT();
   return (
     <>
       <Header siteName={settings.siteName} logo={settings.logo} categories={categories} features={settings.features || {}} />
@@ -38,6 +40,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
         socials={settings.socials || {}}
         categories={categories}
         features={settings.features || {}}
+        t={t}
       />
     </>
   );

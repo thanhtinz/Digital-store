@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useStore, useMoney } from '@/components/Providers';
+import { useStore, useMoney, useT } from '@/components/Providers';
 import { api } from '@/lib/client';
 import { AttachmentPicker } from '@/components/TicketParts';
 import Icon from '@/components/icons';
@@ -50,6 +50,7 @@ function formatCharge(amount: number, currency: string): string {
 export default function PayScreen({ id }: { id: string }) {
   const { user, toast, refreshUser } = useStore();
   const money = useMoney();
+  const t = useT();
   const router = useRouter();
   const [payment, setPayment] = useState<Payment | null>(null);
   const [error, setError] = useState('');
@@ -136,13 +137,13 @@ export default function PayScreen({ id }: { id: string }) {
           <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-green-100 text-green-600">
             <Icon name="check" size={28} />
           </span>
-          <h1 className="mt-4 text-xl font-bold">Payment received</h1>
+          <h1 className="mt-4 text-xl font-bold">{t('pay.received')}</h1>
           <p className="mt-1 text-sm text-gray-500">
             {payment.purpose === 'TOPUP'
               ? `${money(payment.baseAmount)} has been added to your wallet.`
               : 'Your payment is confirmed.'}
           </p>
-          <Link href={successHref} className="btn-primary mt-6 inline-flex">Continue</Link>
+          <Link href={successHref} className="btn-primary mt-6 inline-flex">{t('pay.continue')}</Link>
         </div>
       </div>
     );
@@ -161,7 +162,7 @@ export default function PayScreen({ id }: { id: string }) {
           <p className="mt-1 text-sm text-gray-500">
             Nothing was charged. You can start again whenever you are ready.
           </p>
-          <Link href={successHref} className="btn-primary mt-6 inline-flex">Try again</Link>
+          <Link href={successHref} className="btn-primary mt-6 inline-flex">{t('pay.tryAgain')}</Link>
         </div>
       </div>
     );
@@ -172,8 +173,8 @@ export default function PayScreen({ id }: { id: string }) {
 
   return (
     <div className="container py-8">
-      <p className="section-eyebrow">Almost done</p>
-      <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Complete your bank transfer</h1>
+      <p className="section-eyebrow">{t('pay.eyebrow')}</p>
+      <h1 className="mt-1 text-2xl font-bold sm:text-3xl">{t('pay.title')}</h1>
       <p className="mt-1 text-sm text-gray-500">
         Transfer the exact amount with the reference below. {payment.method === 'sepay'
           ? 'Your order is confirmed automatically, usually within a minute of the transfer landing.'
@@ -182,7 +183,7 @@ export default function PayScreen({ id }: { id: string }) {
 
       {!ins ? (
         <div className="card mt-6 p-8 text-center text-gray-500">
-          Bank details are not configured. Please contact support.
+          {t('pay.noBankDetails')}
         </div>
       ) : (
         <div className="mt-6 grid gap-5 lg:grid-cols-[340px_1fr]">
@@ -217,22 +218,22 @@ export default function PayScreen({ id }: { id: string }) {
           <div className="space-y-4">
             <div className="card p-5">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h2 className="font-bold">Transfer details</h2>
+                <h2 className="font-bold">{t('pay.details')}</h2>
                 <span className="text-xs text-gray-400">
                   {money(payment.baseAmount, payment.baseCurrency)} at your locked rate
                 </span>
               </div>
               <dl className="mt-4 space-y-3">
-                <Row label="Bank" value={[ins.bankName, ins.bankCode].filter(Boolean).join(' · ') || '—'} />
-                <Row label="Account number" value={ins.accountNumber} onCopy={() => copy(ins.accountNumber, 'Account number')} />
-                <Row label="Account name" value={ins.accountName || '—'} />
+                <Row label={t('pay.bank')} value={[ins.bankName, ins.bankCode].filter(Boolean).join(' · ') || '—'} />
+                <Row label={t('pay.accountNumber')} value={ins.accountNumber} onCopy={() => copy(ins.accountNumber, 'Account number')} />
+                <Row label={t('pay.accountName')} value={ins.accountName || '—'} />
                 <Row
-                  label="Amount"
+                  label={t('pay.amount')}
                   value={formatCharge(ins.amount, ins.currency)}
                   onCopy={() => copy(String(Math.round(ins.amount)), 'Amount')}
                   strong
                 />
-                <Row label="Transfer reference" value={ins.memo} onCopy={() => copy(ins.memo, 'Reference')} strong />
+                <Row label={t('pay.reference')} value={ins.memo} onCopy={() => copy(ins.memo, 'Reference')} strong />
               </dl>
               <p className="mt-4 rounded-xl bg-amber-50 p-3 text-xs leading-relaxed text-amber-800">
                 The reference <b>{ins.memo}</b> is how we match your transfer. If your bank strips it, contact support
@@ -251,7 +252,7 @@ export default function PayScreen({ id }: { id: string }) {
                       <Icon name="clock" size={20} />
                     </span>
                     <div>
-                      <h2 className="font-bold">Waiting for confirmation</h2>
+                      <h2 className="font-bold">{t('pay.waiting')}</h2>
                       <p className="mt-0.5 text-sm text-gray-500">
                         We have your details and are checking the transfer. This page updates by itself — you can also
                         close it and we will email you.
@@ -260,13 +261,13 @@ export default function PayScreen({ id }: { id: string }) {
                   </div>
                 ) : (
                   <>
-                    <h2 className="font-bold">Already transferred?</h2>
+                    <h2 className="font-bold">{t('pay.alreadyTransferred')}</h2>
                     <p className="mt-0.5 text-sm text-gray-500">
                       Let us know and we will confirm it. Attaching the receipt makes it faster.
                     </p>
                     <textarea
                       className="input mt-3 min-h-[80px]"
-                      placeholder="Optional: the name on the sending account, or anything that helps us find it"
+                      placeholder={t('pay.notePlaceholder')}
                       value={note}
                       onChange={(e) => setNote(e.target.value)}
                     />
@@ -274,7 +275,7 @@ export default function PayScreen({ id }: { id: string }) {
                       <AttachmentPicker attachments={proof} onChange={setProof} toast={toast} />
                     </div>
                     <button className="btn-primary mt-4 w-full" onClick={submitProof} disabled={busy}>
-                      {busy ? 'Sending…' : 'I have made the transfer'}
+                      {busy ? t('pay.sending') : t('pay.confirmButton')}
                     </button>
                   </>
                 )}

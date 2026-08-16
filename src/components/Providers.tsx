@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { api } from '@/lib/client';
 import { DEFAULT_MONEY_FORMAT, formatMoneyWith, type MoneyFormat } from '@/lib/utils';
 import { DEFAULT_THEME, type Theme } from '@/lib/theme';
+import { DEFAULT_LOCALE, makeT, type Locale, type TFunction } from '@/i18n';
 
 export type SessionUser = {
   id: number;
@@ -29,6 +30,8 @@ type StoreContextValue = {
   money: MoneyFormat;
   theme: Theme;
   allowThemeOverride: boolean;
+  locale: Locale;
+  t: TFunction;
 };
 
 const StoreContext = createContext<StoreContextValue>({
@@ -40,9 +43,14 @@ const StoreContext = createContext<StoreContextValue>({
   money: DEFAULT_MONEY_FORMAT,
   theme: DEFAULT_THEME,
   allowThemeOverride: true,
+  locale: DEFAULT_LOCALE,
+  t: makeT(DEFAULT_LOCALE),
 });
 
 export const useStore = () => useContext(StoreContext);
+
+// Translation for client components.
+export const useT = (): TFunction => useContext(StoreContext).t;
 
 // Formats an amount in the store's configured currency. Passing an explicit
 // code renders that currency instead — historical orders keep the currency
@@ -65,15 +73,18 @@ export default function Providers({
   money = DEFAULT_MONEY_FORMAT,
   theme = DEFAULT_THEME,
   allowThemeOverride = true,
+  locale = DEFAULT_LOCALE,
 }: {
   children: ReactNode;
   money?: MoneyFormat;
   theme?: Theme;
   allowThemeOverride?: boolean;
+  locale?: Locale;
 }) {
   const [user, setUser] = useState<SessionUser | null | undefined>(undefined);
   const [cartCount, setCartCount] = useState(0);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const t = useMemo(() => makeT(locale), [locale]);
 
   const refreshUser = useCallback(async () => {
     try {
@@ -110,8 +121,8 @@ export default function Providers({
   }, []);
 
   const value = useMemo(
-    () => ({ user, refreshUser, cartCount, refreshCart, toast, money, theme, allowThemeOverride }),
-    [user, refreshUser, cartCount, refreshCart, toast, money, theme, allowThemeOverride]
+    () => ({ user, refreshUser, cartCount, refreshCart, toast, money, theme, allowThemeOverride, locale, t }),
+    [user, refreshUser, cartCount, refreshCart, toast, money, theme, allowThemeOverride, locale, t]
   );
 
   return (

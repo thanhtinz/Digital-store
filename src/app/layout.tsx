@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { getPublicSettings } from '@/lib/settings';
 import { DEFAULT_MONEY_FORMAT } from '@/lib/utils';
 import { DEFAULT_THEME, fontUrl, parseThemeCookie, resolveTheme, themeCssVars } from '@/lib/theme';
+import { getLocale } from '@/i18n/server';
 import Providers from '@/components/Providers';
 import './globals.css';
 
@@ -37,12 +38,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     // DB unreachable (e.g. first boot) — fall back to the defaults.
   }
 
+  const locale = getLocale();
   const override = allowOverride ? parseThemeCookie(cookies().get('ds_theme')?.value) : null;
   const theme = resolveTheme(storeTheme, override);
   const font = fontUrl(theme.font);
 
   return (
-    <html lang="en">
+    <html lang={locale}>
       <head>
         {font && (
           <>
@@ -54,7 +56,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <style dangerouslySetInnerHTML={{ __html: themeCssVars(theme) }} />
       </head>
       <body className="flex min-h-screen flex-col">
-        <Providers money={money} theme={theme} allowThemeOverride={allowOverride}>
+        <Providers money={money} theme={theme} allowThemeOverride={allowOverride} locale={locale}>
           {children}
         </Providers>
       </body>
