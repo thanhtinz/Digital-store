@@ -56,6 +56,7 @@ model User {
   walletTxns   WalletTransaction[]
   topups       Topup[]
   apiKeys      ApiKey[]
+  paymentIntents PaymentIntent[]
 
   @@map("users")
 }
@@ -449,6 +450,62 @@ model WalletTransaction {
 
   @@index([userId, createdAt])
   @@map("wallet_transactions")
+}
+
+// ─────────────────── Payment attempts (SePay / PayOS / bank) ───────────────
+// One row per attempt to pay for something, whatever the something is. It
+// carries the amount twice: what the store books (base currency) and what the
+// gateway actually collects, with the exchange rate frozen at creation so a
+// later rate edit never changes an amount a customer was already quoted.
+enum PaymentIntentStatus {
+  PENDING         // waiting on the gateway, or on the customer's transfer
+  AWAITING_REVIEW // manual transfer: customer says they paid, admin must confirm
+  PAID
+  EXPIRED
+  CANCELLED
+  FAILED          // admin rejected, or the gateway reported failure
+}
+
+model PaymentIntent {
+  id       Int    @id @default(autoincrement())
+  // Public numeric reference: PayOS requires a numeric orderCode, and it
+  // doubles as the suffix of the bank-transfer memo. Int, not BigInt, so it
+  // serializes to JSON without special handling.
+  ref      Int    @unique
+  purpose  String @db.VarChar(10) // ORDER | TOPUP | GIFTCARD
+  targetId Int    @map("target_id")
+  userId   Int    @map("user_id")
+  method   String @db.VarChar(20) // sepay | payos | bank
+
+  baseAmount     Decimal @map("base_amount") @db.Decimal(12, 2)
+  baseCurrency   String  @map("base_currency") @db.VarChar(3)
+  chargeAmount   Decimal @map("charge_amount") @db.Decimal(16, 2)
+  chargeCurrency String  @map("charge_currency") @db.VarChar(3)
+  fxRate         Decimal @map("fx_rate") @db.Decimal(18, 8)
+
+  status PaymentIntentStatus @default(PENDING)
+  // Unique so one bank transaction or payment link can settle at most one
+  // intent, ever — the cross-intent replay guard.
+  gatewayRef String? @unique @map("gateway_ref") @db.VarChar(255)
+
+  memo         String?   @db.VarChar(40) // what we told the customer to type
+  proofUrl     String?   @map("proof_url")
+  payerNote    String?   @map("payer_note") @db.VarChar(300)
+  reviewedById Int?      @map("reviewed_by_id")
+  reviewedAt   DateTime? @map("reviewed_at")
+  reviewNote   String?   @map("review_note") @db.VarChar(300)
+
+  raw       Json?
+  expiresAt DateTime? @map("expires_at")
+  paidAt    DateTime? @map("paid_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([purpose, targetId])
+  @@index([status, createdAt])
+  @@map("payment_intents")
 }
 
 model Topup {

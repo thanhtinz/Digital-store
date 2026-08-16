@@ -7,6 +7,8 @@ import { createStripeCheckoutSession } from '@/lib/stripe';
 import { createPaypalOrder } from '@/lib/paypal';
 import { debitWallet } from '@/lib/wallet';
 import { markOrderPaid } from '@/lib/orders';
+import { createIntent, isIntentMethod } from '@/lib/payments';
+import { startIntentPayment } from '@/lib/paymentStart';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +18,10 @@ export const dynamic = 'force-dynamic';
 export const POST = handler(async (req: NextRequest) => {
   const user = await requireUser();
   const body = await req.json();
-  const paymentMethod = body.paymentMethod === 'paypal' ? 'paypal' : body.paymentMethod === 'balance' ? 'balance' : 'stripe';
+  const requested = String(body.paymentMethod || 'stripe');
+  const paymentMethod = isIntentMethod(requested)
+    ? requested
+    : requested === 'paypal' ? 'paypal' : requested === 'balance' ? 'balance' : 'stripe';
 
   let items: CheckoutItemInput[];
   let fromCart = false;
@@ -67,7 +72,18 @@ export const POST = handler(async (req: NextRequest) => {
 
   try {
     let redirectUrl: string;
-    if (paymentMethod === 'paypal') {
+    if (isIntentMethod(paymentMethod)) {
+      // SePay, PayOS and manual bank transfer all go through a payment
+      // intent, which freezes the converted amount and the exchange rate.
+      const intent = await createIntent({
+        purpose: 'ORDER',
+        targetId: order.id,
+        userId: user.id,
+        baseAmount: Number(order.total),
+        method: paymentMethod,
+      });
+      redirectUrl = await startIntentPayment(intent, `Order ${order.code}`, `/orders/${order.code}`);
+    } else if (paymentMethod === 'paypal') {
       const pp = await createPaypalOrder({
         code: order.code,
         total: Number(order.total),

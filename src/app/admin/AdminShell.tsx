@@ -13,6 +13,7 @@ const NAV: Array<{ href: string; label: string; icon: string } | { section: stri
   { href: '/admin', label: 'Dashboard', icon: 'dashboard' },
   { href: '/admin/reports', label: 'Reports', icon: 'chart' },
   { href: '/admin/deliveries', label: 'Deliveries', icon: 'truck' },
+  { href: '/admin/payments', label: 'Payment reviews', icon: 'credit-card' },
   { href: '/admin/inventory', label: 'Auto delivery', icon: 'bolt' },
   { href: '/admin/orders', label: 'Orders', icon: 'box' },
   { href: '/admin/products', label: 'Products', icon: 'bag' },

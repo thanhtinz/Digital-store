@@ -21,7 +21,8 @@ type CartItemView = {
   customFieldDefs: CustomFieldDef[];
 };
 
-type PublicPay = { stripeEnabled: boolean; paypalEnabled: boolean };
+type PublicPay = { stripeEnabled: boolean; paypalEnabled: boolean; sepayEnabled?: boolean; payosEnabled?: boolean; bankEnabled?: boolean };
+type Method = 'stripe' | 'paypal' | 'balance' | 'sepay' | 'payos' | 'bank';
 
 export default function CheckoutPage() {
   return (
@@ -44,7 +45,8 @@ function CheckoutInner() {
   const [buyNow, setBuyNow] = useState<{ packageId: number; quantity: number; customFieldsData: Record<string, string> } | null>(null);
   const [pay, setPay] = useState<PublicPay>({ stripeEnabled: false, paypalEnabled: false });
   const [walletOn, setWalletOn] = useState(true);
-  const [method, setMethod] = useState<'stripe' | 'paypal' | 'balance'>('stripe');
+  const [method, setMethod] = useState<Method>('stripe');
+  const [vnd, setVnd] = useState<{ rate: number; code: string } | null>(null);
   const [loyalty, setLoyalty] = useState<LoyaltyInfo | null>(null);
   const [usePoints, setUsePoints] = useState(false);
   const [coupon, setCoupon] = useState('');
@@ -54,14 +56,20 @@ function CheckoutInner() {
 
   useEffect(() => {
     api<LoyaltyInfo>('/api/loyalty/me').then(setLoyalty).catch(() => {});
-    api<{ payments: PublicPay; features?: Record<string, boolean> }>('/api/public/config')
+    api<{ payments: PublicPay; features?: Record<string, boolean>; rates?: Record<string, number>; paymentCurrency?: string; money?: { code: string } }>('/api/public/config')
       .then((d) => {
         setPay(d.payments);
+        const code = (d.paymentCurrency || 'VND').toUpperCase();
+        const rate = code === d.money?.code ? 1 : d.rates?.[code];
+        if (rate) setVnd({ rate, code });
         const wallet = d.features?.wallet !== false;
         setWalletOn(wallet);
         // Preselect a method that is actually offered.
         if (d.payments.stripeEnabled) setMethod('stripe');
         else if (d.payments.paypalEnabled) setMethod('paypal');
+        else if (d.payments.sepayEnabled) setMethod('sepay');
+        else if (d.payments.payosEnabled) setMethod('payos');
+        else if (d.payments.bankEnabled) setMethod('bank');
         else if (wallet) setMethod('balance');
       })
       .catch(() => {});
@@ -126,12 +134,16 @@ function CheckoutInner() {
   };
 
   const placeOrder = async () => {
-    if (!pay.stripeEnabled && !pay.paypalEnabled && !walletOn) {
+    if (!pay.stripeEnabled && !pay.paypalEnabled && !walletOn && !pay.sepayEnabled && !pay.payosEnabled && !pay.bankEnabled) {
       toast('No payment method is available. Please contact support.', 'error');
       return;
     }
-    if (method !== 'balance' && !pay.stripeEnabled && !pay.paypalEnabled) {
-      toast('No payment method is available. Please contact support.', 'error');
+    if (method === 'stripe' && !pay.stripeEnabled) {
+      toast('Card payments are unavailable. Choose another method.', 'error');
+      return;
+    }
+    if (method === 'paypal' && !pay.paypalEnabled) {
+      toast('PayPal is unavailable. Choose another method.', 'error');
       return;
     }
     if (method === 'balance' && !walletOn) {
@@ -225,6 +237,32 @@ function CheckoutInner() {
                   </span>
                   {!pay.paypalEnabled && <span className="text-xs text-gray-400">Unavailable</span>}
                 </button>
+
+                {/* Vietnamese bank transfer methods */}
+                {([
+                  ['sepay', pay.sepayEnabled, 'Bank transfer (instant)', 'Scan a VietQR code — confirmed automatically within a minute', 'bolt', 'bg-emerald-50 text-emerald-700'],
+                  ['payos', pay.payosEnabled, 'PayOS', 'Pay by bank app, card or e-wallet on the PayOS page', 'credit-card', 'bg-sky-50 text-sky-700'],
+                  ['bank', pay.bankEnabled, 'Bank transfer (manual)', 'Transfer and we confirm it by hand, usually within a few hours', 'store', 'bg-amber-50 text-amber-700'],
+                ] as const).filter(([, enabled]) => enabled).map(([value, , title, desc, icon, tint]) => (
+                  <button
+                    key={value}
+                    onClick={() => setMethod(value as Method)}
+                    className={`flex w-full items-center gap-3 rounded-xl border-2 p-4 text-left transition ${
+                      method === value ? 'border-brand-600 bg-brand-50' : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-lg ${tint}`}><Icon name={icon} size={22} /></span>
+                    <span className="flex-1">
+                      <span className="block text-sm font-semibold">{title}</span>
+                      <span className="block text-xs text-gray-500">{desc}</span>
+                    </span>
+                    {vnd && (
+                      <span className="whitespace-nowrap text-xs font-semibold text-gray-600">
+                        ~ {(Math.ceil((total * vnd.rate) / 1000) * 1000).toLocaleString('en-US')} {vnd.code}
+                      </span>
+                    )}
+                  </button>
+                ))}
               </div>
               {canRedeem && loyalty && (
                 <label className="mt-4 flex cursor-pointer items-center gap-3 rounded-xl bg-amber-50 p-4">
@@ -309,7 +347,7 @@ function CheckoutInner() {
               )}
             </div>
             <button className="btn-primary mt-5 w-full" onClick={placeOrder} disabled={busy}>
-              {busy ? 'Processing…' : method === 'balance' ? `Pay ${buyNow ? 'with balance' : money(total)} from wallet` : method === 'paypal' ? 'Pay with PayPal' : 'Pay with card'}
+              {busy ? 'Processing…' : method === 'balance' ? `Pay ${buyNow ? 'with balance' : money(total)} from wallet` : method === 'paypal' ? 'Pay with PayPal' : method === 'stripe' ? 'Pay with card' : 'Continue to payment'}
             </button>
             <p className="mt-3 flex items-center justify-center gap-1 text-center text-xs text-gray-400"><Icon name="lock" size={13} /> 256-bit SSL secure payment</p>
           </div>

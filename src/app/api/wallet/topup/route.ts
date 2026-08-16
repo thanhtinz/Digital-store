@@ -7,6 +7,8 @@ import { generateTopupCode } from '@/lib/wallet';
 import { getStripeConfig, toStripeAmount } from '@/lib/stripe';
 import { getPaypalConfig } from '@/lib/paypal';
 import { getAppUrl, getSetting } from '@/lib/settings';
+import { createIntent, isIntentMethod } from '@/lib/payments';
+import { startIntentPayment } from '@/lib/paymentStart';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +23,7 @@ export const POST = handler(async (req: NextRequest) => {
   rateLimit('topup', 10, 60 * 60, String(user.id));
   const b = await req.json();
   const amount = Math.round(Number(b.amount) * 100) / 100;
-  const method = b.method === 'paypal' ? 'paypal' : 'stripe';
+  const method = isIntentMethod(b.method) ? b.method : b.method === 'paypal' ? 'paypal' : 'stripe';
   if (!Number.isFinite(amount) || amount < MIN_TOPUP || amount > MAX_TOPUP) {
     return jsonError(400, `Top-up amount must be between $${MIN_TOPUP} and $${MAX_TOPUP}`);
   }
@@ -34,7 +36,16 @@ export const POST = handler(async (req: NextRequest) => {
 
   try {
     let redirectUrl: string;
-    if (method === 'stripe') {
+    if (isIntentMethod(method)) {
+      const intent = await createIntent({
+        purpose: 'TOPUP',
+        targetId: topup.id,
+        userId: user.id,
+        baseAmount: amount,
+        method,
+      });
+      redirectUrl = await startIntentPayment(intent, `Top-up ${topup.code}`, '/wallet');
+    } else if (method === 'stripe') {
       const cfg = await getStripeConfig();
       if (!cfg.enabled) throw new Error('Card payments are not available right now');
       const res = await fetch('https://api.stripe.com/v1/checkout/sessions', {

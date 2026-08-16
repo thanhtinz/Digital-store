@@ -8,6 +8,9 @@ import { debitWallet } from '@/lib/wallet';
 import { getStripeConfig, toStripeAmount } from '@/lib/stripe';
 import { getPaypalConfig } from '@/lib/paypal';
 import { getAppUrl, getSetting } from '@/lib/settings';
+import { createIntent, isIntentMethod } from '@/lib/payments';
+import { startIntentPayment } from '@/lib/paymentStart';
+import { formatMoneyServer } from '@/lib/currency';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +21,7 @@ const MAX = 500;
 export const GET = handler(async () => {
   const user = await requireUser();
   const cards = await prisma.giftCard.findMany({
-    where: { buyerId: user.id },
+    where: { buyerId: user.id, status: { not: 'CANCELLED' } },
     orderBy: { id: 'desc' },
     take: 50,
   });
@@ -41,9 +44,9 @@ export const POST = handler(async (req: NextRequest) => {
   rateLimit('giftcard-buy', 10, 60 * 60, String(user.id));
   const b = await req.json();
   const amount = Math.round(Number(b.amount) * 100) / 100;
-  const method = ['balance', 'paypal', 'stripe'].includes(b.method) ? b.method : 'stripe';
+  const method = ['balance', 'paypal', 'stripe'].includes(b.method) || isIntentMethod(b.method) ? b.method : 'stripe';
   if (!Number.isFinite(amount) || amount < MIN || amount > MAX) {
-    return jsonError(400, `Gift card amount must be between $${MIN} and $${MAX}`);
+    return jsonError(400, `Gift card amount must be between ${await formatMoneyServer(MIN)} and ${await formatMoneyServer(MAX)}`);
   }
 
   const card = await prisma.giftCard.create({
@@ -69,7 +72,16 @@ export const POST = handler(async (req: NextRequest) => {
   const appUrl = await getAppUrl();
   try {
     let redirectUrl: string;
-    if (method === 'stripe') {
+    if (isIntentMethod(method)) {
+      const intent = await createIntent({
+        purpose: 'GIFTCARD',
+        targetId: card.id,
+        userId: user.id,
+        baseAmount: amount,
+        method,
+      });
+      redirectUrl = await startIntentPayment(intent, `Gift card ${card.code}`, '/gift-cards');
+    } else if (method === 'stripe') {
       const cfg = await getStripeConfig();
       if (!cfg.enabled) throw new Error('Card payments are not available right now');
       const res = await fetch('https://api.stripe.com/v1/checkout/sessions', {
@@ -82,7 +94,7 @@ export const POST = handler(async (req: NextRequest) => {
           'line_items[0][quantity]': '1',
           'line_items[0][price_data][currency]': currency.toLowerCase(),
           'line_items[0][price_data][unit_amount]': String(toStripeAmount(amount, currency)),
-          'line_items[0][price_data][product_data][name]': `Gift card $${amount.toFixed(2)}`,
+          'line_items[0][price_data][product_data][name]': `Gift card ${card.code}`,
           'metadata[gift_card_id]': String(card.id),
           success_url: `${appUrl}/gift-cards?purchase=success`,
           cancel_url: `${appUrl}/gift-cards?purchase=cancelled`,
@@ -110,7 +122,7 @@ export const POST = handler(async (req: NextRequest) => {
         headers: { Authorization: `Bearer ${tokenJson.access_token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           intent: 'CAPTURE',
-          purchase_units: [{ custom_id: String(card.id), description: `Gift card $${amount.toFixed(2)}`, amount: { currency_code: currency.toUpperCase(), value: amount.toFixed(2) } }],
+          purchase_units: [{ custom_id: String(card.id), description: `Gift card ${card.code}`, amount: { currency_code: currency.toUpperCase(), value: amount.toFixed(2) } }],
           application_context: {
             shipping_preference: 'NO_SHIPPING',
             user_action: 'PAY_NOW',
@@ -128,7 +140,7 @@ export const POST = handler(async (req: NextRequest) => {
     }
     return NextResponse.json({ ok: true, redirectUrl });
   } catch (e: any) {
-    await prisma.giftCard.delete({ where: { id: card.id } }).catch(() => {});
+    await prisma.giftCard.updateMany({ where: { id: card.id, status: 'PENDING' }, data: { status: 'CANCELLED' } }).catch(() => {});
     return jsonError(502, e.message || 'Could not start the payment');
   }
 });

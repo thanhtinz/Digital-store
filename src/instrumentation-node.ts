@@ -3,6 +3,7 @@
 // (abandoned cart, win-back) and abandoned PENDING order expiry every 30 min.
 import { runAutoCouponRules } from './lib/autoCoupons';
 import { expireStaleOrders } from './lib/orders';
+import { expireStaleIntents } from './lib/payments';
 import { ensureAdminAccount } from './lib/bootstrap';
 
 const globalAny = globalThis as any;
@@ -24,6 +25,12 @@ if (!globalAny.__dsSchedulerStarted) {
       if (expired > 0) console.log(`[orders] expired ${expired} stale pending order(s)`);
     } catch (e) {
       console.error('[orders] expiry run failed:', e);
+    }
+    try {
+      const expired = await expireStaleIntents();
+      if (expired > 0) console.log(`[payments] expired ${expired} stale payment intent(s)`);
+    } catch (e) {
+      console.error('[payments] expiry run failed:', e);
     }
   };
   // First pass shortly after boot, then every 30 minutes.
