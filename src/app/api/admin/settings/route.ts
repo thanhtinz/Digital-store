@@ -44,6 +44,8 @@ const ALL_KEYS = [
   'telegram_enabled', 'telegram_bot_token', 'telegram_chat_id', 'customer_bot_token',
   // SEO
   'indexnow_key',
+  // Appearance
+  'theme_color', 'theme_font', 'theme_text_size', 'theme_allow_override',
   // Feature switches
   'feature_wallet', 'feature_giftcards', 'feature_reviews', 'feature_wishlist', 'feature_news', 'feature_flash_sale', 'feature_livechat', 'feature_support',
 ];

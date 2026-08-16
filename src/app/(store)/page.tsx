@@ -121,7 +121,7 @@ export default async function HomePage() {
       <section className="relative overflow-hidden bg-gray-950">
         {/* Ambient colour wash + grid texture */}
         <div className="pointer-events-none absolute -left-40 -top-40 h-[26rem] w-[26rem] rounded-full bg-brand-600/40 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-52 right-0 h-[30rem] w-[30rem] rounded-full bg-fuchsia-600/25 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-52 right-0 h-[30rem] w-[30rem] rounded-full bg-brand-400/25 blur-3xl" />
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.14]"
           style={{
@@ -145,7 +145,7 @@ export default async function HomePage() {
 
             <h1 className="mt-5 text-4xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
               Digital goods,
-              <span className="bg-gradient-to-r from-brand-300 via-violet-300 to-fuchsia-300 bg-clip-text text-transparent"> delivered in seconds</span>
+              <span className="bg-gradient-to-r from-brand-200 via-brand-300 to-brand-100 bg-clip-text text-transparent"> delivered in seconds</span>
             </h1>
             <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-gray-300 sm:text-lg">
               Streaming subscriptions, game credits and software licenses — paid for securely and sent to you the moment
@@ -408,7 +408,7 @@ export default async function HomePage() {
         )}
 
         {/* ── Closing call to action ──────────────────────────────── */}
-        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-700 via-brand-600 to-violet-600 px-6 py-10 text-center sm:px-10 sm:py-12">
+        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-700 via-brand-600 to-brand-500 px-6 py-10 text-center sm:px-10 sm:py-12">
           <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-white/10" />
           <div className="pointer-events-none absolute -bottom-24 -left-10 h-64 w-64 rounded-full bg-white/[.07]" />
           <h2 className="relative text-2xl font-extrabold text-white sm:text-3xl">Ready when you are</h2>
