@@ -25,7 +25,7 @@ export async function createOrder(params: {
   items: CheckoutItemInput[];
   couponCode?: string;
   redeemPoints?: number;
-  paymentMethod: 'stripe' | 'paypal' | 'balance';
+  paymentMethod: 'stripe' | 'paypal' | 'balance' | 'sepay' | 'payos' | 'bank';
 }) {
   const { userId, email, items, couponCode, redeemPoints, paymentMethod } = params;
   if (!items.length) throw new OrderError('Your cart is empty');

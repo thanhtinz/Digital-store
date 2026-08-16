@@ -36,6 +36,32 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   currency_round_step: '1000',    // round converted zero-decimal amounts up to this
   payment_currency: 'VND',        // what the Vietnamese gateways charge in
   payment_min: '0.50',            // smallest chargeable order total, in base currency
+  // Offset for PaymentIntent.ref. Bump it if the database is reset while the
+  // PayOS merchant account keeps its history — PayOS rejects a reused orderCode.
+  payment_ref_base: '100000',
+  payment_ref_prefix: 'DH',       // memo prefix customers type in their transfer
+  payment_expiry_minutes: '60',
+  // Manual bank transfer (admin confirms the payment)
+  bank_transfer_enabled: 'false',
+  bank_transfer_bank_name: '',
+  bank_transfer_bank_code: '',    // VietQR bank code, e.g. MB, VCB, TCB
+  bank_transfer_account_number: '',
+  bank_transfer_account_name: '',
+  bank_transfer_instructions: '',
+  // SePay: bank transfer confirmed automatically by its webhook
+  sepay_enabled: 'false',
+  sepay_webhook_key: '',
+  sepay_bank_name: '',
+  sepay_bank_code: '',
+  sepay_account_number: '',
+  sepay_account_name: '',
+  sepay_instructions: '',
+  // PayOS: hosted payment link
+  payos_enabled: 'false',
+  payos_client_id: '',
+  payos_api_key: '',
+  payos_checksum_key: '',
+  payos_api_base: 'https://api-merchant.payos.vn',
   support_email: 'support@example.com',
   stripe_enabled: 'false',
   paypal_enabled: 'false',
@@ -121,6 +147,8 @@ export async function getPublicSettings() {
     'currency_decimals', 'currency_symbol', 'currency_symbol_position',
     'currency_thousand_sep', 'currency_decimal_sep', 'currency_rates', 'payment_currency',
     'stripe_enabled', 'paypal_enabled', 'google_login_enabled', 'footer_text',
+    'sepay_enabled', 'sepay_account_number', 'payos_enabled', 'payos_client_id',
+    'bank_transfer_enabled', 'bank_transfer_account_number',
     'footer_about', 'social_facebook', 'social_twitter', 'social_instagram', 'social_youtube', 'social_telegram', 'social_discord',
     'feature_wallet', 'feature_giftcards', 'feature_reviews', 'feature_wishlist', 'feature_news', 'feature_flash_sale', 'feature_livechat', 'feature_support',
   ]);
@@ -135,6 +163,9 @@ export async function getPublicSettings() {
     paymentCurrency: (s.payment_currency || 'VND').toUpperCase(),
     supportEmail: s.support_email,
     stripeEnabled: s.stripe_enabled === 'true',
+    sepayEnabled: s.sepay_enabled === 'true' && !!s.sepay_account_number,
+    payosEnabled: s.payos_enabled === 'true' && !!s.payos_client_id,
+    bankEnabled: s.bank_transfer_enabled === 'true' && !!s.bank_transfer_account_number,
     paypalEnabled: s.paypal_enabled === 'true',
     googleLoginEnabled: s.google_login_enabled === 'true',
     footerText: s.footer_text,

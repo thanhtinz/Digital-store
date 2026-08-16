@@ -11,6 +11,7 @@ const MASK = '••••••••';
 const SECRET_KEYS = new Set([
   'stripe_secret_key', 'stripe_webhook_secret',
   'paypal_client_secret', 'google_client_secret', 'smtp_pass', 'telegram_bot_token', 'customer_bot_token',
+  'sepay_webhook_key', 'payos_api_key', 'payos_checksum_key',
 ]);
 const ALL_KEYS = [
   // Site
@@ -25,6 +26,13 @@ const ALL_KEYS = [
   'stripe_enabled', 'stripe_secret_key', 'stripe_publishable_key', 'stripe_webhook_secret',
   // PayPal
   'paypal_enabled', 'paypal_client_id', 'paypal_client_secret', 'paypal_mode',
+  // Vietnamese payment methods
+  'payment_ref_base', 'payment_ref_prefix', 'payment_expiry_minutes',
+  'bank_transfer_enabled', 'bank_transfer_bank_name', 'bank_transfer_bank_code',
+  'bank_transfer_account_number', 'bank_transfer_account_name', 'bank_transfer_instructions',
+  'sepay_enabled', 'sepay_webhook_key', 'sepay_bank_name', 'sepay_bank_code',
+  'sepay_account_number', 'sepay_account_name', 'sepay_instructions',
+  'payos_enabled', 'payos_client_id', 'payos_api_key', 'payos_checksum_key', 'payos_api_base',
   // Google OAuth
   'google_login_enabled', 'google_client_id', 'google_client_secret',
   // SMTP

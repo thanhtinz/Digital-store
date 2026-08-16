@@ -24,7 +24,8 @@ export default function WalletPage() {
   const [balance, setBalance] = useState<number | null>(null);
   const [txns, setTxns] = useState<Txn[]>([]);
   const [amount, setAmount] = useState('25');
-  const [method, setMethod] = useState<'stripe' | 'paypal'>('stripe');
+  const [method, setMethod] = useState<'stripe' | 'paypal' | 'sepay' | 'payos' | 'bank'>('stripe');
+  const [pay, setPay] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState(false);
 
   const load = () =>
@@ -37,6 +38,17 @@ export default function WalletPage() {
     if (user === null) router.replace('/login?next=/wallet');
     if (user) {
       load().catch(() => {});
+      api<{ payments: Record<string, boolean> }>('/api/public/config')
+        .then((d) => {
+          setPay(d.payments);
+          // Preselect something that is actually offered.
+          if (d.payments.stripeEnabled) setMethod('stripe');
+          else if (d.payments.paypalEnabled) setMethod('paypal');
+          else if (d.payments.sepayEnabled) setMethod('sepay');
+          else if (d.payments.payosEnabled) setMethod('payos');
+          else if (d.payments.bankEnabled) setMethod('bank');
+        })
+        .catch(() => {});
       const status = new URLSearchParams(window.location.search).get('topup');
       if (status === 'success') { toast('Top-up received — balance updated'); refreshUser(); }
       if (status === 'cancelled') toast('Top-up was cancelled', 'error');
@@ -113,24 +125,26 @@ export default function WalletPage() {
               <div>
                 <label className="label">Payment method</label>
                 <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setMethod('stripe')}
-                    className={`flex items-center justify-center gap-1.5 rounded-lg border py-2.5 text-sm font-semibold transition ${
-                      method === 'stripe' ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-gray-300 hover:bg-gray-50'
-                    }`}
-                  >
-                    <Icon name="credit-card" size={16} /> Card
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMethod('paypal')}
-                    className={`flex items-center justify-center gap-1.5 rounded-lg border py-2.5 text-sm font-semibold transition ${
-                      method === 'paypal' ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-gray-300 hover:bg-gray-50'
-                    }`}
-                  >
-                    <Icon name="paypal" size={16} /> PayPal
-                  </button>
+                  {([
+                    ['stripe', 'Card', 'credit-card', pay.stripeEnabled !== false],
+                    ['paypal', 'PayPal', 'paypal', pay.paypalEnabled !== false],
+                    ['sepay', 'Bank (instant)', 'bolt', !!pay.sepayEnabled],
+                    ['payos', 'PayOS', 'credit-card', !!pay.payosEnabled],
+                    ['bank', 'Bank (manual)', 'store', !!pay.bankEnabled],
+                  ] as const)
+                    .filter(([, , , enabled]) => enabled)
+                    .map(([value, label, icon]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setMethod(value as any)}
+                        className={`flex items-center justify-center gap-1.5 rounded-lg border py-2.5 text-sm font-semibold transition ${
+                          method === value ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Icon name={icon} size={16} /> {label}
+                      </button>
+                    ))}
                 </div>
               </div>
               <button className="btn-primary w-full" disabled={busy}>

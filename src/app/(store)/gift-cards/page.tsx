@@ -8,7 +8,7 @@ import { api } from '@/lib/client';
 import Icon from '@/components/icons';
 
 type Card = { id: number; code: string | null; amount: number; status: string; createdAt: string };
-type Pay = { stripeEnabled: boolean; paypalEnabled: boolean };
+type Pay = { stripeEnabled: boolean; paypalEnabled: boolean; sepayEnabled?: boolean; payosEnabled?: boolean; bankEnabled?: boolean };
 
 const PRESETS = ['10', '25', '50', '100'];
 
@@ -132,12 +132,15 @@ export default function GiftCardsPage() {
               </div>
               <div>
                 <label className="label">Payment method</label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {([
                     ['stripe', 'Card', pay?.stripeEnabled],
                     ['paypal', 'PayPal', pay?.paypalEnabled],
                     ['balance', 'Wallet', walletOn],
-                  ] as const).map(([value, label, enabled]) => (
+                    ['sepay', 'Bank (instant)', pay?.sepayEnabled],
+                    ['payos', 'PayOS', pay?.payosEnabled],
+                    ['bank', 'Bank (manual)', pay?.bankEnabled],
+                  ] as const).filter(([, , enabled]) => enabled).map(([value, label, enabled]) => (
                     <button
                       key={value}
                       type="button"
