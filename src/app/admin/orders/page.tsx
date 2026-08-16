@@ -1,15 +1,16 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useStore } from '@/components/Providers';
+import { useStore, useMoney } from '@/components/Providers';
 import { api } from '@/lib/client';
-import { formatMoney } from '@/lib/utils';
+
 import StatusBadge from '@/components/StatusBadge';
 
 const STATUSES = ['', 'PENDING', 'PAID', 'COMPLETED', 'CANCELLED', 'REFUNDED'];
 
 export default function AdminOrdersPage() {
   const { toast } = useStore();
+  const money = useMoney();
   const [orders, setOrders] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -49,8 +50,8 @@ export default function AdminOrdersPage() {
         <div className="card p-5 text-sm">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div><p className="text-xs text-gray-400">Customer</p><p className="font-semibold">{open.user?.name}</p><p className="text-xs">{open.email}</p></div>
-            <div><p className="text-xs text-gray-400">Total</p><p className="font-semibold">{formatMoney(Number(open.total), open.currency)}</p>
-              {Number(open.discount) > 0 && <p className="text-xs text-green-600">−{formatMoney(Number(open.discount))} ({open.couponCode})</p>}</div>
+            <div><p className="text-xs text-gray-400">Total</p><p className="font-semibold">{money(Number(open.total), open.currency)}</p>
+              {Number(open.discount) > 0 && <p className="text-xs text-green-600">−{money(Number(open.discount))} ({open.couponCode})</p>}</div>
             <div><p className="text-xs text-gray-400">Payment</p><p className="font-semibold capitalize">{open.paymentMethod || '—'}</p><p className="break-all text-xs text-gray-400">{open.paymentRef}</p></div>
             <div><p className="text-xs text-gray-400">Placed</p><p className="font-semibold">{new Date(open.createdAt).toLocaleString('en-US')}</p></div>
           </div>
@@ -81,7 +82,7 @@ export default function AdminOrdersPage() {
                     </p>
                   )}
                 </div>
-                <span className="text-sm font-bold">{formatMoney(Number(item.lineTotal))}</span>
+                <span className="text-sm font-bold">{money(Number(item.lineTotal))}</span>
               </div>
               {item.deliveryData ? (
                 <pre className="mt-2 whitespace-pre-wrap break-all rounded-lg bg-gray-900 p-3 font-mono text-xs text-green-300">{item.deliveryData}</pre>
@@ -143,7 +144,7 @@ export default function AdminOrdersPage() {
                 <td className="max-w-[200px] truncate px-4 py-3 text-xs text-gray-500">
                   {o.items.map((i: any) => `${i.productName} ×${i.quantity}`).join(', ')}
                 </td>
-                <td className="px-4 py-3 font-semibold">{formatMoney(Number(o.total), o.currency)}</td>
+                <td className="px-4 py-3 font-semibold">{money(Number(o.total), o.currency)}</td>
                 <td className="px-4 py-3"><StatusBadge status={o.status} /></td>
                 <td className="whitespace-nowrap px-4 py-3 text-xs text-gray-500">{new Date(o.createdAt).toLocaleDateString('en-US')}</td>
                 <td className="px-4 py-3 text-right">

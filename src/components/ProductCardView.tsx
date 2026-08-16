@@ -1,7 +1,10 @@
+'use client';
+
 import Link from 'next/link';
 import type { ProductCard } from '@/lib/catalog';
-import { formatMoney } from '@/lib/utils';
+
 import Icon from './icons';
+import { useMoney } from '@/components/Providers';
 
 export function Stars({ value, size = 14 }: { value: number; size?: number }) {
   return (
@@ -16,6 +19,7 @@ export function Stars({ value, size = 14 }: { value: number; size?: number }) {
 }
 
 export default function ProductCardView({ product }: { product: ProductCard }) {
+  const money = useMoney();
   return (
     <Link
       href={`/product/${product.slug}`}
@@ -52,10 +56,10 @@ export default function ProductCardView({ product }: { product: ProductCard }) {
         <div className="mt-auto flex items-center justify-between gap-2 pt-3">
           <span className="flex items-baseline gap-2">
             <span className="text-base font-extrabold text-gray-900">
-              {product.minPrice > 0 ? formatMoney(product.minPrice) : 'Free'}
+              {product.minPrice > 0 ? money(product.minPrice) : 'Free'}
             </span>
             {product.onSale && product.minOriginal > product.minPrice && (
-              <span className="text-xs text-gray-400 line-through">{formatMoney(product.minOriginal)}</span>
+              <span className="text-xs text-gray-400 line-through">{money(product.minOriginal)}</span>
             )}
           </span>
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gray-100 text-gray-400 transition-all group-hover:bg-brand-600 group-hover:text-white">

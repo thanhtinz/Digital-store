@@ -1,7 +1,8 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { api } from '@/lib/client';
+import { DEFAULT_MONEY_FORMAT, formatMoneyWith, type MoneyFormat } from '@/lib/utils';
 
 export type SessionUser = {
   id: number;
@@ -24,6 +25,7 @@ type StoreContextValue = {
   cartCount: number;
   refreshCart: () => Promise<void>;
   toast: (message: string, kind?: 'success' | 'error') => void;
+  money: MoneyFormat;
 };
 
 const StoreContext = createContext<StoreContextValue>({
@@ -32,11 +34,28 @@ const StoreContext = createContext<StoreContextValue>({
   cartCount: 0,
   refreshCart: async () => {},
   toast: () => {},
+  money: DEFAULT_MONEY_FORMAT,
 });
 
 export const useStore = () => useContext(StoreContext);
 
-export default function Providers({ children }: { children: ReactNode }) {
+// Formats an amount in the store's configured currency. Passing an explicit
+// code renders that currency instead — historical orders keep the currency
+// they were booked in even after the store's base changes.
+export function useMoney() {
+  const { money } = useContext(StoreContext);
+  return useCallback(
+    (value: number | string, code?: string) => {
+      if (code && code.toUpperCase() !== money.code) {
+        return formatMoneyWith(value, { ...money, code: code.toUpperCase(), symbol: code.toUpperCase() });
+      }
+      return formatMoneyWith(value, money);
+    },
+    [money]
+  );
+}
+
+export default function Providers({ children, money = DEFAULT_MONEY_FORMAT }: { children: ReactNode; money?: MoneyFormat }) {
   const [user, setUser] = useState<SessionUser | null | undefined>(undefined);
   const [cartCount, setCartCount] = useState(0);
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -75,8 +94,13 @@ export default function Providers({ children }: { children: ReactNode }) {
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 4000);
   }, []);
 
+  const value = useMemo(
+    () => ({ user, refreshUser, cartCount, refreshCart, toast, money }),
+    [user, refreshUser, cartCount, refreshCart, toast, money]
+  );
+
   return (
-    <StoreContext.Provider value={{ user, refreshUser, cartCount, refreshCart, toast }}>
+    <StoreContext.Provider value={value}>
       {children}
       {/* Toasts */}
       <div className="fixed bottom-4 left-1/2 z-[100] flex w-[92vw] max-w-sm -translate-x-1/2 flex-col gap-2 sm:left-auto sm:right-4 sm:translate-x-0">

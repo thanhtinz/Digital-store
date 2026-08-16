@@ -2,6 +2,7 @@ import prisma from './db';
 import { notifyUser } from './notify';
 import { getSettings, getAppUrl } from './settings';
 import { sendMail, emailLayout, buttonHtml } from './mail';
+import { formatMoneyServer } from './currency';
 
 // Evaluates every active auto-coupon rule against its configured conditions
 // and emails personal one-time codes to matching customers.
@@ -86,8 +87,8 @@ export async function runAutoCouponRules(): Promise<{ granted: number }> {
       granted += 1;
 
       const discountLabel = rule.discountType === 'FIXED'
-        ? `$${Number(rule.value).toFixed(2)} off`
-        : `${Number(rule.value)}% off${rule.maxDiscount ? ` (up to $${Number(rule.maxDiscount).toFixed(2)})` : ''}`;
+        ? `${await formatMoneyServer(Number(rule.value))} off`
+        : `${Number(rule.value)}% off${rule.maxDiscount ? ` (up to ${await formatMoneyServer(Number(rule.maxDiscount))})` : ''}`;
       const intro = rule.trigger === 'ABANDONED_CART'
         ? '<p>You left some great picks in your cart — here is a little push to finish your order:</p>'
         : '<p>We miss you! Here is a personal discount to welcome you back:</p>';

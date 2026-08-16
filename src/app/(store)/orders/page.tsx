@@ -2,9 +2,10 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import prisma from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
-import { formatMoney } from '@/lib/utils';
+
 import StatusBadge from '@/components/StatusBadge';
 import Icon from '@/components/icons';
+import { getMoneyFormatter } from '@/lib/currency';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'My Orders' };
@@ -18,6 +19,7 @@ const FILTERS = [
 ] as const;
 
 export default async function OrdersPage({ searchParams }: { searchParams: { status?: string } }) {
+  const money = await getMoneyFormatter();
   const user = await getSessionUser();
   if (!user) redirect('/login?next=/orders');
 
@@ -105,7 +107,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: { sta
                       )}
                     </div>
                     <StatusBadge status={o.status} />
-                    <span className="w-20 text-right text-sm font-bold">{formatMoney(Number(o.total), o.currency)}</span>
+                    <span className="w-20 text-right text-sm font-bold">{money(Number(o.total), o.currency)}</span>
                     <Icon name="chevron-right" size={16} className="text-gray-300" />
                   </div>
                 </div>

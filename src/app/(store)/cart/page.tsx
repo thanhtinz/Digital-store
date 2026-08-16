@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useStore } from '@/components/Providers';
+import { useStore, useMoney } from '@/components/Providers';
 import { api } from '@/lib/client';
-import { formatMoney, type CustomFieldDef } from '@/lib/utils';
+import { type CustomFieldDef } from '@/lib/utils';
 import Icon from '@/components/icons';
 
 type CartItemView = {
@@ -26,6 +26,7 @@ type CartItemView = {
 
 export default function CartPage() {
   const { user, refreshCart, toast } = useStore();
+  const money = useMoney();
   const [items, setItems] = useState<CartItemView[] | null>(null);
 
   const load = async () => {
@@ -114,9 +115,9 @@ export default function CartPage() {
                       <button className="px-2.5 py-1 hover:bg-gray-100" onClick={() => update(item.id, item.quantity + 1)}>+</button>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-sm font-bold">{formatMoney(item.unitPrice * item.quantity)}</span>
+                      <span className="text-sm font-bold">{money(item.unitPrice * item.quantity)}</span>
                       {item.onSale && (
-                        <span className="text-xs text-gray-400 line-through">{formatMoney(item.originalPrice * item.quantity)}</span>
+                        <span className="text-xs text-gray-400 line-through">{money(item.originalPrice * item.quantity)}</span>
                       )}
                       <button className="text-xs font-medium text-red-500 hover:underline" onClick={() => update(item.id, 0)}>
                         Remove
@@ -133,7 +134,7 @@ export default function CartPage() {
             <h2 className="font-bold">Order summary</h2>
             <div className="mt-4 flex justify-between text-sm">
               <span className="text-gray-500">Subtotal</span>
-              <span className="font-semibold">{formatMoney(subtotal)}</span>
+              <span className="font-semibold">{money(subtotal)}</span>
             </div>
             <p className="mt-1 text-xs text-gray-400">Coupons are applied at checkout.</p>
             <Link

@@ -1,4 +1,5 @@
 import prisma from './db';
+import { moneyFormatFrom, parseRates } from './utils';
 
 // Settings live in the DB (editable from the admin panel). A matching
 // environment variable (UPPER_SNAKE_CASE of the key) always wins, so
@@ -24,7 +25,17 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   site_name: 'Digital Store',
   site_tagline: 'Instant delivery of premium digital goods',
   site_logo: '',
+  // Base currency: every Decimal price in the database is denominated in this.
   currency: 'USD',
+  currency_decimals: '2',
+  currency_symbol: '',            // blank = derive from the currency code
+  currency_symbol_position: 'before',
+  currency_thousand_sep: ',',
+  currency_decimal_sep: '.',
+  currency_rates: '{}',           // { "VND": 25400 } — units of X per 1 base unit
+  currency_round_step: '1000',    // round converted zero-decimal amounts up to this
+  payment_currency: 'VND',        // what the Vietnamese gateways charge in
+  payment_min: '0.50',            // smallest chargeable order total, in base currency
   support_email: 'support@example.com',
   stripe_enabled: 'false',
   paypal_enabled: 'false',
@@ -60,13 +71,27 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   affiliate_rate: '10',         // commission percent
 };
 
+// The settings table is small (~70 rows) and now read on nearly every render
+// for money formatting, so one full read is cheaper than a query per key.
+// A short TTL keeps admin edits feeling immediate; writes bust it outright.
+const CACHE_TTL_MS = 5_000;
+let cache: { at: number; rows: Record<string, string> } | null = null;
+
+async function loadAll(): Promise<Record<string, string>> {
+  if (cache && Date.now() - cache.at < CACHE_TTL_MS) return cache.rows;
+  const rows = await prisma.setting.findMany();
+  const map: Record<string, string> = {};
+  for (const r of rows) map[r.key] = r.value;
+  cache = { at: Date.now(), rows: map };
+  return map;
+}
+
 export async function getSettings(keys: string[]): Promise<Record<string, string>> {
-  const rows = await prisma.setting.findMany({ where: { key: { in: keys } } });
+  const stored = await loadAll();
   const map: Record<string, string> = {};
   for (const key of keys) {
     const env = ENV_MAP[key] ? process.env[ENV_MAP[key]] : undefined;
-    const row = rows.find((r) => r.key === key);
-    map[key] = env || row?.value || SETTING_DEFAULTS[key] || '';
+    map[key] = env || stored[key] || SETTING_DEFAULTS[key] || '';
   }
   return map;
 }
@@ -81,6 +106,7 @@ export async function setSettings(values: Record<string, string>): Promise<void>
       prisma.setting.upsert({ where: { key }, update: { value }, create: { key, value } })
     )
   );
+  cache = null; // next read reflects the write immediately
 }
 
 export async function getAppUrl(): Promise<string> {
@@ -92,6 +118,8 @@ export async function getAppUrl(): Promise<string> {
 export async function getPublicSettings() {
   const s = await getSettings([
     'site_name', 'site_tagline', 'site_logo', 'currency', 'support_email',
+    'currency_decimals', 'currency_symbol', 'currency_symbol_position',
+    'currency_thousand_sep', 'currency_decimal_sep', 'currency_rates', 'payment_currency',
     'stripe_enabled', 'paypal_enabled', 'google_login_enabled', 'footer_text',
     'footer_about', 'social_facebook', 'social_twitter', 'social_instagram', 'social_youtube', 'social_telegram', 'social_discord',
     'feature_wallet', 'feature_giftcards', 'feature_reviews', 'feature_wishlist', 'feature_news', 'feature_flash_sale', 'feature_livechat', 'feature_support',
@@ -101,6 +129,10 @@ export async function getPublicSettings() {
     tagline: s.site_tagline,
     logo: s.site_logo,
     currency: s.currency,
+    // Full money format so the storefront never has to guess the symbol.
+    money: moneyFormatFrom(s),
+    rates: parseRates(s.currency_rates),
+    paymentCurrency: (s.payment_currency || 'VND').toUpperCase(),
     supportEmail: s.support_email,
     stripeEnabled: s.stripe_enabled === 'true',
     paypalEnabled: s.paypal_enabled === 'true',

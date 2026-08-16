@@ -1,16 +1,18 @@
 import { notFound, redirect } from 'next/navigation';
 import prisma from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
-import { formatMoney } from '@/lib/utils';
+
 import StatusBadge from '@/components/StatusBadge';
 import PaymentWatcher from './PaymentWatcher';
 import OrderActions from './OrderActions';
 import Icon from '@/components/icons';
+import { getMoneyFormatter } from '@/lib/currency';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Order details' };
 
 export default async function OrderDetailPage({ params }: { params: { code: string } }) {
+  const money = await getMoneyFormatter();
   const user = await getSessionUser();
   if (!user) redirect(`/login?next=/orders/${params.code}`);
 
@@ -66,7 +68,7 @@ export default async function OrderDetailPage({ params }: { params: { code: stri
                   </p>
                 )}
               </div>
-              <span className="text-sm font-bold">{formatMoney(Number(item.lineTotal), order.currency)}</span>
+              <span className="text-sm font-bold">{money(Number(item.lineTotal), order.currency)}</span>
             </div>
             {/* Delivered content */}
             {item.deliveryData && (
@@ -85,15 +87,15 @@ export default async function OrderDetailPage({ params }: { params: { code: stri
       </div>
 
       <div className="card mt-4 space-y-1.5 p-5 text-sm">
-        <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>{formatMoney(Number(order.subtotal), order.currency)}</span></div>
+        <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>{money(Number(order.subtotal), order.currency)}</span></div>
         {Number(order.discount) > 0 && (
           <div className="flex justify-between text-green-600">
             <span>Discount {order.couponCode ? `(${order.couponCode})` : ''}</span>
-            <span>−{formatMoney(Number(order.discount), order.currency)}</span>
+            <span>−{money(Number(order.discount), order.currency)}</span>
           </div>
         )}
         <div className="flex justify-between border-t border-gray-100 pt-2 text-base font-bold">
-          <span>Total</span><span>{formatMoney(Number(order.total), order.currency)}</span>
+          <span>Total</span><span>{money(Number(order.total), order.currency)}</span>
         </div>
       </div>
     </div>

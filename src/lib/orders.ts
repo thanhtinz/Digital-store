@@ -7,6 +7,7 @@ import { creditWallet } from './wallet';
 import { sendMail, emailLayout } from './mail';
 import { sendTelegram, escapeHtml } from './telegram';
 import { notifyUser } from './notify';
+import { formatMoneyServer, getMoneyFormatter } from './currency';
 
 export type CheckoutItemInput = {
   packageId: number;
@@ -127,7 +128,10 @@ export async function createOrder(params: {
   }
 
   const total = Math.round((subtotal - discount - pointsDiscount) * 100) / 100;
-  if (total < 0.5) throw new OrderError('Order total is below the payment minimum ($0.50)');
+  const minimum = Number((await getSettings(['payment_min'])).payment_min) || 0;
+  if (total < minimum) {
+    throw new OrderError(`Order total is below the payment minimum (${await formatMoneyServer(minimum)})`);
+  }
 
   const currency = (await getSetting('currency')) || 'USD';
 
@@ -283,7 +287,7 @@ export async function markOrderPaid(orderId: number, paymentRef?: string): Promi
   sendTelegram(
     `<b>New paid order</b> ${order.code}\n` +
     `${escapeHtml(itemsLabel)}\n` +
-    `Total: $${Number(order.total).toFixed(2)} · ${order.paymentMethod || 'unknown'} · ${escapeHtml(order.email)}`
+    `Total: ${await formatMoneyServer(Number(order.total), order.currency)} · ${order.paymentMethod || 'unknown'} · ${escapeHtml(order.email)}`
   ).catch(() => {});
 }
 
@@ -456,13 +460,14 @@ async function sendOrderEmail(orderId: number): Promise<void> {
   if (!order) return;
   const siteName = await getSetting('site_name');
   const appUrl = (await getSetting('app_url')) || '';
+  const money = await getMoneyFormatter();
   const rows = order.items
-    .map((i) => `<tr><td style="padding:6px 0">${i.productName} — ${i.packageName} × ${i.quantity}</td><td align="right">$${Number(i.lineTotal).toFixed(2)}</td></tr>`)
+    .map((i) => `<tr><td style="padding:6px 0">${i.productName} — ${i.packageName} × ${i.quantity}</td><td align="right">${money(Number(i.lineTotal), order.currency)}</td></tr>`)
     .join('');
   const html = emailLayout(
     siteName,
     `Payment received — order ${order.code}`,
-    `<p>Thank you for your purchase! We received your payment of <b>$${Number(order.total).toFixed(2)}</b>.</p>
+    `<p>Thank you for your purchase! We received your payment of <b>${money(Number(order.total), order.currency)}</b>.</p>
      <table width="100%" style="font-size:14px;border-collapse:collapse">${rows}</table>
      <p>Track your order and view delivered items here:<br>
      <a href="${appUrl}/orders/${order.code}">${appUrl}/orders/${order.code}</a></p>`
@@ -473,6 +478,6 @@ async function sendOrderEmail(orderId: number): Promise<void> {
   await notifyUser(order.userId, {
     subject: `Your ${siteName} order ${order.code}`,
     html,
-    text: `<b>Payment received — order ${order.code}</b>\n${itemsText}\nTotal: $${Number(order.total).toFixed(2)}\n\n${appUrl}/orders/${order.code}`,
+    text: `<b>Payment received — order ${order.code}</b>\n${itemsText}\nTotal: ${money(Number(order.total), order.currency)}\n\n${appUrl}/orders/${order.code}`,
   });
 }

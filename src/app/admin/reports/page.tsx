@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/client';
-import { formatMoney } from '@/lib/utils';
+
 import Icon from '@/components/icons';
 import StatusBadge from '@/components/StatusBadge';
+import { useMoney } from '@/components/Providers';
 
 type Report = {
   days: number;
@@ -21,6 +22,7 @@ const METHOD_LABELS: Record<string, string> = {
 };
 
 export default function AdminReportsPage() {
+  const money = useMoney();
   const [days, setDays] = useState(30);
   const [data, setData] = useState<Report | null>(null);
 
@@ -63,10 +65,10 @@ export default function AdminReportsPage() {
           {/* KPI cards */}
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
             {([
-              ['credit-card', 'Revenue', formatMoney(data.totals.revenue)],
+              ['credit-card', 'Revenue', money(data.totals.revenue)],
               ['box', 'Paid orders', String(data.totals.orders)],
-              ['dashboard', 'Avg order value', formatMoney(data.totals.avgOrder)],
-              ['ticket', 'Discounts given', formatMoney(data.totals.discountGiven)],
+              ['dashboard', 'Avg order value', money(data.totals.avgOrder)],
+              ['ticket', 'Discounts given', money(data.totals.discountGiven)],
               ['users', 'New customers', String(data.totals.newCustomers)],
             ] as const).map(([icon, label, value]) => (
               <div key={label} className="card flex items-center gap-3 p-4">
@@ -105,7 +107,7 @@ export default function AdminReportsPage() {
                             {p.name}
                           </span>
                           <span className="shrink-0 text-xs text-gray-500">
-                            {p.units} sold · <b className="text-gray-800">{formatMoney(p.revenue)}</b>
+                            {p.units} sold · <b className="text-gray-800">{money(p.revenue)}</b>
                           </span>
                         </div>
                         <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-gray-100">
@@ -131,7 +133,7 @@ export default function AdminReportsPage() {
                         <tr key={m.method} className="border-b border-gray-50 last:border-0">
                           <td className="py-2 font-medium">{METHOD_LABELS[m.method] || m.method}</td>
                           <td className="py-2 text-right text-gray-500">{m.orders} order{m.orders === 1 ? '' : 's'}</td>
-                          <td className="py-2 text-right font-semibold">{formatMoney(m.revenue)}</td>
+                          <td className="py-2 text-right font-semibold">{money(m.revenue)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -161,6 +163,7 @@ export default function AdminReportsPage() {
 }
 
 function RevenueChart({ series }: { series: { date: string; revenue: number; orders: number }[] }) {
+  const money = useMoney();
   const max = Math.max(1, ...series.map((s) => s.revenue));
   // For long ranges collapse to weekly buckets so bars stay readable.
   const buckets = series.length > 92
@@ -185,7 +188,7 @@ function RevenueChart({ series }: { series: { date: string; revenue: number; ord
               style={{ height: `${Math.max(2, (s.revenue / bmax) * 168)}px` }}
             />
             <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-[11px] text-white group-hover:block">
-              {s.date}{series.length > 92 ? ' (week)' : ''}: {formatMoney(s.revenue)} · {s.orders} order{s.orders === 1 ? '' : 's'}
+              {s.date}{series.length > 92 ? ' (week)' : ''}: {money(s.revenue)} · {s.orders} order{s.orders === 1 ? '' : 's'}
             </div>
           </div>
         ))}

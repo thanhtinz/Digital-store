@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/client';
-import { formatMoney } from '@/lib/utils';
+
 import StatusBadge from '@/components/StatusBadge';
 import Icon from '@/components/icons';
+import { useMoney } from '@/components/Providers';
 
 type Stats = {
   revenue: { total: number; month: number; today: number };
@@ -15,6 +16,7 @@ type Stats = {
 };
 
 export default function AdminDashboard() {
+  const money = useMoney();
   const [stats, setStats] = useState<Stats | null>(null);
 
   useEffect(() => {
@@ -32,9 +34,9 @@ export default function AdminDashboard() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {([
-          ['clock', 'Revenue today', formatMoney(stats.revenue.today), ''],
-          ['dashboard', 'Revenue this month', formatMoney(stats.revenue.month), ''],
-          ['credit-card', 'Total revenue', formatMoney(stats.revenue.total), ''],
+          ['clock', 'Revenue today', money(stats.revenue.today), ''],
+          ['dashboard', 'Revenue this month', money(stats.revenue.month), ''],
+          ['credit-card', 'Total revenue', money(stats.revenue.total), ''],
           ['truck', 'Awaiting delivery', String(stats.counts.awaitingDelivery), '/admin/deliveries'],
         ] as const).map(([icon, label, value, href]) => {
           const inner = (
@@ -69,7 +71,7 @@ export default function AdminDashboard() {
                 style={{ height: `${Math.max(2, (s.revenue / max) * 152)}px` }}
               />
               <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-[11px] text-white group-hover:block">
-                {s.date}: {formatMoney(s.revenue)}
+                {s.date}: {money(s.revenue)}
               </div>
             </div>
           ))}
@@ -108,7 +110,7 @@ export default function AdminDashboard() {
                   <td className="max-w-[160px] truncate px-2 py-2.5">{o.customer}</td>
                   <td className="max-w-[180px] truncate px-2 py-2.5 text-xs text-gray-500">{o.summary}</td>
                   <td className="px-2 py-2.5"><StatusBadge status={o.status} /></td>
-                  <td className="px-5 py-2.5 text-right font-semibold">{formatMoney(o.total)}</td>
+                  <td className="px-5 py-2.5 text-right font-semibold">{money(o.total)}</td>
                 </tr>
               ))}
               {stats.recentOrders.length === 0 && (

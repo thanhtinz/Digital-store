@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useStore } from '@/components/Providers';
+import { useStore, useMoney } from '@/components/Providers';
 import { api } from '@/lib/client';
-import { formatMoney } from '@/lib/utils';
+
 import Icon from '@/components/icons';
 
 type Card = { id: number; code: string | null; amount: number; status: string; createdAt: string };
@@ -14,6 +14,7 @@ const PRESETS = ['10', '25', '50', '100'];
 
 export default function GiftCardsPage() {
   const { user, toast, refreshUser } = useStore();
+  const money = useMoney();
   const router = useRouter();
   const params = useSearchParams();
   const [cards, setCards] = useState<Card[]>([]);
@@ -76,7 +77,7 @@ export default function GiftCardsPage() {
     setRedeemBusy(true);
     try {
       const d = await api<{ amount: number }>('/api/gift-cards/redeem', { method: 'POST', json: { code: redeemCode } });
-      toast(`${formatMoney(d.amount)} added to your wallet`);
+      toast(`${money(d.amount)} added to your wallet`);
       setRedeemCode('');
       await refreshUser();
     } catch (e: any) {
@@ -106,7 +107,7 @@ export default function GiftCardsPage() {
             <div className="relative overflow-hidden bg-gradient-to-br from-pink-500 via-rose-500 to-orange-400 p-5 text-white">
               <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10" />
               <p className="text-xs font-semibold uppercase tracking-wider text-white/80">Digital gift card</p>
-              <p className="relative mt-1 text-3xl font-extrabold">{formatMoney(Number(amount) || 0)}</p>
+              <p className="relative mt-1 text-3xl font-extrabold">{money(Number(amount) || 0)}</p>
               <Icon name="gift" size={38} className="absolute bottom-4 right-4 text-white/30" />
             </div>
             <div className="space-y-3 p-5">
@@ -190,7 +191,7 @@ export default function GiftCardsPage() {
                     {new Date(c.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                   </span>
                 </span>
-                <span className="text-sm font-bold">{formatMoney(c.amount)}</span>
+                <span className="text-sm font-bold">{money(c.amount)}</span>
                 {c.status === 'ACTIVE' && (
                   <>
                     <span className="badge bg-green-100 text-green-700">Active</span>

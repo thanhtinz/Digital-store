@@ -5,8 +5,9 @@ import { getFeatures } from '@/lib/features';
 import BannerCarousel from '@/components/BannerCarousel';
 import Countdown from '@/components/Countdown';
 import ProductCardView, { Stars } from '@/components/ProductCardView';
-import { formatMoney } from '@/lib/utils';
+
 import Icon from '@/components/icons';
+import { getMoneyFormatter } from '@/lib/currency';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,6 +44,7 @@ const STEPS = [
 ];
 
 export default async function HomePage() {
+  const money = await getMoneyFormatter();
   const now = new Date();
   const feats = await getFeatures();
   const [banners, categories, flashSale, featuredRaw, latestRaw, stats, testimonials] = await Promise.all([
@@ -293,8 +295,8 @@ export default async function HomePage() {
                       <p className="line-clamp-1 text-xs font-semibold text-white">{item.package.product.name}</p>
                       <p className="line-clamp-1 text-[11px] text-gray-400">{item.package.name}</p>
                       <div className="mt-1.5 flex items-baseline gap-1.5">
-                        <span className="text-sm font-extrabold text-white">{formatMoney(Number(item.salePrice))}</span>
-                        <span className="text-[11px] text-gray-500 line-through">{formatMoney(Number(item.package.price))}</span>
+                        <span className="text-sm font-extrabold text-white">{money(Number(item.salePrice))}</span>
+                        <span className="text-[11px] text-gray-500 line-through">{money(Number(item.package.price))}</span>
                       </div>
                       {left !== null && !soldOut && (
                         <div className="mt-2">

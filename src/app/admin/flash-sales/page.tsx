@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useStore } from '@/components/Providers';
+import { useStore, useMoney } from '@/components/Providers';
 import { api } from '@/lib/client';
-import { formatMoney } from '@/lib/utils';
+
 import Icon from '@/components/icons';
 
 type ItemForm = { packageId: string; salePrice: string; quantityLimit: string; label?: string };
@@ -11,6 +11,7 @@ const EMPTY = { id: 0, name: '', startsAt: '', endsAt: '', isActive: true, items
 
 export default function AdminFlashSalesPage() {
   const { toast } = useStore();
+  const money = useMoney();
   const [sales, setSales] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [form, setForm] = useState<any>(EMPTY);
@@ -24,7 +25,7 @@ export default function AdminFlashSalesPage() {
   }, []);
 
   const allPackages = products.flatMap((p) =>
-    p.packages.map((k: any) => ({ id: k.id, label: `${p.name} — ${k.name} (${formatMoney(Number(k.price))})` }))
+    p.packages.map((k: any) => ({ id: k.id, label: `${p.name} — ${k.name} (${money(Number(k.price))})` }))
   );
 
   const save = async () => {
@@ -93,7 +94,7 @@ export default function AdminFlashSalesPage() {
                 <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-600">
                   {s.items.map((i: any) => (
                     <span key={i.id} className="rounded-full bg-gray-100 px-2.5 py-1">
-                      {i.package?.product?.name} · {i.package?.name}: <b className="text-red-600">{formatMoney(Number(i.salePrice))}</b>
+                      {i.package?.product?.name} · {i.package?.name}: <b className="text-red-600">{money(Number(i.salePrice))}</b>
                       {i.quantityLimit != null && ` (${i.soldCount}/${i.quantityLimit})`}
                     </span>
                   ))}

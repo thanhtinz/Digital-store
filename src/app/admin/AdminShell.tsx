@@ -34,6 +34,7 @@ const NAV: Array<{ href: string; label: string; icon: string } | { section: stri
   { href: '/admin/backup', label: 'Backup', icon: 'download' },
   { href: '/admin/settings/features', label: 'Features', icon: 'spark' },
   { href: '/admin/settings', label: 'Site settings', icon: 'settings' },
+  { href: '/admin/settings/currency', label: 'Currency', icon: 'chart' },
   { href: '/admin/settings/payments', label: 'Payments', icon: 'credit-card' },
   { href: '/admin/settings/marketing', label: 'Rewards & affiliate', icon: 'star' },
   { href: '/admin/settings/google', label: 'Google login', icon: 'key' },

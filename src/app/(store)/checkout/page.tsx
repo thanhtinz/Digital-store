@@ -3,9 +3,9 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useStore } from '@/components/Providers';
+import { useStore, useMoney } from '@/components/Providers';
 import { api } from '@/lib/client';
-import { formatMoney, type CustomFieldDef } from '@/lib/utils';
+import { type CustomFieldDef } from '@/lib/utils';
 import Icon from '@/components/icons';
 
 type CartItemView = {
@@ -35,6 +35,7 @@ type LoyaltyInfo = { enabled: boolean; points: number; redeemValue: number; minR
 
 function CheckoutInner() {
   const { user, toast } = useStore();
+  const money = useMoney();
   const router = useRouter();
   const params = useSearchParams();
   const isBuyNow = params.get('buyNow') === '1';
@@ -115,7 +116,7 @@ function CheckoutInner() {
         json: { code: coupon, subtotal },
       });
       setApplied({ code: d.code, discount: d.discount });
-      toast(`Coupon ${d.code} applied — you save ${formatMoney(d.discount)}`);
+      toast(`Coupon ${d.code} applied — you save ${money(d.discount)}`);
     } catch (e: any) {
       setApplied(null);
       toast(e.message, 'error');
@@ -188,7 +189,7 @@ function CheckoutInner() {
                     <span className="flex-1">
                       <span className="block text-sm font-semibold">Wallet balance</span>
                       <span className="block text-xs text-gray-500">
-                        Available: <b className={balance >= total ? 'text-green-600' : 'text-red-500'}>{formatMoney(balance)}</b> — instant, no redirect
+                        Available: <b className={balance >= total ? 'text-green-600' : 'text-red-500'}>{money(balance)}</b> — instant, no redirect
                       </span>
                     </span>
                     {balance < total && !buyNow && (
@@ -233,7 +234,7 @@ function CheckoutInner() {
                       Use my {loyalty.points.toLocaleString('en-US')} loyalty points
                     </span>
                     <span className="block text-xs text-amber-700">
-                      Save up to {formatMoney(Math.min(loyalty.points * loyalty.redeemValue, Math.max(0, subtotal - discount - 0.5)))} on this order
+                      Save up to {money(Math.min(loyalty.points * loyalty.redeemValue, Math.max(0, subtotal - discount - 0.5)))} on this order
                     </span>
                   </span>
                   <Icon name="star" size={18} className="text-amber-500" />
@@ -260,7 +261,7 @@ function CheckoutInner() {
               </div>
               {applied && (
                 <p className="mt-2 flex items-center gap-1 text-sm font-medium text-green-600">
-                  <Icon name="check" size={15} /> {applied.code} applied — you save {formatMoney(applied.discount)}
+                  <Icon name="check" size={15} /> {applied.code} applied — you save {money(applied.discount)}
                   <button className="ml-2 text-xs text-gray-400 underline" onClick={() => setApplied(null)}>remove</button>
                 </p>
               )}
@@ -288,7 +289,7 @@ function CheckoutInner() {
                       <span className="line-clamp-1 text-xs font-medium">{i.productName}</span>
                       <span className="text-[11px] text-gray-500">{i.packageName} × {i.quantity}</span>
                     </span>
-                    <span className="text-sm font-semibold">{formatMoney(i.unitPrice * i.quantity)}</span>
+                    <span className="text-sm font-semibold">{money(i.unitPrice * i.quantity)}</span>
                   </div>
                 ))}
               </div>
@@ -296,19 +297,19 @@ function CheckoutInner() {
             <div className="mt-4 space-y-1.5 border-t border-gray-100 pt-4 text-sm">
               {!buyNow && (
                 <>
-                  <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>{formatMoney(subtotal)}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>{money(subtotal)}</span></div>
                   {discount > 0 && (
-                    <div className="flex justify-between text-green-600"><span>Discount</span><span>−{formatMoney(discount)}</span></div>
+                    <div className="flex justify-between text-green-600"><span>Discount</span><span>−{money(discount)}</span></div>
                   )}
                   {pointsDiscount > 0 && (
-                    <div className="flex justify-between text-amber-600"><span>Loyalty points</span><span>−{formatMoney(pointsDiscount)}</span></div>
+                    <div className="flex justify-between text-amber-600"><span>Loyalty points</span><span>−{money(pointsDiscount)}</span></div>
                   )}
-                  <div className="flex justify-between pt-1 text-base font-bold"><span>Total</span><span>{formatMoney(total)}</span></div>
+                  <div className="flex justify-between pt-1 text-base font-bold"><span>Total</span><span>{money(total)}</span></div>
                 </>
               )}
             </div>
             <button className="btn-primary mt-5 w-full" onClick={placeOrder} disabled={busy}>
-              {busy ? 'Processing…' : method === 'balance' ? `Pay ${buyNow ? 'with balance' : formatMoney(total)} from wallet` : method === 'paypal' ? 'Pay with PayPal' : 'Pay with card'}
+              {busy ? 'Processing…' : method === 'balance' ? `Pay ${buyNow ? 'with balance' : money(total)} from wallet` : method === 'paypal' ? 'Pay with PayPal' : 'Pay with card'}
             </button>
             <p className="mt-3 flex items-center justify-center gap-1 text-center text-xs text-gray-400"><Icon name="lock" size={13} /> 256-bit SSL secure payment</p>
           </div>

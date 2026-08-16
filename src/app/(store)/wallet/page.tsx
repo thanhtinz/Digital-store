@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useStore } from '@/components/Providers';
+import { useStore, useMoney } from '@/components/Providers';
 import { api } from '@/lib/client';
-import { formatMoney } from '@/lib/utils';
+
 import Icon from '@/components/icons';
 
 type Txn = { id: number; type: string; amount: number; note: string | null; createdAt: string };
@@ -19,6 +19,7 @@ const TXN_META: Record<string, { label: string; icon: string; cls: string }> = {
 
 export default function WalletPage() {
   const { user, toast, refreshUser } = useStore();
+  const money = useMoney();
   const router = useRouter();
   const [balance, setBalance] = useState<number | null>(null);
   const [txns, setTxns] = useState<Txn[]>([]);
@@ -78,7 +79,7 @@ export default function WalletPage() {
               <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10" />
               <div className="pointer-events-none absolute -bottom-14 right-16 h-28 w-28 rounded-full bg-white/5" />
               <p className="text-xs font-semibold uppercase tracking-wider text-white/70">Available balance</p>
-              <p className="relative mt-1 text-3xl font-extrabold">{formatMoney(balance)}</p>
+              <p className="relative mt-1 text-3xl font-extrabold">{money(balance)}</p>
               <Icon name="credit-card" size={38} className="absolute bottom-4 right-4 text-white/25" />
             </div>
             <form onSubmit={topup} className="space-y-3 p-5">
@@ -157,7 +158,7 @@ export default function WalletPage() {
                     </span>
                   </span>
                   <span className={`text-sm font-bold ${t.amount >= 0 ? 'text-green-600' : 'text-gray-900'}`}>
-                    {t.amount >= 0 ? '+' : ''}{formatMoney(t.amount)}
+                    {t.amount >= 0 ? '+' : ''}{money(t.amount)}
                   </span>
                 </div>
               );

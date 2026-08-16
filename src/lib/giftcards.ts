@@ -5,6 +5,7 @@ import { notifyUser } from './notify';
 import { emailLayout } from './mail';
 import { getSettings } from './settings';
 import { escapeHtml } from './telegram';
+import { formatMoneyServer } from './currency';
 
 export function generateGiftCode(): string {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -29,11 +30,11 @@ export async function activateGiftCard(id: number): Promise<void> {
     html: emailLayout(
       siteName,
       'Your gift card is ready',
-      `<p>Thank you for your purchase! Here is your <b>$${Number(card.amount).toFixed(2)}</b> gift card code:</p>
+      `<p>Thank you for your purchase! Here is your <b>${await formatMoneyServer(Number(card.amount))}</b> gift card code:</p>
        <p style="font-size:22px;font-weight:bold;letter-spacing:2px;background:#eef2ff;color:#4338ca;padding:12px 16px;border-radius:8px;text-align:center">${card.code}</p>
        <p>Send it to anyone — they redeem it on the Gift cards page and the amount lands in their wallet instantly. It never expires.</p>`
     ),
-    text: `<b>Your gift card is ready</b>\nAmount: $${Number(card.amount).toFixed(2)}\nCode: <code>${escapeHtml(card.code)}</code>\nRedeemable on the Gift cards page — it never expires.`,
+    text: `<b>Your gift card is ready</b>\nAmount: ${await formatMoneyServer(Number(card.amount))}\nCode: <code>${escapeHtml(card.code)}</code>\nRedeemable on the Gift cards page — it never expires.`,
   }).catch(() => {});
 }
 

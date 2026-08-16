@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useStore } from '@/components/Providers';
+import { useStore, useMoney } from '@/components/Providers';
 import { api } from '@/lib/client';
-import { formatMoney } from '@/lib/utils';
 
 const EMPTY = { id: 0, code: '', type: 'PERCENT', value: '', minOrder: '', maxDiscount: '', maxUses: '', perUserLimit: '', startsAt: '', endsAt: '', isActive: true };
 
 export default function AdminCouponsPage() {
   const { toast } = useStore();
+  const money = useMoney();
   const [coupons, setCoupons] = useState<any[]>([]);
   const [form, setForm] = useState<any>(EMPTY);
   const [busy, setBusy] = useState(false);
@@ -72,8 +72,8 @@ export default function AdminCouponsPage() {
                 <tr key={c.id} className="border-b border-gray-100 last:border-0">
                   <td className="px-4 py-3 font-mono font-bold">{c.code}</td>
                   <td className="px-4 py-3">
-                    {c.type === 'PERCENT' ? `${Number(c.value)}%` : formatMoney(Number(c.value))}
-                    {c.minOrder && <span className="block text-xs text-gray-400">min {formatMoney(Number(c.minOrder))}</span>}
+                    {c.type === 'PERCENT' ? `${Number(c.value)}%` : money(Number(c.value))}
+                    {c.minOrder && <span className="block text-xs text-gray-400">min {money(Number(c.minOrder))}</span>}
                   </td>
                   <td className="px-4 py-3">{c.usedCount}{c.maxUses ? ` / ${c.maxUses}` : ''}</td>
                   <td className="px-4 py-3 text-xs text-gray-500">

@@ -1,15 +1,17 @@
 import Link from 'next/link';
 import prisma from '@/lib/db';
 import Countdown from '@/components/Countdown';
-import { formatMoney } from '@/lib/utils';
+
 import Icon from '@/components/icons';
 import { notFound } from 'next/navigation';
 import { featureEnabled } from '@/lib/features';
+import { getMoneyFormatter } from '@/lib/currency';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Flash Sale' };
 
 export default async function FlashSalePage() {
+  const money = await getMoneyFormatter();
   if (!(await featureEnabled('flash_sale'))) notFound();
 
   const now = new Date();
@@ -67,8 +69,8 @@ export default async function FlashSalePage() {
                     <p className="line-clamp-1 text-sm font-semibold">{item.package.product.name}</p>
                     <p className="text-xs text-gray-500">{item.package.name}</p>
                     <div className="mt-1.5 flex items-baseline gap-2">
-                      <span className="font-bold text-red-600">{formatMoney(Number(item.salePrice))}</span>
-                      <span className="text-xs text-gray-400 line-through">{formatMoney(Number(item.package.price))}</span>
+                      <span className="font-bold text-red-600">{money(Number(item.salePrice))}</span>
+                      <span className="text-xs text-gray-400 line-through">{money(Number(item.package.price))}</span>
                     </div>
                     {left != null && !soldOut && (
                       <p className="mt-1.5 text-[11px] font-medium text-orange-600">Only {left} left at this price</p>

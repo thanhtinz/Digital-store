@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { useStore } from './Providers';
+import { useStore, useMoney } from './Providers';
 import { api } from '@/lib/client';
 import Icon from './icons';
 
@@ -19,6 +19,7 @@ type Props = {
 export default function Header({ siteName, logo, categories, features = {} }: Props) {
   const on = (k: string) => features[k] !== false;
   const { user, cartCount, refreshUser } = useStore();
+  const money = useMoney();
   const router = useRouter();
   const [q, setQ] = useState('');
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -199,7 +200,7 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
                   {on('wallet') && (
                     <Link href="/wallet" onClick={closeAll} className="flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-50">
                       Wallet
-                      <span className="text-xs font-bold text-brand-600">${(user.balance ?? 0).toFixed(2)}</span>
+                      <span className="text-xs font-bold text-brand-600">{money(user.balance ?? 0)}</span>
                     </Link>
                   )}
                   {on('giftcards') && <Link href="/gift-cards" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">Gift cards</Link>}

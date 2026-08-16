@@ -1,4 +1,5 @@
 import { getSettings, getAppUrl } from './settings';
+import { decimalString } from './currency';
 
 // PayPal integration via REST (Orders API v2). Flow: create order →
 // buyer approves on paypal.com → we capture on return and verify status.
@@ -50,7 +51,7 @@ export async function createPaypalOrder(order: {
           reference_id: order.code,
           custom_id: order.code,
           description: order.itemsLabel.slice(0, 120) || `Order ${order.code}`,
-          amount: { currency_code: order.currency.toUpperCase(), value: order.total.toFixed(2) },
+          amount: { currency_code: order.currency.toUpperCase(), value: decimalString(order.total, order.currency) },
         },
       ],
       application_context: {

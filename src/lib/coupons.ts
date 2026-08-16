@@ -1,4 +1,5 @@
 import prisma from './db';
+import { formatMoneyServer } from './currency';
 
 export type CouponCheck =
   | { ok: true; couponId: number; code: string; discount: number }
@@ -19,7 +20,7 @@ export async function checkCoupon(code: string, userId: number, subtotal: number
     return { ok: false, reason: 'This coupon has reached its usage limit' };
   }
   if (coupon.minOrder != null && subtotal < Number(coupon.minOrder)) {
-    return { ok: false, reason: `Minimum order for this coupon is $${Number(coupon.minOrder).toFixed(2)}` };
+    return { ok: false, reason: `Minimum order for this coupon is ${await formatMoneyServer(Number(coupon.minOrder))}` };
   }
   if (coupon.perUserLimit != null) {
     const used = await prisma.couponRedemption.count({ where: { couponId: coupon.id, userId } });
