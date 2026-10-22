@@ -59,12 +59,12 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
     <>
     {/* The drawer lives outside <header>: backdrop-blur would otherwise turn
         the header into the containing block for position:fixed children. */}
-    <header className="sticky top-0 z-50 border-b border-gray-200/80 bg-white/95 shadow-[0_1px_12px_rgba(16,24,40,.05)] backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-white/50 bg-white/80 shadow-[0_1px_0_rgba(16,24,40,.04),0_16px_36px_-24px_rgba(16,24,40,.25)] backdrop-blur-xl backdrop-saturate-150">
       <div className="container flex h-16 items-center gap-2 sm:gap-3">
         {/* Burger (mobile) */}
         <button
           aria-label="Open menu"
-          className="rounded-lg p-2 hover:bg-gray-100 lg:hidden"
+          className="rounded-lg p-2 transition hover:bg-gray-100/80 active:scale-95 lg:hidden"
           onClick={() => setMobileOpen(true)}
         >
           <Icon name="menu" size={22} />
@@ -77,7 +77,7 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
             <img src={logo} alt={siteName} className="h-9 w-auto max-w-[170px] object-contain" />
           ) : (
             <>
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-lg font-extrabold text-white">
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-lg font-extrabold text-white shadow-btn-primary ring-1 ring-white/30">
                 {siteName.charAt(0)}
               </span>
               <span className="hidden text-lg font-extrabold tracking-tight sm:block">{siteName}</span>
@@ -87,7 +87,7 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
 
         {/* Desktop nav — compact: Products / Categories dropdown / Flash Sale */}
         <nav className="ml-3 hidden items-center gap-0.5 lg:flex">
-          <Link href="/products" className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">
+          <Link href="/products" className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100/80 hover:text-gray-900">
             {t('nav.products')}
           </Link>
 
@@ -95,8 +95,8 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
             <div className="relative">
               <button
                 onClick={() => setCatMenu((v) => !v)}
-                className={`flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium ${
-                  catMenu ? 'bg-gray-100 text-gray-900' : 'text-gray-700 hover:bg-gray-100'
+                className={`flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                  catMenu ? 'bg-gray-100 text-gray-900' : 'text-gray-700 hover:bg-gray-100/80 hover:text-gray-900'
                 }`}
               >
                 {t('nav.categories')}
@@ -105,13 +105,13 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
               {catMenu && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setCatMenu(false)} />
-                  <div className="absolute left-0 z-50 mt-2 w-60 overflow-hidden rounded-xl border border-gray-200 bg-white py-1.5 shadow-lg">
+                  <div className="absolute left-0 z-50 mt-2 w-60 origin-top-left animate-scale-in overflow-hidden rounded-2xl border border-gray-200/80 bg-white py-1.5 shadow-pop">
                     {categories.map((c) => (
                       <Link
                         key={c.id}
                         href={`/category/${c.slug}`}
                         onClick={closeAll}
-                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-brand-700"
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 transition hover:bg-brand-50/70 hover:text-brand-700"
                       >
                         <Icon name="folder" size={16} className="text-gray-400" />
                         {c.name}
@@ -121,7 +121,7 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
                       <Link
                         href="/products"
                         onClick={closeAll}
-                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-brand-600 hover:bg-gray-50"
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-brand-600 transition hover:bg-brand-50/70"
                       >
                         View all products
                         <Icon name="chevron-right" size={14} />
@@ -134,12 +134,12 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
           )}
 
           {on('flash_sale') && (
-            <Link href="/flash-sale" className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50">
+            <Link href="/flash-sale" className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50">
               <Icon name="bolt" size={15} /> {t('nav.flashSale')}
             </Link>
           )}
           {on('news') && (
-            <Link href="/news" className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">
+            <Link href="/news" className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100/80 hover:text-gray-900">
               {t('nav.news')}
             </Link>
           )}
@@ -152,17 +152,17 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder={t('nav.search')}
-              className="input rounded-full bg-gray-50 py-2 pl-10 focus:bg-white"
+              className="input rounded-full bg-gray-50/80 py-2 pl-10 shadow-none focus:bg-white"
             />
             <Icon name="search" size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
           </div>
         </form>
 
         {/* Cart */}
-        <Link href="/cart" aria-label="Cart" onClick={closeAll} className="relative ml-auto rounded-lg p-2 hover:bg-gray-100 md:ml-0">
+        <Link href="/cart" aria-label="Cart" onClick={closeAll} className="relative ml-auto rounded-xl p-2 transition hover:bg-gray-100/80 active:scale-95 md:ml-0">
           <Icon name="cart" size={22} />
           {cartCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-brand-600 px-1 text-[11px] font-bold text-white">
+            <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 animate-scale-in place-items-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 px-1 text-[11px] font-bold text-white shadow-sm ring-2 ring-white">
               {cartCount > 99 ? '99+' : cartCount}
             </span>
           )}
@@ -175,7 +175,7 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
           <div className="relative">
             <button
               onClick={() => setUserMenu((v) => !v)}
-              className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-brand-100 text-sm font-bold text-brand-700"
+              className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-brand-100 text-sm font-bold text-brand-700 shadow-sm ring-1 ring-brand-200/60 transition hover:ring-brand-300"
             >
               {user.avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -187,7 +187,7 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
             {userMenu && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setUserMenu(false)} />
-                <div className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
+                <div className="absolute right-0 z-50 mt-2 w-56 origin-top-right animate-scale-in overflow-hidden rounded-2xl border border-gray-200/80 bg-white py-1 shadow-pop">
                   <div className="border-b border-gray-100 px-4 py-2.5">
                     <p className="truncate text-sm font-semibold">{user.name}</p>
                     <p className="truncate text-xs text-gray-500">{user.email}</p>
@@ -229,8 +229,8 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
     {/* ── Mobile burger drawer ─────────────────────────────────── */}
     {mobileOpen && (
         <>
-          <div className="fixed inset-0 z-[55] bg-black/40 lg:hidden" onClick={() => setMobileOpen(false)} />
-          <div className="fixed bottom-0 left-0 top-0 z-[60] flex w-[300px] max-w-[85vw] flex-col bg-white shadow-xl lg:hidden">
+          <div className="fixed inset-0 z-[55] animate-fade-in bg-black/40 backdrop-blur-[2px] lg:hidden" onClick={() => setMobileOpen(false)} />
+          <div className="fixed bottom-0 left-0 top-0 z-[60] flex w-[300px] max-w-[85vw] animate-slide-in-left flex-col bg-white shadow-2xl lg:hidden">
             <div className="flex h-16 items-center justify-between border-b border-gray-100 px-4">
               <span className="text-base font-extrabold">{siteName}</span>
               <button aria-label="Close menu" className="rounded-lg p-2 hover:bg-gray-100" onClick={() => setMobileOpen(false)}>
