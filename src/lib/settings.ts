@@ -35,6 +35,11 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   currency_symbol_position: '',
   currency_thousand_sep: '',
   currency_decimal_sep: '',
+  // 'auto' (default): display format comes from the currency code alone and
+  // the piece settings above are ignored — legacy USD-era values stored in
+  // the DB must not override VND's dot grouping. 'custom' is written only
+  // when the admin explicitly edits a format piece in Settings → Currency.
+  currency_format_mode: 'auto',
   currency_rates: '{}',           // { "VND": 25400 } — units of X per 1 base unit
   currency_round_step: '1000',    // round converted zero-decimal amounts up to this
   payment_currency: 'VND',        // what the Vietnamese gateways charge in
@@ -157,7 +162,7 @@ export async function getPublicSettings() {
   const s = await getSettings([
     'site_name', 'site_tagline', 'site_logo', 'currency', 'support_email',
     'currency_decimals', 'currency_symbol', 'currency_symbol_position',
-    'currency_thousand_sep', 'currency_decimal_sep', 'currency_rates', 'payment_currency',
+    'currency_thousand_sep', 'currency_decimal_sep', 'currency_format_mode', 'currency_rates', 'payment_currency',
     'stripe_enabled', 'paypal_enabled', 'google_login_enabled', 'footer_text',
     'sepay_enabled', 'sepay_account_number', 'payos_enabled', 'payos_client_id',
     'bank_transfer_enabled', 'bank_transfer_account_number',

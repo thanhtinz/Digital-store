@@ -18,7 +18,7 @@ const ALL_KEYS = [
   'site_name', 'site_tagline', 'site_logo', 'currency', 'support_email', 'footer_text', 'footer_about', 'app_url',
   // Currency and money format
   'currency_decimals', 'currency_symbol', 'currency_symbol_position',
-  'currency_thousand_sep', 'currency_decimal_sep', 'currency_rates',
+  'currency_thousand_sep', 'currency_decimal_sep', 'currency_format_mode', 'currency_rates',
   'currency_round_step', 'payment_currency', 'payment_min',
   'social_facebook', 'social_twitter', 'social_instagram', 'social_youtube', 'social_telegram', 'social_discord',
   'require_email_verification',

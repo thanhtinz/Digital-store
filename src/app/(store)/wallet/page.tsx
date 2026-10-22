@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore, useMoney, useT } from '@/components/Providers';
 import { api } from '@/lib/client';
 
 import Icon from '@/components/icons';
-import { formatDateTime } from '@/lib/utils';
+import { formatDateTime, topupLimitsFor } from '@/lib/utils';
 import { INTL_LOCALE } from '@/i18n';
 
 type Txn = { id: number; type: string; amount: number; note: string | null; createdAt: string };
@@ -20,9 +20,9 @@ const TXN_META: Record<string, { icon: string; cls: string }> = {
   ADJUST: { icon: 'settings', cls: 'bg-gray-100 text-gray-500' },
 };
 
-const MIN_TOPUP = 5;
-const MAX_TOPUP = 1000;
-const PRESETS = [10, 25, 50, 100];
+// Groups a raw digit string with the store's thousand separator so the
+// amount input reads "100.000" while the state stays a plain number string.
+const groupInt = (raw: string, sep: string) => raw.replace(/\B(?=(\d{3})+(?!\d))/g, sep);
 
 export default function WalletPage() {
   const { user, toast, refreshUser, locale, money: fmt } = useStore();
@@ -30,9 +30,19 @@ export default function WalletPage() {
   const money = useMoney();
   const t = useT();
   const router = useRouter();
+  // Limits follow the shared per-currency table (VND: 10.000–10.000.000 ₫,
+  // presets 10.000/50.000/100.000/200.000) — the same one the API enforces.
+  const limits = topupLimitsFor(fmt.code);
   const [balance, setBalance] = useState<number | null>(null);
   const [txns, setTxns] = useState<Txn[]>([]);
-  const [amount, setAmount] = useState('25');
+  const [amount, setAmount] = useState('');
+  const amountTouched = useRef(false);
+  // Preselect the currency's default amount once the store config (and with
+  // it the real currency) arrives, unless the user already typed or tapped.
+  useEffect(() => {
+    if (!amountTouched.current) setAmount(String(limits.defaultAmount));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fmt.code]);
   const [method, setMethod] = useState<'stripe' | 'paypal' | 'sepay' | 'payos' | 'bank'>('stripe');
   const [pay, setPay] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState(false);
@@ -107,11 +117,11 @@ export default function WalletPage() {
               <div>
                 <label className="label">{t('wallet.amountLabel', { currency: fmt.code })}</label>
                 <div className="flex gap-2">
-                  {PRESETS.map((v) => (
+                  {limits.presets.map((v) => (
                     <button
                       key={v}
                       type="button"
-                      onClick={() => setAmount(String(v))}
+                      onClick={() => { amountTouched.current = true; setAmount(String(v)); }}
                       className={`flex-1 rounded-lg border py-2 text-sm font-semibold transition ${
                         amount === String(v) ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-gray-300 hover:bg-gray-50'
                       }`}
@@ -122,14 +132,17 @@ export default function WalletPage() {
                 </div>
                 <input
                   className="input mt-2"
-                  type="number"
-                  min={MIN_TOPUP}
-                  max={MAX_TOPUP}
-                  step="1"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  type="text"
+                  inputMode="numeric"
+                  value={fmt.decimals === 0 ? groupInt(amount, fmt.thousandSep) : amount}
+                  onChange={(e) => {
+                    amountTouched.current = true;
+                    // Zero-decimal currencies take whole amounts only: keep
+                    // digits, the display regroups them ("100.000").
+                    setAmount(fmt.decimals === 0 ? e.target.value.replace(/[^\d]/g, '').slice(0, 12) : e.target.value);
+                  }}
                 />
-                <p className="mt-1 text-xs text-gray-400">{t('wallet.range', { min: money(MIN_TOPUP), max: money(MAX_TOPUP) })}</p>
+                <p className="mt-1 text-xs text-gray-400">{t('wallet.range', { min: money(limits.min), max: money(limits.max) })}</p>
               </div>
               <div>
                 <label className="label">{t('checkout.paymentMethod')}</label>

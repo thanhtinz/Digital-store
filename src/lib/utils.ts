@@ -73,12 +73,20 @@ export const DEFAULT_MONEY_FORMAT: MoneyFormat = {
 };
 
 // Builds a format from a raw settings map (server) or public config (client).
-// Every piece falls back to the currency code's own conventions when the
-// matching setting is blank — which is now the shipped default — so picking
-// "VND" in the setup wizard is enough to get "1.370.000 ₫" with no further
-// knobs to turn. Explicitly saved settings still win, piece by piece.
+// Two modes, chosen by the currency_format_mode setting:
+//  - 'auto' (default — and what any database that predates the setting
+//    implicitly holds): the currency code's conventions win outright, so
+//    picking "VND" is enough to get "1.370.000 ₫". The currency_* piece
+//    settings are ignored. They used to apply piece-by-piece whenever
+//    non-blank, which let USD-era values once saved into the DB (","
+//    grouping, "." decimal, 2 decimals) silently override VND's dot
+//    grouping — rendering "299,000 ₫".
+//  - 'custom': the admin explicitly opted in on the settings page; the
+//    piece settings then override the conventions one by one, with blank
+//    pieces still falling back to the code's convention.
 export function moneyFormatFrom(s: Record<string, string | undefined>): MoneyFormat {
   const code = (s.currency || 'USD').toUpperCase();
+  if (s.currency_format_mode !== 'custom') return moneyFormatForCode(code);
   const conv = currencyConvention(code);
   const rawDecimals = s.currency_decimals;
   const parsedDecimals = rawDecimals === undefined || rawDecimals === '' ? NaN : Number(rawDecimals);
@@ -91,6 +99,19 @@ export function moneyFormatFrom(s: Record<string, string | undefined>): MoneyFor
     thousandSep: s.currency_thousand_sep ? s.currency_thousand_sep : conv.thousandSep,
     decimalSep: s.currency_decimal_sep ? s.currency_decimal_sep : conv.decimalSep,
   };
+}
+
+// Wallet top-up limits per base currency. Bank rails in Vietnam do not
+// settle tiny transfers, so VND starts at 10.000 ₫; currencies without an
+// explicit entry keep the original card-era limits. One shared table so
+// the wallet page and the top-up API can never drift apart.
+export type TopupLimits = { min: number; max: number; presets: number[]; defaultAmount: number };
+const TOPUP_LIMITS_BY_CURRENCY: Record<string, TopupLimits> = {
+  VND: { min: 10000, max: 10000000, presets: [10000, 50000, 100000, 200000], defaultAmount: 100000 },
+};
+const DEFAULT_TOPUP_LIMITS: TopupLimits = { min: 5, max: 1000, presets: [10, 25, 50, 100], defaultAmount: 25 };
+export function topupLimitsFor(code: string): TopupLimits {
+  return TOPUP_LIMITS_BY_CURRENCY[(code || '').toUpperCase()] || DEFAULT_TOPUP_LIMITS;
 }
 
 // Exchange rates are stored as one JSON object: target units per 1 base unit.

@@ -58,7 +58,7 @@ export type MoneyConfig = {
 export async function getMoneyConfig(): Promise<MoneyConfig> {
   const s = await getSettings([
     'currency', 'currency_decimals', 'currency_symbol', 'currency_symbol_position',
-    'currency_thousand_sep', 'currency_decimal_sep', 'currency_rates',
+    'currency_thousand_sep', 'currency_decimal_sep', 'currency_format_mode', 'currency_rates',
     'currency_round_step', 'payment_currency',
   ]);
   const roundStep = Number(s.currency_round_step);

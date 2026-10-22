@@ -9,11 +9,10 @@ import { getPaypalConfig } from '@/lib/paypal';
 import { getAppUrl, getSetting } from '@/lib/settings';
 import { createIntent, isIntentMethod } from '@/lib/payments';
 import { startIntentPayment } from '@/lib/paymentStart';
+import { topupLimitsFor } from '@/lib/utils';
+import { formatMoneyServer } from '@/lib/currency';
 
 export const dynamic = 'force-dynamic';
-
-const MIN_TOPUP = 5;
-const MAX_TOPUP = 1000;
 
 // Creates a wallet top-up and returns the gateway redirect URL.
 export const POST = handler(async (req: NextRequest) => {
@@ -24,11 +23,16 @@ export const POST = handler(async (req: NextRequest) => {
   const b = await req.json();
   const amount = Math.round(Number(b.amount) * 100) / 100;
   const method = isIntentMethod(b.method) ? b.method : b.method === 'paypal' ? 'paypal' : 'stripe';
-  if (!Number.isFinite(amount) || amount < MIN_TOPUP || amount > MAX_TOPUP) {
-    return jsonError(400, `Top-up amount must be between $${MIN_TOPUP} and $${MAX_TOPUP}`);
-  }
-
   const currency = (await getSetting('currency')) || 'USD';
+  // Limits come from the shared per-currency table (VND: 10.000–10.000.000 ₫)
+  // so a direct API call is held to exactly what the wallet page shows.
+  const limits = topupLimitsFor(currency);
+  if (!Number.isFinite(amount) || amount < limits.min || amount > limits.max) {
+    return jsonError(
+      400,
+      `Số tiền nạp phải từ ${await formatMoneyServer(limits.min)} đến ${await formatMoneyServer(limits.max)}`
+    );
+  }
   const appUrl = await getAppUrl();
   const topup = await prisma.topup.create({
     data: { code: generateTopupCode(), userId: user.id, amount, method },

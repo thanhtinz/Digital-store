@@ -37,6 +37,15 @@ export default function CurrencySettingsPage() {
     set('currency_rates', JSON.stringify(out));
   };
 
+  // Editing any single format piece is an explicit opt-in to 'custom' —
+  // in 'auto' the pieces are ignored and the currency code's conventions
+  // rule, so a stale USD-era separator saved long ago can't leak back in.
+  const setPiece = (k: string, v: string) => {
+    set(k, v);
+    set('currency_format_mode', 'custom');
+  };
+  const formatMode = s.currency_format_mode === 'custom' ? 'custom' : 'auto';
+
   const base = (s.currency || 'USD').toUpperCase();
   const paymentCode = (s.payment_currency || 'VND').toUpperCase();
   const paymentRate = parseRates(s.currency_rates || '{}')[paymentCode];
@@ -69,22 +78,34 @@ export default function CurrencySettingsPage() {
               {COMMON.map((c) => <option key={c} value={c} />)}
             </datalist>
           </div>
-          {field(s, set, { k: 'currency_symbol', label: t('admin.currency.symbol'), placeholder: t('admin.currency.symbolPlaceholder') })}
+          <div>
+            <label className="label">{t('admin.currency.formatMode')}</label>
+            <select
+              className="input"
+              value={formatMode}
+              onChange={(e) => set('currency_format_mode', e.target.value)}
+            >
+              <option value="auto">{t('admin.currency.formatAuto')}</option>
+              <option value="custom">{t('admin.currency.formatCustom')}</option>
+            </select>
+            <p className="mt-1 text-xs text-gray-400">{t('admin.currency.formatModeHelp')}</p>
+          </div>
+          {field(s, setPiece, { k: 'currency_symbol', label: t('admin.currency.symbol'), placeholder: t('admin.currency.symbolPlaceholder') })}
           <div>
             <label className="label">{t('admin.currency.symbolPos')}</label>
             <select
               className="input"
               value={s.currency_symbol_position ?? ''}
-              onChange={(e) => set('currency_symbol_position', e.target.value)}
+              onChange={(e) => setPiece('currency_symbol_position', e.target.value)}
             >
               <option value="">{t('admin.currency.posAuto')}</option>
               <option value="before">{t('admin.currency.posBefore')}</option>
               <option value="after">{t('admin.currency.posAfter')}</option>
             </select>
           </div>
-          {field(s, set, { k: 'currency_decimals', label: t('admin.currency.decimals'), type: 'number', help: t('admin.currency.decimalsHelp') })}
-          {field(s, set, { k: 'currency_thousand_sep', label: t('admin.currency.thousandSep'), help: t('admin.currency.sepHelp') })}
-          {field(s, set, { k: 'currency_decimal_sep', label: t('admin.currency.decimalSep'), help: t('admin.currency.sepHelp') })}
+          {field(s, setPiece, { k: 'currency_decimals', label: t('admin.currency.decimals'), type: 'number', help: t('admin.currency.decimalsHelp') })}
+          {field(s, setPiece, { k: 'currency_thousand_sep', label: t('admin.currency.thousandSep'), help: t('admin.currency.sepHelp') })}
+          {field(s, setPiece, { k: 'currency_decimal_sep', label: t('admin.currency.decimalSep'), help: t('admin.currency.sepHelp') })}
         </div>
         <div className="mt-4 rounded-xl bg-gray-50 p-4">
           <p className="text-xs font-bold uppercase tracking-wide text-gray-500">{t('admin.currency.preview')}</p>
