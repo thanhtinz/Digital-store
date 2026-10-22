@@ -125,12 +125,12 @@ export default async function HomePage() {
   ];
 
   return (
-    <div className="space-y-14 pb-16 sm:space-y-16">
+    <div className="space-y-16 pb-20 sm:space-y-20">
       {/* ── Hero ─────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden bg-gray-950">
         {/* Ambient colour wash + grid texture */}
-        <div className="pointer-events-none absolute -left-40 -top-40 h-[26rem] w-[26rem] rounded-full bg-brand-600/40 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-52 right-0 h-[30rem] w-[30rem] rounded-full bg-brand-400/25 blur-3xl" />
+        <div className="pointer-events-none absolute -left-40 -top-40 h-[26rem] w-[26rem] animate-float rounded-full bg-brand-600/40 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-52 right-0 h-[30rem] w-[30rem] animate-float rounded-full bg-brand-400/25 blur-3xl [animation-delay:-3.5s]" />
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.14]"
           style={{
@@ -142,9 +142,9 @@ export default async function HomePage() {
           }}
         />
 
-        <div className="container relative py-14 sm:py-20">
-          <div className="mx-auto max-w-3xl text-center">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-white/90 backdrop-blur">
+        <div className="container relative py-16 sm:py-24">
+          <div className="mx-auto max-w-3xl animate-fade-up text-center">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-white/90 shadow-sm backdrop-blur">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
@@ -152,29 +152,29 @@ export default async function HomePage() {
               {t('home.badge')}
             </span>
 
-            <h1 className="mt-5 text-4xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
+            <h1 className="mt-6 text-4xl font-extrabold leading-[1.06] tracking-tight text-white sm:text-5xl lg:text-[4rem]">
               {t('home.titleA')}
               <span className="bg-gradient-to-r from-brand-200 via-brand-300 to-brand-100 bg-clip-text text-transparent"> {t('home.titleB')}</span>
             </h1>
-            <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-gray-300 sm:text-lg">
+            <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-gray-300 sm:text-lg">
               {t('home.subtitle')}
             </p>
 
             {/* Search is the primary action: shoppers arrive knowing what they want */}
-            <form action="/products" method="get" className="mx-auto mt-7 flex max-w-xl gap-2">
+            <form action="/products" method="get" className="mx-auto mt-8 flex max-w-xl gap-2 rounded-2xl shadow-[0_24px_48px_-24px_rgba(0,0,0,.65)]">
               <div className="relative flex-1">
                 <Icon name="search" size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   name="q"
                   placeholder={t('home.searchPlaceholder')}
                   aria-label={t('home.searchAria')}
-                  className="h-12 w-full rounded-xl border border-white/15 bg-white/10 pl-11 pr-4 text-sm text-white outline-none backdrop-blur transition placeholder:text-gray-400 focus:border-brand-400 focus:bg-white/15"
+                  className="h-12 w-full rounded-2xl border border-white/15 bg-white/10 pl-11 pr-4 text-sm text-white outline-none backdrop-blur transition placeholder:text-gray-400 focus:border-brand-400 focus:bg-white/15 focus:ring-4 focus:ring-brand-500/20"
                 />
               </div>
-              <button className="btn-primary h-12 shrink-0 px-5">{t('home.search')}</button>
+              <button className="btn-primary h-12 shrink-0 rounded-2xl px-5">{t('home.search')}</button>
             </form>
 
-            <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-medium text-gray-300">
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-medium text-gray-300">
               {[
                 ['bolt', t('home.trustInstant')],
                 ['shield', t('home.trustProtection')],
@@ -189,37 +189,37 @@ export default async function HomePage() {
           </div>
 
           {/* Live numbers, straight from the database */}
-          <div className="mx-auto mt-10 grid max-w-3xl grid-cols-3 divide-x divide-white/10 rounded-2xl border border-white/10 bg-white/[.06] backdrop-blur">
+          <div className="mx-auto mt-12 grid max-w-3xl grid-cols-3 divide-x divide-white/10 rounded-2xl border border-white/10 bg-white/[.06] shadow-[0_24px_48px_-28px_rgba(0,0,0,.7)] ring-1 ring-white/5 backdrop-blur">
             {heroStats.map((s) => (
               <div key={s.label} className="px-3 py-4 text-center sm:px-6 sm:py-5">
-                <p className="text-xl font-extrabold text-white sm:text-2xl">{s.value}</p>
-                <p className="mt-0.5 text-[11px] text-gray-400 sm:text-xs">{s.label}</p>
+                <p className="text-xl font-extrabold tracking-tight text-white sm:text-[1.7rem]">{s.value}</p>
+                <p className="mt-1 text-[11px] text-gray-400 sm:text-xs">{s.label}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <div className="container space-y-14 sm:space-y-16">
+      <div className="container space-y-16 sm:space-y-20">
         {/* ── Promotional banners ─────────────────────────────────── */}
         {banners.length > 0 && <BannerCarousel banners={banners as any} />}
 
         {/* ── Categories ──────────────────────────────────────────── */}
         {categories.length > 0 && (
           <section>
-            <div className="mb-5 flex items-end justify-between gap-3">
+            <div className="mb-6 flex items-end justify-between gap-3">
               <div>
                 <p className="section-eyebrow">{t('home.catalog')}</p>
-                <h2 className="mt-1 text-xl font-bold sm:text-2xl">{t('home.shopByCategory')}</h2>
+                <h2 className="mt-1.5 text-2xl font-extrabold tracking-tight sm:text-[1.7rem]">{t('home.shopByCategory')}</h2>
               </div>
               <Link href="/products" className="view-all">{t('home.allProducts')} <Icon name="arrow-right" size={14} /></Link>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
               {categories.map((c, i) => (
                 <Link
                   key={c.id}
                   href={`/category/${c.slug}`}
-                  className="group relative flex h-36 flex-col justify-end overflow-hidden rounded-2xl p-5 text-white shadow-[0_10px_30px_-18px_rgba(16,24,40,.5)] transition-transform duration-300 hover:-translate-y-1"
+                  className="group relative flex h-40 flex-col justify-end overflow-hidden rounded-3xl p-5 text-white shadow-[0_16px_36px_-18px_rgba(16,24,40,.55)] ring-1 ring-black/5 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_44px_-18px_rgba(16,24,40,.6)] sm:p-6"
                 >
                   {c.imageUrl ? (
                     <>
@@ -240,7 +240,7 @@ export default async function HomePage() {
                         {c._count.products === 1 ? t('home.productCountOne') : t('home.productCount', { count: c._count.products })}
                       </span>
                     </span>
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/20 backdrop-blur transition group-hover:bg-white group-hover:text-gray-900">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/20 backdrop-blur transition-all duration-300 group-hover:translate-x-0.5 group-hover:bg-white group-hover:text-gray-900">
                       <Icon name="arrow-right" size={16} />
                     </span>
                   </span>
@@ -252,7 +252,7 @@ export default async function HomePage() {
 
         {/* ── Flash sale ──────────────────────────────────────────── */}
         {flashSale && flashSale.items.length > 0 && (
-          <section className="relative overflow-hidden rounded-3xl bg-gray-950 p-5 shadow-[0_24px_48px_-28px_rgba(16,24,40,.6)] sm:p-7">
+          <section className="relative overflow-hidden rounded-4xl bg-gray-950 p-5 shadow-[0_28px_56px_-28px_rgba(16,24,40,.65)] ring-1 ring-white/10 sm:p-8">
             <div className="pointer-events-none absolute -left-20 -top-24 h-72 w-72 rounded-full bg-red-600/35 blur-3xl" />
             <div className="pointer-events-none absolute -bottom-28 right-0 h-72 w-72 rounded-full bg-orange-500/25 blur-3xl" />
 
@@ -283,7 +283,7 @@ export default async function HomePage() {
                   <Link
                     key={item.id}
                     href={`/product/${item.package.product.slug}`}
-                    className="group overflow-hidden rounded-2xl bg-white/[.07] ring-1 ring-white/10 backdrop-blur transition duration-300 hover:-translate-y-1 hover:bg-white/[.12]"
+                    className="group overflow-hidden rounded-2xl bg-white/[.07] ring-1 ring-white/10 backdrop-blur transition duration-300 hover:-translate-y-1 hover:bg-white/[.12] hover:ring-white/25"
                   >
                     <div className="relative aspect-[4/3] bg-gray-800">
                       {item.package.product.images[0] ? (
@@ -328,34 +328,34 @@ export default async function HomePage() {
         {/* ── Featured ────────────────────────────────────────────── */}
         {featured.length > 0 && (
           <section>
-            <div className="mb-5 flex items-end justify-between gap-3">
+            <div className="mb-6 flex items-end justify-between gap-3">
               <div>
                 <p className="section-eyebrow">{t('home.handPicked')}</p>
-                <h2 className="mt-1 text-xl font-bold sm:text-2xl">{t('home.featured')}</h2>
+                <h2 className="mt-1.5 text-2xl font-extrabold tracking-tight sm:text-[1.7rem]">{t('home.featured')}</h2>
               </div>
               <Link href="/products" className="view-all">{t('home.viewAll')} <Icon name="arrow-right" size={14} /></Link>
             </div>
-            <div className={`grid gap-4 ${productCols(Math.min(8, featured.length))}`}>
+            <div className={`grid gap-4 sm:gap-5 ${productCols(Math.min(8, featured.length))}`}>
               {featured.slice(0, 8).map((p) => <ProductCardView key={p.id} product={p} />)}
             </div>
           </section>
         )}
 
         {/* ── How it works ────────────────────────────────────────── */}
-        <section className="rounded-3xl border border-gray-200/80 bg-white p-6 sm:p-8">
-          <div className="mb-6 text-center">
-            <p className="section-eyebrow">{t('home.howItWorks')}</p>
-            <h2 className="mt-1 text-xl font-bold sm:text-2xl">{t('home.threeSteps')}</h2>
+        <section className="rounded-4xl border border-gray-200/80 bg-gradient-to-b from-white to-gray-50/70 p-6 shadow-card sm:p-10">
+          <div className="mb-7 text-center">
+            <p className="section-eyebrow justify-center">{t('home.howItWorks')}</p>
+            <h2 className="mt-1.5 text-2xl font-extrabold tracking-tight sm:text-[1.7rem]">{t('home.threeSteps')}</h2>
           </div>
           <div className="grid gap-5 sm:grid-cols-3">
             {steps(t).map((s, i) => (
-              <div key={s.title} className="relative rounded-2xl bg-gray-50 p-5">
-                <span className="absolute right-4 top-3 text-4xl font-extrabold text-gray-200/90">{i + 1}</span>
-                <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand-600 text-white shadow-[0_8px_20px_-10px_rgba(79,70,229,.9)]">
-                  <Icon name={s.icon} size={20} />
+              <div key={s.title} className="group relative rounded-3xl border border-gray-100 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover">
+                <span className="absolute right-5 top-4 text-5xl font-extrabold tracking-tight text-gray-100 transition-colors group-hover:text-brand-100">{i + 1}</span>
+                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-btn-primary">
+                  <Icon name={s.icon} size={21} />
                 </span>
-                <h3 className="relative mt-3 text-sm font-bold">{s.title}</h3>
-                <p className="mt-1 text-sm leading-relaxed text-gray-500">{s.text}</p>
+                <h3 className="relative mt-4 text-[15px] font-bold">{s.title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-gray-500">{s.text}</p>
               </div>
             ))}
           </div>
@@ -363,15 +363,15 @@ export default async function HomePage() {
 
         {/* ── New arrivals ────────────────────────────────────────── */}
         <section>
-          <div className="mb-5 flex items-end justify-between gap-3">
+          <div className="mb-6 flex items-end justify-between gap-3">
             <div>
               <p className="section-eyebrow">{t('home.justAdded')}</p>
-              <h2 className="mt-1 text-xl font-bold sm:text-2xl">{t('home.newArrivals')}</h2>
+              <h2 className="mt-1.5 text-2xl font-extrabold tracking-tight sm:text-[1.7rem]">{t('home.newArrivals')}</h2>
             </div>
             <Link href="/products?sort=newest" className="view-all">{t('home.viewAll')} <Icon name="arrow-right" size={14} /></Link>
           </div>
           {latest.length > 0 ? (
-            <div className={`grid gap-4 ${productCols(Math.min(8, latest.length))}`}>
+            <div className={`grid gap-4 sm:gap-5 ${productCols(Math.min(8, latest.length))}`}>
               {latest.slice(0, 8).map((p) => <ProductCardView key={p.id} product={p} />)}
             </div>
           ) : (
@@ -384,16 +384,16 @@ export default async function HomePage() {
         {/* ── Customer reviews ────────────────────────────────────── */}
         {testimonials.length > 0 && (
           <section>
-            <div className="mb-5 flex items-end justify-between gap-3">
+            <div className="mb-6 flex items-end justify-between gap-3">
               <div>
                 <p className="section-eyebrow">{t('home.socialProof')}</p>
-                <h2 className="mt-1 text-xl font-bold sm:text-2xl">{t('home.whatCustomersSay')}</h2>
+                <h2 className="mt-1.5 text-2xl font-extrabold tracking-tight sm:text-[1.7rem]">{t('home.whatCustomersSay')}</h2>
               </div>
               <Link href="/reviews" className="view-all">{t('home.allReviews')} <Icon name="arrow-right" size={14} /></Link>
             </div>
-            <div className={`grid gap-4 ${testimonials.length >= 3 ? 'sm:grid-cols-3' : testimonials.length === 2 ? 'sm:grid-cols-2' : ''}`}>
+            <div className={`grid gap-4 sm:gap-5 ${testimonials.length >= 3 ? 'sm:grid-cols-3' : testimonials.length === 2 ? 'sm:grid-cols-2' : ''}`}>
               {testimonials.map((r) => (
-                <figure key={r.id} className="card flex flex-col p-5">
+                <figure key={r.id} className="card card-hover flex flex-col p-6 transition-all duration-300 hover:-translate-y-1">
                   <Stars value={r.rating} />
                   <blockquote className="mt-3 flex-1 text-sm leading-relaxed text-gray-700">
                     &ldquo;{r.content}&rdquo;
@@ -416,7 +416,7 @@ export default async function HomePage() {
         )}
 
         {/* ── Closing call to action ──────────────────────────────── */}
-        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-700 via-brand-600 to-brand-500 px-6 py-10 text-center sm:px-10 sm:py-12">
+        <section className="relative overflow-hidden rounded-4xl bg-gradient-to-br from-brand-700 via-brand-600 to-brand-500 px-6 py-12 text-center shadow-glow sm:px-10 sm:py-14">
           <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-white/10" />
           <div className="pointer-events-none absolute -bottom-24 -left-10 h-64 w-64 rounded-full bg-white/[.07]" />
           <h2 className="relative text-2xl font-extrabold text-white sm:text-3xl">{t('home.ctaTitle')}</h2>
