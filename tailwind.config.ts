@@ -31,6 +31,7 @@ const config: Config = {
         'card-hover': '0 2px 4px rgba(16, 24, 40, 0.05), 0 24px 44px -20px rgba(16, 24, 40, 0.22)',
         pop: '0 12px 32px -12px rgba(16, 24, 40, 0.25), 0 2px 6px rgba(16, 24, 40, 0.06)',
         glow: '0 0 0 1px rgb(var(--brand-500) / 0.25), 0 12px 32px -12px rgb(var(--brand-600) / 0.45)',
+        glass: '0 8px 32px -12px rgb(var(--brand-600) / 0.16), 0 2px 8px rgba(16, 24, 40, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.65)',
         'btn-primary':
           '0 10px 24px -10px rgb(var(--brand-600) / 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.22)',
         'btn-primary-hover':

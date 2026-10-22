@@ -22,11 +22,11 @@ export default function Footer({ siteName, tagline, logo, footerText, footerAbou
   const socialLinks = SOCIAL_ORDER.filter((k) => socials?.[k]);
   const on = (k: string) => features[k] !== false;
   return (
-    <footer className="relative mt-20 border-t border-gray-200/80 bg-white">
+    <footer className="relative mt-20 border-t border-white/50 bg-white/55 shadow-[0_-18px_40px_-30px_rgb(var(--brand-800)/.35)] backdrop-blur-2xl backdrop-saturate-150">
       {/* Brand hairline along the top edge */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-400/60 to-transparent" />
       {/* Trust strip */}
-      <div className="border-b border-gray-100 bg-gradient-to-b from-gray-50/80 to-white">
+      <div className="border-b border-white/50 bg-white/30">
         <div className="container grid grid-cols-2 gap-x-4 gap-y-5 py-7 sm:grid-cols-4">
           {([
             ['bolt', t('trust.instant'), t('trust.instantSub')],
@@ -35,7 +35,7 @@ export default function Footer({ siteName, tagline, logo, footerText, footerAbou
             ['chat', t('trust.human'), t('trust.humanSub')],
           ] as const).map(([icon, title, desc]) => (
             <div key={title} className="group flex items-center gap-3">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand-50 to-brand-100 text-brand-600 shadow-sm ring-1 ring-brand-100 transition group-hover:scale-105">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white/70 text-brand-600 shadow-sm ring-1 ring-white/70 backdrop-blur transition group-hover:scale-105">
                 <Icon name={icon} size={18} />
               </span>
               <div>
@@ -70,7 +70,7 @@ export default function Footer({ siteName, tagline, logo, footerText, footerAbou
                   target="_blank"
                   rel="noreferrer"
                   aria-label={k}
-                  className="grid h-9 w-9 place-items-center rounded-xl border border-gray-200 bg-gray-50 text-gray-500 transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-600 hover:shadow-sm"
+                  className="grid h-9 w-9 place-items-center rounded-full border border-white/60 bg-white/60 text-gray-500 shadow-sm backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-600"
                 >
                   <Icon name={k} size={17} />
                 </a>
@@ -107,10 +107,10 @@ export default function Footer({ siteName, tagline, logo, footerText, footerAbou
         <div>
           <p className="text-xs font-bold uppercase tracking-[.14em] text-gray-400">{t('footer.accept')}</p>
           <div className="mt-4 flex flex-wrap gap-2">
-            {['VISA', 'Mastercard', 'AMEX', 'PayPal', 'Stripe'].map((brand) => (
+            {['VISA', 'Mastercard', 'AMEX', 'PayPal', 'Stripe', 'VietQR', 'SePay', 'PayOS'].map((brand) => (
               <span
                 key={brand}
-                className="rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-bold tracking-wide text-gray-600 shadow-sm transition hover:border-brand-200 hover:bg-brand-50/60 hover:text-brand-700"
+                className="rounded-full border border-white/60 bg-white/60 px-2.5 py-1 text-[11px] font-bold tracking-wide text-gray-600 shadow-sm backdrop-blur transition hover:border-brand-200 hover:bg-brand-50/60 hover:text-brand-700"
               >
                 {brand}
               </span>

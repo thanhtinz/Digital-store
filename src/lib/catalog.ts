@@ -58,6 +58,7 @@ export type ProductCard = {
   ratingAvg: number;
   ratingCount: number;
   soldCount: number;
+  isFeatured: boolean;
 };
 
 export async function toProductCards(products: Array<any>): Promise<ProductCard[]> {
@@ -92,6 +93,7 @@ export async function toProductCards(products: Array<any>): Promise<ProductCard[
       ratingAvg: p.ratingAvg,
       ratingCount: p.ratingCount,
       soldCount: p.soldCount,
+      isFeatured: !!p.isFeatured,
     };
   });
 }

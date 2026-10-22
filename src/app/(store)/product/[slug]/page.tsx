@@ -171,7 +171,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
               ['shield', t('home.trustProtection')],
               ['chat', t('catalog.support247')],
             ] as const).map(([icon, label]) => (
-              <div key={label} className="flex items-center justify-center gap-1.5 rounded-lg bg-gray-50 px-2 py-2.5 text-xs font-medium text-gray-600">
+              <div key={label} className="flex items-center justify-center gap-1.5 rounded-full bg-white/60 px-2 py-2.5 text-xs font-medium text-gray-600 shadow-sm ring-1 ring-white/70 backdrop-blur">
                 <Icon name={icon} size={14} className="text-brand-600" /> {label}
               </div>
             ))}

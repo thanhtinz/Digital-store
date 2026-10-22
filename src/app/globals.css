@@ -3,12 +3,12 @@
 @tailwind utilities;
 
 @layer base {
-  /* Fallback palette. The server overrides these per request from settings. */
+  /* Fallback palette (Shopee orange). The server overrides these per request from settings. */
   :root {
-    --brand-50: 238 242 255; --brand-100: 224 231 255; --brand-200: 199 210 254;
-    --brand-300: 165 180 252; --brand-400: 129 140 248; --brand-500: 99 102 241;
-    --brand-600: 79 70 229; --brand-700: 67 56 202; --brand-800: 55 48 163;
-    --brand-900: 49 46 129;
+    --brand-50: 255 245 240; --brand-100: 255 233 224; --brand-200: 255 205 188;
+    --brand-300: 255 168 140; --brand-400: 250 120 80; --brand-500: 242 90 50;
+    --brand-600: 238 77 45; --brand-700: 214 58 32; --brand-800: 172 47 27;
+    --brand-900: 140 40 24;
     --font-sans: 'Inter';
   }
   html {
@@ -16,10 +16,17 @@
     scroll-behavior: smooth;
   }
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
-    /* Subtle ambient tint so large surfaces never feel flat */
+    @apply text-gray-900 antialiased;
+    /* Aurora backdrop: warm peach-orange washes over a soft brand tint, so
+       the frosted-glass surfaces above it read as glass and not flat white.
+       Fixed attachment keeps the light still while content scrolls. */
+    background-color: rgb(var(--brand-50));
     background-image:
-      radial-gradient(60rem 30rem at 50% -10rem, rgb(var(--brand-100) / 0.35), transparent 70%);
+      radial-gradient(55rem 32rem at 85% -8rem, rgb(255 183 128 / 0.55), transparent 65%),
+      radial-gradient(50rem 30rem at -10% 12%, rgb(var(--brand-200) / 0.65), transparent 65%),
+      radial-gradient(46rem 30rem at 55% 115%, rgb(255 205 170 / 0.5), transparent 65%),
+      linear-gradient(180deg, rgb(var(--brand-50)), rgb(255 243 235) 45%, rgb(var(--brand-50)));
+    background-attachment: fixed;
     background-repeat: no-repeat;
     text-rendering: optimizeLegibility;
   }
@@ -44,25 +51,30 @@
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 ease-out disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed active:scale-[.98];
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-semibold transition-all duration-200 ease-out disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed active:scale-[.98];
   }
   .btn-primary {
-    @apply btn bg-gradient-to-b from-brand-500 to-brand-700 text-white shadow-btn-primary hover:shadow-btn-primary-hover hover:brightness-[1.06] hover:from-brand-500 hover:to-brand-700;
+    @apply btn bg-gradient-to-b from-brand-500 to-brand-700 text-white shadow-btn-primary hover:shadow-btn-primary-hover hover:brightness-[1.06] hover:from-brand-500 hover:to-brand-700 hover:-translate-y-px;
   }
   .btn-secondary {
-    @apply btn bg-white text-gray-800 border border-gray-300 shadow-sm hover:border-brand-300 hover:text-brand-700 hover:shadow hover:-translate-y-px;
+    @apply btn border border-white/60 bg-white/60 text-gray-800 shadow-sm backdrop-blur-xl hover:border-brand-300 hover:bg-white/85 hover:text-brand-700 hover:shadow hover:-translate-y-px;
   }
   .btn-danger {
     @apply btn bg-gradient-to-b from-red-500 to-red-700 text-white shadow-[0_10px_24px_-10px_rgba(220,38,38,.55),inset_0_1px_0_rgba(255,255,255,.25)] hover:brightness-[1.05];
   }
+  /* Glass icon button used for header chrome (cart, appearance, …) */
+  .btn-icon-glass {
+    @apply grid h-10 w-10 place-items-center rounded-full bg-white/15 text-white ring-1 ring-white/40 backdrop-blur transition hover:bg-white/30 active:scale-95;
+  }
   .input {
-    @apply w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm shadow-[inset_0_1px_2px_rgba(16,24,40,.04)] outline-none transition-all duration-200 placeholder:text-gray-400 hover:border-gray-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 focus:hover:border-brand-500;
+    @apply w-full rounded-2xl border border-white/60 bg-white/70 px-3.5 py-2.5 text-sm shadow-[inset_0_1px_2px_rgba(16,24,40,.04)] outline-none backdrop-blur transition-all duration-200 placeholder:text-gray-400 hover:border-brand-200 focus:border-brand-500 focus:bg-white/90 focus:ring-4 focus:ring-brand-100 focus:hover:border-brand-500;
   }
   .label {
     @apply mb-1.5 block text-sm font-medium text-gray-700;
   }
+  /* Cards are frosted glass over the aurora backdrop. */
   .card {
-    @apply rounded-2xl border border-gray-200/80 bg-white shadow-card transition-shadow duration-300;
+    @apply rounded-[1.25rem] border border-white/60 bg-white/70 shadow-glass backdrop-blur-xl backdrop-saturate-150 transition-shadow duration-300;
   }
   .card-hover {
     @apply hover:shadow-card-hover hover:border-brand-200;
@@ -76,7 +88,7 @@
     @apply h-px w-6 rounded-full bg-gradient-to-r from-brand-400 to-brand-600;
   }
   .view-all {
-    @apply inline-flex shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3.5 py-1.5 text-sm font-semibold text-gray-700 shadow-sm transition-all duration-200 hover:-translate-y-px hover:border-brand-300 hover:text-brand-700 hover:shadow;
+    @apply inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/60 bg-white/60 px-3.5 py-1.5 text-sm font-semibold text-gray-700 shadow-sm backdrop-blur transition-all duration-200 hover:-translate-y-px hover:border-brand-300 hover:text-brand-700 hover:shadow;
   }
   .badge {
     @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold shadow-sm;
