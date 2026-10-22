@@ -93,6 +93,7 @@ const CATEGORIES = [
   { name: 'Security & VPN', slug: 'security-vpn', sortOrder: 6 },
 ];
 
+// All prices below are VND amounts (the store's base currency) — whole đồng, no decimals.
 const PRODUCTS: ProductDef[] = [
   {
     slug: 'streammax-premium',
@@ -105,9 +106,9 @@ const PRODUCTS: ProductDef[] = [
     soldCount: 2841, ratingAvg: 4.9, ratingCount: 312,
     colors: ['#7c3aed', '#db2777'], glyph: 'play',
     packages: [
-      { name: '1 Month', price: 9.99, comparePrice: 12.99, sortOrder: 0, autoDeliver: true },
-      { name: '6 Months', price: 49.99, comparePrice: 69.99, sortOrder: 1, autoDeliver: true },
-      { name: '12 Months', price: 89.99, comparePrice: 129.99, sortOrder: 2, autoDeliver: true },
+      { name: '1 Month', price: 59000, comparePrice: 79000, sortOrder: 0, autoDeliver: true },
+      { name: '6 Months', price: 299000, comparePrice: 399000, sortOrder: 1, autoDeliver: true },
+      { name: '12 Months', price: 499000, comparePrice: 699000, sortOrder: 2, autoDeliver: true },
     ],
   },
   {
@@ -120,8 +121,8 @@ const PRODUCTS: ProductDef[] = [
     soldCount: 1204, ratingAvg: 4.8, ratingCount: 198,
     colors: ['#0ea5e9', '#6366f1'], glyph: 'play',
     packages: [
-      { name: '1 Month', price: 7.99, comparePrice: 9.99, sortOrder: 0, autoDeliver: true },
-      { name: '12 Months', price: 69.99, comparePrice: 99.99, sortOrder: 1, autoDeliver: true },
+      { name: '1 Month', price: 49000, comparePrice: 69000, sortOrder: 0, autoDeliver: true },
+      { name: '12 Months', price: 399000, comparePrice: 599000, sortOrder: 1, autoDeliver: true },
     ],
   },
   {
@@ -135,8 +136,8 @@ const PRODUCTS: ProductDef[] = [
     soldCount: 5210, ratingAvg: 4.9, ratingCount: 864,
     colors: ['#f59e0b', '#ef4444'], glyph: 'game',
     packages: [
-      { name: '1,000 Credits', price: 4.99, sortOrder: 0, customFields: PLAYER_FIELDS },
-      { name: '5,500 Credits (+10% bonus)', price: 24.99, sortOrder: 1, customFields: PLAYER_FIELDS_SHORT },
+      { name: '1,000 Credits', price: 59000, sortOrder: 0, customFields: PLAYER_FIELDS },
+      { name: '5,500 Credits (+10% bonus)', price: 279000, sortOrder: 1, customFields: PLAYER_FIELDS_SHORT },
     ],
   },
   {
@@ -149,8 +150,8 @@ const PRODUCTS: ProductDef[] = [
     soldCount: 864, ratingAvg: 4.7, ratingCount: 121,
     colors: ['#06b6d4', '#3b82f6'], glyph: 'game',
     packages: [
-      { name: 'Season Pass', price: 19.99, comparePrice: 29.99, sortOrder: 0, customFields: PLAYER_FIELDS_SHORT },
-      { name: 'Season Pass + DLC Bundle', price: 34.99, comparePrice: 49.99, sortOrder: 1, customFields: PLAYER_FIELDS_SHORT },
+      { name: 'Season Pass', price: 149000, comparePrice: 229000, sortOrder: 0, customFields: PLAYER_FIELDS_SHORT },
+      { name: 'Season Pass + DLC Bundle', price: 249000, comparePrice: 379000, sortOrder: 1, customFields: PLAYER_FIELDS_SHORT },
     ],
   },
   {
@@ -163,8 +164,8 @@ const PRODUCTS: ProductDef[] = [
     soldCount: 1730, ratingAvg: 4.9, ratingCount: 402,
     colors: ['#0f766e', '#22c55e'], glyph: 'key',
     packages: [
-      { name: 'Personal (1 device)', price: 19.99, sortOrder: 0, autoDeliver: true },
-      { name: 'Family (6 devices)', price: 39.99, comparePrice: 59.99, sortOrder: 1, autoDeliver: true },
+      { name: 'Personal (1 device)', price: 149000, sortOrder: 0, autoDeliver: true },
+      { name: 'Family (6 devices)', price: 299000, comparePrice: 449000, sortOrder: 1, autoDeliver: true },
     ],
   },
   {
@@ -178,8 +179,8 @@ const PRODUCTS: ProductDef[] = [
     soldCount: 642, ratingAvg: 4.8, ratingCount: 97,
     colors: ['#db2777', '#f97316'], glyph: 'camera',
     packages: [
-      { name: '1 Year', price: 59.99, comparePrice: 89.99, sortOrder: 0, autoDeliver: true },
-      { name: 'Lifetime', price: 149.99, comparePrice: 249.99, sortOrder: 1, autoDeliver: true },
+      { name: '1 Year', price: 399000, comparePrice: 599000, sortOrder: 0, autoDeliver: true },
+      { name: 'Lifetime', price: 999000, comparePrice: 1499000, sortOrder: 1, autoDeliver: true },
     ],
   },
   {
@@ -192,7 +193,7 @@ const PRODUCTS: ProductDef[] = [
     soldCount: 958, ratingAvg: 4.6, ratingCount: 143,
     colors: ['#2563eb', '#06b6d4'], glyph: 'cloud',
     packages: [
-      { name: '2TB — 1 Year', price: 49.99, comparePrice: 71.88, sortOrder: 0, autoDeliver: true },
+      { name: '2TB — 1 Year', price: 349000, comparePrice: 499000, sortOrder: 0, autoDeliver: true },
     ],
   },
   {
@@ -206,8 +207,8 @@ const PRODUCTS: ProductDef[] = [
     soldCount: 3312, ratingAvg: 4.8, ratingCount: 517,
     colors: ['#9333ea', '#f43f5e'], glyph: 'music',
     packages: [
-      { name: '1 Month', price: 5.99, comparePrice: 7.99, sortOrder: 0, autoDeliver: true },
-      { name: '12 Months', price: 54.99, comparePrice: 84.99, sortOrder: 1, autoDeliver: true },
+      { name: '1 Month', price: 39000, comparePrice: 59000, sortOrder: 0, autoDeliver: true },
+      { name: '12 Months', price: 349000, comparePrice: 549000, sortOrder: 1, autoDeliver: true },
     ],
   },
   {
@@ -219,7 +220,7 @@ const PRODUCTS: ProductDef[] = [
     soldCount: 733, ratingAvg: 4.7, ratingCount: 88,
     colors: ['#b45309', '#f59e0b'], glyph: 'book',
     packages: [
-      { name: '6 Months', price: 29.99, comparePrice: 44.99, sortOrder: 0, autoDeliver: true },
+      { name: '6 Months', price: 199000, comparePrice: 299000, sortOrder: 0, autoDeliver: true },
     ],
   },
   {
@@ -232,7 +233,7 @@ const PRODUCTS: ProductDef[] = [
     soldCount: 1490, ratingAvg: 4.9, ratingCount: 264,
     colors: ['#059669', '#84cc16'], glyph: 'globe',
     packages: [
-      { name: 'Lifetime', price: 79.99, comparePrice: 129.99, sortOrder: 0, autoDeliver: true },
+      { name: 'Lifetime', price: 499000, comparePrice: 799000, sortOrder: 0, autoDeliver: true },
     ],
   },
   {
@@ -245,8 +246,8 @@ const PRODUCTS: ProductDef[] = [
     soldCount: 1105, ratingAvg: 4.8, ratingCount: 176,
     colors: ['#1e293b', '#475569'], glyph: 'code',
     packages: [
-      { name: 'Monthly', price: 12.99, sortOrder: 0, autoDeliver: true },
-      { name: 'Annual', price: 99.99, comparePrice: 149.99, sortOrder: 1, autoDeliver: true },
+      { name: 'Monthly', price: 99000, sortOrder: 0, autoDeliver: true },
+      { name: 'Annual', price: 599000, comparePrice: 899000, sortOrder: 1, autoDeliver: true },
     ],
   },
   {
@@ -259,16 +260,16 @@ const PRODUCTS: ProductDef[] = [
     soldCount: 2267, ratingAvg: 4.7, ratingCount: 329,
     colors: ['#0e7490', '#0ea5e9'], glyph: 'shield',
     packages: [
-      { name: '1 Year (10 devices)', price: 39.99, comparePrice: 83.88, sortOrder: 0, autoDeliver: true },
-      { name: '2 Years (10 devices)', price: 59.99, comparePrice: 167.76, sortOrder: 1, autoDeliver: true },
+      { name: '1 Year (10 devices)', price: 249000, comparePrice: 449000, sortOrder: 0, autoDeliver: true },
+      { name: '2 Years (10 devices)', price: 449000, comparePrice: 799000, sortOrder: 1, autoDeliver: true },
     ],
   },
 ];
 
 const COUPONS = [
-  { code: 'WELCOME10', type: 'PERCENT' as const, value: 10, maxDiscount: 20, perUserLimit: 1, minOrder: null as number | null, endsInDays: null as number | null },
-  { code: 'FLASH20', type: 'PERCENT' as const, value: 20, maxDiscount: 25, perUserLimit: null, minOrder: null, endsInDays: 7 },
-  { code: 'SAVE5', type: 'FIXED' as const, value: 5, maxDiscount: null, perUserLimit: null, minOrder: 30, endsInDays: null },
+  { code: 'WELCOME10', type: 'PERCENT' as const, value: 10, maxDiscount: 200000, perUserLimit: 1, minOrder: null as number | null, endsInDays: null as number | null },
+  { code: 'FLASH20', type: 'PERCENT' as const, value: 20, maxDiscount: 300000, perUserLimit: null, minOrder: null, endsInDays: 7 },
+  { code: 'SAVE5', type: 'FIXED' as const, value: 50000, maxDiscount: null, perUserLimit: null, minOrder: 300000, endsInDays: null },
 ];
 
 const BANNERS = [
@@ -300,12 +301,12 @@ const BANNERS = [
 
 const FLASH_SALE_NAME = 'Flash Sale';
 const FLASH_ITEMS: Array<{ product: string; pkg: string; salePrice: number; quantityLimit: number; soldCount: number }> = [
-  { product: 'streammax-premium', pkg: '12 Months', salePrice: 53.99, quantityLimit: 100, soldCount: 87 },
-  { product: 'game-credits-topup', pkg: '5,500 Credits (+10% bonus)', salePrice: 17.49, quantityLimit: 200, soldCount: 154 },
-  { product: 'securevault-license', pkg: 'Family (6 devices)', salePrice: 23.99, quantityLimit: 80, soldCount: 41 },
-  { product: 'musicwave-premium', pkg: '12 Months', salePrice: 32.99, quantityLimit: 120, soldCount: 96 },
-  { product: 'safenet-vpn', pkg: '2 Years (10 devices)', salePrice: 35.99, quantityLimit: 60, soldCount: 58 },
-  { product: 'learnlang-pro', pkg: 'Lifetime', salePrice: 47.99, quantityLimit: 50, soldCount: 19 },
+  { product: 'streammax-premium', pkg: '12 Months', salePrice: 299000, quantityLimit: 100, soldCount: 87 },
+  { product: 'game-credits-topup', pkg: '5,500 Credits (+10% bonus)', salePrice: 195000, quantityLimit: 200, soldCount: 154 },
+  { product: 'securevault-license', pkg: 'Family (6 devices)', salePrice: 179000, quantityLimit: 80, soldCount: 41 },
+  { product: 'musicwave-premium', pkg: '12 Months', salePrice: 209000, quantityLimit: 120, soldCount: 96 },
+  { product: 'safenet-vpn', pkg: '2 Years (10 devices)', salePrice: 269000, quantityLimit: 60, soldCount: 58 },
+  { product: 'learnlang-pro', pkg: 'Lifetime', salePrice: 299000, quantityLimit: 50, soldCount: 19 },
 ];
 
 async function main() {
