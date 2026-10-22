@@ -6,22 +6,13 @@ import Icon from './icons';
 import { useMoney, useStore, useT } from './Providers';
 import { INTL_LOCALE } from '@/i18n';
 
-// Serializable coupon shape rendered by the homepage voucher strip and the
-// hero voucher panel (values already converted from Decimal to number).
-export type Voucher = {
-  code: string;
-  type: 'PERCENT' | 'FIXED';
-  value: number;
-  minOrder: number | null;
-  maxDiscount: number | null;
-  endsAt: string | null;
-};
+// The Voucher type and voucherHeadline live in '@/lib/voucher' (a server-safe
+// module): the homepage Server Component calls voucherHeadline during SSR,
+// and plain function exports of a 'use client' module are not callable from
+// the server in the production bundle.
+import { voucherHeadline, type Voucher } from '@/lib/voucher';
 
-export function voucherHeadline(v: Voucher, t: (k: string, p?: Record<string, string | number>) => string, money: (n: number) => string) {
-  return v.type === 'PERCENT'
-    ? t('home.voucherOffPercent', { value: v.value })
-    : t('home.voucherOffFixed', { amount: money(v.value) });
-}
+export type { Voucher };
 
 export function CopyCodeButton({ code, className = '' }: { code: string; className?: string }) {
   const t = useT();

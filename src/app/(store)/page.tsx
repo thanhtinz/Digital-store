@@ -5,7 +5,8 @@ import { getFeatures } from '@/lib/features';
 import BannerCarousel from '@/components/BannerCarousel';
 import Countdown from '@/components/Countdown';
 import SuggestedTabs from '@/components/SuggestedTabs';
-import VoucherCard, { CopyCodeButton, voucherHeadline, type Voucher } from '@/components/VoucherCard';
+import VoucherCard, { CopyCodeButton } from '@/components/VoucherCard';
+import { voucherHeadline, type Voucher } from '@/lib/voucher';
 
 import Icon from '@/components/icons';
 import { getMoneyFormatter } from '@/lib/currency';
