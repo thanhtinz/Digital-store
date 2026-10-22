@@ -7,6 +7,11 @@ export type ColorPreset = { key: string; name: string; shades: string[] };
 // Shades are "R G B" triplets, 50 through 900, matching Tailwind's scale.
 export const COLOR_PRESETS: ColorPreset[] = [
   {
+    key: 'shopee',
+    name: 'Shopee orange',
+    shades: ['255 245 240', '255 233 224', '255 205 188', '255 168 140', '250 120 80', '242 90 50', '238 77 45', '214 58 32', '172 47 27', '140 40 24'],
+  },
+  {
     key: 'indigo',
     name: 'Indigo',
     shades: ['238 242 255', '224 231 255', '199 210 254', '165 180 252', '129 140 248', '99 102 241', '79 70 229', '67 56 202', '55 48 163', '49 46 129'],
@@ -30,6 +35,11 @@ export const COLOR_PRESETS: ColorPreset[] = [
     key: 'rose',
     name: 'Rose',
     shades: ['255 241 242', '255 228 230', '254 205 211', '253 164 175', '251 113 133', '244 63 94', '225 29 72', '190 18 60', '159 18 57', '136 19 55'],
+  },
+  {
+    key: 'teal',
+    name: 'Teal',
+    shades: ['240 253 250', '204 251 241', '153 246 228', '94 234 212', '45 212 191', '20 184 166', '13 148 136', '15 118 110', '17 94 89', '19 78 74'],
   },
   {
     key: 'amber',
@@ -62,29 +72,93 @@ export const TEXT_SIZES: TextSize[] = [
   { key: 'large', name: 'Large', rootPx: 17.5 },
 ];
 
-export const DEFAULT_THEME = { color: 'indigo', font: 'inter', textSize: 'normal' };
+export type Dir = 'ltr' | 'rtl';
 
-export type Theme = { color: string; font: string; textSize: string };
+export const DEFAULT_THEME = { color: 'shopee', font: 'inter', textSize: 'normal', dir: 'ltr' as Dir, custom: '' };
+
+export type Theme = { color: string; font: string; textSize: string; dir: Dir; custom: string };
+
+const HEX_RE = /^#[0-9a-f]{6}$/i;
+
+export function isValidHex(value: string | undefined | null): value is string {
+  return !!value && HEX_RE.test(value);
+}
+
+// Derives a 50–900 shade scale from one hex colour: tints climb toward
+// white, shades descend toward black, and the picked colour itself sits
+// at 500/600 where most of the UI's emphasis lives.
+export function shadesFromHex(hex: string): string[] {
+  const n = parseInt(hex.slice(1), 16);
+  const rgb: [number, number, number] = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  const mix = (target: number, amt: number) =>
+    rgb.map((c) => Math.round(c + (target - c) * amt)).join(' ');
+  return [
+    mix(255, 0.94), // 50
+    mix(255, 0.86), // 100
+    mix(255, 0.68), // 200
+    mix(255, 0.46), // 300
+    mix(255, 0.22), // 400
+    mix(0, 0),      // 500 — the picked colour itself
+    mix(0, 0.1),    // 600
+    mix(0, 0.2),    // 700
+    mix(0, 0.32),   // 800
+    mix(0, 0.44),   // 900
+  ];
+}
 
 export function resolveTheme(store: Partial<Theme>, override?: Partial<Theme> | null): Theme {
   const pick = <T extends { key: string }>(list: T[], ...candidates: Array<string | undefined>) =>
     candidates.map((c) => list.find((x) => x.key === c)).find(Boolean) || list[0];
+
+  // Colour resolves preset-first per candidate; 'custom' only wins when a
+  // valid hex travels with it (from the same source, override before store).
+  let color = DEFAULT_THEME.color;
+  let custom = '';
+  for (const candidate of [override?.color, store.color, DEFAULT_THEME.color]) {
+    if (!candidate) continue;
+    if (candidate === 'custom') {
+      const hex = [override?.custom, store.custom].find(isValidHex);
+      if (hex) {
+        color = 'custom';
+        custom = hex.toLowerCase();
+        break;
+      }
+      continue;
+    }
+    const found = COLOR_PRESETS.find((x) => x.key === candidate);
+    if (found) {
+      color = found.key;
+      break;
+    }
+  }
+
   return {
-    color: pick(COLOR_PRESETS, override?.color, store.color, DEFAULT_THEME.color).key,
+    color,
+    custom,
     font: pick(FONT_PRESETS, override?.font, store.font, DEFAULT_THEME.font).key,
     textSize: pick(TEXT_SIZES, override?.textSize, store.textSize, DEFAULT_THEME.textSize).key,
+    dir: (override?.dir ?? store.dir) === 'rtl' ? 'rtl' : 'ltr',
   };
 }
 
-// Parses the visitor's ds_theme cookie: "color:font:size".
+// Parses the visitor's ds_theme cookie: "color:font:size:dir:customHex".
+// Older cookies carry only the first three segments — those still parse.
 export function parseThemeCookie(raw: string | undefined): Partial<Theme> | null {
   if (!raw) return null;
-  const [color, font, textSize] = raw.split(':');
-  return { color, font, textSize };
+  let decoded = raw;
+  try { decoded = decodeURIComponent(raw); } catch { /* keep raw */ }
+  const [color, font, textSize, dir, custom] = decoded.split(':');
+  return {
+    color,
+    font,
+    textSize,
+    dir: dir === 'rtl' ? 'rtl' : dir === 'ltr' ? 'ltr' : undefined,
+    custom: isValidHex(custom) ? custom : undefined,
+  };
 }
 
 export function serializeThemeCookie(theme: Theme): string {
-  return `${theme.color}:${theme.font}:${theme.textSize}`;
+  return encodeURIComponent(`${theme.color}:${theme.font}:${theme.textSize}:${theme.dir}:${theme.custom || ''}`);
 }
 
 export function fontUrl(fontKey: string): string | null {
@@ -96,12 +170,14 @@ export function fontUrl(fontKey: string): string | null {
 // The :root block injected into <head>. Server-rendered, so the page never
 // paints in the wrong colour before hydration.
 export function themeCssVars(theme: Theme): string {
-  const color = COLOR_PRESETS.find((c) => c.key === theme.color) || COLOR_PRESETS[0];
+  const shades = theme.color === 'custom' && isValidHex(theme.custom)
+    ? shadesFromHex(theme.custom)
+    : (COLOR_PRESETS.find((c) => c.key === theme.color) || COLOR_PRESETS[0]).shades;
   const font = FONT_PRESETS.find((f) => f.key === theme.font) || FONT_PRESETS[0];
   const size = TEXT_SIZES.find((t) => t.key === theme.textSize) || TEXT_SIZES[1];
-  const shades = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900]
-    .map((shade, i) => `--brand-${shade}:${color.shades[i]};`)
+  const vars = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900]
+    .map((shade, i) => `--brand-${shade}:${shades[i]};`)
     .join('');
   // Tailwind sizes are all rem-based, so one root font-size scales everything.
-  return `:root{${shades}--font-sans:${font.stack};font-size:${size.rootPx}px}`;
+  return `:root{${vars}--font-sans:${font.stack};font-size:${size.rootPx}px}`;
 }

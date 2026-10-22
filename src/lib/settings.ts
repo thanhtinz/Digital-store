@@ -63,7 +63,9 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   payos_checksum_key: '',
   payos_api_base: 'https://api-merchant.payos.vn',
   // Appearance
-  theme_color: 'indigo',
+  theme_color: 'shopee',
+  theme_custom_color: '',         // hex used when theme_color = 'custom'
+  theme_dir: 'ltr',               // 'ltr' | 'rtl'
   theme_font: 'inter',
   theme_text_size: 'normal',
   theme_allow_override: 'true',   // let visitors pick their own
@@ -158,7 +160,7 @@ export async function getPublicSettings() {
     'sepay_enabled', 'sepay_account_number', 'payos_enabled', 'payos_client_id',
     'bank_transfer_enabled', 'bank_transfer_account_number',
     'footer_about', 'social_facebook', 'social_twitter', 'social_instagram', 'social_youtube', 'social_telegram', 'social_discord',
-    'theme_color', 'theme_font', 'theme_text_size', 'theme_allow_override',
+    'theme_color', 'theme_custom_color', 'theme_dir', 'theme_font', 'theme_text_size', 'theme_allow_override',
     'feature_wallet', 'feature_giftcards', 'feature_reviews', 'feature_wishlist', 'feature_news', 'feature_flash_sale', 'feature_livechat', 'feature_support',
   ]);
   return {
@@ -171,7 +173,13 @@ export async function getPublicSettings() {
     rates: parseRates(s.currency_rates),
     paymentCurrency: (s.payment_currency || 'VND').toUpperCase(),
     supportEmail: s.support_email,
-    theme: { color: s.theme_color, font: s.theme_font, textSize: s.theme_text_size },
+    theme: {
+      color: s.theme_color,
+      custom: s.theme_custom_color,
+      dir: (s.theme_dir === 'rtl' ? 'rtl' : 'ltr') as 'ltr' | 'rtl',
+      font: s.theme_font,
+      textSize: s.theme_text_size,
+    },
     themeAllowOverride: s.theme_allow_override !== 'false',
     stripeEnabled: s.stripe_enabled === 'true',
     sepayEnabled: s.sepay_enabled === 'true' && !!s.sepay_account_number,
