@@ -47,6 +47,26 @@ export function setSessionCookie(user: Pick<User, 'id' | 'role' | 'sessionVersio
   });
 }
 
+// ── Two-factor login challenge ─────────────────────────────────────────
+// Signed by /api/auth/login after the password step, verified by
+// /api/auth/2fa/verify. Both sides go through authSecret() so a production
+// deploy without AUTH_SECRET fails closed here too — previously the two
+// routes read process.env directly with a publicly known fallback string,
+// which would have let anyone mint a challenge for a 2FA-enabled account.
+export function signTwoFactorChallenge(userId: number): string {
+  return jwt.sign({ uid: userId, purpose: '2fa' }, authSecret(), { expiresIn: '5m' });
+}
+
+export function verifyTwoFactorChallenge(token: string): { uid: number } | null {
+  try {
+    const payload = jwt.verify(token, authSecret()) as { uid?: unknown; purpose?: unknown };
+    if (payload.purpose !== '2fa' || typeof payload.uid !== 'number') return null;
+    return { uid: payload.uid };
+  } catch {
+    return null;
+  }
+}
+
 export function clearSessionCookie(): void {
   cookies().set(SESSION_COOKIE, '', { httpOnly: true, path: '/', maxAge: 0 });
 }

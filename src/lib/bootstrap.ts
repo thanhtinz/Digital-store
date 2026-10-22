@@ -1,6 +1,5 @@
 // First-boot bootstrap: makes a freshly deployed instance usable without a
 // shell. Runs on every start but only ever acts when the store has no admin.
-import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import prisma from './db';
 
@@ -10,8 +9,16 @@ export async function ensureAdminAccount() {
 
   const email = (process.env.SEED_ADMIN_EMAIL || 'admin@example.com').toLowerCase();
   const envPassword = process.env.SEED_ADMIN_PASSWORD;
-  // Never fall back to a well-known password on a public deployment.
-  const password = envPassword || crypto.randomBytes(9).toString('base64url');
+  // Without an operator-configured password we no longer mint an account
+  // with a random password that only ever appears in the boot logs: the
+  // first-run setup page (/setup) is where the owner creates the admin
+  // account and the store identity. Auto-creation stays available for
+  // headless deploys that pin SEED_ADMIN_PASSWORD.
+  if (!envPassword) {
+    console.log('[bootstrap] No admin account yet — complete first-run setup at /setup');
+    return;
+  }
+  const password = envPassword;
 
   // A non-admin account may already own the email (self sign-up) — promote it.
   const user = await prisma.user.findUnique({ where: { email } });
@@ -33,11 +40,6 @@ export async function ensureAdminAccount() {
 
   console.log('[bootstrap] ------------------------------------------------');
   console.log(`[bootstrap] Created the first admin account: ${email}`);
-  if (envPassword) {
-    console.log('[bootstrap] Password: the SEED_ADMIN_PASSWORD you configured.');
-  } else {
-    console.log(`[bootstrap] Password: ${password}`);
-    console.log('[bootstrap] This is shown once. Sign in and change it now.');
-  }
+  console.log('[bootstrap] Password: the SEED_ADMIN_PASSWORD you configured.');
   console.log('[bootstrap] ------------------------------------------------');
 }

@@ -68,6 +68,9 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   theme_text_size: 'normal',
   theme_allow_override: 'true',   // let visitors pick their own
   support_email: 'support@example.com',
+  // Fallback language for visitors whose browser offers neither Vietnamese
+  // nor English (see src/i18n/server.ts). The switcher/cookie always win.
+  default_locale: 'vi',
   stripe_enabled: 'false',
   paypal_enabled: 'false',
   paypal_mode: 'sandbox',

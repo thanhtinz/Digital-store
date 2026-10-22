@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
 import { authenticator } from 'otplib';
 import prisma from '@/lib/db';
-import { setSessionCookie, recordLogin } from '@/lib/auth';
+import { setSessionCookie, recordLogin, verifyTwoFactorChallenge } from '@/lib/auth';
 import { handler, jsonError } from '@/lib/api';
 import { rateLimit } from '@/lib/rateLimit';
 
@@ -15,13 +14,8 @@ export const POST = handler(async (req: NextRequest) => {
   const challenge = String(body.challenge || '');
   const code = String(body.code || '').replace(/\s/g, '');
 
-  let payload: any;
-  try {
-    payload = jwt.verify(challenge, process.env.AUTH_SECRET || 'dev-only-insecure-secret');
-  } catch {
-    return jsonError(401, 'Your login attempt expired. Please sign in again.');
-  }
-  if (payload.purpose !== '2fa') return jsonError(401, 'Invalid challenge');
+  const payload = verifyTwoFactorChallenge(challenge);
+  if (!payload) return jsonError(401, 'Your login attempt expired. Please sign in again.');
 
   const user = await prisma.user.findUnique({ where: { id: payload.uid } });
   if (!user || !user.twoFactorEnabled || !user.twoFactorSecret) return jsonError(401, 'Invalid challenge');

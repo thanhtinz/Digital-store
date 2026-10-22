@@ -37,7 +37,28 @@ export function getLocale(): Locale {
   for (const tag of offered) {
     if (isLocale(tag)) return tag;
   }
-  return DEFAULT_LOCALE;
+  return configuredDefault ?? DEFAULT_LOCALE;
+}
+
+// The fallback of last resort above is configurable: it is the store's
+// `default_locale` setting (chosen in the first-run setup / admin). That
+// value lives in the database while getLocale() is synchronous, so the root
+// layout primes this module-level cache on each request — the setting is a
+// single global for the whole store, never per-visitor state.
+let configuredDefault: Locale | null = null;
+let configuredDefaultAt = 0;
+const CONFIGURED_DEFAULT_TTL_MS = 60_000;
+
+export async function primeDefaultLocale(): Promise<void> {
+  if (Date.now() - configuredDefaultAt < CONFIGURED_DEFAULT_TTL_MS) return;
+  configuredDefaultAt = Date.now();
+  try {
+    const { getSetting } = await import('@/lib/settings');
+    const value = await getSetting('default_locale');
+    configuredDefault = isLocale(value) ? value : null;
+  } catch {
+    configuredDefault = null;
+  }
 }
 
 export function getT(): TFunction {

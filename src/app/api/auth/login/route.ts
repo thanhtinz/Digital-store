@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
 import prisma from '@/lib/db';
-import { verifyPassword, setSessionCookie, recordLogin, isAccountLocked, LOCKOUT_MESSAGE } from '@/lib/auth';
+import { verifyPassword, setSessionCookie, recordLogin, isAccountLocked, LOCKOUT_MESSAGE, signTwoFactorChallenge } from '@/lib/auth';
 import { rateLimit } from '@/lib/rateLimit';
 import { getSettings } from '@/lib/settings';
 import { sendMail, emailLayout } from '@/lib/mail';
@@ -43,7 +42,7 @@ export const POST = handler(async (req: NextRequest) => {
 
   if (user.twoFactorEnabled) {
     // Short-lived challenge token; session only issued after the TOTP step.
-    const challenge = jwt.sign({ uid: user.id, purpose: '2fa' }, process.env.AUTH_SECRET || 'dev-only-insecure-secret', { expiresIn: '5m' });
+    const challenge = signTwoFactorChallenge(user.id);
     return NextResponse.json({ ok: true, requires2fa: true, challenge });
   }
 

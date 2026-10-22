@@ -59,22 +59,34 @@ export async function createIntent(params: {
   }
 
   // ref must be unique and numeric; derive it from the row id so it is stable
-  // and collision-free without a second sequence.
-  const created = await prisma.paymentIntent.create({
-    data: {
-      ref: 0,
-      purpose,
-      targetId,
-      userId,
-      method,
-      baseAmount,
-      baseCurrency: cfg.base.code,
-      chargeAmount: charge.amount,
-      chargeCurrency: cfg.paymentCurrency,
-      fxRate: charge.rate,
-      expiresAt: new Date(Date.now() + minutes * 60_000),
-    },
-  });
+  // and collision-free without a second sequence. The row therefore starts
+  // with a random negative placeholder: ref is UNIQUE, so a fixed placeholder
+  // (this used to be 0) makes two simultaneous checkouts collide on the
+  // constraint and one of them dies with a duplicate-key error. A random
+  // placeholder plus a retry on the unique violation removes the race.
+  const intentData = {
+    purpose,
+    targetId,
+    userId,
+    method,
+    baseAmount,
+    baseCurrency: cfg.base.code,
+    chargeAmount: charge.amount,
+    chargeCurrency: cfg.paymentCurrency,
+    fxRate: charge.rate,
+    expiresAt: new Date(Date.now() + minutes * 60_000),
+  };
+  let created: PaymentIntent;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      created = await prisma.paymentIntent.create({
+        data: { ...intentData, ref: -1 - Math.floor(Math.random() * 2_147_483_646) },
+      });
+      break;
+    } catch (e: any) {
+      if (attempt >= 4 || e?.code !== 'P2002') throw e;
+    }
+  }
   const ref = refBase + created.id;
   return prisma.paymentIntent.update({
     where: { id: created.id },
