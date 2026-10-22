@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/client';
+import { ADMIN_INTL_LOCALE, useAdminT } from '@/components/Providers';
 import Icon from '@/components/icons';
 
 type Log = {
@@ -28,6 +29,7 @@ export default function AdminAuditPage() {
   const [page, setPage] = useState(1);
   const [q, setQ] = useState('');
   const [loaded, setLoaded] = useState(false);
+  const t = useAdminT();
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -48,16 +50,16 @@ export default function AdminAuditPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Audit log</h1>
+          <h1 className="text-2xl font-bold">{t('admin.audit.title')}</h1>
           <p className="mt-0.5 text-sm text-gray-500">
-            Every admin action is recorded here — who did what, when, and from which IP.
+            {t('admin.audit.subtitle')}
           </p>
         </div>
         <div className="relative">
           <Icon name="search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             className="input w-64 pl-9"
-            placeholder="Filter by action, target, admin…"
+            placeholder={t('admin.audit.filterPlaceholder')}
             value={q}
             onChange={(e) => { setQ(e.target.value); setPage(1); }}
           />
@@ -68,11 +70,11 @@ export default function AdminAuditPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wide text-gray-400">
-              <th className="px-4 py-3">Time</th>
-              <th className="px-4 py-3">Admin</th>
-              <th className="px-4 py-3">Action</th>
-              <th className="px-4 py-3">Target</th>
-              <th className="px-4 py-3">Detail</th>
+              <th className="px-4 py-3">{t('admin.security.colTime')}</th>
+              <th className="px-4 py-3">{t('admin.audit.colAdmin')}</th>
+              <th className="px-4 py-3">{t('admin.audit.colAction')}</th>
+              <th className="px-4 py-3">{t('admin.audit.colTarget')}</th>
+              <th className="px-4 py-3">{t('admin.audit.colDetail')}</th>
               <th className="px-4 py-3">IP</th>
             </tr>
           </thead>
@@ -80,7 +82,7 @@ export default function AdminAuditPage() {
             {logs.map((l) => (
               <tr key={l.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/60">
                 <td className="whitespace-nowrap px-4 py-2.5 text-xs text-gray-500">
-                  {new Date(l.createdAt).toLocaleString('en-US', {
+                  {new Date(l.createdAt).toLocaleString(ADMIN_INTL_LOCALE, {
                     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
                   })}
                 </td>
@@ -99,7 +101,7 @@ export default function AdminAuditPage() {
               <tr>
                 <td colSpan={6} className="px-4 py-12 text-center text-gray-400">
                   <Icon name="list" size={36} className="mx-auto text-gray-300" />
-                  <p className="mt-2">No audit entries{q ? ' matching your filter' : ' yet'}.</p>
+                  <p className="mt-2">{q ? t('admin.audit.emptyFiltered') : t('admin.audit.empty')}</p>
                 </td>
               </tr>
             )}
@@ -109,14 +111,14 @@ export default function AdminAuditPage() {
 
       {pages > 1 && (
         <div className="mt-4 flex items-center justify-between text-sm">
-          <span className="text-gray-500">{total} entr{total === 1 ? 'y' : 'ies'}</span>
+          <span className="text-gray-500">{t('admin.audit.entries', { count: total })}</span>
           <div className="flex gap-2">
             <button className="btn-secondary px-3 py-1.5 text-xs" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-              Previous
+              {t('admin.common.prev')}
             </button>
-            <span className="px-2 py-1.5 text-xs text-gray-500">Page {page} / {pages}</span>
+            <span className="px-2 py-1.5 text-xs text-gray-500">{t('admin.common.pageOf', { page, total: pages })}</span>
             <button className="btn-secondary px-3 py-1.5 text-xs" disabled={page >= pages} onClick={() => setPage(page + 1)}>
-              Next
+              {t('admin.common.next')}
             </button>
           </div>
         </div>

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useStore, useMoney } from '@/components/Providers';
+import { ADMIN_INTL_LOCALE, useAdminT, useStore, useMoney } from '@/components/Providers';
 import { api } from '@/lib/client';
 import Icon from '@/components/icons';
 
@@ -28,9 +28,9 @@ type Payment = {
 };
 
 const TABS = [
-  { key: 'review', label: 'Awaiting review' },
-  { key: 'pending', label: 'Not yet paid' },
-  { key: 'all', label: 'Last 30 days' },
+  { key: 'review', labelKey: 'admin.payments.tabReview' },
+  { key: 'pending', labelKey: 'admin.payments.tabPending' },
+  { key: 'all', labelKey: 'admin.payments.tabAll' },
 ];
 
 const STATUS_BADGE: Record<string, string> = {
@@ -42,11 +42,12 @@ const STATUS_BADGE: Record<string, string> = {
   FAILED: 'bg-red-100 text-red-700',
 };
 
-const PURPOSE_LABEL: Record<string, string> = { ORDER: 'Order', TOPUP: 'Wallet top-up', GIFTCARD: 'Gift card' };
+const PURPOSE_KEY: Record<string, string> = { ORDER: 'admin.payments.purposeOrder', TOPUP: 'admin.payments.purposeTopup', GIFTCARD: 'admin.payments.purposeGiftcard' };
 
 export default function AdminPaymentsPage() {
   const { toast } = useStore();
   const money = useMoney();
+  const t = useAdminT();
   const [tab, setTab] = useState('review');
   const [rows, setRows] = useState<Payment[] | null>(null);
   const [busy, setBusy] = useState<number | null>(null);
@@ -65,11 +66,11 @@ export default function AdminPaymentsPage() {
   useEffect(() => { load(); }, [load]);
 
   const act = async (id: number, action: 'approve' | 'reject') => {
-    if (action === 'reject' && !confirm('Reject this payment? The order or top-up it was paying for will be released.')) return;
+    if (action === 'reject' && !confirm(t('admin.payments.rejectConfirm'))) return;
     setBusy(id);
     try {
       await api('/api/admin/payments', { method: 'PATCH', json: { id, action } });
-      toast(action === 'approve' ? 'Payment confirmed' : 'Payment rejected');
+      toast(action === 'approve' ? t('admin.payments.confirmedToast') : t('admin.payments.rejectedToast'));
       await load();
     } catch (e: any) {
       toast(e.message, 'error');
@@ -82,32 +83,31 @@ export default function AdminPaymentsPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold">Payment reviews</h1>
+        <h1 className="text-2xl font-bold">{t('admin.payments.title')}</h1>
         <p className="mt-0.5 text-sm text-gray-500">
-          Bank transfers customers say they have made. Confirming one settles whatever it was paying for — an order is
-          delivered, a top-up credits the wallet, a gift card is activated.
+          {t('admin.payments.subtitle')}
         </p>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {TABS.map((t) => (
+        {TABS.map((tb) => (
           <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
+            key={tb.key}
+            onClick={() => setTab(tb.key)}
             className={`rounded-full px-4 py-1.5 text-sm font-semibold shadow-sm transition ${
-              tab === t.key ? 'bg-gray-900 text-white' : 'border border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+              tab === tb.key ? 'bg-gray-900 text-white' : 'border border-gray-200 bg-white text-gray-600 hover:border-gray-300'
             }`}
           >
-            {t.label}
+            {t(tb.labelKey)}
           </button>
         ))}
       </div>
 
       {rows === null ? (
-        <div className="card p-12 text-center text-gray-400">Loading…</div>
+        <div className="card p-12 text-center text-gray-400">{t('admin.common.loading')}</div>
       ) : rows.length === 0 ? (
         <div className="card p-12 text-center text-gray-500">
-          {tab === 'review' ? 'No transfers are waiting for confirmation.' : 'Nothing here.'}
+          {tab === 'review' ? t('admin.payments.emptyReview') : t('admin.payments.empty')}
         </div>
       ) : (
         <div className="space-y-3">
@@ -117,36 +117,36 @@ export default function AdminPaymentsPage() {
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-mono text-sm font-bold">{p.memo || p.ref}</span>
-                    <span className={`badge ${STATUS_BADGE[p.status] || 'bg-gray-100 text-gray-600'}`}>{p.status.replace('_', ' ')}</span>
+                    <span className={`badge ${STATUS_BADGE[p.status] || 'bg-gray-100 text-gray-600'}`}>{t(`admin.payStatus.${p.status}`)}</span>
                     <span className="badge bg-gray-100 text-gray-600">{p.method}</span>
                   </div>
                   <p className="mt-1 text-sm text-gray-600">
-                    {PURPOSE_LABEL[p.purpose] || p.purpose}
+                    {t(PURPOSE_KEY[p.purpose] ?? '') || p.purpose}
                     {p.orderCode && (
                       <> · <Link href={`/admin/orders?q=${p.orderCode}`} className="font-medium text-brand-600 hover:underline">{p.orderCode}</Link></>
                     )}
                     {' · '}{p.name || p.email}
                   </p>
                   <p className="mt-0.5 text-xs text-gray-400">
-                    {new Date(p.createdAt).toLocaleString('en-US')}
-                    {p.reviewedAt && ` · reviewed ${new Date(p.reviewedAt).toLocaleString('en-US')}`}
+                    {new Date(p.createdAt).toLocaleString(ADMIN_INTL_LOCALE)}
+                    {p.reviewedAt && ` · ${t('admin.payments.reviewedAt', { time: new Date(p.reviewedAt).toLocaleString(ADMIN_INTL_LOCALE) })}`}
                   </p>
                   {p.payerNote && <p className="mt-2 rounded-lg bg-gray-50 p-2 text-sm text-gray-600">{p.payerNote}</p>}
-                  {p.reviewNote && <p className="mt-2 text-xs text-gray-500">Note: {p.reviewNote}</p>}
+                  {p.reviewNote && <p className="mt-2 text-xs text-gray-500">{t('admin.payments.note')}: {p.reviewNote}</p>}
                 </div>
 
                 <div className="flex items-center gap-3">
                   {p.proofUrl && (
                     <a href={p.proofUrl} target="_blank" rel="noreferrer" className="shrink-0">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={p.proofUrl} alt="Transfer receipt" className="h-16 w-16 rounded-lg border border-gray-200 object-cover" />
+                      <img src={p.proofUrl} alt={t('admin.payments.proofAlt')} className="h-16 w-16 rounded-lg border border-gray-200 object-cover" />
                     </a>
                   )}
                   <div className="text-right">
                     <p className="text-base font-extrabold">
-                      {p.chargeAmount.toLocaleString('en-US')} {p.chargeCurrency}
+                      {money(p.chargeAmount, p.chargeCurrency)}
                     </p>
-                    <p className="text-xs text-gray-400">{money(p.baseAmount, p.baseCurrency)} booked</p>
+                    <p className="text-xs text-gray-400">{money(p.baseAmount, p.baseCurrency)} {t('admin.payments.booked')}</p>
                   </div>
                 </div>
               </div>
@@ -154,10 +154,10 @@ export default function AdminPaymentsPage() {
               {(p.status === 'AWAITING_REVIEW' || p.status === 'PENDING') && (
                 <div className="mt-3 flex flex-wrap gap-2 border-t border-gray-100 pt-3">
                   <button className="btn-primary" disabled={busy === p.id} onClick={() => act(p.id, 'approve')}>
-                    <Icon name="check" size={15} /> {busy === p.id ? 'Working…' : 'Confirm payment'}
+                    <Icon name="check" size={15} /> {busy === p.id ? t('admin.payments.working') : t('admin.payments.confirm')}
                   </button>
                   <button className="btn-secondary" disabled={busy === p.id} onClick={() => act(p.id, 'reject')}>
-                    <Icon name="x" size={15} /> Reject
+                    <Icon name="x" size={15} /> {t('admin.payments.reject')}
                   </button>
                 </div>
               )}

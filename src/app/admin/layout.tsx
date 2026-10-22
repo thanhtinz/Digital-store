@@ -4,7 +4,7 @@ import { isSetupComplete } from '@/lib/setup';
 import AdminShell from './AdminShell';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Admin Console', robots: { index: false, follow: false } };
+export const metadata = { title: 'Bảng điều khiển quản trị', robots: { index: false, follow: false } };
 
 // Server-side gate for the whole admin area: anonymous visitors and customers
 // never receive an admin page at all, so access does not depend on client JS.

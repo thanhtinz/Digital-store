@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useSettings, field, SettingsHeader } from '../shared';
+import { useAdminT } from '@/components/Providers';
 import { formatMoneyWith, moneyFormatFrom, parseRates } from '@/lib/utils';
 import Icon from '@/components/icons';
 
@@ -11,6 +12,7 @@ type Row = { code: string; rate: string };
 
 export default function CurrencySettingsPage() {
   const { s, set, save, busy } = useSettings();
+  const t = useAdminT();
   // Local rows mirror the currency_rates JSON so the admin edits a table,
   // not a blob. They serialize back on every change.
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -20,7 +22,7 @@ export default function CurrencySettingsPage() {
     return formatMoneyWith(1234567.89, moneyFormatFrom(s));
   }, [s]);
 
-  if (!s) return <div className="py-16 text-center text-gray-400">Loading…</div>;
+  if (!s) return <div className="py-16 text-center text-gray-400">{t('admin.common.loading')}</div>;
 
   const currentRows: Row[] =
     rows ?? Object.entries(parseRates(s.currency_rates || '{}')).map(([code, rate]) => ({ code, rate: String(rate) }));
@@ -42,21 +44,20 @@ export default function CurrencySettingsPage() {
   return (
     <div className="space-y-6">
       <SettingsHeader
-        title="Currency"
-        subtitle="The currency your prices are stored in, how amounts are displayed, and the rates used to charge in another currency."
+        title={t('admin.currency.title')}
+        subtitle={t('admin.currency.subtitle')}
         onSave={save}
         busy={busy}
       />
 
       <div className="card p-5">
-        <h2 className="font-bold">Base currency</h2>
+        <h2 className="font-bold">{t('admin.currency.baseTitle')}</h2>
         <p className="mt-0.5 text-sm text-gray-500">
-          Every price in the catalog, every wallet balance and every order total is stored in this currency. Changing it
-          re-labels existing prices — it does not convert them.
+          {t('admin.currency.baseText')}
         </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="label">Currency code</label>
+            <label className="label">{t('admin.currency.code')}</label>
             <input
               className="input uppercase"
               maxLength={3}
@@ -68,34 +69,33 @@ export default function CurrencySettingsPage() {
               {COMMON.map((c) => <option key={c} value={c} />)}
             </datalist>
           </div>
-          {field(s, set, { k: 'currency_symbol', label: 'Symbol', placeholder: 'Leave blank to use the default for the code' })}
+          {field(s, set, { k: 'currency_symbol', label: t('admin.currency.symbol'), placeholder: t('admin.currency.symbolPlaceholder') })}
           <div>
-            <label className="label">Symbol position</label>
+            <label className="label">{t('admin.currency.symbolPos')}</label>
             <select
               className="input"
-              value={s.currency_symbol_position ?? 'before'}
+              value={s.currency_symbol_position ?? ''}
               onChange={(e) => set('currency_symbol_position', e.target.value)}
             >
-              <option value="before">Before the amount ($10.00)</option>
-              <option value="after">After the amount (10,00 &#8363;)</option>
+              <option value="">{t('admin.currency.posAuto')}</option>
+              <option value="before">{t('admin.currency.posBefore')}</option>
+              <option value="after">{t('admin.currency.posAfter')}</option>
             </select>
           </div>
-          {field(s, set, { k: 'currency_decimals', label: 'Decimal places', type: 'number', help: 'Use 0 for currencies without cents, such as VND or JPY.' })}
-          {field(s, set, { k: 'currency_thousand_sep', label: 'Thousands separator' })}
-          {field(s, set, { k: 'currency_decimal_sep', label: 'Decimal separator' })}
+          {field(s, set, { k: 'currency_decimals', label: t('admin.currency.decimals'), type: 'number', help: t('admin.currency.decimalsHelp') })}
+          {field(s, set, { k: 'currency_thousand_sep', label: t('admin.currency.thousandSep'), help: t('admin.currency.sepHelp') })}
+          {field(s, set, { k: 'currency_decimal_sep', label: t('admin.currency.decimalSep'), help: t('admin.currency.sepHelp') })}
         </div>
         <div className="mt-4 rounded-xl bg-gray-50 p-4">
-          <p className="text-xs font-bold uppercase tracking-wide text-gray-500">Preview</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-gray-500">{t('admin.currency.preview')}</p>
           <p className="mt-1 text-2xl font-extrabold">{preview}</p>
         </div>
       </div>
 
       <div className="card p-5">
-        <h2 className="font-bold">Exchange rates</h2>
+        <h2 className="font-bold">{t('admin.currency.ratesTitle')}</h2>
         <p className="mt-0.5 text-sm text-gray-500">
-          How many units of each currency equal <b>1 {base}</b>. Used when a customer pays through a gateway that settles
-          in another currency — the rate is frozen onto the payment the moment it is created, so a later edit never
-          changes an amount a customer has already been quoted.
+          {t('admin.currency.ratesText', { base })}
         </p>
 
         <div className="mt-4 space-y-2">
@@ -117,9 +117,9 @@ export default function CurrencySettingsPage() {
                 value={row.rate}
                 onChange={(e) => writeRows(currentRows.map((r, j) => (j === i ? { ...r, rate: e.target.value } : r)))}
               />
-              <span className="whitespace-nowrap text-sm text-gray-500">per 1 {base}</span>
+              <span className="whitespace-nowrap text-sm text-gray-500">{t('admin.currency.perOne', { base })}</span>
               <button
-                aria-label="Remove rate"
+                aria-label={t('admin.currency.removeRate')}
                 className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600"
                 onClick={() => writeRows(currentRows.filter((_, j) => j !== i))}
               >
@@ -128,20 +128,19 @@ export default function CurrencySettingsPage() {
             </div>
           ))}
           <button className="btn-secondary" onClick={() => writeRows([...currentRows, { code: '', rate: '' }])}>
-            <Icon name="plus" size={15} /> Add a rate
+            <Icon name="plus" size={15} /> {t('admin.currency.addRate')}
           </button>
         </div>
       </div>
 
       <div className="card p-5">
-        <h2 className="font-bold">Payments</h2>
+        <h2 className="font-bold">{t('admin.currency.paymentsTitle')}</h2>
         <p className="mt-0.5 text-sm text-gray-500">
-          Vietnamese methods (SePay, PayOS, bank transfer) collect in this currency; card gateways always charge in the
-          base currency.
+          {t('admin.currency.paymentsText')}
         </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="label">Charge currency for Vietnamese methods</label>
+            <label className="label">{t('admin.currency.chargeCurrency')}</label>
             <input
               className="input uppercase"
               maxLength={3}
@@ -150,21 +149,21 @@ export default function CurrencySettingsPage() {
             />
             {paymentCode !== base && !paymentRate && (
               <p className="mt-1 text-xs font-medium text-red-600">
-                No exchange rate is configured for {paymentCode} — add one above before enabling those methods.
+                {t('admin.currency.noRate', { code: paymentCode })}
               </p>
             )}
           </div>
           {field(s, set, {
             k: 'currency_round_step',
-            label: 'Round converted amounts up to',
+            label: t('admin.currency.roundStep'),
             type: 'number',
-            help: 'For currencies without cents. 1000 turns 253,746 into 254,000 so customers type a clean number.',
+            help: t('admin.currency.roundStepHelp'),
           })}
           {field(s, set, {
             k: 'payment_min',
-            label: `Minimum order total (${base})`,
+            label: t('admin.currency.paymentMin', { base }),
             type: 'number',
-            help: 'Orders below this cannot be paid for. Card gateways reject very small amounts.',
+            help: t('admin.currency.paymentMinHelp'),
           })}
         </div>
       </div>

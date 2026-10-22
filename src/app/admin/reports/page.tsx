@@ -5,7 +5,7 @@ import { api } from '@/lib/client';
 
 import Icon from '@/components/icons';
 import StatusBadge from '@/components/StatusBadge';
-import { useMoney } from '@/components/Providers';
+import { useAdminT, useMoney } from '@/components/Providers';
 
 type Report = {
   days: number;
@@ -17,13 +17,14 @@ type Report = {
 };
 
 const RANGES = [7, 30, 90, 365];
-const METHOD_LABELS: Record<string, string> = {
-  stripe: 'Card (Stripe)', paypal: 'PayPal', balance: 'Wallet balance', manual: 'Marked paid manually',
-};
+
 
 export default function AdminReportsPage() {
   const money = useMoney();
+  const t = useAdminT();
   const [days, setDays] = useState(30);
+  const methodLabel = (m: string) =>
+    ({ stripe: t('admin.reports.methodCard'), paypal: 'PayPal', balance: t('admin.reports.methodBalance'), manual: t('admin.reports.methodManual') } as Record<string, string>)[m] || m;
   const [data, setData] = useState<Report | null>(null);
 
   useEffect(() => {
@@ -35,8 +36,8 @@ export default function AdminReportsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Reports</h1>
-          <p className="mt-0.5 text-sm text-gray-500">Sales performance for the selected period.</p>
+          <h1 className="text-2xl font-bold">{t('admin.reports.title')}</h1>
+          <p className="mt-0.5 text-sm text-gray-500">{t('admin.reports.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex rounded-lg border border-gray-200 bg-white p-0.5">
@@ -48,28 +49,28 @@ export default function AdminReportsPage() {
                   days === r ? 'bg-brand-600 text-white' : 'text-gray-500 hover:text-gray-800'
                 }`}
               >
-                {r === 365 ? '1 year' : `${r} days`}
+                {r === 365 ? t('admin.reports.year') : t('admin.reports.days', { days: r })}
               </button>
             ))}
           </div>
           <a href={`/api/admin/reports/export?days=${days}`} className="btn-secondary flex items-center gap-1.5 text-sm">
-            <Icon name="download" size={15} /> Export CSV
+            <Icon name="download" size={15} /> {t('admin.reports.exportCsv')}
           </a>
         </div>
       </div>
 
       {!data ? (
-        <div className="py-16 text-center text-gray-400">Loading report…</div>
+        <div className="py-16 text-center text-gray-400">{t('admin.reports.loading')}</div>
       ) : (
         <>
           {/* KPI cards */}
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
             {([
-              ['credit-card', 'Revenue', money(data.totals.revenue)],
-              ['box', 'Paid orders', String(data.totals.orders)],
-              ['dashboard', 'Avg order value', money(data.totals.avgOrder)],
-              ['ticket', 'Discounts given', money(data.totals.discountGiven)],
-              ['users', 'New customers', String(data.totals.newCustomers)],
+              ['credit-card', t('admin.reports.revenue'), money(data.totals.revenue)],
+              ['box', t('admin.reports.paidOrders'), String(data.totals.orders)],
+              ['dashboard', t('admin.reports.avgOrder'), money(data.totals.avgOrder)],
+              ['ticket', t('admin.reports.discounts'), money(data.totals.discountGiven)],
+              ['users', t('admin.reports.newCustomers'), String(data.totals.newCustomers)],
             ] as const).map(([icon, label, value]) => (
               <div key={label} className="card flex items-center gap-3 p-4">
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600">
@@ -85,16 +86,16 @@ export default function AdminReportsPage() {
 
           {/* Revenue chart */}
           <div className="card p-5">
-            <h2 className="font-bold">Daily revenue</h2>
+            <h2 className="font-bold">{t('admin.reports.dailyRevenue')}</h2>
             <RevenueChart series={data.series} />
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Top products */}
             <div className="card p-5">
-              <h2 className="font-bold">Top products</h2>
+              <h2 className="font-bold">{t('admin.reports.topProducts')}</h2>
               {data.topProducts.length === 0 ? (
-                <p className="py-8 text-center text-sm text-gray-400">No paid orders in this period.</p>
+                <p className="py-8 text-center text-sm text-gray-400">{t('admin.reports.noPaidOrders')}</p>
               ) : (
                 <div className="mt-3 space-y-2.5">
                   {data.topProducts.map((p, i) => {
@@ -107,7 +108,7 @@ export default function AdminReportsPage() {
                             {p.name}
                           </span>
                           <span className="shrink-0 text-xs text-gray-500">
-                            {p.units} sold · <b className="text-gray-800">{money(p.revenue)}</b>
+                            {t('admin.reports.sold', { count: p.units })} · <b className="text-gray-800">{money(p.revenue)}</b>
                           </span>
                         </div>
                         <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-gray-100">
@@ -123,16 +124,16 @@ export default function AdminReportsPage() {
             <div className="space-y-6">
               {/* Payment methods */}
               <div className="card p-5">
-                <h2 className="font-bold">Payment methods</h2>
+                <h2 className="font-bold">{t('admin.reports.methods')}</h2>
                 {data.byMethod.length === 0 ? (
-                  <p className="py-6 text-center text-sm text-gray-400">No data yet.</p>
+                  <p className="py-6 text-center text-sm text-gray-400">{t('admin.reports.noData')}</p>
                 ) : (
                   <table className="mt-3 w-full text-sm">
                     <tbody>
                       {data.byMethod.map((m) => (
                         <tr key={m.method} className="border-b border-gray-50 last:border-0">
-                          <td className="py-2 font-medium">{METHOD_LABELS[m.method] || m.method}</td>
-                          <td className="py-2 text-right text-gray-500">{m.orders} order{m.orders === 1 ? '' : 's'}</td>
+                          <td className="py-2 font-medium">{methodLabel(m.method)}</td>
+                          <td className="py-2 text-right text-gray-500">{t('admin.reports.ordersCount', { count: m.orders })}</td>
                           <td className="py-2 text-right font-semibold">{money(m.revenue)}</td>
                         </tr>
                       ))}
@@ -143,15 +144,15 @@ export default function AdminReportsPage() {
 
               {/* Order status */}
               <div className="card p-5">
-                <h2 className="font-bold">Orders by status</h2>
+                <h2 className="font-bold">{t('admin.reports.byStatus')}</h2>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {data.byStatus.map((s) => (
                     <span key={s.status} className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2">
-                      <StatusBadge status={s.status} />
+                      <StatusBadge status={s.status} label={t(`admin.status.${s.status}`)} />
                       <b className="text-sm">{s.count}</b>
                     </span>
                   ))}
-                  {data.byStatus.length === 0 && <p className="text-sm text-gray-400">No orders in this period.</p>}
+                  {data.byStatus.length === 0 && <p className="text-sm text-gray-400">{t('admin.reports.noOrders')}</p>}
                 </div>
               </div>
             </div>
@@ -164,6 +165,7 @@ export default function AdminReportsPage() {
 
 function RevenueChart({ series }: { series: { date: string; revenue: number; orders: number }[] }) {
   const money = useMoney();
+  const t = useAdminT();
   const max = Math.max(1, ...series.map((s) => s.revenue));
   // For long ranges collapse to weekly buckets so bars stay readable.
   const buckets = series.length > 92
@@ -188,7 +190,7 @@ function RevenueChart({ series }: { series: { date: string; revenue: number; ord
               style={{ height: `${Math.max(2, (s.revenue / bmax) * 168)}px` }}
             />
             <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-[11px] text-white group-hover:block">
-              {s.date}{series.length > 92 ? ' (week)' : ''}: {money(s.revenue)} · {s.orders} order{s.orders === 1 ? '' : 's'}
+              {s.date}{series.length > 92 ? t('admin.reports.weekSuffix') : ''}: {money(s.revenue)} · {t('admin.reports.ordersCount', { count: s.orders })}
             </div>
           </div>
         ))}

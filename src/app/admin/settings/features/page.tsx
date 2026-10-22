@@ -1,28 +1,29 @@
 'use client';
 
 import Icon from '@/components/icons';
+import { useAdminT } from '@/components/Providers';
 import { useSettings, SettingsHeader } from '../shared';
 
-const FEATURES: { key: string; icon: string; title: string; desc: string }[] = [
-  { key: 'feature_wallet', icon: 'credit-card', title: 'Wallet', desc: 'Balance top-ups and instant wallet checkout. Hiding it also hides the Wallet page and the balance payment method.' },
-  { key: 'feature_giftcards', icon: 'gift', title: 'Gift cards', desc: 'Buying and redeeming prepaid gift card codes.' },
-  { key: 'feature_reviews', icon: 'star', title: 'Product reviews', desc: 'Review form and review lists on products, plus the public /reviews wall.' },
-  { key: 'feature_wishlist', icon: 'heart', title: 'Wishlist', desc: 'Save-for-later hearts on products and the wishlist page.' },
-  { key: 'feature_news', icon: 'news', title: 'News & blog', desc: 'The /news section and its links in the header and footer.' },
-  { key: 'feature_flash_sale', icon: 'bolt', title: 'Flash sales', desc: 'The flash sale section on the home page, the /flash-sale page and nav links. Sale prices stop applying while off.' },
-  { key: 'feature_livechat', icon: 'chat', title: 'Live chat widget', desc: 'The floating chat bubble on the storefront.' },
-  { key: 'feature_support', icon: 'users', title: 'Support center', desc: 'Customer ticket pages. Turning this off also hides live chat.' },
+const FEATURES: { key: string; icon: string; titleKey: string; descKey: string }[] = [
+  { key: 'feature_wallet', icon: 'credit-card', titleKey: 'admin.features.wallet', descKey: 'admin.features.walletDesc' },
+  { key: 'feature_giftcards', icon: 'gift', titleKey: 'admin.features.giftcards', descKey: 'admin.features.giftcardsDesc' },
+  { key: 'feature_reviews', icon: 'star', titleKey: 'admin.features.reviews', descKey: 'admin.features.reviewsDesc' },
+  { key: 'feature_wishlist', icon: 'heart', titleKey: 'admin.features.wishlist', descKey: 'admin.features.wishlistDesc' },
+  { key: 'feature_news', icon: 'news', titleKey: 'admin.features.news', descKey: 'admin.features.newsDesc' },
+  { key: 'feature_flash_sale', icon: 'bolt', titleKey: 'admin.features.flashSale', descKey: 'admin.features.flashSaleDesc' },
+  { key: 'feature_support', icon: 'users', titleKey: 'admin.features.support', descKey: 'admin.features.supportDesc' },
 ];
 
 export default function AdminFeaturesPage() {
   const { s, set, save, busy } = useSettings();
-  if (!s) return <div className="py-16 text-center text-gray-400">Loading settings…</div>;
+  const t = useAdminT();
+  if (!s) return <div className="py-16 text-center text-gray-400">{t('admin.settings.loading')}</div>;
 
   return (
     <div>
       <SettingsHeader
-        title="Features"
-        subtitle="Switch parts of the storefront on or off — changes apply immediately after saving."
+        title={t('admin.features.title')}
+        subtitle={t('admin.features.subtitle')}
         onSave={save}
         busy={busy}
       />
@@ -37,7 +38,7 @@ export default function AdminFeaturesPage() {
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="font-bold">{f.title}</p>
+                  <p className="font-bold">{t(f.titleKey)}</p>
                   <button
                     role="switch"
                     aria-checked={on}
@@ -47,17 +48,14 @@ export default function AdminFeaturesPage() {
                     <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${on ? 'left-[22px]' : 'left-0.5'}`} />
                   </button>
                 </div>
-                <p className="mt-1 text-xs leading-relaxed text-gray-500">{f.desc}</p>
+                <p className="mt-1 text-xs leading-relaxed text-gray-500">{t(f.descKey)}</p>
               </div>
             </div>
           );
         })}
       </div>
 
-      <p className="mt-4 text-xs text-gray-400">
-        Loyalty points and the affiliate program have their own switches under Rewards &amp; affiliate;
-        payment methods under Payments; Telegram under Notifications.
-      </p>
+      <p className="mt-4 text-xs text-gray-400">{t('admin.features.note')}</p>
     </div>
   );
 }

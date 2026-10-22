@@ -1,12 +1,14 @@
 'use client';
 
 import { useSettings, toggle, SettingsHeader } from '../shared';
+import { useAdminT } from '@/components/Providers';
 import { COLOR_PRESETS, FONT_PRESETS, TEXT_SIZES } from '@/lib/theme';
 import Icon from '@/components/icons';
 
 export default function AppearanceSettingsPage() {
   const { s, set, save, busy } = useSettings();
-  if (!s) return <div className="py-16 text-center text-gray-400">Loading…</div>;
+  const t = useAdminT();
+  if (!s) return <div className="py-16 text-center text-gray-400">{t('admin.common.loading')}</div>;
 
   const color = s.theme_color || 'indigo';
   const font = s.theme_font || 'inter';
@@ -16,15 +18,15 @@ export default function AppearanceSettingsPage() {
   return (
     <div className="space-y-6">
       <SettingsHeader
-        title="Appearance"
-        subtitle="The storefront's colour, typeface and text size. Changes apply everywhere as soon as you save."
+        title={t('admin.appearance.title')}
+        subtitle={t('admin.appearance.subtitle')}
         onSave={save}
         busy={busy}
       />
 
       <div className="card p-5">
-        <h2 className="font-bold">Brand colour</h2>
-        <p className="mt-0.5 text-sm text-gray-500">Used for buttons, links, highlights and focus rings.</p>
+        <h2 className="font-bold">{t('admin.appearance.colourTitle')}</h2>
+        <p className="mt-0.5 text-sm text-gray-500">{t('admin.appearance.colourText')}</p>
         <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {COLOR_PRESETS.map((c) => (
             <button
@@ -40,7 +42,7 @@ export default function AppearanceSettingsPage() {
                 ))}
               </span>
               <span className="mt-2 flex items-center gap-1 text-xs font-semibold">
-                {color === c.key && <Icon name="check" size={13} />} {c.name}
+                {color === c.key && <Icon name="check" size={13} />} {t(`theme.color.${c.key}`)}
               </span>
             </button>
           ))}
@@ -48,7 +50,7 @@ export default function AppearanceSettingsPage() {
       </div>
 
       <div className="card p-5">
-        <h2 className="font-bold">Typeface</h2>
+        <h2 className="font-bold">{t('admin.appearance.fontTitle')}</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {FONT_PRESETS.map((f) => (
             <button
@@ -61,60 +63,59 @@ export default function AppearanceSettingsPage() {
               <span className="block text-lg font-bold" style={{ fontFamily: `${f.stack}, system-ui` }}>
                 {f.name}
               </span>
-              <span className="mt-0.5 block text-xs text-gray-500">{f.note || 'Loaded from Google Fonts'}</span>
+              <span className="mt-0.5 block text-xs text-gray-500">{f.key === 'be-vietnam' ? t('admin.appearance.fontNoteBeVietnam') : f.key === 'system' ? t('admin.appearance.fontNoteSystem') : t('admin.appearance.fontNoteGoogle')}</span>
             </button>
           ))}
         </div>
       </div>
 
       <div className="card p-5">
-        <h2 className="font-bold">Text size</h2>
-        <p className="mt-0.5 text-sm text-gray-500">Scales the whole interface, not just body copy.</p>
+        <h2 className="font-bold">{t('admin.appearance.sizeTitle')}</h2>
+        <p className="mt-0.5 text-sm text-gray-500">{t('admin.appearance.sizeText')}</p>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          {TEXT_SIZES.map((t) => (
+          {TEXT_SIZES.map((sz) => (
             <button
-              key={t.key}
-              onClick={() => set('theme_text_size', t.key)}
+              key={sz.key}
+              onClick={() => set('theme_text_size', sz.key)}
               className={`rounded-xl border-2 p-4 text-left transition ${
-                size === t.key ? 'border-gray-900' : 'border-gray-200 hover:border-gray-300'
+                size === sz.key ? 'border-gray-900' : 'border-gray-200 hover:border-gray-300'
               }`}
             >
-              <span className="block font-bold" style={{ fontSize: t.rootPx }}>{t.name}</span>
-              <span className="mt-0.5 block text-xs text-gray-500">Root size {t.rootPx}px</span>
+              <span className="block font-bold" style={{ fontSize: sz.rootPx }}>{t(`theme.size.${sz.key}`)}</span>
+              <span className="mt-0.5 block text-xs text-gray-500">{t('admin.appearance.rootSize', { px: sz.rootPx })}</span>
             </button>
           ))}
         </div>
-        <div className="mt-4">{toggle(s, set, 'theme_allow_override', 'Let visitors choose their own appearance')}</div>
+        <div className="mt-4">{toggle(s, set, 'theme_allow_override', t('admin.appearance.allowOverride'))}</div>
         <p className="mt-1 text-xs text-gray-400">
-          When on, shoppers get an appearance menu in the footer. Their choice is stored in their own browser and never
-          changes what anyone else sees.
+          {t('admin.appearance.overrideNote')}
         </p>
       </div>
 
       {/* Live preview using the selected values directly, not the saved ones */}
       <div className="card p-5">
-        <h2 className="font-bold">Preview</h2>
+        <h2 className="font-bold">{t('admin.appearance.previewTitle')}</h2>
         <div
           className="mt-4 rounded-2xl border border-gray-200 p-6"
           style={{ fontFamily: `${FONT_PRESETS.find((f) => f.key === font)?.stack || 'Inter'}, system-ui` }}
         >
           <p className="text-xs font-bold uppercase tracking-widest" style={{ color: `rgb(${preset.shades[6]})` }}>
-            Hand-picked
+            {t('admin.appearance.previewEyebrow')}
           </p>
-          <h3 className="mt-1 text-xl font-extrabold">Featured products</h3>
-          <p className="mt-1 text-sm text-gray-500">Instant delivery of premium digital goods.</p>
+          <h3 className="mt-1 text-xl font-extrabold">{t('admin.appearance.previewHeading')}</h3>
+          <p className="mt-1 text-sm text-gray-500">{t('admin.appearance.previewText')}</p>
           <div className="mt-4 flex flex-wrap gap-2">
             <span
               className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white"
               style={{ background: `linear-gradient(to bottom, rgb(${preset.shades[5]}), rgb(${preset.shades[6]}))` }}
             >
-              <Icon name="cart" size={16} /> Add to cart
+              <Icon name="cart" size={16} /> {t('admin.appearance.previewAddCart')}
             </span>
             <span
               className="inline-flex items-center rounded-xl px-4 py-2.5 text-sm font-semibold"
               style={{ background: `rgb(${preset.shades[0]})`, color: `rgb(${preset.shades[7]})` }}
             >
-              Save for later
+              {t('admin.appearance.previewSaveLater')}
             </span>
           </div>
         </div>

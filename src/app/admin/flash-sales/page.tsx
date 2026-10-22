@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useStore, useMoney } from '@/components/Providers';
+import { ADMIN_INTL_LOCALE, useAdminT, useStore, useMoney } from '@/components/Providers';
 import { api } from '@/lib/client';
 
 import Icon from '@/components/icons';
@@ -12,6 +12,7 @@ const EMPTY = { id: 0, name: '', startsAt: '', endsAt: '', isActive: true, items
 export default function AdminFlashSalesPage() {
   const { toast } = useStore();
   const money = useMoney();
+  const t = useAdminT();
   const [sales, setSales] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [form, setForm] = useState<any>(EMPTY);
@@ -42,7 +43,7 @@ export default function AdminFlashSalesPage() {
       };
       if (form.id) await api(`/api/admin/flash-sales/${form.id}`, { method: 'PATCH', json: payload });
       else await api('/api/admin/flash-sales', { method: 'POST', json: payload });
-      toast('Flash sale saved');
+      toast(t('admin.flash.savedToast'));
       setForm(EMPTY);
       await load();
     } catch (e: any) {
@@ -53,7 +54,7 @@ export default function AdminFlashSalesPage() {
   };
 
   const remove = async (id: number) => {
-    if (!confirm('Delete this flash sale?')) return;
+    if (!confirm(t('admin.flash.deleteConfirm'))) return;
     await api(`/api/admin/flash-sales/${id}`, { method: 'DELETE' });
     await load();
   };
@@ -62,7 +63,7 @@ export default function AdminFlashSalesPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold">Flash sales</h1>
+      <h1 className="text-2xl font-bold">{t('admin.flash.title')}</h1>
       <div className="mt-4 grid gap-6 xl:grid-cols-[1fr_400px]">
         <div className="space-y-3">
           {sales.map((s) => {
@@ -74,10 +75,10 @@ export default function AdminFlashSalesPage() {
                     <p className="font-bold">
                       {s.name}
                       {live && <span className="badge ml-2 gap-1 bg-red-100 text-red-700"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-600" /> LIVE</span>}
-                      {!s.isActive && <span className="badge ml-2 bg-gray-200 text-gray-500">Off</span>}
+                      {!s.isActive && <span className="badge ml-2 bg-gray-200 text-gray-500">{t('admin.coupons.off')}</span>}
                     </p>
                     <p className="text-xs text-gray-400">
-                      {new Date(s.startsAt).toLocaleString('en-US')} → {new Date(s.endsAt).toLocaleString('en-US')}
+                      {new Date(s.startsAt).toLocaleString(ADMIN_INTL_LOCALE)} → {new Date(s.endsAt).toLocaleString(ADMIN_INTL_LOCALE)}
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -87,8 +88,8 @@ export default function AdminFlashSalesPage() {
                         id: s.id, name: s.name, startsAt: toLocal(s.startsAt), endsAt: toLocal(s.endsAt), isActive: s.isActive,
                         items: s.items.map((i: any) => ({ packageId: String(i.packageId), salePrice: String(Number(i.salePrice)), quantityLimit: i.quantityLimit ? String(i.quantityLimit) : '' })),
                       })}
-                    >Edit</button>
-                    <button className="text-xs text-red-500 hover:underline" onClick={() => remove(s.id)}>Delete</button>
+                    >{t('admin.products.edit')}</button>
+                    <button className="text-xs text-red-500 hover:underline" onClick={() => remove(s.id)}>{t('admin.editor.delete')}</button>
                   </div>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-600">
@@ -102,23 +103,23 @@ export default function AdminFlashSalesPage() {
               </div>
             );
           })}
-          {sales.length === 0 && <div className="card p-10 text-center text-sm text-gray-400">No flash sales yet.</div>}
+          {sales.length === 0 && <div className="card p-10 text-center text-sm text-gray-400">{t('admin.flash.empty')}</div>}
         </div>
 
         <div className="card h-fit p-5">
-          <h2 className="font-bold">{form.id ? 'Edit flash sale' : 'New flash sale'}</h2>
+          <h2 className="font-bold">{form.id ? t('admin.flash.editTitle') : t('admin.flash.newTitle')}</h2>
           <div className="mt-3 space-y-3">
-            <div><label className="label">Name *</label><input className="input" placeholder="Weekend deals" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+            <div><label className="label">{t('admin.editor.name')}</label><input className="input" placeholder={t('admin.flash.namePlaceholder')} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="label">Starts *</label><input className="input" type="datetime-local" value={form.startsAt} onChange={(e) => setForm({ ...form, startsAt: e.target.value })} /></div>
-              <div><label className="label">Ends *</label><input className="input" type="datetime-local" value={form.endsAt} onChange={(e) => setForm({ ...form, endsAt: e.target.value })} /></div>
+              <div><label className="label">{t('admin.flash.starts')}</label><input className="input" type="datetime-local" value={form.startsAt} onChange={(e) => setForm({ ...form, startsAt: e.target.value })} /></div>
+              <div><label className="label">{t('admin.flash.ends')}</label><input className="input" type="datetime-local" value={form.endsAt} onChange={(e) => setForm({ ...form, endsAt: e.target.value })} /></div>
             </div>
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} /> Active</label>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} /> {t('admin.products.active')}</label>
 
             <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold">Discounted packages</p>
+              <p className="text-sm font-semibold">{t('admin.flash.packages')}</p>
               <button className="text-xs font-semibold text-brand-600 hover:underline" onClick={() => setForm({ ...form, items: [...form.items, { packageId: '', salePrice: '', quantityLimit: '' }] })}>
-                + Add
+                {t('admin.flash.add')}
               </button>
             </div>
             {form.items.map((item: ItemForm, i: number) => (
@@ -132,13 +133,13 @@ export default function AdminFlashSalesPage() {
                     setForm({ ...form, items });
                   }}
                 >
-                  <option value="">— Choose a package —</option>
+                  <option value="">{t('admin.flash.choosePackage')}</option>
                   {allPackages.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
                 </select>
                 <div className="flex gap-2">
-                  <input className="input py-1.5 text-xs" type="number" step="0.01" placeholder="Sale price $" value={item.salePrice}
+                  <input className="input py-1.5 text-xs" type="number" step="0.01" placeholder={t('admin.flash.salePrice')} value={item.salePrice}
                     onChange={(e) => { const items = [...form.items]; items[i] = { ...item, salePrice: e.target.value }; setForm({ ...form, items }); }} />
-                  <input className="input py-1.5 text-xs" type="number" placeholder="Qty limit (opt)" value={item.quantityLimit}
+                  <input className="input py-1.5 text-xs" type="number" placeholder={t('admin.flash.qtyLimit')} value={item.quantityLimit}
                     onChange={(e) => { const items = [...form.items]; items[i] = { ...item, quantityLimit: e.target.value }; setForm({ ...form, items }); }} />
                   <button className="text-red-500" onClick={() => setForm({ ...form, items: form.items.filter((_: any, x: number) => x !== i) })}><Icon name="x" size={14} /></button>
                 </div>
@@ -147,9 +148,9 @@ export default function AdminFlashSalesPage() {
 
             <div className="flex gap-2">
               <button className="btn-primary flex-1" onClick={save} disabled={busy || !form.name || !form.startsAt || !form.endsAt}>
-                {form.id ? 'Update' : 'Create'}
+                {form.id ? t('admin.categories.update') : t('admin.categories.create')}
               </button>
-              {form.id > 0 && <button className="btn-secondary" onClick={() => setForm(EMPTY)}>New</button>}
+              {form.id > 0 && <button className="btn-secondary" onClick={() => setForm(EMPTY)}>{t('admin.categories.newBtn')}</button>}
             </div>
           </div>
         </div>

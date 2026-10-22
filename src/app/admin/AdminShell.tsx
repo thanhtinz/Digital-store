@@ -3,49 +3,50 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { useStore } from '@/components/Providers';
+import { useAdminT, useStore } from '@/components/Providers';
 import Icon from '@/components/icons';
 import { api } from '@/lib/client';
 
 // The admin area is fully separate from the storefront: its own header,
 // sidebar menu and footer. Settings are separate pages (no tabs).
-const NAV: Array<{ href: string; label: string; icon: string } | { section: string }> = [
-  { href: '/admin', label: 'Dashboard', icon: 'dashboard' },
-  { href: '/admin/reports', label: 'Reports', icon: 'chart' },
-  { href: '/admin/deliveries', label: 'Deliveries', icon: 'truck' },
-  { href: '/admin/payments', label: 'Payment reviews', icon: 'credit-card' },
-  { href: '/admin/inventory', label: 'Auto delivery', icon: 'bolt' },
-  { href: '/admin/orders', label: 'Orders', icon: 'box' },
-  { href: '/admin/products', label: 'Products', icon: 'bag' },
-  { href: '/admin/categories', label: 'Categories', icon: 'folder' },
-  { section: 'Marketing' },
-  { href: '/admin/banners', label: 'Banners', icon: 'image' },
-  { href: '/admin/coupons', label: 'Coupons', icon: 'ticket' },
-  { href: '/admin/flash-sales', label: 'Flash sales', icon: 'bolt' },
-  { href: '/admin/auto-coupons', label: 'Auto coupons', icon: 'gift' },
-  { href: '/admin/posts', label: 'News', icon: 'news' },
-  { section: 'Community' },
-  { href: '/admin/tickets', label: 'Support tickets', icon: 'chat' },
-  { href: '/admin/reviews', label: 'Reviews', icon: 'star' },
-  { href: '/admin/users', label: 'Users', icon: 'users' },
-  { section: 'Configuration' },
-  { href: '/admin/security', label: 'Security', icon: 'shield' },
-  { href: '/admin/audit', label: 'Audit log', icon: 'list' },
-  { href: '/admin/api-keys', label: 'API keys', icon: 'key' },
-  { href: '/admin/backup', label: 'Backup', icon: 'download' },
-  { href: '/admin/settings/features', label: 'Features', icon: 'spark' },
-  { href: '/admin/settings', label: 'Site settings', icon: 'settings' },
-  { href: '/admin/settings/currency', label: 'Currency', icon: 'chart' },
-  { href: '/admin/settings/appearance', label: 'Appearance', icon: 'image' },
-  { href: '/admin/settings/payments', label: 'Payments', icon: 'credit-card' },
-  { href: '/admin/settings/marketing', label: 'Rewards & affiliate', icon: 'star' },
-  { href: '/admin/settings/google', label: 'Google login', icon: 'key' },
-  { href: '/admin/settings/email', label: 'Email (SMTP)', icon: 'mail' },
-  { href: '/admin/settings/notifications', label: 'Notifications', icon: 'bell' },
+const NAV: Array<{ href: string; labelKey: string; icon: string } | { sectionKey: string }> = [
+  { href: '/admin', labelKey: 'admin.nav.dashboard', icon: 'dashboard' },
+  { href: '/admin/reports', labelKey: 'admin.nav.reports', icon: 'chart' },
+  { href: '/admin/deliveries', labelKey: 'admin.nav.deliveries', icon: 'truck' },
+  { href: '/admin/payments', labelKey: 'admin.nav.paymentReviews', icon: 'credit-card' },
+  { href: '/admin/inventory', labelKey: 'admin.nav.autoDelivery', icon: 'bolt' },
+  { href: '/admin/orders', labelKey: 'admin.nav.orders', icon: 'box' },
+  { href: '/admin/products', labelKey: 'admin.nav.products', icon: 'bag' },
+  { href: '/admin/categories', labelKey: 'admin.nav.categories', icon: 'folder' },
+  { sectionKey: 'admin.nav.sectionMarketing' },
+  { href: '/admin/banners', labelKey: 'admin.nav.banners', icon: 'image' },
+  { href: '/admin/coupons', labelKey: 'admin.nav.coupons', icon: 'ticket' },
+  { href: '/admin/flash-sales', labelKey: 'admin.nav.flashSales', icon: 'bolt' },
+  { href: '/admin/auto-coupons', labelKey: 'admin.nav.autoCoupons', icon: 'gift' },
+  { href: '/admin/posts', labelKey: 'admin.nav.posts', icon: 'news' },
+  { sectionKey: 'admin.nav.sectionCommunity' },
+  { href: '/admin/tickets', labelKey: 'admin.nav.tickets', icon: 'chat' },
+  { href: '/admin/reviews', labelKey: 'admin.nav.reviews', icon: 'star' },
+  { href: '/admin/users', labelKey: 'admin.nav.users', icon: 'users' },
+  { sectionKey: 'admin.nav.sectionConfiguration' },
+  { href: '/admin/security', labelKey: 'admin.nav.security', icon: 'shield' },
+  { href: '/admin/audit', labelKey: 'admin.nav.audit', icon: 'list' },
+  { href: '/admin/api-keys', labelKey: 'admin.nav.apiKeys', icon: 'key' },
+  { href: '/admin/backup', labelKey: 'admin.nav.backup', icon: 'download' },
+  { href: '/admin/settings/features', labelKey: 'admin.nav.features', icon: 'spark' },
+  { href: '/admin/settings', labelKey: 'admin.nav.siteSettings', icon: 'settings' },
+  { href: '/admin/settings/currency', labelKey: 'admin.nav.currency', icon: 'chart' },
+  { href: '/admin/settings/appearance', labelKey: 'admin.nav.appearance', icon: 'image' },
+  { href: '/admin/settings/payments', labelKey: 'admin.nav.paymentSettings', icon: 'credit-card' },
+  { href: '/admin/settings/marketing', labelKey: 'admin.nav.rewards', icon: 'star' },
+  { href: '/admin/settings/google', labelKey: 'admin.nav.google', icon: 'key' },
+  { href: '/admin/settings/email', labelKey: 'admin.nav.email', icon: 'mail' },
+  { href: '/admin/settings/notifications', labelKey: 'admin.nav.notifications', icon: 'bell' },
 ];
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
   const { user, refreshUser } = useStore();
+  const t = useAdminT();
   const router = useRouter();
   const pathname = usePathname();
   const [drawer, setDrawer] = useState(false);
@@ -66,7 +67,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   if (!user || user.role === 'CUSTOMER') {
     return (
       <div className="grid min-h-screen place-items-center bg-gray-100 text-sm text-gray-400">
-        Checking access…
+        {t('admin.shell.checking')}
       </div>
     );
   }
@@ -77,7 +78,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       <header className="sticky top-0 z-50 border-b border-gray-800 bg-gray-900 text-white">
         <div className="flex h-14 items-center gap-3 px-4">
           <button
-            aria-label="Menu"
+            aria-label={t('admin.shell.menu')}
             className="rounded-lg p-2 hover:bg-white/10 lg:hidden"
             onClick={() => setDrawer((v) => !v)}
           >
@@ -87,7 +88,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600">
               <Icon name="shield" size={17} />
             </span>
-            <span className="text-sm font-bold tracking-wide">Admin Console</span>
+            <span className="text-sm font-bold tracking-wide">{t('admin.shell.title')}</span>
           </Link>
           <span className="hidden rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-gray-300 sm:block">
             {user.role}
@@ -99,7 +100,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-300 hover:bg-white/10 hover:text-white"
             >
               <Icon name="store" size={16} />
-              <span className="hidden sm:inline">View store</span>
+              <span className="hidden sm:inline">{t('admin.shell.viewStore')}</span>
             </Link>
             <div className="mx-1 h-6 w-px bg-white/15" />
             <span className="hidden max-w-[160px] truncate text-sm text-gray-300 md:block">{user.name}</span>
@@ -108,7 +109,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-300 hover:bg-white/10 hover:text-white"
             >
               <Icon name="logout" size={16} />
-              <span className="hidden sm:inline">Sign out</span>
+              <span className="hidden sm:inline">{t('admin.shell.signOut')}</span>
             </button>
           </div>
         </div>
@@ -137,11 +138,11 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       {/* ── Admin footer ─────────────────────────────────────────── */}
       <footer className="border-t border-gray-200 bg-white">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-xs text-gray-400 sm:px-6">
-          <span>Admin Console · internal use only</span>
+          <span>{t('admin.shell.footerNote')}</span>
           <span className="flex items-center gap-4">
-            <Link href="/admin/orders" className="hover:text-gray-600">Orders</Link>
-            <Link href="/admin/settings" className="hover:text-gray-600">Settings</Link>
-            <Link href="/" className="hover:text-gray-600">Storefront</Link>
+            <Link href="/admin/orders" className="hover:text-gray-600">{t('admin.nav.orders')}</Link>
+            <Link href="/admin/settings" className="hover:text-gray-600">{t('admin.nav.siteSettings')}</Link>
+            <Link href="/" className="hover:text-gray-600">{t('admin.shell.storefront')}</Link>
           </span>
         </div>
       </footer>
@@ -150,13 +151,14 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 }
 
 function SidebarNav({ pathname }: { pathname: string }) {
+  const t = useAdminT();
   return (
     <nav className="space-y-0.5 p-3">
       {NAV.map((item, i) => {
-        if ('section' in item) {
+        if ('sectionKey' in item) {
           return (
             <p key={i} className="px-3 pb-1 pt-4 text-[11px] font-bold uppercase tracking-wider text-gray-400">
-              {item.section}
+              {t(item.sectionKey)}
             </p>
           );
         }
@@ -170,7 +172,7 @@ function SidebarNav({ pathname }: { pathname: string }) {
             }`}
           >
             <Icon name={item.icon} size={17} className={active ? '' : 'text-gray-400'} />
-            {item.label}
+            {t(item.labelKey)}
           </Link>
         );
       })}

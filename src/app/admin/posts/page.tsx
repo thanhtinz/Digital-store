@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useStore } from '@/components/Providers';
+import { ADMIN_INTL_LOCALE, useAdminT, useStore } from '@/components/Providers';
 import { api } from '@/lib/client';
 import Icon from '@/components/icons';
 
@@ -21,6 +21,7 @@ const EMPTY = { id: 0, title: '', slug: '', excerpt: '', content: '', coverImage
 
 export default function AdminPostsPage() {
   const { toast } = useStore();
+  const t = useAdminT();
   const [posts, setPosts] = useState<Post[]>([]);
   const [editing, setEditing] = useState<typeof EMPTY | null>(null);
   const [busy, setBusy] = useState(false);
@@ -43,7 +44,7 @@ export default function AdminPostsPage() {
       };
       if (editing.id) await api(`/api/admin/posts/${editing.id}`, { method: 'PATCH', json: payload });
       else await api('/api/admin/posts', { method: 'POST', json: payload });
-      toast('Post saved');
+      toast(t('admin.posts.savedToast'));
       setEditing(null);
       await load();
     } catch (e: any) {
@@ -54,7 +55,7 @@ export default function AdminPostsPage() {
   };
 
   const remove = async (post: Post) => {
-    if (!confirm(`Delete "${post.title}"?`)) return;
+    if (!confirm(t('admin.posts.deleteConfirm', { title: post.title }))) return;
     await api(`/api/admin/posts/${post.id}`, { method: 'DELETE' });
     await load();
   };
@@ -66,7 +67,7 @@ export default function AdminPostsPage() {
       fd.append('file', file);
       const res = await fetch('/api/admin/upload', { method: 'POST', body: fd });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      if (!res.ok) throw new Error(data.error || t('admin.editor.uploadFailed'));
       setEditing((e) => (e ? { ...e, coverImage: data.url } : e));
     } catch (e: any) {
       toast(e.message, 'error');
@@ -79,30 +80,30 @@ export default function AdminPostsPage() {
     return (
       <div>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold">{editing.id ? 'Edit post' : 'New post'}</h1>
+          <h1 className="text-2xl font-bold">{editing.id ? t('admin.posts.editTitle') : t('admin.posts.newTitle')}</h1>
           <div className="flex gap-2">
-            <button className="btn-secondary" onClick={() => setEditing(null)}>Cancel</button>
+            <button className="btn-secondary" onClick={() => setEditing(null)}>{t('admin.editor.cancel')}</button>
             <button className="btn-primary" onClick={save} disabled={busy || !editing.title.trim()}>
-              {busy ? 'Saving…' : 'Save post'}
+              {busy ? t('admin.common.saving') : t('admin.posts.save')}
             </button>
           </div>
         </div>
 
         <div className="card mt-5 grid gap-4 p-5 sm:grid-cols-2">
           <div>
-            <label className="label">Title *</label>
+            <label className="label">{t('admin.posts.fieldTitle')}</label>
             <input className="input" value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} />
           </div>
           <div>
-            <label className="label">Slug (URL)</label>
-            <input className="input" placeholder="auto from title" value={editing.slug} onChange={(e) => setEditing({ ...editing, slug: e.target.value })} />
+            <label className="label">{t('admin.editor.slug')}</label>
+            <input className="input" placeholder={t('admin.posts.slugPlaceholder')} value={editing.slug} onChange={(e) => setEditing({ ...editing, slug: e.target.value })} />
           </div>
           <div className="sm:col-span-2">
-            <label className="label">Excerpt (shown in the news list)</label>
+            <label className="label">{t('admin.posts.excerpt')}</label>
             <textarea className="input" rows={2} maxLength={500} value={editing.excerpt} onChange={(e) => setEditing({ ...editing, excerpt: e.target.value })} />
           </div>
           <div className="sm:col-span-2">
-            <label className="label">Cover image</label>
+            <label className="label">{t('admin.posts.cover')}</label>
             <div className="flex flex-wrap items-center gap-3">
               {editing.coverImage && (
                 <span className="relative">
@@ -111,14 +112,14 @@ export default function AdminPostsPage() {
                   <button
                     className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-gray-900 text-white"
                     onClick={() => setEditing({ ...editing, coverImage: '' })}
-                    aria-label="Remove cover"
+                    aria-label={t('admin.posts.removeCover')}
                   >
                     <Icon name="x" size={10} />
                   </button>
                 </span>
               )}
               <label className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-dashed border-gray-300 px-4 py-3 text-sm font-medium text-gray-500 hover:border-brand-400 hover:text-brand-600">
-                <Icon name="upload" size={16} /> {uploading ? 'Uploading…' : editing.coverImage ? 'Replace image' : 'Upload image'}
+                <Icon name="upload" size={16} /> {uploading ? t('admin.banners.uploading') : editing.coverImage ? t('admin.posts.replaceImage') : t('admin.banners.upload')}
                 <input
                   type="file"
                   accept="image/*"
@@ -129,12 +130,12 @@ export default function AdminPostsPage() {
             </div>
           </div>
           <div className="sm:col-span-2">
-            <label className="label">Content (HTML allowed)</label>
+            <label className="label">{t('admin.posts.content')}</label>
             <textarea className="input font-mono text-xs" rows={14} value={editing.content} onChange={(e) => setEditing({ ...editing, content: e.target.value })} />
           </div>
           <label className="flex items-center gap-2 text-sm font-medium">
             <input type="checkbox" checked={editing.isPublished} onChange={(e) => setEditing({ ...editing, isPublished: e.target.checked })} />
-            Published — visible on the storefront
+            {t('admin.posts.publishedFlag')}
           </label>
         </div>
       </div>
@@ -145,11 +146,11 @@ export default function AdminPostsPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">News</h1>
-          <p className="mt-0.5 text-sm text-gray-500">Announcements and articles shown at /news on the storefront.</p>
+          <h1 className="text-2xl font-bold">{t('admin.posts.title')}</h1>
+          <p className="mt-0.5 text-sm text-gray-500">{t('admin.posts.subtitle')}</p>
         </div>
         <button className="btn-primary" onClick={() => setEditing({ ...EMPTY })}>
-          <Icon name="plus" size={16} /> New post
+          <Icon name="plus" size={16} /> {t('admin.posts.newBtn')}
         </button>
       </div>
 
@@ -157,10 +158,10 @@ export default function AdminPostsPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wide text-gray-400">
-              <th className="px-4 py-3">Post</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Published</th>
-              <th className="px-4 py-3 text-right">Actions</th>
+              <th className="px-4 py-3">{t('admin.posts.colPost')}</th>
+              <th className="px-4 py-3">{t('admin.products.colStatus')}</th>
+              <th className="px-4 py-3">{t('admin.posts.colPublished')}</th>
+              <th className="px-4 py-3 text-right">{t('admin.posts.colActions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -184,11 +185,11 @@ export default function AdminPostsPage() {
                 </td>
                 <td className="px-4 py-2.5">
                   {p.isPublished
-                    ? <span className="badge bg-green-100 text-green-700">Published</span>
-                    : <span className="badge bg-gray-100 text-gray-500">Draft</span>}
+                    ? <span className="badge bg-green-100 text-green-700">{t('admin.posts.published')}</span>
+                    : <span className="badge bg-gray-100 text-gray-500">{t('admin.posts.draft')}</span>}
                 </td>
                 <td className="whitespace-nowrap px-4 py-2.5 text-xs text-gray-500">
-                  {p.publishedAt ? new Date(p.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
+                  {p.publishedAt ? new Date(p.publishedAt).toLocaleDateString(ADMIN_INTL_LOCALE, { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
                 </td>
                 <td className="whitespace-nowrap px-4 py-2.5 text-right">
                   <button
@@ -197,8 +198,8 @@ export default function AdminPostsPage() {
                       id: p.id, title: p.title, slug: p.slug, excerpt: p.excerpt || '',
                       content: p.content, coverImage: p.coverImage || '', isPublished: p.isPublished,
                     })}
-                  >Edit</button>
-                  <button className="ml-3 text-xs text-red-500 hover:underline" onClick={() => remove(p)}>Delete</button>
+                  >{t('admin.products.edit')}</button>
+                  <button className="ml-3 text-xs text-red-500 hover:underline" onClick={() => remove(p)}>{t('admin.editor.delete')}</button>
                 </td>
               </tr>
             ))}
@@ -206,7 +207,7 @@ export default function AdminPostsPage() {
               <tr>
                 <td colSpan={4} className="px-4 py-12 text-center text-gray-400">
                   <Icon name="news" size={36} className="mx-auto text-gray-300" />
-                  <p className="mt-2">No posts yet — write your first announcement.</p>
+                  <p className="mt-2">{t('admin.posts.empty')}</p>
                 </td>
               </tr>
             )}

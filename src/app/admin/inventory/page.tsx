@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useStore } from '@/components/Providers';
+import { ADMIN_INTL_LOCALE, useAdminT, useStore } from '@/components/Providers';
 import { api } from '@/lib/client';
 import Icon from '@/components/icons';
 
@@ -26,6 +26,7 @@ type Summary = { autoPackages: number; unitsAvailable: number; lowStock: number;
 // stock pool management for one package.
 export default function AdminInventoryPage() {
   const { toast } = useStore();
+  const t = useAdminT();
   const [rows, setRows] = useState<Row[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [productId, setProductId] = useState<number | null>(null);
@@ -42,7 +43,7 @@ export default function AdminInventoryPage() {
   const toggleAuto = async (row: Row) => {
     try {
       await api('/api/admin/inventory', { method: 'PATCH', json: { packageId: row.packageId, autoDeliver: !row.autoDeliver } });
-      toast(row.autoDeliver ? 'Switched to manual delivery' : 'Automatic delivery enabled');
+      toast(row.autoDeliver ? t('admin.inventory.manualToast') : t('admin.inventory.autoToast'));
       await load();
     } catch (e: any) {
       toast(e.message, 'error');
@@ -50,12 +51,12 @@ export default function AdminInventoryPage() {
   };
 
   const stockBadge = (r: Row) => {
-    if (!r.autoDeliver) return <span className="badge bg-gray-100 text-gray-500">Manual</span>;
-    if (r.available === 0) return <span className="badge bg-red-100 text-red-700">Out of stock</span>;
+    if (!r.autoDeliver) return <span className="badge bg-gray-100 text-gray-500">{t('admin.inventory.manual')}</span>;
+    if (r.available === 0) return <span className="badge bg-red-100 text-red-700">{t('admin.inventory.outOfStock')}</span>;
     if (r.lowStockAlert != null && r.available <= r.lowStockAlert) {
-      return <span className="badge bg-amber-100 text-amber-700">Low — {r.available} left</span>;
+      return <span className="badge bg-amber-100 text-amber-700">{t('admin.inventory.lowLeft', { count: r.available })}</span>;
     }
-    return <span className="badge gap-1 bg-green-100 text-green-700"><Icon name="bolt" size={11} /> {r.available} in stock</span>;
+    return <span className="badge gap-1 bg-green-100 text-green-700"><Icon name="bolt" size={11} /> {t('admin.inventory.inStock', { count: r.available })}</span>;
   };
 
   // ── Level 3: stock pool for one package ──
@@ -70,7 +71,7 @@ export default function AdminInventoryPage() {
     return (
       <div>
         <button className="flex items-center gap-1 text-sm text-gray-500 hover:text-brand-600" onClick={() => setProductId(null)}>
-          <Icon name="chevron-left" size={15} /> All products
+          <Icon name="chevron-left" size={15} /> {t('admin.inventory.allProducts')}
         </button>
         <div className="mt-2 flex items-center gap-3">
           {first?.productImage ? (
@@ -81,7 +82,7 @@ export default function AdminInventoryPage() {
           )}
           <div>
             <h1 className="text-xl font-bold">{first?.productName}</h1>
-            <p className="text-sm text-gray-500">Choose a package to manage its stock pool, note and alerts.</p>
+            <p className="text-sm text-gray-500">{t('admin.inventory.choosePackage')}</p>
           </div>
         </div>
 
@@ -95,9 +96,9 @@ export default function AdminInventoryPage() {
 
               <div className="mt-3 grid grid-cols-3 gap-2 text-center">
                 {([
-                  [String(r.available), 'In pool'],
-                  [String(r.sold30d), 'Sold 30d'],
-                  [r.lowStockAlert != null ? `≤ ${r.lowStockAlert}` : 'Off', 'Alert'],
+                  [String(r.available), t('admin.inventory.inPool')],
+                  [String(r.sold30d), t('admin.inventory.sold30d')],
+                  [r.lowStockAlert != null ? `≤ ${r.lowStockAlert}` : t('admin.inventory.off'), t('admin.inventory.alert')],
                 ] as const).map(([value, label]) => (
                   <div key={label} className="rounded-lg bg-gray-50 py-2">
                     <p className="text-sm font-extrabold">{value}</p>
@@ -116,11 +117,11 @@ export default function AdminInventoryPage() {
                   >
                     <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${r.autoDeliver ? 'left-[22px]' : 'left-0.5'}`} />
                   </button>
-                  {r.autoDeliver ? 'Automatic' : 'Manual'}
+                  {r.autoDeliver ? t('admin.inventory.automatic') : t('admin.inventory.manual')}
                 </label>
                 {r.autoDeliver && (
                   <button className="btn-primary px-3 py-1.5 text-xs" onClick={() => setPkg(r)}>
-                    <Icon name="package" size={14} /> Manage stock
+                    <Icon name="package" size={14} /> {t('admin.inventory.manageStock')}
                   </button>
                 )}
               </div>
@@ -160,28 +161,27 @@ export default function AdminInventoryPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Auto delivery</h1>
+          <h1 className="text-2xl font-bold">{t('admin.inventory.title')}</h1>
           <p className="mt-0.5 text-sm text-gray-500">
-            Products with automatic packages. Click a product, then a package, to manage its stock pool.
-            The delivery method (manual / automatic) is chosen per package when creating the product.
+            {t('admin.inventory.subtitle')}
           </p>
         </div>
-        <button className="btn-secondary" onClick={() => load()}><Icon name="refresh" size={16} /> Refresh</button>
+        <button className="btn-secondary" onClick={() => load()}><Icon name="refresh" size={16} /> {t('admin.deliveries.refresh')}</button>
       </div>
 
       {summary && (
         <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-5">
           {([
-            ['bolt', String(summary.autoPackages), 'Instant packages'],
-            ['package', String(summary.unitsAvailable), 'Units in stock'],
-            ['clock', String(summary.lowStock), 'Low stock'],
-            ['x', String(summary.outOfStock), 'Out of stock'],
-            ['check', String(summary.sold30d), 'Delivered (30d)'],
-          ] as const).map(([icon, value, label]) => (
+            ['bolt', String(summary.autoPackages), t('admin.inventory.instantPackages'), ''],
+            ['package', String(summary.unitsAvailable), t('admin.inventory.unitsInStock'), ''],
+            ['clock', String(summary.lowStock), t('admin.inventory.lowStock'), 'low'],
+            ['x', String(summary.outOfStock), t('admin.inventory.outOfStock'), 'out'],
+            ['check', String(summary.sold30d), t('admin.inventory.delivered30d'), ''],
+          ] as const).map(([icon, value, label, tone]) => (
             <div key={label} className="card flex items-center gap-3 p-4">
               <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${
-                label === 'Out of stock' && summary.outOfStock > 0 ? 'bg-red-50 text-red-600'
-                : label === 'Low stock' && summary.lowStock > 0 ? 'bg-amber-50 text-amber-600'
+                tone === 'out' && summary.outOfStock > 0 ? 'bg-red-50 text-red-600'
+                : tone === 'low' && summary.lowStock > 0 ? 'bg-amber-50 text-amber-600'
                 : 'bg-brand-50 text-brand-600'
               }`}>
                 <Icon name={icon} size={17} />
@@ -211,18 +211,18 @@ export default function AdminInventoryPage() {
             <span className="min-w-0 flex-1">
               <span className="block truncate font-semibold">{p.name}</span>
               <span className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-gray-400">
-                <span className="badge gap-1 bg-brand-50 text-brand-700"><Icon name="bolt" size={10} /> {p.autoCount}/{p.totalPackages} automatic</span>
-                {p.out > 0 && <span className="badge bg-red-100 text-red-700">{p.out} out of stock</span>}
-                {p.low > 0 && <span className="badge bg-amber-100 text-amber-700">{p.low} low</span>}
+                <span className="badge gap-1 bg-brand-50 text-brand-700"><Icon name="bolt" size={10} /> {t('admin.inventory.autoCount', { auto: p.autoCount, total: p.totalPackages })}</span>
+                {p.out > 0 && <span className="badge bg-red-100 text-red-700">{t('admin.inventory.outCount', { count: p.out })}</span>}
+                {p.low > 0 && <span className="badge bg-amber-100 text-amber-700">{t('admin.inventory.lowCount', { count: p.low })}</span>}
               </span>
             </span>
             <span className="hidden text-right sm:block">
               <span className="block text-lg font-extrabold">{p.available}</span>
-              <span className="block text-xs text-gray-400">units in stock</span>
+              <span className="block text-xs text-gray-400">{t('admin.inventory.unitsInStockLower')}</span>
             </span>
             <span className="hidden text-right sm:block">
               <span className="block text-lg font-extrabold">{p.sold30d}</span>
-              <span className="block text-xs text-gray-400">sold (30d)</span>
+              <span className="block text-xs text-gray-400">{t('admin.inventory.sold30dLower')}</span>
             </span>
             <Icon name="chevron-right" size={18} className="text-gray-300" />
           </button>
@@ -230,8 +230,8 @@ export default function AdminInventoryPage() {
         {products.length === 0 && (
           <div className="card p-14 text-center text-gray-400">
             <Icon name="bolt" size={44} className="mx-auto text-gray-300" />
-            <p className="mt-3 font-semibold text-gray-600">No automatic packages yet</p>
-            <p className="mt-1 text-sm">Edit a product and set a package&apos;s delivery method to “Automatic” — it will show up here.</p>
+            <p className="mt-3 font-semibold text-gray-600">{t('admin.inventory.noneTitle')}</p>
+            <p className="mt-1 text-sm">{t('admin.inventory.noneText')}</p>
           </div>
         )}
       </div>
@@ -242,6 +242,7 @@ export default function AdminInventoryPage() {
 // ── Stock pool management for one package (level 3) ──
 function PackageStockPanel({ row, onBack }: { row: Row; onBack: () => void }) {
   const { toast } = useStore();
+  const t = useAdminT();
   const [items, setItems] = useState<any[]>([]);
   const [soldCount, setSoldCount] = useState(0);
   const [lines, setLines] = useState('');
@@ -264,7 +265,7 @@ function PackageStockPanel({ row, onBack }: { row: Row; onBack: () => void }) {
         method: 'POST',
         json: { packageId: row.packageId, lines },
       });
-      toast(`Added ${d.added} unit${d.added === 1 ? '' : 's'}${d.skippedDuplicates ? ` · ${d.skippedDuplicates} duplicate${d.skippedDuplicates === 1 ? '' : 's'} skipped` : ''}`);
+      toast(d.skippedDuplicates ? t('admin.inventory.addedToast', { added: d.added, skipped: d.skippedDuplicates }) : t('admin.inventory.addedOnly', { added: d.added }));
       setLines('');
       await load();
     } catch (e: any) {
@@ -281,7 +282,7 @@ function PackageStockPanel({ row, onBack }: { row: Row; onBack: () => void }) {
         method: 'PATCH',
         json: { packageId: row.packageId, deliveryNote: note, lowStockAlert: alertAt === '' ? null : Number(alertAt) },
       });
-      toast('Delivery settings saved');
+      toast(t('admin.inventory.settingsSaved'));
     } catch (e: any) {
       toast(e.message, 'error');
     } finally {
@@ -301,54 +302,54 @@ function PackageStockPanel({ row, onBack }: { row: Row; onBack: () => void }) {
       </button>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-bold">{row.productName} <span className="text-gray-400">·</span> {row.packageName}</h1>
-        <span className="badge bg-gray-100 text-gray-600">{items.length} available · {soldCount} sold</span>
+        <span className="badge bg-gray-100 text-gray-600">{t('admin.inventory.poolSummary', { available: items.length, sold: soldCount })}</span>
       </div>
 
       <div className="mt-4 grid gap-5 lg:grid-cols-2">
         <div className="card p-5">
-          <h2 className="flex items-center gap-2 font-bold"><Icon name="package" size={17} className="text-brand-600" /> Add stock</h2>
-          <p className="mt-1 text-xs text-gray-500">One license key / account per line. Duplicates already in the pool are skipped automatically.</p>
+          <h2 className="flex items-center gap-2 font-bold"><Icon name="package" size={17} className="text-brand-600" /> {t('admin.inventory.addStock')}</h2>
+          <p className="mt-1 text-xs text-gray-500">{t('admin.inventory.addStockHelp')}</p>
           <textarea className="input mt-3 font-mono text-xs" rows={6} value={lines} onChange={(e) => setLines(e.target.value)} placeholder={'KEY-AAAA-BBBB\nKEY-CCCC-DDDD'} />
           <button className="btn-primary mt-3" onClick={addStock} disabled={busy || !lines.trim()}>
-            <Icon name="plus" size={15} /> Add to pool
+            <Icon name="plus" size={15} /> {t('admin.inventory.addToPool')}
           </button>
         </div>
 
         <div className="card p-5">
-          <h2 className="flex items-center gap-2 font-bold"><Icon name="settings" size={17} className="text-brand-600" /> Delivery settings</h2>
+          <h2 className="flex items-center gap-2 font-bold"><Icon name="settings" size={17} className="text-brand-600" /> {t('admin.inventory.deliverySettings')}</h2>
           <div className="mt-3 space-y-3">
             <div>
-              <label className="label">Delivery note (appended below every delivered code)</label>
+              <label className="label">{t('admin.inventory.noteLabel')}</label>
               <textarea className="input" rows={3} maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)}
-                placeholder={'How to activate:\n1. Open the app → Settings → License\n2. Paste your key'} />
+                placeholder={t('admin.inventory.notePlaceholder')} />
             </div>
             <div>
-              <label className="label">Low-stock email alert</label>
+              <label className="label">{t('admin.inventory.alertLabel')}</label>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">Email me when stock drops to</span>
-                <input className="input w-20" type="number" min="0" placeholder="off" value={alertAt} onChange={(e) => setAlertAt(e.target.value)} />
-                <span className="text-sm text-gray-500">units</span>
+                <span className="text-sm text-gray-500">{t('admin.inventory.alertWhen')}</span>
+                <input className="input w-20" type="number" min="0" placeholder={t('admin.inventory.off')} value={alertAt} onChange={(e) => setAlertAt(e.target.value)} />
+                <span className="text-sm text-gray-500">{t('admin.inventory.units')}</span>
               </div>
-              <p className="mt-1 text-xs text-gray-400">Sent to the support email in Site settings. Leave empty to disable.</p>
+              <p className="mt-1 text-xs text-gray-400">{t('admin.inventory.alertHelp')}</p>
             </div>
-            <button className="btn-primary" onClick={saveSettings} disabled={busy}>Save settings</button>
+            <button className="btn-primary" onClick={saveSettings} disabled={busy}>{t('admin.inventory.saveSettings')}</button>
           </div>
         </div>
       </div>
 
       <div className="card mt-5">
-        <h2 className="border-b border-gray-100 p-4 text-sm font-bold">Unsold pool ({items.length})</h2>
+        <h2 className="border-b border-gray-100 p-4 text-sm font-bold">{t('admin.inventory.unsoldPool', { count: items.length })}</h2>
         <div className="max-h-96 divide-y divide-gray-100 overflow-y-auto">
           {items.map((it) => (
             <div key={it.id} className="flex items-center gap-3 px-4 py-2">
               <code className="min-w-0 flex-1 truncate font-mono text-xs">{it.content}</code>
-              <span className="text-[11px] text-gray-400">{new Date(it.createdAt).toLocaleDateString('en-US')}</span>
-              <button className="text-red-400 hover:text-red-600" onClick={() => removeItem(it.id)} aria-label="Remove">
+              <span className="text-[11px] text-gray-400">{new Date(it.createdAt).toLocaleDateString(ADMIN_INTL_LOCALE)}</span>
+              <button className="text-red-400 hover:text-red-600" onClick={() => removeItem(it.id)} aria-label={t('admin.inventory.remove')}>
                 <Icon name="trash" size={14} />
               </button>
             </div>
           ))}
-          {items.length === 0 && <p className="px-4 py-8 text-center text-sm text-gray-400">Pool is empty — add stock above.</p>}
+          {items.length === 0 && <p className="px-4 py-8 text-center text-sm text-gray-400">{t('admin.inventory.poolEmpty')}</p>}
         </div>
       </div>
     </div>

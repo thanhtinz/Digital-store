@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { api } from '@/lib/client';
 import { DEFAULT_MONEY_FORMAT, formatMoneyWith, type MoneyFormat } from '@/lib/utils';
 import { DEFAULT_THEME, type Theme } from '@/lib/theme';
-import { DEFAULT_LOCALE, makeT, type Locale, type TFunction } from '@/i18n';
+import { DEFAULT_LOCALE, INTL_LOCALE, makeT, type Locale, type TFunction } from '@/i18n';
 
 export type SessionUser = {
   id: number;
@@ -51,6 +51,16 @@ export const useStore = () => useContext(StoreContext);
 
 // Translation for client components.
 export const useT = (): TFunction => useContext(StoreContext).t;
+
+// The admin console is Vietnamese-first by product decision: its strings
+// always resolve through the Vietnamese dictionary, independent of the
+// storefront language cookie (ds_lang) a visitor may have picked in the
+// shop's language switcher. Dates/numbers in admin use vi-VN too.
+const ADMIN_T = makeT('vi');
+export function useAdminT(): TFunction {
+  return ADMIN_T;
+}
+export const ADMIN_INTL_LOCALE = INTL_LOCALE.vi;
 
 // Formats an amount in the store's configured currency. Passing an explicit
 // code renders that currency instead — historical orders keep the currency

@@ -4,13 +4,14 @@
 // google / email). Each page loads the full settings map but only renders and
 // saves its own fields — the API merges partial updates.
 import { useEffect, useState } from 'react';
-import { useStore } from '@/components/Providers';
+import { useAdminT, useStore } from '@/components/Providers';
 import { api } from '@/lib/client';
 
 export type Settings = Record<string, string>;
 
 export function useSettings() {
   const { toast } = useStore();
+  const t = useAdminT();
   const [s, setS] = useState<Settings | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -25,7 +26,7 @@ export function useSettings() {
     setBusy(true);
     try {
       await api('/api/admin/settings', { method: 'POST', json: s });
-      toast('Settings saved');
+      toast(t('admin.common.saved'));
     } catch (e: any) {
       toast(e.message, 'error');
     } finally {
@@ -68,6 +69,7 @@ export function SettingsHeader({ title, subtitle, onSave, busy }: {
   onSave: () => void;
   busy: boolean;
 }) {
+  const t = useAdminT();
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div>
@@ -75,7 +77,7 @@ export function SettingsHeader({ title, subtitle, onSave, busy }: {
         <p className="mt-0.5 text-sm text-gray-500">{subtitle}</p>
       </div>
       <button className="btn-primary" onClick={onSave} disabled={busy}>
-        {busy ? 'Saving…' : 'Save changes'}
+        {busy ? t('admin.common.saving') : t('admin.common.save')}
       </button>
     </div>
   );

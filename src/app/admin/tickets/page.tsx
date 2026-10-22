@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useStore } from '@/components/Providers';
+import { ADMIN_INTL_LOCALE, useAdminT, useStore } from '@/components/Providers';
 import { api } from '@/lib/client';
 import Icon from '@/components/icons';
 import { AttachmentPicker, MessageBubble } from '@/components/TicketParts';
@@ -14,6 +14,7 @@ const STATUS_BADGE: Record<string, string> = {
 
 export default function AdminTicketsPage() {
   const { toast } = useStore();
+  const t = useAdminT();
   const [tickets, setTickets] = useState<any[]>([]);
   const [openCount, setOpenCount] = useState(0);
   const [status, setStatus] = useState('');
@@ -38,7 +39,7 @@ export default function AdminTicketsPage() {
       setReply('');
       setAttachments([]);
       await load();
-      if (body.action === 'reply') toast('Reply sent — the customer has been emailed');
+      if (body.action === 'reply') toast(t('admin.tickets.replyToast'));
     } catch (e: any) {
       toast(e.message, 'error');
     } finally {
@@ -50,22 +51,22 @@ export default function AdminTicketsPage() {
     return (
       <div className="mx-auto max-w-3xl">
         <button className="flex items-center gap-1 text-sm text-gray-500 hover:text-brand-600" onClick={() => setActive(null)}>
-          <Icon name="chevron-left" size={15} /> All tickets
+          <Icon name="chevron-left" size={15} /> {t('admin.tickets.all')}
         </button>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
           <div>
             <h1 className="text-xl font-bold">#{active.id} · {active.subject}</h1>
             <p className="mt-0.5 text-sm text-gray-500">
               {active.user.name} · {active.user.email}
-              {active.orderCode && <> · order <span className="font-mono font-semibold">#{active.orderCode}</span></>}
+              {active.orderCode && <> · {t('admin.tickets.orderRef')} <span className="font-mono font-semibold">#{active.orderCode}</span></>}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <span className={`badge ${STATUS_BADGE[active.status]}`}>{active.status}</span>
+            <span className={`badge ${STATUS_BADGE[active.status]}`}>{t(`admin.ticketStatus.${active.status}`)}</span>
             {active.status !== 'CLOSED' ? (
-              <button className="btn-secondary px-3 py-1.5 text-xs" onClick={() => action(active.id, { action: 'close' })}>Close ticket</button>
+              <button className="btn-secondary px-3 py-1.5 text-xs" onClick={() => action(active.id, { action: 'close' })}>{t('admin.tickets.close')}</button>
             ) : (
-              <button className="btn-secondary px-3 py-1.5 text-xs" onClick={() => action(active.id, { action: 'reopen' })}>Reopen</button>
+              <button className="btn-secondary px-3 py-1.5 text-xs" onClick={() => action(active.id, { action: 'reopen' })}>{t('admin.tickets.reopen')}</button>
             )}
           </div>
         </div>
@@ -77,16 +78,16 @@ export default function AdminTicketsPage() {
                 key={m.id}
                 message={m}
                 mine={m.isStaff}
-                authorLabel={m.isStaff ? 'You (support)' : active.user.name}
+                authorLabel={m.isStaff ? t('admin.tickets.youSupport') : active.user.name}
               />
             ))}
           </div>
           <div className="border-t border-gray-100 p-4">
-            <textarea className="input" rows={3} placeholder="Write a reply — the customer is notified by email…" value={reply} onChange={(e) => setReply(e.target.value)} />
+            <textarea className="input" rows={3} placeholder={t('admin.tickets.replyPlaceholder')} value={reply} onChange={(e) => setReply(e.target.value)} />
             <div className="mt-2.5 flex flex-wrap items-center justify-between gap-3">
               <AttachmentPicker attachments={attachments} onChange={setAttachments} toast={toast} />
               <button className="btn-primary" disabled={busy || (!reply.trim() && !attachments.length)} onClick={() => action(active.id, { action: 'reply', message: reply, attachments })}>
-                <Icon name="send" size={15} /> {busy ? 'Sending…' : 'Send reply'}
+                <Icon name="send" size={15} /> {busy ? t('admin.tickets.sending') : t('admin.tickets.sendReply')}
               </button>
             </div>
           </div>
@@ -99,34 +100,34 @@ export default function AdminTicketsPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Support tickets</h1>
-          <p className="mt-0.5 text-sm text-gray-500">{openCount} ticket{openCount === 1 ? '' : 's'} waiting for a reply</p>
+          <h1 className="text-2xl font-bold">{t('admin.tickets.title')}</h1>
+          <p className="mt-0.5 text-sm text-gray-500">{t('admin.tickets.waitingCount', { count: openCount })}</p>
         </div>
         <select className="input w-44" value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value="">All statuses</option>
-          <option value="OPEN">Open</option>
-          <option value="ANSWERED">Answered</option>
-          <option value="CLOSED">Closed</option>
+          <option value="">{t('admin.orders.allStatuses')}</option>
+          <option value="OPEN">{t('admin.ticketStatus.OPEN')}</option>
+          <option value="ANSWERED">{t('admin.ticketStatus.ANSWERED')}</option>
+          <option value="CLOSED">{t('admin.ticketStatus.CLOSED')}</option>
         </select>
       </div>
 
       <div className="mt-4 space-y-2.5">
-        {tickets.map((t) => (
-          <button key={t.id} className="card flex w-full items-center gap-3 p-4 text-left transition hover:shadow-md" onClick={() => setActive(t)}>
-            <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${t.status === 'OPEN' ? 'bg-amber-50 text-amber-600' : 'bg-gray-100 text-gray-400'}`}>
+        {tickets.map((tk) => (
+          <button key={tk.id} className="card flex w-full items-center gap-3 p-4 text-left transition hover:shadow-md" onClick={() => setActive(tk)}>
+            <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${tk.status === 'OPEN' ? 'bg-amber-50 text-amber-600' : 'bg-gray-100 text-gray-400'}`}>
               <Icon name="chat" size={17} />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="line-clamp-1 text-sm font-semibold">#{t.id} · {t.subject}</span>
+              <span className="line-clamp-1 text-sm font-semibold">#{tk.id} · {tk.subject}</span>
               <span className="text-xs text-gray-400">
-                {t.user.name} · {t.user.email} · {t.messages.length} message{t.messages.length === 1 ? '' : 's'} · updated{' '}
-                {new Date(t.updatedAt).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}
+                {tk.user.name} · {tk.user.email} · {t('admin.tickets.messagesCount', { count: tk.messages.length })} · {t('admin.tickets.updatedPrefix')}{' '}
+                {new Date(tk.updatedAt).toLocaleString(ADMIN_INTL_LOCALE, { dateStyle: 'short', timeStyle: 'short' })}
               </span>
             </span>
-            <span className={`badge ${STATUS_BADGE[t.status]}`}>{t.status}</span>
+            <span className={`badge ${STATUS_BADGE[tk.status]}`}>{t(`admin.ticketStatus.${tk.status}`)}</span>
           </button>
         ))}
-        {tickets.length === 0 && <div className="card p-12 text-center text-gray-400">No tickets found.</div>}
+        {tickets.length === 0 && <div className="card p-12 text-center text-gray-400">{t('admin.tickets.empty')}</div>}
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/client';
-import { useStore, useMoney } from '@/components/Providers';
+import { useAdminT, useStore, useMoney } from '@/components/Providers';
 
 import ProductEditor, { type EditableProduct } from './ProductEditor';
 import Icon from '@/components/icons';
@@ -10,6 +10,7 @@ import Icon from '@/components/icons';
 export default function AdminProductsPage() {
   const { toast } = useStore();
   const money = useMoney();
+  const t = useAdminT();
   const [products, setProducts] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -25,8 +26,8 @@ export default function AdminProductsPage() {
       fd.append('file', file);
       const res = await fetch('/api/admin/products/import', { method: 'POST', body: fd });
       const d = await res.json();
-      if (!res.ok) throw new Error(d.error || 'Import failed');
-      toast(`Imported: ${d.createdProducts} new product(s), ${d.createdPackages} new + ${d.updatedPackages} updated package(s)${d.errors.length ? ` — ${d.errors.length} row error(s)` : ''}`);
+      if (!res.ok) throw new Error(d.error || t('admin.products.importFailed'));
+      toast(t('admin.products.importedToast', { products: d.createdProducts, created: d.createdPackages, updated: d.updatedPackages, errors: d.errors.length }));
       if (d.errors.length) console.warn('CSV import errors:', d.errors);
       await load();
     } catch (e: any) {
@@ -60,12 +61,12 @@ export default function AdminProductsPage() {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Products <span className="text-sm font-normal text-gray-400">({total})</span></h1>
+        <h1 className="text-2xl font-bold">{t('admin.products.title')} <span className="text-sm font-normal text-gray-400">({total})</span></h1>
         <div className="flex flex-wrap gap-2">
-          <input className="input w-48" placeholder="Search…" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />
-          <a href="/api/admin/products/export" className="btn-secondary">Export CSV</a>
+          <input className="input w-48" placeholder={t('admin.products.search')} value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />
+          <a href="/api/admin/products/export" className="btn-secondary">{t('admin.products.exportCsv')}</a>
           <label className="btn-secondary cursor-pointer">
-            {importing ? 'Importing…' : 'Import CSV'}
+            {importing ? t('admin.products.importing') : t('admin.products.importCsv')}
             <input
               type="file"
               accept=".csv,text/csv"
@@ -73,7 +74,7 @@ export default function AdminProductsPage() {
               onChange={(e) => { if (e.target.files?.[0]) importCsv(e.target.files[0]); e.target.value = ''; }}
             />
           </label>
-          <button className="btn-primary" onClick={() => setEditing('new')}>+ New product</button>
+          <button className="btn-primary" onClick={() => setEditing('new')}>{t('admin.products.new')}</button>
         </div>
       </div>
 
@@ -81,12 +82,12 @@ export default function AdminProductsPage() {
         <table className="w-full min-w-[640px] text-sm">
           <thead>
             <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wide text-gray-400">
-              <th className="px-4 py-3">Product</th>
-              <th className="px-4 py-3">Category</th>
-              <th className="px-4 py-3">Packages</th>
-              <th className="px-4 py-3">Price from</th>
-              <th className="px-4 py-3">Stock</th>
-              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">{t('admin.products.colProduct')}</th>
+              <th className="px-4 py-3">{t('admin.products.colCategory')}</th>
+              <th className="px-4 py-3">{t('admin.products.colPackages')}</th>
+              <th className="px-4 py-3">{t('admin.products.colPriceFrom')}</th>
+              <th className="px-4 py-3">{t('admin.products.colStock')}</th>
+              <th className="px-4 py-3">{t('admin.products.colStatus')}</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -116,17 +117,17 @@ export default function AdminProductsPage() {
                   <td className="px-4 py-3">{stock}</td>
                   <td className="px-4 py-3">
                     <span className={`badge ${p.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}>
-                      {p.isActive ? 'Active' : 'Hidden'}
+                      {p.isActive ? t('admin.products.active') : t('admin.products.hidden')}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button className="btn-secondary px-3 py-1.5 text-xs" onClick={() => setEditing(p)}>Edit</button>
+                    <button className="btn-secondary px-3 py-1.5 text-xs" onClick={() => setEditing(p)}>{t('admin.products.edit')}</button>
                   </td>
                 </tr>
               );
             })}
             {products.length === 0 && (
-              <tr><td colSpan={7} className="px-4 py-12 text-center text-gray-400">No products yet — create your first one.</td></tr>
+              <tr><td colSpan={7} className="px-4 py-12 text-center text-gray-400">{t('admin.products.empty')}</td></tr>
             )}
           </tbody>
         </table>
@@ -134,9 +135,9 @@ export default function AdminProductsPage() {
 
       {total > 20 && (
         <div className="mt-4 flex justify-center gap-2">
-          <button className="btn-secondary px-3 py-1.5" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>← Prev</button>
-          <span className="px-3 py-1.5 text-sm text-gray-500">Page {page} / {Math.ceil(total / 20)}</span>
-          <button className="btn-secondary px-3 py-1.5" disabled={page >= Math.ceil(total / 20)} onClick={() => setPage((p) => p + 1)}>Next →</button>
+          <button className="btn-secondary px-3 py-1.5" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}><span>←</span> {t('admin.common.prev')}</button>
+          <span className="px-3 py-1.5 text-sm text-gray-500">{t('admin.common.pageOf', { page, total: Math.ceil(total / 20) })}</span>
+          <button className="btn-secondary px-3 py-1.5" disabled={page >= Math.ceil(total / 20)} onClick={() => setPage((p) => p + 1)}>{t('admin.common.next')} <span>→</span></button>
         </div>
       )}
     </div>

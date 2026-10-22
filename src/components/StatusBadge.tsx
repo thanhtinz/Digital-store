@@ -1,5 +1,6 @@
-// Storefront callers pass a translated `label`; the admin console keeps the
-// English defaults below.
+// Callers pass a translated `label` (storefront via its locale, the admin
+// console via the Vietnamese admin dictionary); the English strings below
+// are only a last-resort fallback.
 const STYLES: Record<string, { label: string; cls: string }> = {
   PENDING: { label: 'Awaiting payment', cls: 'bg-amber-100 text-amber-700' },
   PAID: { label: 'Awaiting delivery', cls: 'bg-blue-100 text-blue-700' },

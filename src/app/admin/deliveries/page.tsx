@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useStore, useMoney } from '@/components/Providers';
+import { ADMIN_INTL_LOCALE, useAdminT, useStore, useMoney } from '@/components/Providers';
+import { useAutoRefresh } from '../useAutoRefresh';
 import { api } from '@/lib/client';
 
 import Icon from '@/components/icons';
@@ -12,6 +13,7 @@ import Icon from '@/components/icons';
 export default function AdminDeliveriesPage() {
   const { toast } = useStore();
   const money = useMoney();
+  const t = useAdminT();
   const [orders, setOrders] = useState<any[] | null>(null);
   const [text, setText] = useState<Record<number, string>>({});
   const [busyItem, setBusyItem] = useState<number | null>(null);
@@ -22,6 +24,8 @@ export default function AdminDeliveriesPage() {
   }, []);
 
   useEffect(() => { load().catch(() => {}); }, [load]);
+  // The queue refreshes itself — newly paid orders appear without a reload.
+  const lastUpdated = useAutoRefresh(load);
 
   const deliver = async (orderId: number, itemId: number) => {
     setBusyItem(itemId);
@@ -30,7 +34,7 @@ export default function AdminDeliveriesPage() {
         method: 'PATCH',
         json: { action: 'deliver', itemId, deliveryData: text[itemId] || '' },
       });
-      toast('Delivered — the customer has been emailed');
+      toast(t('admin.deliveries.deliveredToast'));
       setText((t) => ({ ...t, [itemId]: '' }));
       await load();
     } catch (e: any) {
@@ -40,20 +44,27 @@ export default function AdminDeliveriesPage() {
     }
   };
 
-  if (orders === null) return <div className="py-16 text-center text-gray-400">Loading delivery queue…</div>;
+  if (orders === null) return <div className="py-16 text-center text-gray-400">{t('admin.deliveries.loading')}</div>;
 
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Delivery queue</h1>
+          <h1 className="text-2xl font-bold">{t('admin.deliveries.title')}</h1>
           <p className="mt-0.5 text-sm text-gray-500">
-            Paid orders waiting for fulfillment. Delivering the last item completes the order automatically.
+            {t('admin.deliveries.subtitle')}
           </p>
         </div>
-        <button className="btn-secondary" onClick={() => load()}>
-          <Icon name="refresh" size={16} /> Refresh
-        </button>
+        <div className="flex items-center gap-3">
+          {lastUpdated && (
+            <span className="text-xs text-gray-400">
+              {t('admin.shell.lastUpdated', { time: lastUpdated.toLocaleTimeString(ADMIN_INTL_LOCALE) })}
+            </span>
+          )}
+          <button className="btn-secondary" onClick={() => load()}>
+            <Icon name="refresh" size={16} /> {t('admin.deliveries.refresh')}
+          </button>
+        </div>
       </div>
 
       {orders.length === 0 ? (
@@ -61,8 +72,8 @@ export default function AdminDeliveriesPage() {
           <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-green-50 text-green-600">
             <Icon name="check" size={30} />
           </span>
-          <p className="mt-4 font-semibold">All caught up!</p>
-          <p className="mt-1 text-sm text-gray-500">There are no paid orders waiting for delivery.</p>
+          <p className="mt-4 font-semibold">{t('admin.deliveries.caughtUp')}</p>
+          <p className="mt-1 text-sm text-gray-500">{t('admin.deliveries.emptyText')}</p>
         </div>
       ) : (
         <div className="mt-5 space-y-5">
@@ -77,7 +88,7 @@ export default function AdminDeliveriesPage() {
                 </span>
                 <span className="flex items-center gap-1.5 text-xs text-gray-400">
                   <Icon name="clock" size={13} />
-                  paid {o.paidAt ? new Date(o.paidAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : '—'}
+                  {t('admin.deliveries.paidAt', { time: o.paidAt ? new Date(o.paidAt).toLocaleString(ADMIN_INTL_LOCALE, { dateStyle: 'medium', timeStyle: 'short' }) : '—' })}
                 </span>
                 <span className="ml-auto text-sm font-bold">{money(Number(o.total), o.currency)}</span>
               </div>
@@ -103,11 +114,11 @@ export default function AdminDeliveriesPage() {
                       </div>
                       {item.deliveredAt ? (
                         <span className="badge gap-1 bg-green-100 text-green-700">
-                          <Icon name="check" size={12} /> Delivered
+                          <Icon name="check" size={12} /> {t('admin.deliveries.delivered')}
                         </span>
                       ) : (
                         <span className="badge gap-1 bg-amber-100 text-amber-700">
-                          <Icon name="clock" size={12} /> Waiting
+                          <Icon name="clock" size={12} /> {t('admin.deliveries.waiting')}
                         </span>
                       )}
                     </div>
@@ -121,7 +132,7 @@ export default function AdminDeliveriesPage() {
                         <textarea
                           className="input flex-1 font-mono text-xs"
                           rows={2}
-                          placeholder="Enter the delivery content — license key, account credentials, activation instructions…"
+                          placeholder={t('admin.deliveries.placeholder')}
                           value={text[item.id] || ''}
                           onChange={(e) => setText((t) => ({ ...t, [item.id]: e.target.value }))}
                         />
@@ -131,7 +142,7 @@ export default function AdminDeliveriesPage() {
                           onClick={() => deliver(o.id, item.id)}
                         >
                           <Icon name="send" size={15} />
-                          {busyItem === item.id ? 'Delivering…' : 'Deliver & notify'}
+                          {busyItem === item.id ? t('admin.deliveries.delivering') : t('admin.deliveries.deliverNotify')}
                         </button>
                       </div>
                     )}
