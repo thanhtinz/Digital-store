@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { useStore, useT } from './Providers';
 import {
   COLOR_PRESETS, FONT_PRESETS, TEXT_SIZES, fontUrl, isValidHex, serializeThemeCookie, themeCssVars,
@@ -64,6 +65,10 @@ export default function AppearanceMenu({
   const [draft, setDraft] = useState<Theme>(theme);
   const [saving, setSaving] = useState(false);
   const box = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  // Trigger position captured on open: the panel renders in a portal (see
+  // below), so it is positioned with `fixed` coordinates derived from this.
+  const [anchor, setAnchor] = useState<DOMRect | null>(null);
 
   useEffect(() => setDraft(theme), [theme]);
 
@@ -84,11 +89,32 @@ export default function AppearanceMenu({
   useEffect(() => {
     if (!open) return;
     const close = (e: MouseEvent) => {
-      if (box.current && !box.current.contains(e.target as Node)) setOpen(false);
+      if (box.current?.contains(e.target as Node)) return;
+      if (panelRef.current?.contains(e.target as Node)) return;
+      setOpen(false);
     };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    // The panel is fixed-positioned from a captured anchor; if the page
+    // moves under it, close rather than leave it floating in the wrong spot.
+    const dismiss = () => setOpen(false);
     document.addEventListener('mousedown', close);
-    return () => document.removeEventListener('mousedown', close);
+    document.addEventListener('keydown', onKey);
+    window.addEventListener('resize', dismiss);
+    window.addEventListener('scroll', dismiss, true);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('keydown', onKey);
+      window.removeEventListener('resize', dismiss);
+      window.removeEventListener('scroll', dismiss, true);
+    };
   }, [open ]);
+
+  const toggle = () => {
+    if (!open) setAnchor(box.current?.getBoundingClientRect() ?? null);
+    setOpen((v) => !v);
+  };
 
   if (!allowThemeOverride) return null;
 
@@ -131,11 +157,29 @@ export default function AppearanceMenu({
       active ? 'bg-brand-600 text-white shadow-btn-primary' : 'bg-white/70 text-gray-600 ring-1 ring-gray-200 hover:bg-brand-50 hover:text-brand-700'
     }`;
 
+  // The panel is portaled to <body> and fixed-positioned: as an in-flow
+  // absolute dropdown it inherited whatever narrow/clipping context the
+  // trigger sits in (header bar, footer column, account chrome), which
+  // squeezed it and let page content show through. Desktop: 340px wide,
+  // anchored to the trigger and clamped to the viewport. Mobile: a
+  // full-width bottom sheet (left/right come from the max-sm classes).
+  const PANEL_W = 340;
+  const panelStyle: CSSProperties = (() => {
+    if (!anchor) return { top: 76, right: 12, transformOrigin: 'top right' };
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    if (vw < 640) return { bottom: 12, transformOrigin: 'bottom center' };
+    const left = Math.min(Math.max(12, anchor.right - PANEL_W), Math.max(12, vw - PANEL_W - 12));
+    return placement === 'up'
+      ? { left, bottom: vh - anchor.top + 8, transformOrigin: 'bottom right' }
+      : { left, top: anchor.bottom + 8, transformOrigin: 'top right' };
+  })();
+
   return (
     <div className="relative" ref={box}>
       {variant === 'gear' ? (
         <button
-          onClick={() => setOpen((v) => !v)}
+          onClick={toggle}
           aria-label={t('footer.appearance')}
           title={t('footer.appearance')}
           className="grid h-10 w-10 place-items-center rounded-full bg-white/15 text-white ring-1 ring-white/40 backdrop-blur transition hover:bg-white/30 active:scale-95"
@@ -144,19 +188,20 @@ export default function AppearanceMenu({
         </button>
       ) : (
         <button
-          onClick={() => setOpen((v) => !v)}
+          onClick={toggle}
           className="inline-flex items-center gap-1.5 text-xs text-gray-400 transition hover:text-brand-600"
         >
           <Icon name="spark" size={14} /> {t('footer.appearance')}
         </button>
       )}
 
-      {open && (
-        <div
-          className={`absolute right-0 z-50 w-72 animate-scale-in rounded-3xl border border-white/60 bg-white/85 p-4 text-gray-900 shadow-pop backdrop-blur-2xl backdrop-saturate-150 ${
-            placement === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'
-          }`}
-        >
+      {open &&
+        createPortal(
+          <div
+            ref={panelRef}
+            style={panelStyle}
+            className="fixed z-[120] w-[340px] max-w-[calc(100vw-1.5rem)] animate-scale-in rounded-3xl border border-white/60 bg-white/95 p-4 text-gray-900 shadow-pop backdrop-blur-2xl backdrop-saturate-150 max-sm:inset-x-3 max-sm:w-auto"
+          >
           <p className={sectionLabel}>{t('appearance.colour')}</p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {COLOR_PRESETS.map((c) => (
@@ -224,21 +269,22 @@ export default function AppearanceMenu({
           </div>
 
           <div className="mt-4 flex items-center justify-between gap-2 border-t border-gray-200/70 pt-3">
-            <button onClick={reset} className="text-xs font-semibold text-gray-500 transition hover:text-brand-600">
+            <button onClick={reset} className="whitespace-nowrap text-xs font-semibold text-gray-500 transition hover:text-brand-600">
               {t('appearance.reset')}
             </button>
             {user?.role === 'ADMIN' && (
               <button
                 onClick={saveAsDefault}
                 disabled={saving}
-                className="btn-primary px-3 py-1.5 text-xs"
+                className="btn-primary shrink-0 whitespace-nowrap px-3 py-1.5 text-xs"
               >
                 {saving ? '…' : t('appearance.saveDefault')}
               </button>
             )}
           </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

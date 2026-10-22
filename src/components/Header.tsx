@@ -92,8 +92,6 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
       <div className="bg-gradient-to-r from-brand-800 via-brand-700 to-brand-600 text-white">
         <div className="container flex h-8 items-center justify-between gap-4 text-[11px] font-medium sm:text-xs">
           <div className="flex items-center gap-3 sm:gap-4">
-            <Link href="/admin" className="transition hover:text-white/75">{t('utility.seller')}</Link>
-            <span className="hidden h-3 w-px bg-white/30 sm:block" />
             <span className="hidden items-center gap-1.5 sm:flex">
               <Icon name="download" size={12} /> {t('utility.download')}
             </span>
