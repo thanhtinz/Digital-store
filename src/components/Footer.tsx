@@ -22,30 +22,32 @@ export default function Footer({ siteName, tagline, logo, footerText, footerAbou
   const socialLinks = SOCIAL_ORDER.filter((k) => socials?.[k]);
   const on = (k: string) => features[k] !== false;
   return (
-    <footer className="mt-16 border-t border-gray-200 bg-white">
+    <footer className="relative mt-20 border-t border-gray-200/80 bg-white">
+      {/* Brand hairline along the top edge */}
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-400/60 to-transparent" />
       {/* Trust strip */}
-      <div className="border-b border-gray-100">
-        <div className="container grid grid-cols-2 gap-4 py-6 sm:grid-cols-4">
+      <div className="border-b border-gray-100 bg-gradient-to-b from-gray-50/80 to-white">
+        <div className="container grid grid-cols-2 gap-x-4 gap-y-5 py-7 sm:grid-cols-4">
           {([
             ['bolt', t('trust.instant'), t('trust.instantSub')],
             ['lock', t('trust.secure'), t('trust.secureSub')],
             ['refresh', t('trust.refund'), t('trust.refundSub')],
             ['chat', t('trust.human'), t('trust.humanSub')],
           ] as const).map(([icon, title, desc]) => (
-            <div key={title} className="flex items-center gap-3">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600">
+            <div key={title} className="group flex items-center gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand-50 to-brand-100 text-brand-600 shadow-sm ring-1 ring-brand-100 transition group-hover:scale-105">
                 <Icon name={icon} size={18} />
               </span>
               <div>
                 <p className="text-sm font-semibold leading-tight">{title}</p>
-                <p className="text-xs text-gray-400">{desc}</p>
+                <p className="mt-0.5 text-xs text-gray-400">{desc}</p>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="container grid gap-8 py-12 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="container grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-4 lg:gap-12 lg:py-14">
         <div>
           {logo ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -53,9 +55,9 @@ export default function Footer({ siteName, tagline, logo, footerText, footerAbou
           ) : (
             <p className="text-lg font-extrabold">{siteName}</p>
           )}
-          <p className="mt-2 text-sm text-gray-500">{footerAbout || tagline}</p>
+          <p className="mt-3 text-sm leading-relaxed text-gray-500">{footerAbout || tagline}</p>
           {supportEmail && (
-            <a href={`mailto:${supportEmail}`} className="mt-3 inline-flex items-center gap-1.5 text-sm text-brand-600 hover:underline">
+            <a href={`mailto:${supportEmail}`} className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 transition hover:text-brand-700 hover:underline">
               <Icon name="mail" size={15} /> {supportEmail}
             </a>
           )}
@@ -68,7 +70,7 @@ export default function Footer({ siteName, tagline, logo, footerText, footerAbou
                   target="_blank"
                   rel="noreferrer"
                   aria-label={k}
-                  className="grid h-9 w-9 place-items-center rounded-lg border border-gray-200 bg-gray-50 text-gray-500 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-600"
+                  className="grid h-9 w-9 place-items-center rounded-xl border border-gray-200 bg-gray-50 text-gray-500 transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-600 hover:shadow-sm"
                 >
                   <Icon name={k} size={17} />
                 </a>
@@ -77,44 +79,44 @@ export default function Footer({ siteName, tagline, logo, footerText, footerAbou
           )}
         </div>
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-gray-400">{t('footer.shop')}</p>
-          <ul className="mt-3 space-y-2 text-sm">
-            <li><Link href="/products" className="text-gray-600 hover:text-brand-600">{t('footer.allProducts')}</Link></li>
-            {on('flash_sale') && <li><Link href="/flash-sale" className="text-gray-600 hover:text-brand-600">{t('footer.flashSale')}</Link></li>}
-            {on('news') && <li><Link href="/news" className="text-gray-600 hover:text-brand-600">{t('footer.news')}</Link></li>}
-            {on('giftcards') && <li><Link href="/gift-cards" className="text-gray-600 hover:text-brand-600">{t('footer.giftCards')}</Link></li>}
-            {on('reviews') && <li><Link href="/reviews" className="text-gray-600 hover:text-brand-600">{t('footer.reviews')}</Link></li>}
+          <p className="text-xs font-bold uppercase tracking-[.14em] text-gray-400">{t('footer.shop')}</p>
+          <ul className="mt-4 space-y-2.5 text-sm">
+            <li><Link href="/products" className="text-gray-600 transition hover:text-brand-600">{t('footer.allProducts')}</Link></li>
+            {on('flash_sale') && <li><Link href="/flash-sale" className="text-gray-600 transition hover:text-brand-600">{t('footer.flashSale')}</Link></li>}
+            {on('news') && <li><Link href="/news" className="text-gray-600 transition hover:text-brand-600">{t('footer.news')}</Link></li>}
+            {on('giftcards') && <li><Link href="/gift-cards" className="text-gray-600 transition hover:text-brand-600">{t('footer.giftCards')}</Link></li>}
+            {on('reviews') && <li><Link href="/reviews" className="text-gray-600 transition hover:text-brand-600">{t('footer.reviews')}</Link></li>}
             {categories.slice(0, 4).map((c) => (
               <li key={c.id}>
-                <Link href={`/category/${c.slug}`} className="text-gray-600 hover:text-brand-600">{c.name}</Link>
+                <Link href={`/category/${c.slug}`} className="text-gray-600 transition hover:text-brand-600">{c.name}</Link>
               </li>
             ))}
           </ul>
         </div>
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-gray-400">{t('footer.help')}</p>
-          <ul className="mt-3 space-y-2 text-sm">
-            {on('support') && <li><Link href="/support" className="text-gray-600 hover:text-brand-600">{t('footer.support')}</Link></li>}
-            <li><Link href="/faq" className="text-gray-600 hover:text-brand-600">{t('footer.faq')}</Link></li>
-            <li><Link href="/refund-policy" className="text-gray-600 hover:text-brand-600">{t('footer.refund')}</Link></li>
-            <li><Link href="/terms" className="text-gray-600 hover:text-brand-600">{t('footer.terms')}</Link></li>
-            <li><Link href="/privacy" className="text-gray-600 hover:text-brand-600">{t('footer.privacy')}</Link></li>
-            <li><Link href="/status" className="text-gray-600 hover:text-brand-600">{t('footer.status')}</Link></li>
+          <p className="text-xs font-bold uppercase tracking-[.14em] text-gray-400">{t('footer.help')}</p>
+          <ul className="mt-4 space-y-2.5 text-sm">
+            {on('support') && <li><Link href="/support" className="text-gray-600 transition hover:text-brand-600">{t('footer.support')}</Link></li>}
+            <li><Link href="/faq" className="text-gray-600 transition hover:text-brand-600">{t('footer.faq')}</Link></li>
+            <li><Link href="/refund-policy" className="text-gray-600 transition hover:text-brand-600">{t('footer.refund')}</Link></li>
+            <li><Link href="/terms" className="text-gray-600 transition hover:text-brand-600">{t('footer.terms')}</Link></li>
+            <li><Link href="/privacy" className="text-gray-600 transition hover:text-brand-600">{t('footer.privacy')}</Link></li>
+            <li><Link href="/status" className="text-gray-600 transition hover:text-brand-600">{t('footer.status')}</Link></li>
           </ul>
         </div>
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-gray-400">{t('footer.accept')}</p>
-          <div className="mt-3 flex flex-wrap gap-2">
+          <p className="text-xs font-bold uppercase tracking-[.14em] text-gray-400">{t('footer.accept')}</p>
+          <div className="mt-4 flex flex-wrap gap-2">
             {['VISA', 'Mastercard', 'AMEX', 'PayPal', 'Stripe'].map((brand) => (
               <span
                 key={brand}
-                className="rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-bold tracking-wide text-gray-600"
+                className="rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-bold tracking-wide text-gray-600 shadow-sm transition hover:border-brand-200 hover:bg-brand-50/60 hover:text-brand-700"
               >
                 {brand}
               </span>
             ))}
           </div>
-          <p className="mt-3 flex items-center gap-1.5 text-xs text-gray-400">
+          <p className="mt-3.5 flex items-center gap-1.5 text-xs text-gray-400">
             <Icon name="lock" size={13} /> {t('footer.ssl')}
           </p>
         </div>
