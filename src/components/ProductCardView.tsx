@@ -29,46 +29,48 @@ export default function ProductCardView({ product }: { product: ProductCard }) {
   return (
     <Link
       href={`/product/${product.slug}`}
-      className="card group flex flex-col overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-brand-200 hover:shadow-[0_2px_4px_rgba(16,24,40,.06),0_20px_36px_-16px_rgba(79,70,229,.25)]"
+      className="card card-hover group flex flex-col overflow-hidden transition-all duration-300 hover:-translate-y-1"
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
+      <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200/70">
         {product.image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={product.image}
             alt={product.name}
-            className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.06]"
+            className="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.07]"
             loading="lazy"
           />
         ) : (
           <div className="grid h-full w-full place-items-center text-gray-300"><Icon name="bag" size={44} /></div>
         )}
+        {/* Soft bottom fade so badges/edges blend into the card body */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/[.06] to-transparent" />
         {product.onSale && (
-          <span className="badge absolute left-2.5 top-2.5 gap-1 bg-gradient-to-r from-red-600 to-orange-500 text-white shadow-md">
+          <span className="badge absolute left-2.5 top-2.5 gap-1 bg-gradient-to-r from-red-600 to-orange-500 text-white shadow-lg ring-1 ring-white/30">
             <Icon name="bolt" size={11} /> {t('catalog.saleBadge')}
           </span>
         )}
       </div>
-      <div className="flex flex-1 flex-col p-4">
+      <div className="flex flex-1 flex-col p-4 sm:p-[1.125rem]">
         {product.categoryName && (
-          <p className="text-[11px] font-bold uppercase tracking-wider text-brand-600">{product.categoryName}</p>
+          <p className="text-[11px] font-bold uppercase tracking-[.12em] text-brand-600">{product.categoryName}</p>
         )}
-        <h3 className="mt-1 line-clamp-2 text-sm font-semibold leading-snug transition-colors group-hover:text-brand-700">{product.name}</h3>
-        <div className="mt-1.5 flex items-center gap-1.5 text-xs text-gray-500">
+        <h3 className="mt-1.5 line-clamp-2 text-sm font-semibold leading-snug transition-colors group-hover:text-brand-700">{product.name}</h3>
+        <div className="mt-2 flex items-center gap-1.5 text-xs text-gray-500">
           <Stars value={product.ratingAvg} />
-          <span>({product.ratingCount})</span>
-          {product.soldCount > 0 && <span>· {t('product.sold', { count: formatNumber(product.soldCount, intlLocale) })}</span>}
+          <span className="font-medium text-gray-600">({product.ratingCount})</span>
+          {product.soldCount > 0 && <span className="text-gray-400">· {t('product.sold', { count: formatNumber(product.soldCount, intlLocale) })}</span>}
         </div>
-        <div className="mt-auto flex items-center justify-between gap-2 pt-3">
-          <span className="flex items-baseline gap-2">
-            <span className="text-base font-extrabold text-gray-900">
+        <div className="mt-auto flex items-end justify-between gap-2 pt-4">
+          <span className="flex flex-wrap items-baseline gap-x-2">
+            <span className="text-lg font-extrabold tracking-tight text-gray-900">
               {product.minPrice > 0 ? money(product.minPrice) : t('common.free')}
             </span>
             {product.onSale && product.minOriginal > product.minPrice && (
-              <span className="text-xs text-gray-400 line-through">{money(product.minOriginal)}</span>
+              <span className="text-xs font-medium text-gray-400 line-through">{money(product.minOriginal)}</span>
             )}
           </span>
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gray-100 text-gray-400 transition-all group-hover:bg-brand-600 group-hover:text-white">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-500 ring-1 ring-brand-100 transition-all duration-300 group-hover:bg-brand-600 group-hover:text-white group-hover:shadow-btn-primary group-hover:ring-brand-600">
             <Icon name="arrow-right" size={15} />
           </span>
         </div>
