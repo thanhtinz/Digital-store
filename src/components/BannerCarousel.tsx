@@ -21,9 +21,9 @@ export default function BannerCarousel({ banners }: { banners: Banner[] }) {
   const next = () => setIndex((i) => (i + 1) % banners.length);
 
   return (
-    <div className="group relative overflow-hidden rounded-3xl shadow-[0_24px_48px_-24px_rgba(16,24,40,.35)]">
+    <div className="group relative overflow-hidden rounded-4xl shadow-[0_28px_56px_-28px_rgba(16,24,40,.45)] ring-1 ring-gray-950/5">
       <div
-        className="flex transition-transform duration-500 ease-out"
+        className="flex transition-transform duration-700 ease-[cubic-bezier(.22,1,.36,1)]"
         style={{ transform: `translateX(-${index * 100}%)` }}
       >
         {banners.map((b) => {
@@ -32,9 +32,9 @@ export default function BannerCarousel({ banners }: { banners: Banner[] }) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={b.imageUrl} alt={b.title || 'Banner'} className="h-full w-full object-cover" />
               {(b.title || b.subtitle) && (
-                <div className="absolute inset-0 flex flex-col justify-center bg-gradient-to-r from-black/60 via-black/20 to-transparent p-6 sm:p-12">
-                  {b.title && <h2 className="max-w-lg text-xl font-extrabold text-white drop-shadow sm:text-3xl">{b.title}</h2>}
-                  {b.subtitle && <p className="mt-2 max-w-md text-sm text-white/85 sm:text-base">{b.subtitle}</p>}
+                <div className="absolute inset-0 flex flex-col justify-center bg-gradient-to-r from-black/65 via-black/25 to-transparent p-6 sm:p-12">
+                  {b.title && <h2 className="max-w-lg text-xl font-extrabold leading-tight tracking-tight text-white drop-shadow sm:text-3xl lg:text-4xl">{b.title}</h2>}
+                  {b.subtitle && <p className="mt-2.5 max-w-md text-sm leading-relaxed text-white/85 sm:text-base">{b.subtitle}</p>}
                 </div>
               )}
             </div>
@@ -51,27 +51,27 @@ export default function BannerCarousel({ banners }: { banners: Banner[] }) {
           <button
             aria-label="Previous slide"
             onClick={prev}
-            className="absolute left-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/85 text-gray-700 opacity-0 shadow-md backdrop-blur transition hover:bg-white group-hover:opacity-100"
+            className="absolute left-3 top-1/2 grid h-10 w-10 -translate-y-1/2 scale-90 place-items-center rounded-full bg-white/85 text-gray-700 opacity-0 shadow-md ring-1 ring-black/5 backdrop-blur transition-all duration-300 hover:scale-100 hover:bg-white group-hover:opacity-100 sm:left-4"
           >
             <Icon name="chevron-right" size={18} className="rotate-180" />
           </button>
           <button
             aria-label="Next slide"
             onClick={next}
-            className="absolute right-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/85 text-gray-700 opacity-0 shadow-md backdrop-blur transition hover:bg-white group-hover:opacity-100"
+            className="absolute right-3 top-1/2 grid h-10 w-10 -translate-y-1/2 scale-90 place-items-center rounded-full bg-white/85 text-gray-700 opacity-0 shadow-md ring-1 ring-black/5 backdrop-blur transition-all duration-300 hover:scale-100 hover:bg-white group-hover:opacity-100 sm:right-4"
           >
             <Icon name="chevron-right" size={18} />
           </button>
         </>
       )}
       {banners.length > 1 && (
-        <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5 rounded-full bg-black/20 px-2 py-1.5 backdrop-blur">
+        <div className="absolute bottom-3.5 left-1/2 flex -translate-x-1/2 gap-1.5 rounded-full bg-black/25 px-2.5 py-1.5 ring-1 ring-white/15 backdrop-blur">
           {banners.map((_, i) => (
             <button
               key={i}
               aria-label={`Slide ${i + 1}`}
               onClick={() => setIndex(i)}
-              className={`h-2 rounded-full transition-all ${i === index ? 'w-6 bg-white' : 'w-2 bg-white/50'}`}
+              className={`h-2 rounded-full transition-all duration-300 ${i === index ? 'w-7 bg-white' : 'w-2 bg-white/50 hover:bg-white/75'}`}
             />
           ))}
         </div>
