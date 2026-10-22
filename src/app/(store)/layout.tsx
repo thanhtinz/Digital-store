@@ -1,5 +1,7 @@
+import { redirect } from 'next/navigation';
 import prisma from '@/lib/db';
 import { getPublicSettings } from '@/lib/settings';
+import { isSetupComplete } from '@/lib/setup';
 import { getT } from '@/i18n/server';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -9,6 +11,9 @@ export const dynamic = 'force-dynamic';
 
 // Storefront chrome: public header + footer around every shop page.
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
+  // First-run gate: until an admin account exists, every storefront page
+  // goes to the installer. (/setup itself lives outside this group.)
+  if (!(await isSetupComplete())) redirect('/setup');
   let settings = { siteName: 'Digital Store', tagline: '', logo: '', footerText: '', footerAbout: '', supportEmail: '', socials: {}, features: {} } as any;
   let categories: Array<{ id: number; name: string; slug: string }> = [];
   try {

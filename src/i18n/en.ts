@@ -673,6 +673,25 @@ export const en: Record<string, string> = {
   'meta.terms': 'Terms of Service',
   'meta.refund': 'Refund Policy',
 
+  // ── First-run setup ─────────────────────────────────────────────
+  'setup.title': 'Set up your store',
+  'setup.subtitle': 'Create the admin account and your store details. Everything can be changed later in the admin panel.',
+  'setup.adminTitle': 'Admin account',
+  'setup.adminName': 'Your name',
+  'setup.adminEmail': 'Admin email',
+  'setup.adminPassword': 'Password',
+  'setup.adminPasswordConfirm': 'Confirm password',
+  'setup.passwordHint': 'At least 8 characters',
+  'setup.siteTitle': 'Store details',
+  'setup.siteName': 'Store name',
+  'setup.tagline': 'Tagline',
+  'setup.supportEmail': 'Support email',
+  'setup.currency': 'Default currency (3-letter code)',
+  'setup.language': 'Default language',
+  'setup.submit': 'Complete setup',
+  'setup.submitting': 'Setting up…',
+  'setup.done': 'Setup complete — welcome!',
+
   // ── Common ──────────────────────────────────────────────────────
   'common.loading': 'Loading…',
   'common.save': 'Save',

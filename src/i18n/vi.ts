@@ -673,6 +673,25 @@ export const vi: Record<string, string> = {
   'meta.terms': 'Điều khoản dịch vụ',
   'meta.refund': 'Chính sách hoàn tiền',
 
+  // ── First-run setup ─────────────────────────────────────────────
+  'setup.title': 'Thiết lập cửa hàng',
+  'setup.subtitle': 'Tạo tài khoản quản trị và thông tin cửa hàng. Bạn có thể thay đổi mọi thứ sau trong trang quản trị.',
+  'setup.adminTitle': 'Tài khoản quản trị',
+  'setup.adminName': 'Họ tên',
+  'setup.adminEmail': 'Email quản trị',
+  'setup.adminPassword': 'Mật khẩu',
+  'setup.adminPasswordConfirm': 'Nhập lại mật khẩu',
+  'setup.passwordHint': 'Tối thiểu 8 ký tự',
+  'setup.siteTitle': 'Thông tin website',
+  'setup.siteName': 'Tên cửa hàng',
+  'setup.tagline': 'Khẩu hiệu',
+  'setup.supportEmail': 'Email hỗ trợ',
+  'setup.currency': 'Tiền tệ mặc định (mã 3 ký tự)',
+  'setup.language': 'Ngôn ngữ mặc định',
+  'setup.submit': 'Hoàn tất thiết lập',
+  'setup.submitting': 'Đang thiết lập…',
+  'setup.done': 'Thiết lập hoàn tất — chào mừng bạn!',
+
   // ── Common ──────────────────────────────────────────────────────
   'common.loading': 'Đang tải…',
   'common.save': 'Lưu',

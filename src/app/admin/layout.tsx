@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getSessionUser } from '@/lib/auth';
+import { isSetupComplete } from '@/lib/setup';
 import AdminShell from './AdminShell';
 
 export const dynamic = 'force-dynamic';
@@ -8,6 +9,8 @@ export const metadata = { title: 'Admin Console', robots: { index: false, follow
 // Server-side gate for the whole admin area: anonymous visitors and customers
 // never receive an admin page at all, so access does not depend on client JS.
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  // An uninitialized store has no admin to sign in as — setup comes first.
+  if (!(await isSetupComplete())) redirect('/setup');
   const user = await getSessionUser();
   if (!user) redirect('/login?next=/admin');
   if (user.role === 'CUSTOMER') redirect('/');
