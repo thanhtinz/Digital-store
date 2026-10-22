@@ -47,7 +47,7 @@ const ALL_KEYS = [
   // Appearance
   'theme_color', 'theme_custom_color', 'theme_dir', 'theme_font', 'theme_text_size', 'theme_allow_override',
   // Feature switches
-  'feature_wallet', 'feature_giftcards', 'feature_reviews', 'feature_wishlist', 'feature_news', 'feature_flash_sale', 'feature_livechat', 'feature_support',
+  'feature_wallet', 'feature_giftcards', 'feature_reviews', 'feature_wishlist', 'feature_news', 'feature_flash_sale', 'feature_support',
 ];
 
 export const GET = handler(async () => {

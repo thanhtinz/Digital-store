@@ -5,7 +5,6 @@ import { isSetupComplete } from '@/lib/setup';
 import { getT } from '@/i18n/server';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import LiveChat from '@/components/LiveChat';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +33,6 @@ export default async function StoreLayout({ children }: { children: React.ReactN
     <>
       <Header siteName={settings.siteName} logo={settings.logo} categories={categories} features={settings.features || {}} />
       <main className="flex-1">{children}</main>
-      {settings.features?.livechat !== false && settings.features?.support !== false && <LiveChat />}
       <Footer
         siteName={settings.siteName}
         tagline={settings.tagline}

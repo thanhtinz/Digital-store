@@ -100,7 +100,7 @@ export default async function HomePage() {
 
   const heroStats = [
     { value: formatNumber(productCount, intlLocale), label: t('home.statProducts') },
-    { value: orderCount > 0 ? `${formatNumber(orderCount, intlLocale)}+` : 'Instant', label: orderCount > 0 ? t('home.statOrders') : t('home.statAutomated') },
+    { value: orderCount > 0 ? `${formatNumber(orderCount, intlLocale)}+` : t('home.statInstant'), label: orderCount > 0 ? t('home.statOrders') : t('home.statAutomated') },
     { value: avgRating > 0 ? `${avgRating}/5` : '24/7', label: avgRating > 0 ? t('home.statReviews', { count: ratingAgg._count }) : t('home.statHuman') },
   ];
 
@@ -329,29 +329,32 @@ export default async function HomePage() {
 
         {/* ── Trust / guarantee band ────────────────────────────── */}
         <section className="card p-6 sm:p-8">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="section-eyebrow">{t('home.digitalDelivery')}</p>
-              <h2 className="mt-1.5 text-2xl font-extrabold tracking-tight sm:text-[1.7rem]">{t('home.guaranteeTitle')}</h2>
-            </div>
-            <div className="flex gap-6">
-              {heroStats.map((s) => (
-                <div key={s.label} className="text-end">
-                  <p className="text-xl font-extrabold text-brand-700">{s.value}</p>
-                  <p className="text-[11px] font-medium text-gray-400">{s.label}</p>
-                </div>
-              ))}
-            </div>
+          <div>
+            <p className="section-eyebrow">{t('home.digitalDelivery')}</p>
+            <h2 className="mt-1.5 text-2xl font-extrabold tracking-tight sm:text-[1.7rem]">{t('home.guaranteeTitle')}</h2>
           </div>
-          <div className="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Stats: three equal tiles, value over label, one shared rhythm —
+              no more right-aligned values drifting out of column. */}
+          <div className="mt-6 grid grid-cols-3 gap-2.5 sm:gap-3">
+            {heroStats.map((s) => (
+              <div key={s.label} className="rounded-2xl bg-white/40 px-2 py-3.5 text-center ring-1 ring-white/60 backdrop-blur">
+                <p className="text-lg font-extrabold leading-none text-brand-700 sm:text-2xl">{s.value}</p>
+                <p className="mt-1.5 text-[11px] font-medium leading-tight text-gray-500">{s.label}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 border-t border-white/60" />
+          {/* Guarantees: light glass chips instead of heavy solid blocks,
+              2×2 on mobile, four across on desktop. */}
+          <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-5 lg:grid-cols-4">
             {guarantees.map((g) => (
-              <div key={g.title} className="flex gap-3.5">
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-btn-primary">
-                  <Icon name={g.icon} size={19} />
+              <div key={g.title} className="flex gap-3">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-500/10 text-brand-600 ring-1 ring-brand-500/15 backdrop-blur">
+                  <Icon name={g.icon} size={16} />
                 </span>
-                <span>
-                  <span className="block text-sm font-bold text-gray-900">{g.title}</span>
-                  <span className="mt-1 block text-xs leading-relaxed text-gray-500">{g.text}</span>
+                <span className="min-w-0">
+                  <span className="block text-[13px] font-bold text-gray-900">{g.title}</span>
+                  <span className="mt-0.5 block text-[11px] leading-relaxed text-gray-500">{g.text}</span>
                 </span>
               </div>
             ))}

@@ -3,7 +3,7 @@ import { getSettings } from './settings';
 // Site-wide feature switches, editable in Admin → Features. Everything is
 // ON by default; a feature is off only when its setting is exactly 'false'.
 export const FEATURE_KEYS = [
-  'wallet', 'giftcards', 'reviews', 'wishlist', 'news', 'flash_sale', 'livechat', 'support',
+  'wallet', 'giftcards', 'reviews', 'wishlist', 'news', 'flash_sale', 'support',
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { createPortal } from 'react-dom';
 import { useStore, useT } from './Providers';
 import {
   COLOR_PRESETS, FONT_PRESETS, TEXT_SIZES, fontUrl, isValidHex, serializeThemeCookie, themeCssVars,
@@ -65,10 +64,11 @@ export default function AppearanceMenu({
   const [draft, setDraft] = useState<Theme>(theme);
   const [saving, setSaving] = useState(false);
   const box = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-  // Trigger position captured on open: the panel renders in a portal (see
-  // below), so it is positioned with `fixed` coordinates derived from this.
-  const [anchor, setAnchor] = useState<DOMRect | null>(null);
+  // Dropdown placement resolved on open from the trigger's viewport rect:
+  // the panel hangs directly below the trigger (flipping above it only when
+  // the viewport's bottom edge leaves no room) and shifts sideways just
+  // enough to stay inside the viewport — always anchored to the trigger.
+  const [pos, setPos] = useState<{ above: boolean; shiftX: number } | null>(null);
 
   useEffect(() => setDraft(theme), [theme]);
 
@@ -90,14 +90,13 @@ export default function AppearanceMenu({
     if (!open) return;
     const close = (e: MouseEvent) => {
       if (box.current?.contains(e.target as Node)) return;
-      if (panelRef.current?.contains(e.target as Node)) return;
       setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false);
     };
-    // The panel is fixed-positioned from a captured anchor; if the page
-    // moves under it, close rather than leave it floating in the wrong spot.
+    // The panel is anchored to the trigger; if the page moves under it,
+    // close rather than leave it floating in the wrong spot.
     const dismiss = () => setOpen(false);
     document.addEventListener('mousedown', close);
     document.addEventListener('keydown', onKey);
@@ -111,8 +110,29 @@ export default function AppearanceMenu({
     };
   }, [open ]);
 
+  const PANEL_W = 340;
+  const PANEL_H_EST = 440;
+
   const toggle = () => {
-    if (!open) setAnchor(box.current?.getBoundingClientRect() ?? null);
+    if (!open && box.current) {
+      const rect = box.current.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const w = Math.min(PANEL_W, vw - 24);
+      // Horizontal: gear triggers hug the right edge (align the panel's
+      // right edge with the trigger's), link triggers align left edges —
+      // then clamp the result inside the viewport with a 12px margin.
+      let shiftX = variant === 'gear' ? rect.width - w : 0;
+      const absLeft = rect.left + shiftX;
+      if (absLeft < 12) shiftX += 12 - absLeft;
+      if (rect.left + shiftX + w > vw - 12) shiftX -= rect.left + shiftX + w - (vw - 12);
+      // Vertical: below the trigger unless the bottom edge is too close
+      // and there is clearly more room above (footer trigger at page end).
+      // A caller asking for 'up' gets above whenever it fits there.
+      const fitsAbove = rect.top > PANEL_H_EST + 16;
+      const above = placement === 'up' ? fitsAbove : vh - rect.bottom < PANEL_H_EST + 16 && fitsAbove;
+      setPos({ above, shiftX });
+    }
     setOpen((v) => !v);
   };
 
@@ -157,23 +177,20 @@ export default function AppearanceMenu({
       active ? 'bg-brand-600 text-white shadow-btn-primary' : 'bg-white/70 text-gray-600 ring-1 ring-gray-200 hover:bg-brand-50 hover:text-brand-700'
     }`;
 
-  // The panel is portaled to <body> and fixed-positioned: as an in-flow
-  // absolute dropdown it inherited whatever narrow/clipping context the
-  // trigger sits in (header bar, footer column, account chrome), which
-  // squeezed it and let page content show through. Desktop: 340px wide,
-  // anchored to the trigger and clamped to the viewport. Mobile: a
-  // full-width bottom sheet (left/right come from the max-sm classes).
-  const PANEL_W = 340;
-  const panelStyle: CSSProperties = (() => {
-    if (!anchor) return { top: 76, right: 12, transformOrigin: 'top right' };
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    if (vw < 640) return { bottom: 12, transformOrigin: 'bottom center' };
-    const left = Math.min(Math.max(12, anchor.right - PANEL_W), Math.max(12, vw - PANEL_W - 12));
-    return placement === 'up'
-      ? { left, bottom: vh - anchor.top + 8, transformOrigin: 'bottom right' }
-      : { left, top: anchor.bottom + 8, transformOrigin: 'top right' };
-  })();
+  // The panel is an in-flow dropdown hanging off the trigger's relative
+  // wrapper — opening directly under the button that was clicked, like a
+  // menu. Its horizontal shift and above/below flip were resolved in
+  // toggle() from the trigger's rect so it stays inside the viewport
+  // without detaching into a fixed sheet. Width is a fixed 340px (never
+  // squeezed by the trigger's own column), the background is near-opaque,
+  // and z-index keeps it above page content.
+  const panelStyle: CSSProperties = pos
+    ? {
+        left: pos.shiftX,
+        ...(pos.above ? { bottom: 'calc(100% + 8px)' } : { top: 'calc(100% + 8px)' }),
+        transformOrigin: pos.above ? 'bottom right' : 'top right',
+      }
+    : { top: 'calc(100% + 8px)', right: 0 };
 
   return (
     <div className="relative" ref={box}>
@@ -195,13 +212,11 @@ export default function AppearanceMenu({
         </button>
       )}
 
-      {open &&
-        createPortal(
-          <div
-            ref={panelRef}
-            style={panelStyle}
-            className="fixed z-[120] w-[340px] max-w-[calc(100vw-1.5rem)] animate-scale-in rounded-3xl border border-white/60 bg-white/95 p-4 text-gray-900 shadow-pop backdrop-blur-2xl backdrop-saturate-150 max-sm:inset-x-3 max-sm:w-auto"
-          >
+      {open && (
+        <div
+          style={panelStyle}
+          className="absolute z-[120] w-[340px] max-w-[calc(100vw-1.5rem)] animate-scale-in rounded-3xl border border-white/60 bg-white/95 p-4 text-gray-900 shadow-pop backdrop-blur-2xl backdrop-saturate-150"
+        >
           <p className={sectionLabel}>{t('appearance.colour')}</p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {COLOR_PRESETS.map((c) => (
@@ -269,22 +284,21 @@ export default function AppearanceMenu({
           </div>
 
           <div className="mt-4 flex items-center justify-between gap-2 border-t border-gray-200/70 pt-3">
-            <button onClick={reset} className="whitespace-nowrap text-xs font-semibold text-gray-500 transition hover:text-brand-600">
+            <button onClick={reset} className="shrink-0 whitespace-nowrap px-1 py-1.5 text-xs font-semibold text-gray-500 transition hover:text-brand-600">
               {t('appearance.reset')}
             </button>
             {user?.role === 'ADMIN' && (
               <button
                 onClick={saveAsDefault}
                 disabled={saving}
-                className="btn-primary shrink-0 whitespace-nowrap px-3 py-1.5 text-xs"
+                className="btn-primary shrink-0 whitespace-nowrap px-2.5 py-1.5 text-xs"
               >
                 {saving ? '…' : t('appearance.saveDefault')}
               </button>
             )}
           </div>
-          </div>,
-          document.body,
-        )}
+        </div>
+      )}
     </div>
   );
 }
