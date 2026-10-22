@@ -3,7 +3,9 @@ import { vi } from './vi';
 
 export const LOCALES = ['en', 'vi'] as const;
 export type Locale = (typeof LOCALES)[number];
-export const DEFAULT_LOCALE: Locale = 'en';
+// Vietnamese is the fallback locale: this store's customers are primarily
+// Vietnamese. English stays fully available through the language switcher.
+export const DEFAULT_LOCALE: Locale = 'vi';
 
 export const LOCALE_NAMES: Record<Locale, string> = { en: 'English', vi: 'Tiếng Việt' };
 
