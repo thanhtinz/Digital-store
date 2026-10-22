@@ -28,7 +28,7 @@ export default function BannerCarousel({ banners }: { banners: Banner[] }) {
       >
         {banners.map((b) => {
           const slide = (
-            <div className="relative aspect-[21/8] w-full shrink-0 bg-gray-200 sm:aspect-[21/6]">
+            <div className="relative aspect-[21/8] w-full shrink-0 bg-gray-200 sm:aspect-[21/6] lg:aspect-[21/5]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={b.imageUrl} alt={b.title || 'Banner'} className="h-full w-full object-cover" />
               {(b.title || b.subtitle) && (

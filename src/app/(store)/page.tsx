@@ -5,8 +5,8 @@ import { getFeatures } from '@/lib/features';
 import BannerCarousel from '@/components/BannerCarousel';
 import Countdown from '@/components/Countdown';
 import SuggestedTabs from '@/components/SuggestedTabs';
-import VoucherCard, { CopyCodeButton } from '@/components/VoucherCard';
-import { voucherHeadline, type Voucher } from '@/lib/voucher';
+import VoucherStrip from '@/components/VoucherStrip';
+import { type Voucher } from '@/lib/voucher';
 
 import Icon from '@/components/icons';
 import { getMoneyFormatter } from '@/lib/currency';
@@ -27,13 +27,6 @@ const TILE_TINTS = [
   'from-rose-500 to-pink-600',
   'from-fuchsia-500 to-purple-600',
 ];
-
-function flashCols(n: number) {
-  if (n >= 6) return 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6';
-  if (n >= 4) return 'grid-cols-2 sm:grid-cols-4';
-  if (n === 3) return 'grid-cols-2 sm:grid-cols-3';
-  return 'grid-cols-2';
-}
 
 export default async function HomePage() {
   const intlLocale = INTL_LOCALE[getLocale()];
@@ -65,8 +58,9 @@ export default async function HomePage() {
           { OR: [{ endsAt: null }, { endsAt: { gte: now } }] },
         ],
       },
-      orderBy: { id: 'asc' },
-      take: 4,
+      // Newest first: the homepage strip headlines the freshest codes.
+      orderBy: { id: 'desc' },
+      take: 20,
     }),
     prisma.product.findMany({
       where: { isActive: true },
@@ -130,110 +124,47 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-16 pb-20 sm:space-y-20">
-      {/* ── Hero: banner carousel + Flash Sale / Voucher side panels ── */}
+      {/* ── Hero: full-width banner carousel. Flash Sale and Voucher have
+          their own dedicated sections further down the page, so there are
+          no side panels here — nothing appears twice. ── */}
       <section className="container pt-5 sm:pt-7">
-        <div className="grid gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            {banners.length > 0 ? (
-              <BannerCarousel banners={banners as any} />
-            ) : (
-              <div className="card relative flex h-full min-h-56 flex-col justify-center overflow-hidden p-6 sm:p-10">
-                <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-brand-300/40 blur-3xl" />
-                <div className="pointer-events-none absolute -bottom-24 -left-10 h-56 w-56 rounded-full bg-brand-200/50 blur-3xl" />
-                <span className="relative inline-flex w-fit items-center gap-2 rounded-full bg-emerald-50/80 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100">
-                  <span className="relative flex h-2 w-2">
-                    <span className="absolute h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative h-2 w-2 rounded-full bg-emerald-500" />
-                  </span>
-                  {t('home.badge')}
-                </span>
-                <h1 className="relative mt-4 text-3xl font-extrabold leading-[1.08] tracking-tight sm:text-4xl">
-                  {t('home.titleA')}
-                  <span className="bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text text-transparent"> {t('home.titleB')}</span>
-                </h1>
-                <p className="relative mt-3 max-w-lg text-sm leading-relaxed text-gray-500 sm:text-base">{t('home.subtitle')}</p>
-                <form action="/products" method="get" className="relative mt-6 flex max-w-lg items-center gap-1 rounded-full bg-white p-1 shadow-glass ring-1 ring-white/70">
-                  <Icon name="search" size={17} className="ms-3 shrink-0 text-gray-400" />
-                  <input
-                    name="q"
-                    placeholder={t('home.searchPlaceholder')}
-                    aria-label={t('home.searchAria')}
-                    className="min-w-0 flex-1 bg-transparent px-1.5 py-2 text-sm outline-none placeholder:text-gray-400"
-                  />
-                  <button className="btn-primary shrink-0 px-5 py-2">{t('home.search')}</button>
-                </form>
-                <div className="relative mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-medium text-gray-500">
-                  {guarantees.map((g) => (
-                    <span key={g.title} className="inline-flex items-center gap-1.5">
-                      <Icon name={g.icon} size={14} className="text-brand-600" /> {g.title}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Side panels: live flash sale summary + vouchers */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-            <Link href="/flash-sale" className="card card-hover group flex flex-col justify-center p-5 transition-all duration-300 hover:-translate-y-0.5">
-              <span className="inline-flex items-center gap-1.5 text-sm font-extrabold uppercase tracking-wide text-red-600">
-                <Icon name="bolt" size={16} /> {flashSale ? flashSale.name : t('home.dailyDeals')}
+        {banners.length > 0 ? (
+          <BannerCarousel banners={banners as any} />
+        ) : (
+          <div className="card relative flex min-h-56 flex-col justify-center overflow-hidden p-6 sm:p-10">
+            <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-brand-300/40 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 -left-10 h-56 w-56 rounded-full bg-brand-200/50 blur-3xl" />
+            <span className="relative inline-flex w-fit items-center gap-2 rounded-full bg-emerald-50/80 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative h-2 w-2 rounded-full bg-emerald-500" />
               </span>
-              {flashSale ? (
-                <span className="mt-3 flex flex-wrap items-center gap-2 text-xs font-medium text-gray-500">
-                  {t('home.endsIn')} <Countdown until={flashSale.endsAt.toISOString()} />
+              {t('home.badge')}
+            </span>
+            <h1 className="relative mt-4 text-3xl font-extrabold leading-[1.08] tracking-tight sm:text-4xl">
+              {t('home.titleA')}
+              <span className="bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text text-transparent"> {t('home.titleB')}</span>
+            </h1>
+            <p className="relative mt-3 max-w-lg text-sm leading-relaxed text-gray-500 sm:text-base">{t('home.subtitle')}</p>
+            <form action="/products" method="get" className="relative mt-6 flex max-w-lg items-center gap-1 rounded-full bg-white p-1 shadow-glass ring-1 ring-white/70">
+              <Icon name="search" size={17} className="ms-3 shrink-0 text-gray-400" />
+              <input
+                name="q"
+                placeholder={t('home.searchPlaceholder')}
+                aria-label={t('home.searchAria')}
+                className="min-w-0 flex-1 bg-transparent px-1.5 py-2 text-sm outline-none placeholder:text-gray-400"
+              />
+              <button className="btn-primary shrink-0 px-5 py-2">{t('home.search')}</button>
+            </form>
+            <div className="relative mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-medium text-gray-500">
+              {guarantees.map((g) => (
+                <span key={g.title} className="inline-flex items-center gap-1.5">
+                  <Icon name={g.icon} size={14} className="text-brand-600" /> {g.title}
                 </span>
-              ) : (
-                <span className="mt-2 text-xs leading-relaxed text-gray-500">{t('home.dailyDealsText')}</span>
-              )}
-              <span className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-brand-600 group-hover:underline">
-                {t('home.viewAll')} <Icon name="arrow-right" size={13} />
-              </span>
-            </Link>
-
-            {vouchers.length > 0 ? (
-              <div className="card flex flex-col justify-center p-5">
-                <span className="inline-flex items-center gap-1.5 text-sm font-extrabold uppercase tracking-wide text-brand-600">
-                  <Icon name="ticket" size={16} /> {t('home.voucherTitle')}
-                </span>
-                <div className="mt-3 space-y-2.5">
-                  {vouchers.slice(0, 2).map((v) => (
-                    <div key={v.code} className="flex items-center gap-2.5 rounded-2xl bg-white/60 px-3 py-2 ring-1 ring-white/70">
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-extrabold text-gray-900">
-                          {voucherHeadline(v, t, money)}{' '}
-                          <span className="ms-1 font-mono text-xs font-bold tracking-wider text-brand-700">{v.code}</span>
-                        </p>
-                        {v.minOrder != null && (
-                          <p className="truncate text-[11px] text-gray-400">{t('home.voucherMinOrder', { amount: money(v.minOrder) })}</p>
-                        )}
-                      </div>
-                      <CopyCodeButton code={v.code} />
-                    </div>
-                  ))}
-                </div>
-                <a href="#vouchers" className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-brand-600 hover:underline">
-                  {t('home.viewAll')} <Icon name="arrow-right" size={13} />
-                </a>
-              </div>
-            ) : (
-              <div className="card flex flex-col justify-center p-5">
-                <span className="inline-flex items-center gap-1.5 text-sm font-extrabold uppercase tracking-wide text-emerald-600">
-                  <Icon name="bolt" size={16} /> {t('home.digitalDelivery')}
-                </span>
-                <p className="mt-2 text-xs leading-relaxed text-gray-500">{t('home.digitalDeliveryText')}</p>
-                <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-                  {heroStats.map((s) => (
-                    <div key={s.label} className="rounded-2xl bg-white/60 px-1 py-2 ring-1 ring-white/70">
-                      <p className="truncate text-sm font-extrabold text-gray-900">{s.value}</p>
-                      <p className="mt-0.5 truncate text-[10px] text-gray-400">{s.label}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Utility shortcut row (8 items) */}
         <div className="mt-6 grid grid-cols-4 gap-2 sm:gap-3 lg:grid-cols-8">
@@ -284,22 +215,9 @@ export default async function HomePage() {
           </section>
         )}
 
-        {/* ── Voucher strip ─────────────────────────────────────── */}
-        {vouchers.length > 0 && (
-          <section id="vouchers" className="scroll-mt-36">
-            <div className="mb-5 flex items-center gap-2">
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-btn-primary">
-                <Icon name="ticket" size={17} />
-              </span>
-              <h2 className="text-xl font-extrabold uppercase tracking-wide text-brand-600 sm:text-2xl">{t('home.voucherTitle')}</h2>
-            </div>
-            <div className={`grid gap-3 sm:grid-cols-2 ${vouchers.length >= 4 ? 'xl:grid-cols-4' : vouchers.length === 3 ? 'xl:grid-cols-3' : 'xl:grid-cols-2'}`}>
-              {vouchers.map((v) => (
-                <VoucherCard key={v.code} voucher={v} />
-              ))}
-            </div>
-          </section>
-        )}
+        {/* ── Voucher strip (newest 5 + "view more" toggle live in the
+            VoucherStrip client component) ─────────────────────────── */}
+        {vouchers.length > 0 && <VoucherStrip vouchers={vouchers} />}
 
         {/* ── Flash sale (light glass, Shopee-style ĐÃ BÁN bars) ── */}
         {flashSale && flashSale.items.length > 0 && (
@@ -319,8 +237,10 @@ export default async function HomePage() {
               <Link href="/flash-sale" className="view-all">{t('home.viewAll')} <Icon name="arrow-right" size={14} /></Link>
             </div>
 
-            <div className={`relative grid gap-3 ${flashCols(Math.min(6, flashSale.items.length))}`}>
-              {flashSale.items.slice(0, 6).map((item) => {
+            {/* Shopee-style rail: one horizontal, snap-scrolling row with
+                the scrollbar hidden, instead of a static grid. */}
+            <div className="relative -mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto overflow-y-hidden px-1 pb-2 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {flashSale.items.map((item) => {
                 const soldOut = item.quantityLimit != null && item.soldCount >= item.quantityLimit;
                 const left = item.quantityLimit != null ? Math.max(0, item.quantityLimit - item.soldCount) : null;
                 const pct = Number(item.package.price) > 0
@@ -335,7 +255,7 @@ export default async function HomePage() {
                   <Link
                     key={item.id}
                     href={`/product/${item.package.product.slug}`}
-                    className="group overflow-hidden rounded-3xl border border-white/60 bg-white/70 shadow-sm backdrop-blur transition duration-300 hover:-translate-y-1 hover:shadow-glass"
+                    className="group w-40 shrink-0 snap-start overflow-hidden rounded-3xl border border-white/60 bg-white/70 shadow-sm backdrop-blur transition duration-300 hover:-translate-y-1 hover:shadow-glass sm:w-44 lg:w-48"
                   >
                     <div className="relative aspect-square bg-gradient-to-br from-white/60 to-brand-50/50">
                       {item.package.product.images[0] ? (

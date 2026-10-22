@@ -584,6 +584,8 @@ export const en: Record<string, string> = {
   'home.voucherCopiedShort': 'Copied',
   'home.voucherCopied': 'Code {code} copied',
   'home.voucherExpires': 'Expires {date}',
+  'home.voucherViewMore': 'View {count} more codes',
+  'home.voucherCollapse': 'Show less',
   'home.almostGone': 'Selling fast',
   'home.guaranteeTitle': 'Shop with confidence',
   'home.trustInstantText': 'Keys / accounts are emailed automatically within seconds.',

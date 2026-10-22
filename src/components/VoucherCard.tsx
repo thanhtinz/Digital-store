@@ -34,11 +34,11 @@ export function CopyCodeButton({ code, className = '' }: { code: string; classNa
     <button
       type="button"
       onClick={copy}
-      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold shadow-btn-primary transition active:scale-95 ${
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold shadow-btn-primary transition active:scale-95 ${
         copied ? 'bg-emerald-500 text-white' : 'bg-gradient-to-b from-brand-500 to-brand-600 text-white hover:brightness-110'
       } ${className}`}
     >
-      <Icon name={copied ? 'check' : 'copy'} size={13} />
+      <Icon name={copied ? 'check' : 'copy'} size={12} />
       {copied ? t('home.voucherCopiedShort') : t('home.voucherCopy')}
     </button>
   );
@@ -76,13 +76,13 @@ export default function VoucherCard({ voucher }: { voucher: Voucher }) {
       className="relative flex overflow-hidden rounded-2xl bg-white/70 shadow-glass ring-1 ring-white/70 backdrop-blur-xl"
       style={maskStyle}
     >
-      <div className="flex w-[37%] shrink-0 flex-col items-center justify-center gap-1 bg-gradient-to-br from-brand-500 to-brand-700 px-3 py-4 text-center text-white">
-        <Icon name="ticket" size={20} className="opacity-80" />
-        <p className="text-base font-extrabold leading-tight sm:text-lg">{voucherHeadline(voucher, t, money)}</p>
+      <div className="flex w-[37%] shrink-0 flex-col items-center justify-center gap-0.5 bg-gradient-to-br from-brand-500 to-brand-700 px-2.5 py-3 text-center text-white">
+        <Icon name="ticket" size={18} className="opacity-80" />
+        <p className="text-sm font-extrabold leading-tight sm:text-base">{voucherHeadline(voucher, t, money)}</p>
       </div>
-      <div className="relative flex min-w-0 flex-1 flex-col justify-center gap-1.5 px-4 py-3">
+      <div className="relative flex min-w-0 flex-1 flex-col justify-center gap-1 px-3.5 py-2.5">
         <span className="pointer-events-none absolute bottom-2 left-0 top-2 border-s border-dashed border-gray-300" />
-        <p className="truncate font-mono text-base font-extrabold tracking-[.14em] text-gray-900">{voucher.code}</p>
+        <p className="truncate font-mono text-sm font-extrabold tracking-[.14em] text-gray-900">{voucher.code}</p>
         {conditions.length > 0 && (
           <p className="line-clamp-2 text-[11px] leading-snug text-gray-500">{conditions.join(' · ')}</p>
         )}

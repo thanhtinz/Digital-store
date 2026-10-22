@@ -583,6 +583,8 @@ export const vi: Record<string, string> = {
   'home.voucherCopiedShort': 'Đã chép',
   'home.voucherCopied': 'Đã chép mã {code}',
   'home.voucherExpires': 'HSD: {date}',
+  'home.voucherViewMore': 'Xem thêm {count} mã',
+  'home.voucherCollapse': 'Thu gọn',
   'home.almostGone': 'Sắp cháy hàng',
   'home.guaranteeTitle': 'Mua sắm an tâm',
   'home.trustInstantText': 'Key / tài khoản được gửi tự động qua email trong vài giây.',
