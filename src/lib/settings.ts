@@ -27,11 +27,14 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   site_logo: '',
   // Base currency: every Decimal price in the database is denominated in this.
   currency: 'USD',
-  currency_decimals: '2',
+  // Display format pieces: blank = follow the currency code's conventions
+  // (VND → 0 decimals, "." grouping, symbol after; USD → 2 decimals, ","
+  // grouping, symbol before). Admins can still override each piece.
+  currency_decimals: '',
   currency_symbol: '',            // blank = derive from the currency code
-  currency_symbol_position: 'before',
-  currency_thousand_sep: ',',
-  currency_decimal_sep: '.',
+  currency_symbol_position: '',
+  currency_thousand_sep: '',
+  currency_decimal_sep: '',
   currency_rates: '{}',           // { "VND": 25400 } — units of X per 1 base unit
   currency_round_step: '1000',    // round converted zero-decimal amounts up to this
   payment_currency: 'VND',        // what the Vietnamese gateways charge in
@@ -102,7 +105,6 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   feature_wishlist: 'true',
   feature_news: 'true',
   feature_flash_sale: 'true',
-  feature_livechat: 'true',
   feature_support: 'true',
   affiliate_rate: '10',         // commission percent
 };
@@ -161,7 +163,7 @@ export async function getPublicSettings() {
     'bank_transfer_enabled', 'bank_transfer_account_number',
     'footer_about', 'social_facebook', 'social_twitter', 'social_instagram', 'social_youtube', 'social_telegram', 'social_discord',
     'theme_color', 'theme_custom_color', 'theme_dir', 'theme_font', 'theme_text_size', 'theme_allow_override',
-    'feature_wallet', 'feature_giftcards', 'feature_reviews', 'feature_wishlist', 'feature_news', 'feature_flash_sale', 'feature_livechat', 'feature_support',
+    'feature_wallet', 'feature_giftcards', 'feature_reviews', 'feature_wishlist', 'feature_news', 'feature_flash_sale', 'feature_support',
   ]);
   return {
     siteName: s.site_name,
@@ -204,7 +206,6 @@ export async function getPublicSettings() {
       wishlist: s.feature_wishlist !== 'false',
       news: s.feature_news !== 'false',
       flash_sale: s.feature_flash_sale !== 'false',
-      livechat: s.feature_livechat !== 'false',
       support: s.feature_support !== 'false',
     },
   };

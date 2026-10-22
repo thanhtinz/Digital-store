@@ -4,6 +4,7 @@ import { requireUser } from '@/lib/auth';
 import { handler, jsonError } from '@/lib/api';
 import { rateLimit } from '@/lib/rateLimit';
 import { sendTelegram, escapeHtml } from '@/lib/telegram';
+import { formatMoneyServer } from '@/lib/currency';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,8 +38,8 @@ export const POST = handler(async (req: NextRequest, { params }: { params: { id:
   }
 
   sendTelegram(
-    `<b>Bank transfer to review</b> ${escapeHtml(intent.memo || String(intent.ref))}\n` +
-      `${escapeHtml(user.email)} · ${Number(intent.chargeAmount).toLocaleString('en-US')} ${escapeHtml(intent.chargeCurrency)}`
+    `<b>Chuyển khoản chờ duyệt</b> ${escapeHtml(intent.memo || String(intent.ref))}\n` +
+      `${escapeHtml(user.email)} · ${await formatMoneyServer(Number(intent.chargeAmount), intent.chargeCurrency)}`
   ).catch(() => {});
 
   return NextResponse.json({ ok: true });

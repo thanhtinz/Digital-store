@@ -180,5 +180,5 @@ export async function expireStaleIntents(): Promise<number> {
 // a mistyped transfer memo never means silently swallowed funds.
 export function warnUnmatched(detail: string): void {
   console.warn('[payments] unmatched transfer:', detail);
-  sendTelegram(`<b>Unmatched bank transfer</b>\n${escapeHtml(detail)}`).catch(() => {});
+  sendTelegram(`<b>Chuyển khoản không khớp đơn nào</b>\n${escapeHtml(detail)}`).catch(() => {});
 }

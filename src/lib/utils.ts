@@ -20,21 +20,76 @@ export function currencySymbol(code: string): string {
   return SYMBOLS[code.toUpperCase()] || code.toUpperCase();
 }
 
+// Currencies whose smallest unit IS the unit — no cents. Amounts for these
+// must be whole numbers everywhere: Stripe, PayPal, PayOS and bank transfers.
+// (Canonical list lives here; src/lib/currency.ts re-uses it for gateways.)
+export const ZERO_DECIMAL_CURRENCIES = new Set([
+  'bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf', 'krw', 'mga', 'pyg',
+  'rwf', 'ugx', 'vnd', 'vuv', 'xaf', 'xof', 'xpf',
+]);
+
+// How each currency is conventionally written: decimal places, grouping and
+// decimal separators, and where the symbol sits. A bare currency code must
+// always render sensibly on its own — "₫53.99" (VND symbol glued to a
+// USD-style decimal amount) is what happens when it doesn't. The currency_*
+// settings override individual pieces, but only when the admin actually
+// saved a value; blank means "follow the code".
+type CurrencyConvention = { decimals: number; thousandSep: string; decimalSep: string; position: 'before' | 'after' };
+const CURRENCY_CONVENTIONS: Record<string, CurrencyConvention> = {
+  VND: { decimals: 0, thousandSep: '.', decimalSep: ',', position: 'after' },
+  JPY: { decimals: 0, thousandSep: ',', decimalSep: '.', position: 'before' },
+  KRW: { decimals: 0, thousandSep: ',', decimalSep: '.', position: 'before' },
+  USD: { decimals: 2, thousandSep: ',', decimalSep: '.', position: 'before' },
+  GBP: { decimals: 2, thousandSep: ',', decimalSep: '.', position: 'before' },
+  AUD: { decimals: 2, thousandSep: ',', decimalSep: '.', position: 'before' },
+  CAD: { decimals: 2, thousandSep: ',', decimalSep: '.', position: 'before' },
+  SGD: { decimals: 2, thousandSep: ',', decimalSep: '.', position: 'before' },
+  EUR: { decimals: 2, thousandSep: '.', decimalSep: ',', position: 'after' },
+  THB: { decimals: 2, thousandSep: ',', decimalSep: '.', position: 'before' },
+  PHP: { decimals: 2, thousandSep: ',', decimalSep: '.', position: 'before' },
+  INR: { decimals: 2, thousandSep: ',', decimalSep: '.', position: 'before' },
+};
+
+export function currencyConvention(code: string): CurrencyConvention {
+  const upper = code.toUpperCase();
+  return (
+    CURRENCY_CONVENTIONS[upper] || {
+      decimals: ZERO_DECIMAL_CURRENCIES.has(upper.toLowerCase()) ? 0 : 2,
+      thousandSep: ',',
+      decimalSep: '.',
+      position: 'before',
+    }
+  );
+}
+
+// The full display format for a bare currency code, no settings involved.
+export function moneyFormatForCode(code: string): MoneyFormat {
+  const upper = code.toUpperCase();
+  return { code: upper, symbol: currencySymbol(upper), ...currencyConvention(upper) };
+}
+
 export const DEFAULT_MONEY_FORMAT: MoneyFormat = {
   code: 'USD', symbol: '$', position: 'before', decimals: 2, thousandSep: ',', decimalSep: '.',
 };
 
 // Builds a format from a raw settings map (server) or public config (client).
+// Every piece falls back to the currency code's own conventions when the
+// matching setting is blank — which is now the shipped default — so picking
+// "VND" in the setup wizard is enough to get "1.370.000 ₫" with no further
+// knobs to turn. Explicitly saved settings still win, piece by piece.
 export function moneyFormatFrom(s: Record<string, string | undefined>): MoneyFormat {
   const code = (s.currency || 'USD').toUpperCase();
-  const decimals = Number(s.currency_decimals);
+  const conv = currencyConvention(code);
+  const rawDecimals = s.currency_decimals;
+  const parsedDecimals = rawDecimals === undefined || rawDecimals === '' ? NaN : Number(rawDecimals);
   return {
     code,
     symbol: s.currency_symbol || currencySymbol(code),
-    position: s.currency_symbol_position === 'after' ? 'after' : 'before',
-    decimals: Number.isFinite(decimals) ? Math.min(4, Math.max(0, Math.floor(decimals))) : 2,
-    thousandSep: s.currency_thousand_sep ?? ',',
-    decimalSep: s.currency_decimal_sep ?? '.',
+    position:
+      s.currency_symbol_position === 'after' ? 'after' : s.currency_symbol_position === 'before' ? 'before' : conv.position,
+    decimals: Number.isFinite(parsedDecimals) ? Math.min(4, Math.max(0, Math.floor(parsedDecimals))) : conv.decimals,
+    thousandSep: s.currency_thousand_sep ? s.currency_thousand_sep : conv.thousandSep,
+    decimalSep: s.currency_decimal_sep ? s.currency_decimal_sep : conv.decimalSep,
   };
 }
 
@@ -72,13 +127,18 @@ export function formatMoneyWith(value: number | string, fmt: MoneyFormat): strin
 
 // Back-compatible entry point. Passing an explicit currency code renders that
 // currency (historical orders keep the currency they were booked in); passing
-// a MoneyFormat renders with the store's configured format.
+// a MoneyFormat renders with the store's configured format. The code path
+// formats with the currency's own locale so VND gets vi-VN grouping and 0
+// decimals here too, not en-US habits.
+const INTL_LOCALE_FOR_CURRENCY: Record<string, string> = {
+  VND: 'vi-VN', JPY: 'ja-JP', KRW: 'ko-KR', EUR: 'de-DE', GBP: 'en-GB', THB: 'th-TH', INR: 'en-IN',
+};
 export function formatMoney(value: number | string, fmt?: MoneyFormat | string): string {
   if (fmt && typeof fmt === 'object') return formatMoneyWith(value, fmt);
   const code = (fmt || 'USD').toUpperCase();
   const num = Number(value);
   const safe = Number.isFinite(num) ? num : 0;
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: code }).format(safe);
+  return new Intl.NumberFormat(INTL_LOCALE_FOR_CURRENCY[code] || 'en-US', { style: 'currency', currency: code }).format(safe);
 }
 
 // Dates always take an explicit locale. Letting Intl fall back to the

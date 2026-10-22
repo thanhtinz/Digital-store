@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { getSettings } from '@/lib/settings';
 import { sendTelegramTo, escapeHtml } from '@/lib/telegram';
-import { formatMoney } from '@/lib/utils';
+import { formatMoneyServer } from '@/lib/currency';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,14 +79,14 @@ export async function POST(req: NextRequest) {
     const orders = await prisma.order.findMany({
       where: { userId: user.id },
       orderBy: { id: 'desc' },
-      select: { code: true, status: true, total: true, createdAt: true },
+      select: { code: true, status: true, total: true, currency: true, createdAt: true },
     });
     if (!orders.length) {
       await reply('No orders yet.');
     } else {
-      const lines = orders.map((o) =>
-        `<b>${o.code}</b> · ${o.createdAt.toISOString().slice(0, 10)} · ${formatMoney(Number(o.total))} · ${STATUS_LABEL[o.status] || o.status}`
-      );
+      const lines = await Promise.all(orders.map(async (o) =>
+        `<b>${o.code}</b> · ${o.createdAt.toISOString().slice(0, 10)} · ${await formatMoneyServer(Number(o.total), o.currency)} · ${STATUS_LABEL[o.status] || o.status}`
+      ));
       // Telegram caps messages at 4096 chars — send the full history in chunks.
       const header = `<b>Your orders (${orders.length})</b>\n`;
       const footer = '\n\nUse /order CODE for details.';
@@ -123,13 +123,13 @@ export async function POST(req: NextRequest) {
           : '';
         await reply(
           `<b>Order ${order.code}</b> — ${STATUS_LABEL[order.status] || order.status}\n` +
-          `${items}\nTotal: ${formatMoney(Number(order.total))}${deliveredBlock}`
+          `${items}\nTotal: ${await formatMoneyServer(Number(order.total), order.currency)}${deliveredBlock}`
         );
       }
     }
   } else if (text.startsWith('/balance')) {
     await reply(
-      `<b>Wallet balance:</b> ${formatMoney(Number(user.balance))}\n` +
+      `<b>Wallet balance:</b> ${await formatMoneyServer(Number(user.balance))}\n` +
       `<b>Loyalty points:</b> ${user.loyaltyPoints}`
     );
   } else if (text.startsWith('/unlink')) {

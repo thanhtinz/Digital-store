@@ -34,7 +34,7 @@ export async function testTelegram(botToken: string, chatId: string): Promise<bo
     const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text: 'Test message from your store — Telegram notifications are working.' }),
+      body: JSON.stringify({ chat_id: chatId, text: 'Tin nhắn thử từ cửa hàng của bạn — thông báo Telegram đã hoạt động.' }),
     });
     return res.ok;
   } catch {

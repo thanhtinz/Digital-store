@@ -15,27 +15,27 @@ export const POST = handler(async (req: NextRequest) => {
 
   if (gateway === 'stripe') {
     const s = await getSettings(['stripe_secret_key']);
-    if (!s.stripe_secret_key) return jsonError(400, 'Save your Stripe secret key first');
+    if (!s.stripe_secret_key) return jsonError(400, 'Hãy lưu khoá bí mật Stripe trước');
     const ok = await testStripeConnection(s.stripe_secret_key);
     return ok
-      ? NextResponse.json({ ok: true, message: 'Stripe connection verified' })
-      : jsonError(400, 'Stripe rejected the secret key');
+      ? NextResponse.json({ ok: true, message: 'Đã xác thực kết nối Stripe' })
+      : jsonError(400, 'Stripe từ chối khoá bí mật này');
   }
   if (gateway === 'paypal') {
     const s = await getSettings(['paypal_client_id', 'paypal_client_secret', 'paypal_mode']);
-    if (!s.paypal_client_id || !s.paypal_client_secret) return jsonError(400, 'Save your PayPal credentials first');
+    if (!s.paypal_client_id || !s.paypal_client_secret) return jsonError(400, 'Hãy lưu thông tin PayPal trước');
     const ok = await testPaypalConnection(s.paypal_client_id, s.paypal_client_secret, s.paypal_mode);
     return ok
-      ? NextResponse.json({ ok: true, message: `PayPal connection verified (${s.paypal_mode})` })
-      : jsonError(400, 'PayPal rejected the credentials');
+      ? NextResponse.json({ ok: true, message: `Đã xác thực kết nối PayPal (${s.paypal_mode})` })
+      : jsonError(400, 'PayPal từ chối thông tin đăng nhập này');
   }
   if (gateway === 'telegram') {
     const s = await getSettings(['telegram_bot_token', 'telegram_chat_id']);
-    if (!s.telegram_bot_token || !s.telegram_chat_id) return jsonError(400, 'Save your bot token and chat ID first');
+    if (!s.telegram_bot_token || !s.telegram_chat_id) return jsonError(400, 'Hãy lưu token bot và Chat ID trước');
     const ok = await testTelegram(s.telegram_bot_token, s.telegram_chat_id);
     return ok
-      ? NextResponse.json({ ok: true, message: 'Test message sent — check your Telegram' })
-      : jsonError(400, 'Telegram rejected the credentials — check the bot token and chat ID');
+      ? NextResponse.json({ ok: true, message: 'Đã gửi tin thử — kiểm tra Telegram của bạn' })
+      : jsonError(400, 'Telegram từ chối thông tin này — kiểm tra lại token bot và Chat ID');
   }
-  return jsonError(400, 'Unknown gateway');
+  return jsonError(400, 'Cổng kiểm tra không hợp lệ');
 });

@@ -177,6 +177,21 @@ export async function createOrder(params: {
     return created;
   });
 
+  // Ping the store owner on Telegram — a new order exists even before it
+  // is paid. Fire-and-forget: alerts must never slow or fail a checkout.
+  (async () => {
+    const [siteName, totalLabel] = await Promise.all([
+      getSetting('site_name'),
+      formatMoneyServer(Number(order.total), order.currency),
+    ]);
+    const itemsLabel = order.items.map((i) => `${i.productName} — ${i.packageName} ×${i.quantity}`).join(', ');
+    await sendTelegram(
+      `<b>[${escapeHtml(siteName)}] Đơn hàng mới</b> ${order.code}\n` +
+      `${escapeHtml(itemsLabel)}\n` +
+      `Tổng: ${totalLabel} · ${escapeHtml(paymentMethod)} · ${escapeHtml(email)}`
+    );
+  })().catch(() => {});
+
   return order;
 }
 
@@ -284,11 +299,14 @@ export async function markOrderPaid(orderId: number, paymentRef?: string): Promi
 
   // Ping the store owner on Telegram (no-op unless configured).
   const itemsLabel = order.items.map((i) => `${i.productName} — ${i.packageName} ×${i.quantity}`).join(', ');
-  sendTelegram(
-    `<b>New paid order</b> ${order.code}\n` +
-    `${escapeHtml(itemsLabel)}\n` +
-    `Total: ${await formatMoneyServer(Number(order.total), order.currency)} · ${order.paymentMethod || 'unknown'} · ${escapeHtml(order.email)}`
-  ).catch(() => {});
+  (async () => {
+    const siteName = await getSetting('site_name');
+    await sendTelegram(
+      `<b>[${escapeHtml(siteName)}] Đơn đã thanh toán</b> ${order.code}\n` +
+      `${escapeHtml(itemsLabel)}\n` +
+      `Tổng: ${await formatMoneyServer(Number(order.total), order.currency)} · ${order.paymentMethod || 'không rõ'} · ${escapeHtml(order.email)}`
+    );
+  })().catch(() => {});
 }
 
 // Loyalty points for the buyer + affiliate commission for their referrer.
@@ -386,7 +404,7 @@ export async function autoDeliver(orderId: number): Promise<void> {
     if (pkg.lowStockAlert != null && delivered.length > 0) {
       const left = await prisma.stockItem.count({ where: { packageId: pkg.id, isSold: false } });
       if (left <= pkg.lowStockAlert && left + delivered.length > pkg.lowStockAlert) {
-        sendTelegram(`<b>Low stock</b> — ${escapeHtml(`${pkg.product.name} — ${pkg.name}`)}: ${left} unit(s) left (threshold ${pkg.lowStockAlert})`).catch(() => {});
+        sendTelegram(`<b>Sắp hết hàng</b> — ${escapeHtml(`${pkg.product.name} — ${pkg.name}`)}: còn ${left} sản phẩm (ngưỡng cảnh báo ${pkg.lowStockAlert})`).catch(() => {});
         notifyAdmin(
           `Low stock: ${pkg.product.name} — ${pkg.name}`,
           `<p><b>${pkg.product.name} — ${pkg.name}</b> is down to <b>${left}</b> unsold unit${left === 1 ? '' : 's'} (alert threshold: ${pkg.lowStockAlert}).</p>
@@ -398,7 +416,7 @@ export async function autoDeliver(orderId: number): Promise<void> {
 
   // Alert the owner when an order is stuck waiting for manual fulfillment.
   if (shortages.length > 0) {
-    sendTelegram(`<b>Manual fulfillment needed</b> — order ${order.code}\n${escapeHtml(shortages.join('; '))}`).catch(() => {});
+    sendTelegram(`<b>Cần giao hàng thủ công</b> — đơn ${order.code}\n${escapeHtml(shortages.join('; '))}`).catch(() => {});
     notifyAdmin(
       `Order ${order.code} needs manual delivery`,
       `<p>Auto-delivery ran out of stock for order <b>${order.code}</b>:</p>

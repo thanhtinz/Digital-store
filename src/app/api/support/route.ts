@@ -53,7 +53,7 @@ export const POST = handler(async (req: NextRequest) => {
     },
   });
   sendTelegram(
-    `<b>New support ticket</b> #${ticket.id}\n${escapeHtml(subject)}\nFrom ${escapeHtml(user.email)}${orderCode ? ` · order ${orderCode}` : ''}`
+    `<b>Ticket hỗ trợ mới</b> #${ticket.id}\n${escapeHtml(subject)}\nTừ ${escapeHtml(user.email)}${orderCode ? ` · đơn ${orderCode}` : ''}`
   ).catch(() => {});
   return NextResponse.json({ ok: true, ticket });
 });

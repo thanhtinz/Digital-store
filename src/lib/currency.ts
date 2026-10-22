@@ -1,14 +1,11 @@
 import { getSettings } from './settings';
-import { currencySymbol, formatMoneyWith, moneyFormatFrom, parseRates, type MoneyFormat } from './utils';
+import {
+  formatMoneyWith, moneyFormatForCode, moneyFormatFrom, parseRates,
+  ZERO_DECIMAL_CURRENCIES, type MoneyFormat,
+} from './utils';
 
 export { parseRates };
-
-// Currencies whose smallest unit IS the unit — no cents. Amounts for these
-// must be whole numbers everywhere: Stripe, PayPal, PayOS and bank transfers.
-export const ZERO_DECIMAL_CURRENCIES = new Set([
-  'bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf', 'krw', 'mga', 'pyg',
-  'rwf', 'ugx', 'vnd', 'vuv', 'xaf', 'xof', 'xpf',
-]);
+export { ZERO_DECIMAL_CURRENCIES };
 
 export function isZeroDecimal(code: string): boolean {
   return ZERO_DECIMAL_CURRENCIES.has(code.toLowerCase());
@@ -112,13 +109,10 @@ export function decimalString(amount: number, currency: string): string {
 
 function formatIn(value: number | string, base: MoneyFormat, currency?: string): string {
   if (currency && currency.toUpperCase() !== base.code) {
-    const code = currency.toUpperCase();
-    return formatMoneyWith(value, {
-      ...base,
-      code,
-      symbol: currencySymbol(code),
-      decimals: isZeroDecimal(code) ? 0 : base.decimals,
-    });
+    // A foreign currency renders by its OWN conventions (VND: 0 decimals,
+    // dot grouping, symbol after) — never the base currency's separators
+    // with a swapped symbol.
+    return formatMoneyWith(value, moneyFormatForCode(currency));
   }
   return formatMoneyWith(value, base);
 }
