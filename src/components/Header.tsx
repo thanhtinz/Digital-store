@@ -228,6 +228,13 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
           <div className="ms-auto flex shrink-0 items-center gap-1.5 sm:gap-2 md:ms-0">
             <AppearanceMenu variant="gear" placement="down" />
 
+            {/* Notifications — order & delivery updates live on the orders page */}
+            <span className="hidden sm:block">
+              <Link href="/orders" aria-label={t('nav.notifications')} onClick={closeAll} className="btn-icon-glass relative">
+                <Icon name="bell" size={20} />
+              </Link>
+            </span>
+
             <Link href="/cart" aria-label="Cart" onClick={closeAll} className="btn-icon-glass relative">
               <Icon name="cart" size={20} />
               {cartCount > 0 && (
