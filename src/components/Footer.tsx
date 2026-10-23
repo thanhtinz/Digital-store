@@ -25,27 +25,9 @@ export default function Footer({ siteName, tagline, logo, footerText, footerAbou
     <footer className="relative mt-20 border-t border-white/50 bg-white/55 shadow-[0_-18px_40px_-30px_rgb(var(--brand-800)/.35)] backdrop-blur-2xl backdrop-saturate-150">
       {/* Brand hairline along the top edge */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-400/60 to-transparent" />
-      {/* Trust strip */}
-      <div className="border-b border-white/50 bg-white/30">
-        <div className="container grid grid-cols-2 gap-x-4 gap-y-5 py-7 sm:grid-cols-4">
-          {([
-            ['bolt', t('trust.instant'), t('trust.instantSub')],
-            ['lock', t('trust.secure'), t('trust.secureSub')],
-            ['refresh', t('trust.refund'), t('trust.refundSub')],
-            ['chat', t('trust.human'), t('trust.humanSub')],
-          ] as const).map(([icon, title, desc]) => (
-            <div key={title} className="group flex items-center gap-3">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white/70 text-brand-600 shadow-sm ring-1 ring-white/70 backdrop-blur transition group-hover:scale-105">
-                <Icon name={icon} size={18} />
-              </span>
-              <div>
-                <p className="text-sm font-semibold leading-tight">{title}</p>
-                <p className="mt-0.5 text-xs text-gray-400">{desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* No trust strip here: the homepage already ends with the richer
+          "Mua sắm an tâm" guarantee card, and stacking a second lookalike
+          strip in the footer read as duplicated content. */}
 
       <div className="container grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-4 lg:gap-12 lg:py-14">
         <div>
