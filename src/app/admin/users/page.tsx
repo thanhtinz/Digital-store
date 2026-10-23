@@ -72,7 +72,17 @@ export default function AdminUsersPage() {
                     <span className="badge bg-gray-100 text-gray-600">{t(`admin.users.role${u.role}`)}</span>
                   )}
                 </td>
-                <td className="px-4 py-3">{u.emailVerifiedAt ? <Icon name="check" size={16} className="text-green-600" /> : <span className="text-gray-300">—</span>}</td>
+                <td className="px-4 py-3">
+                  {u.emailVerifiedAt ? (
+                    <Icon name="check" size={16} className="text-green-600" />
+                  ) : isAdmin && u.id !== me?.id ? (
+                    <button className="px-2 py-1 text-xs font-semibold text-brand-600 hover:underline" onClick={() => update(u.id, { verifyEmail: true })}>
+                      {t('admin.users.verify')}
+                    </button>
+                  ) : (
+                    <span className="text-gray-300">—</span>
+                  )}
+                </td>
                 <td className="px-4 py-3">{u.twoFactorEnabled ? <Icon name="shield" size={16} className="text-brand-600" /> : <span className="text-gray-300">—</span>}</td>
                 <td className="px-4 py-3">{u._count.orders}</td>
                 <td className="whitespace-nowrap px-4 py-3 text-xs text-gray-500">{new Date(u.createdAt).toLocaleDateString(ADMIN_INTL_LOCALE)}</td>

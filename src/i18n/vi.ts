@@ -1179,6 +1179,7 @@ export const vi: Record<string, string> = {
   'admin.users.colUser': 'Người dùng',
   'admin.users.colRole': 'Vai trò',
   'admin.users.colVerified': 'Đã xác thực',
+  'admin.users.verify': 'Xác minh',
   'admin.users.colOrders': 'Đơn hàng',
   'admin.users.colJoined': 'Ngày tham gia',
   'admin.users.googleAccount': 'Tài khoản Google',

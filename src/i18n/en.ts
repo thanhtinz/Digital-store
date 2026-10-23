@@ -1180,6 +1180,7 @@ export const en: Record<string, string> = {
   'admin.users.colUser': 'User',
   'admin.users.colRole': 'Role',
   'admin.users.colVerified': 'Verified',
+  'admin.users.verify': 'Verify',
   'admin.users.colOrders': 'Orders',
   'admin.users.colJoined': 'Joined',
   'admin.users.googleAccount': 'Google account',

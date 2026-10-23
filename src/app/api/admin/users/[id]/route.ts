@@ -16,7 +16,13 @@ export const PATCH = handler(async (req: NextRequest, { params }: { params: { id
   const data: any = {};
   if (b.isBlocked !== undefined) data.isBlocked = !!b.isBlocked;
   if (b.role !== undefined && ['CUSTOMER', 'STAFF', 'ADMIN'].includes(b.role)) data.role = b.role;
+  if (b.verifyEmail === true) {
+    // Manual email verification by an admin: only stamp the field when the
+    // user is not verified yet, never overwrite an existing timestamp.
+    const current = await prisma.user.findUnique({ where: { id }, select: { emailVerifiedAt: true } });
+    if (current && !current.emailVerifiedAt) data.emailVerifiedAt = new Date();
+  }
   const user = await prisma.user.update({ where: { id }, data });
   audit(admin, 'user.update', user.email, JSON.stringify(data));
-  return NextResponse.json({ ok: true, user: { id: user.id, role: user.role, isBlocked: user.isBlocked } });
+  return NextResponse.json({ ok: true, user: { id: user.id, role: user.role, isBlocked: user.isBlocked, emailVerifiedAt: user.emailVerifiedAt } });
 });
