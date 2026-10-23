@@ -134,8 +134,10 @@ export default async function VouchersPage() {
   const isEmpty = personal.length === 0 && pub.length === 0;
 
   const statusLabel = (s: Status) =>
-    s === 'used'
-      ? t('vouchers.statusUsed')
+    s === 'available'
+      ? t('vouchers.statusUnused')
+      : s === 'used'
+        ? t('vouchers.statusUsed')
       : s === 'usedUp'
         ? t('vouchers.statusUsedUp')
         : s === 'exhausted'
@@ -175,7 +177,7 @@ export default async function VouchersPage() {
           <p className="flex flex-wrap items-center gap-2">
             <span className="truncate font-mono text-sm font-extrabold tracking-[.14em] text-gray-900">{v.code}</span>
             {label && (
-              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${row.status === 'used' ? 'bg-sky-100 text-sky-700' : 'bg-gray-200 text-gray-600'}`}>
+              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${row.status === 'available' ? 'bg-emerald-100 text-emerald-700' : row.status === 'used' ? 'bg-sky-100 text-sky-700' : 'bg-gray-200 text-gray-600'}`}>
                 {label}
               </span>
             )}

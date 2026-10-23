@@ -509,6 +509,7 @@ export const en: Record<string, string> = {
   'vouchers.statusExhausted': 'Fully redeemed',
   'vouchers.statusExpired': 'Expired',
   'vouchers.statusNotStarted': 'Not active yet',
+  'vouchers.statusUnused': 'Unused',
   'vouchers.usesLeft': '{count} use(s) left',
   'vouchers.personalTag': 'Personal code',
   'support.eyebrow': 'We are here to help',

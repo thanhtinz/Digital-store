@@ -509,6 +509,7 @@ export const vi: Record<string, string> = {
   'vouchers.statusExhausted': 'Đã hết lượt sử dụng',
   'vouchers.statusExpired': 'Đã hết hạn',
   'vouchers.statusNotStarted': 'Chưa đến ngày áp dụng',
+  'vouchers.statusUnused': 'Chưa dùng',
   'vouchers.usesLeft': 'Còn {count} lượt dùng',
   'vouchers.personalTag': 'Mã cá nhân',
   'support.eyebrow': 'Chúng tôi luôn sẵn sàng',

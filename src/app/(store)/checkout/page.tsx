@@ -140,6 +140,12 @@ function CheckoutInner() {
   };
 
   const placeOrder = async () => {
+    // Validate the gift recipient first: a typo'd recipient email must
+    // surface before balance/method complaints, not after them.
+    if (giftOn && !isValidEmail(giftEmail.trim())) {
+      toast(t('checkout.giftInvalidEmail'), 'error');
+      return;
+    }
     if (!pay.stripeEnabled && !pay.paypalEnabled && !walletOn && !pay.sepayEnabled && !pay.payosEnabled && !pay.bankEnabled) {
       toast(t('checkout.noMethod'), 'error');
       return;
@@ -158,10 +164,6 @@ function CheckoutInner() {
     }
     if (method === 'balance' && !buyNow && balance < total) {
       toast(t('checkout.insufficient'), 'error');
-      return;
-    }
-    if (giftOn && !isValidEmail(giftEmail.trim())) {
-      toast(t('checkout.giftInvalidEmail'), 'error');
       return;
     }
     setBusy(true);
