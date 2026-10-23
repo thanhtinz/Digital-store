@@ -4,6 +4,7 @@ import { getActiveFlashPrices, effectivePrice, toProductCards, productCardInclud
 import { getAppUrl, getSettings } from '@/lib/settings';
 import { parseCustomFields, formatNumber } from '@/lib/utils';
 import ProductCardView, { Stars } from '@/components/ProductCardView';
+import { TrackRecentView, RecentlyViewedRail } from '@/components/RecentlyViewed';
 import Gallery from './Gallery';
 import ProductActions from './ProductActions';
 import BuyBox from './BuyBox';
@@ -127,6 +128,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
 
   return (
     <div className="container py-8">
+      <TrackRecentView slug={product.slug} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* Breadcrumb */}
       <nav className="mb-4 flex flex-wrap items-center gap-1.5 text-sm text-gray-500">
@@ -208,6 +210,8 @@ export default async function ProductPage({ params }: { params: { slug: string }
           </div>
         </section>
       )}
+
+      <RecentlyViewedRail excludeSlug={product.slug} className="mt-12" />
     </div>
   );
 }

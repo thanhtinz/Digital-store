@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import prisma from '@/lib/db';
-import { toProductCards, productCardInclude } from '@/lib/catalog';
+import { toProductCards, productCardInclude, type ProductCard } from '@/lib/catalog';
 import ProductCardView from '@/components/ProductCardView';
 import { clampInt, formatNumber } from '@/lib/utils';
+import { getMoneyFormatter } from '@/lib/currency';
 import Icon from '@/components/icons';
 import { INTL_LOCALE } from '@/i18n';
 import { getLocale, getT } from '@/i18n/server';
@@ -16,46 +17,102 @@ const SORTS: Record<string, any> = {
   newest: { id: 'desc' },
   popular: { soldCount: 'desc' },
   rating: { ratingAvg: 'desc' },
+  // Price sorts run in memory on the card's effective min price (flash-sale
+  // aware), which Prisma cannot express over the packages relation.
+  priceAsc: { soldCount: 'desc' },
+  priceDesc: { soldCount: 'desc' },
 };
 
-type Search = { q?: string; category?: string; sort?: string; page?: string };
+type Search = { q?: string; category?: string; sort?: string; page?: string; min?: string; max?: string };
+
+// Price bounds arrive as raw query params; only plain non-negative integers
+// count — anything else means "no bound on that side".
+function parseBound(value?: string): number | null {
+  if (!value) return null;
+  const v = value.trim();
+  if (!/^\d{1,12}$/.test(v)) return null;
+  const n = Number(v);
+  return Number.isSafeInteger(n) ? n : null;
+}
+
+// Shopee-style quick ranges (amounts in the store's base currency).
+const PRICE_PRESETS: Array<{ min: number | null; max: number | null }> = [
+  { min: null, max: 100_000 },
+  { min: 100_000, max: 300_000 },
+  { min: 300_000, max: 500_000 },
+  { min: 500_000, max: null },
+];
 
 export default async function ProductsPage({ searchParams }: { searchParams: Search }) {
   const intlLocale = INTL_LOCALE[getLocale()];
   const t = getT();
+  const money = await getMoneyFormatter();
   const q = (searchParams.q || '').trim();
   const sort = SORTS[searchParams.sort || ''] ? searchParams.sort! : 'popular';
   const page = clampInt(searchParams.page, 1, 10_000, 1);
   const pageSize = 12;
+  const minPrice = parseBound(searchParams.min);
+  const maxPrice = parseBound(searchParams.max);
+  const hasPriceFilter = minPrice !== null || maxPrice !== null;
 
   const where: any = { isActive: true };
   if (q) where.name = { contains: q, mode: 'insensitive' };
   if (searchParams.category) where.category = { slug: searchParams.category };
 
-  const [raw, total, categories] = await Promise.all([
+  const [raw, categories] = await Promise.all([
     prisma.product.findMany({
       where,
       orderBy: SORTS[sort],
-      skip: (page - 1) * pageSize,
-      take: pageSize,
       include: productCardInclude,
     }),
-    prisma.product.count({ where }),
     prisma.category.findMany({ where: { isActive: true }, orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] }),
   ]);
-  const products = await toProductCards(raw);
+
+  // Cards carry the effective (flash-aware) min package price — the same
+  // number the card displays — so filtering and price sorting stay honest.
+  let cards = await toProductCards(raw);
+  if (hasPriceFilter) {
+    cards = cards.filter(
+      (c) => (minPrice === null || c.minPrice >= minPrice) && (maxPrice === null || c.minPrice <= maxPrice)
+    );
+  }
+  if (sort === 'priceAsc' || sort === 'priceDesc') {
+    const dir = sort === 'priceAsc' ? 1 : -1;
+    cards = [...cards].sort(
+      (a, b) => dir * (a.minPrice - b.minPrice) || b.soldCount - a.soldCount || b.id - a.id
+    );
+  }
+  const total = cards.length;
   const pages = Math.max(1, Math.ceil(total / pageSize));
+  const products: ProductCard[] = cards.slice((page - 1) * pageSize, page * pageSize);
 
   const buildUrl = (patch: Partial<Search>) => {
     const params = new URLSearchParams();
-    const merged = { q, category: searchParams.category, sort, page: String(page), ...patch };
+    const merged = {
+      q,
+      category: searchParams.category,
+      sort,
+      page: String(page),
+      min: minPrice !== null ? String(minPrice) : undefined,
+      max: maxPrice !== null ? String(maxPrice) : undefined,
+      ...patch,
+    };
     if (merged.q) params.set('q', merged.q);
     if (merged.category) params.set('category', merged.category);
     if (merged.sort && merged.sort !== 'popular') params.set('sort', merged.sort);
     if (merged.page && merged.page !== '1') params.set('page', merged.page);
+    if (merged.min) params.set('min', merged.min);
+    if (merged.max) params.set('max', merged.max);
     const qs = params.toString();
     return `/products${qs ? `?${qs}` : ''}`;
   };
+
+  const presetLabel = (p: (typeof PRICE_PRESETS)[number]) =>
+    p.min === null
+      ? t('catalog.priceUnder', { amount: money(p.max!) })
+      : p.max === null
+        ? t('catalog.priceOver', { amount: money(p.min) })
+        : t('catalog.priceBetween', { from: money(p.min), to: money(p.max) });
 
   return (
     <div className="container py-8">
@@ -67,14 +124,22 @@ export default async function ProductsPage({ searchParams }: { searchParams: Sea
             {total === 1 ? t('catalog.availableOne') : t('catalog.available', { count: formatNumber(total, intlLocale) })}
           </p>
         </div>
-        <div className="flex rounded-full border border-gray-200 bg-white p-1 shadow-sm">
-          {(['popular', 'newest', 'rating'] as const).map((s) => (
+        <div className="flex flex-wrap justify-end rounded-full border border-gray-200 bg-white p-1 shadow-sm">
+          {(['popular', 'newest', 'rating', 'priceAsc', 'priceDesc'] as const).map((s) => (
             <Link
               key={s}
               href={buildUrl({ sort: s, page: '1' })}
               className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${sort === s ? 'bg-brand-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
             >
-              {s === 'popular' ? t('catalog.sortPopular') : s === 'newest' ? t('catalog.sortNewest') : t('catalog.sortRating')}
+              {s === 'popular'
+                ? t('catalog.sortPopular')
+                : s === 'newest'
+                  ? t('catalog.sortNewest')
+                  : s === 'rating'
+                    ? t('catalog.sortRating')
+                    : s === 'priceAsc'
+                      ? t('catalog.sortPriceAsc')
+                      : t('catalog.sortPriceDesc')}
             </Link>
           ))}
         </div>
@@ -100,6 +165,69 @@ export default async function ProductsPage({ searchParams }: { searchParams: Sea
           ))}
         </div>
       )}
+
+      {/* Price range filter: quick Shopee-style ranges + a custom from/to form.
+          Everything rides on the URL (?min=&max=) so filtered views are shareable. */}
+      <div className="card mb-6 flex flex-wrap items-center gap-x-4 gap-y-3 p-4">
+        <span className="flex items-center gap-1.5 text-sm font-bold text-gray-700">
+          <Icon name="ticket" size={15} className="text-brand-600" /> {t('catalog.priceRange')}
+        </span>
+        <div className="flex flex-wrap gap-2">
+          {PRICE_PRESETS.map((p) => {
+            const active = minPrice === p.min && maxPrice === p.max;
+            return (
+              <Link
+                key={`${p.min}-${p.max}`}
+                href={buildUrl({
+                  min: p.min !== null ? String(p.min) : (undefined as any),
+                  max: p.max !== null ? String(p.max) : (undefined as any),
+                  page: '1',
+                })}
+                className={`rounded-full px-3.5 py-1.5 text-[13px] font-semibold shadow-sm transition ${active ? 'bg-brand-600 text-white' : 'border border-gray-200 bg-white text-gray-600 hover:border-brand-300 hover:text-brand-700'}`}
+              >
+                {presetLabel(p)}
+              </Link>
+            );
+          })}
+        </div>
+        <form method="get" action="/products" className="flex flex-wrap items-center gap-2">
+          {q && <input type="hidden" name="q" value={q} />}
+          {searchParams.category && <input type="hidden" name="category" value={searchParams.category} />}
+          {sort !== 'popular' && <input type="hidden" name="sort" value={sort} />}
+          <input
+            name="min"
+            type="number"
+            min={0}
+            step={1000}
+            inputMode="numeric"
+            defaultValue={minPrice ?? ''}
+            placeholder={t('catalog.priceFrom')}
+            aria-label={t('catalog.priceFrom')}
+            className="input w-32 py-1.5 text-sm"
+          />
+          <span className="text-gray-400">–</span>
+          <input
+            name="max"
+            type="number"
+            min={0}
+            step={1000}
+            inputMode="numeric"
+            defaultValue={maxPrice ?? ''}
+            placeholder={t('catalog.priceTo')}
+            aria-label={t('catalog.priceTo')}
+            className="input w-32 py-1.5 text-sm"
+          />
+          <button type="submit" className="btn-primary px-4 py-1.5 text-sm">{t('catalog.priceApply')}</button>
+          {hasPriceFilter && (
+            <Link
+              href={buildUrl({ min: undefined as any, max: undefined as any, page: '1' })}
+              className="text-sm font-semibold text-gray-500 underline-offset-2 transition hover:text-brand-700 hover:underline"
+            >
+              {t('catalog.clearFilters')}
+            </Link>
+          )}
+        </form>
+      </div>
 
       {products.length > 0 ? (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:[grid-template-columns:repeat(auto-fill,minmax(240px,1fr))]">

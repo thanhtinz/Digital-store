@@ -9,6 +9,8 @@ import { debitWallet } from '@/lib/wallet';
 import { markOrderPaid } from '@/lib/orders';
 import { createIntent, isIntentMethod } from '@/lib/payments';
 import { startIntentPayment } from '@/lib/paymentStart';
+import { isValidEmail } from '@/lib/utils';
+import { setSettings } from '@/lib/settings';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,14 +44,36 @@ export const POST = handler(async (req: NextRequest) => {
   }
   if (!items.length) return jsonError(400, 'Your cart is empty', 'cartEmpty');
 
+  // ── Buy as a gift: delivery (keys/accounts + the delivery email) goes to
+  // the recipient's email via Order.email, while the order itself — and all
+  // payment confirmations — stays with the buyer. The recipient needs no
+  // account. A recipient equal to the buyer is just a normal order.
+  let giftEmail: string | null = null;
+  let giftMessage = '';
+  if (body.gift) {
+    const recipient = String(body.gift.recipientEmail || '').trim().slice(0, 255);
+    if (!isValidEmail(recipient)) {
+      return jsonError(400, 'Email người nhận chưa hợp lệ', 'giftEmailInvalid');
+    }
+    if (recipient.toLowerCase() !== user.email.toLowerCase()) giftEmail = recipient;
+    giftMessage = String(body.gift.message || '').trim().slice(0, 300);
+  }
+
   const order = await createOrder({
     userId: user.id,
-    email: user.email,
+    email: giftEmail || user.email,
     items,
     couponCode: body.couponCode ? String(body.couponCode) : undefined,
     redeemPoints: body.redeemPoints ? Number(body.redeemPoints) : undefined,
     paymentMethod,
   });
+
+  // The gift note has no column of its own (no schema change): it rides in
+  // the settings key/value store under the order code and is consumed by
+  // the delivery email, which is the one place it is ever shown.
+  if (giftEmail && giftMessage) {
+    await setSettings({ [`giftmsg:${order.code}`]: giftMessage }).catch(() => {});
+  }
 
   const itemsLabel = order.items.map((i) => `${i.productName} — ${i.packageName} ×${i.quantity}`).join(', ');
 
@@ -97,7 +121,9 @@ export const POST = handler(async (req: NextRequest) => {
         code: order.code,
         total: Number(order.total),
         currency: order.currency,
-        email: order.email,
+        // The payer is the buyer — for gift orders order.email is the
+        // recipient, who must not receive the payment receipt.
+        email: user.email,
         itemsLabel,
       });
       await prisma.order.update({ where: { id: order.id }, data: { paymentRef: session.id } });

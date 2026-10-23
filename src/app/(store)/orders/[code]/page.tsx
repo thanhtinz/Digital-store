@@ -44,6 +44,14 @@ export default async function OrderDetailPage({ params }: { params: { code: stri
         <StatusBadge status={order.status} label={t(`orders.status.${order.status}`)} />
       </div>
 
+      {/* Gift orders deliver to a different email than the buyer's account */}
+      {order.email.toLowerCase() !== user.email.toLowerCase() && (
+        <div className="mt-4 flex items-center gap-2.5 rounded-2xl bg-brand-50 px-4 py-3 text-sm font-medium text-brand-800 ring-1 ring-brand-100">
+          <Icon name="gift" size={17} className="shrink-0 text-brand-600" />
+          <span>{t('orders.giftBanner', { email: order.email })}</span>
+        </div>
+      )}
+
       {/* Live status watcher after gateway redirect */}
       <PaymentWatcher code={order.code} initialStatus={order.status} />
 

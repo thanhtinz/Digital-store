@@ -5,6 +5,7 @@ import { getFeatures } from '@/lib/features';
 import BannerCarousel from '@/components/BannerCarousel';
 import Countdown from '@/components/Countdown';
 import SuggestedTabs from '@/components/SuggestedTabs';
+import { RecentlyViewedRail } from '@/components/RecentlyViewed';
 import VoucherStrip from '@/components/VoucherStrip';
 import { type Voucher } from '@/lib/voucher';
 
@@ -326,6 +327,9 @@ export default async function HomePage() {
             price={suggestedPrice}
           />
         </section>
+
+        {/* ── Recently viewed (per-browser, from localStorage) ──── */}
+        <RecentlyViewedRail />
 
         {/* ── Trust / guarantee band ────────────────────────────── */}
         <section className="card p-6 sm:p-8">

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useStore, useMoney, useT } from '@/components/Providers';
 import { api } from '@/lib/client';
-import { type CustomFieldDef, formatNumber } from '@/lib/utils';
+import { type CustomFieldDef, formatNumber, isValidEmail } from '@/lib/utils';
 import Icon from '@/components/icons';
 import { INTL_LOCALE } from '@/i18n';
 
@@ -54,6 +54,9 @@ function CheckoutInner() {
   const [usePoints, setUsePoints] = useState(false);
   const [coupon, setCoupon] = useState('');
   const [applied, setApplied] = useState<{ code: string; discount: number } | null>(null);
+  const [giftOn, setGiftOn] = useState(false);
+  const [giftEmail, setGiftEmail] = useState('');
+  const [giftMessage, setGiftMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [applying, setApplying] = useState(false);
 
@@ -157,6 +160,10 @@ function CheckoutInner() {
       toast(t('checkout.insufficient'), 'error');
       return;
     }
+    if (giftOn && !isValidEmail(giftEmail.trim())) {
+      toast(t('checkout.giftInvalidEmail'), 'error');
+      return;
+    }
     setBusy(true);
     try {
       const d = await api<{ redirectUrl: string; orderCode: string; paid?: boolean }>('/api/checkout', {
@@ -165,6 +172,9 @@ function CheckoutInner() {
           paymentMethod: method,
           couponCode: applied?.code,
           redeemPoints: usePoints && canRedeem && loyalty ? loyalty.points : undefined,
+          ...(giftOn
+            ? { gift: { recipientEmail: giftEmail.trim(), message: giftMessage.trim() || undefined } }
+            : {}),
           ...(buyNow ? { buyNow } : {}),
         },
       });
@@ -305,6 +315,53 @@ function CheckoutInner() {
                   <Icon name="check" size={15} /> {t('checkout.couponInline', { code: applied.code, amount: money(applied.discount) })}
                   <button className="ml-2 text-xs text-gray-400 underline" onClick={() => setApplied(null)}>{t('checkout.removeCoupon')}</button>
                 </p>
+              )}
+            </div>
+
+            {/* Buy as a gift: delivery goes to the recipient's email */}
+            <div className="card p-5">
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={giftOn}
+                  onChange={(e) => setGiftOn(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <span className="flex-1">
+                  <span className="flex items-center gap-1.5 text-sm font-bold">
+                    <Icon name="gift" size={16} className="text-brand-600" /> {t('checkout.gift')}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-gray-500">{t('checkout.giftSub')}</span>
+                </span>
+              </label>
+              {giftOn && (
+                <div className="mt-4 space-y-3">
+                  <div>
+                    <label className="label" htmlFor="gift-email">{t('checkout.giftEmail')}</label>
+                    <input
+                      id="gift-email"
+                      className="input"
+                      type="email"
+                      autoComplete="email"
+                      placeholder="ban@example.com"
+                      value={giftEmail}
+                      onChange={(e) => setGiftEmail(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="label" htmlFor="gift-message">{t('checkout.giftMessage')}</label>
+                    <textarea
+                      id="gift-message"
+                      className="input"
+                      rows={2}
+                      maxLength={300}
+                      placeholder={t('checkout.giftMessagePlaceholder')}
+                      value={giftMessage}
+                      onChange={(e) => setGiftMessage(e.target.value)}
+                    />
+                    <p className="mt-1 text-right text-[11px] text-gray-400">{giftMessage.length}/300</p>
+                  </div>
+                </div>
               )}
             </div>
           </div>

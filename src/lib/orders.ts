@@ -2,7 +2,7 @@ import prisma from './db';
 import { getActiveFlashPrices, effectivePrice } from './catalog';
 import { checkCoupon } from './coupons';
 import { generateOrderCode, parseCustomFields } from './utils';
-import { getSetting, getSettings } from './settings';
+import { getSetting, getSettings, setSettings } from './settings';
 import { creditWallet } from './wallet';
 import { sendMail, emailLayout } from './mail';
 import { sendTelegram, escapeHtml } from './telegram';
@@ -455,6 +455,41 @@ export async function sendDeliveryEmail(orderId: number): Promise<void> {
       <pre style="background:#111827;color:#d1fae5;padding:12px;border-radius:8px;font-size:12px;white-space:pre-wrap;word-break:break-all">${i.deliveryData}</pre>`)
     .join('');
   const allDone = order.items.every((i) => i.deliveredAt);
+
+  // ── Gift orders: the delivery email (with the keys) belongs to the
+  // recipient at order.email — never to the buyer. The buyer only gets a
+  // key-free delivery notice through their usual notification channel.
+  const buyer = await prisma.user.findUnique({
+    where: { id: order.userId },
+    select: { email: true, name: true },
+  });
+  const isGift = !!buyer && order.email.toLowerCase() !== buyer.email.toLowerCase();
+  if (isGift) {
+    const giftMessage = (await getSetting(`giftmsg:${order.code}`)) || '';
+    const giftHtml = emailLayout(
+      siteName,
+      allDone ? `Your gift has been delivered` : `Part of your gift has been delivered`,
+      `<p><b>${escapeHtml(buyer!.name)}</b> bought you a gift at ${escapeHtml(siteName)} — and it has arrived:</p>
+       ${giftMessage ? `<p style="background:#f9fafb;border-left:3px solid #d1d5db;padding:10px 12px;font-style:italic">“${escapeHtml(giftMessage)}”</p>` : ''}
+       ${blocks}
+       <p>Please keep this email — it contains your item${delivered.length > 1 ? 's' : ''}. No account is needed to use ${delivered.length > 1 ? 'them' : 'it'}.</p>`
+    );
+    await sendMail(order.email, `Your gift from ${siteName} — order ${order.code}`, giftHtml);
+    if (giftMessage) await setSettings({ [`giftmsg:${order.code}`]: '' }).catch(() => {});
+    await notifyUser(order.userId, {
+      subject: `Your ${siteName} gift order ${order.code} has been delivered`,
+      html: emailLayout(
+        siteName,
+        `Gift delivered — order ${order.code}`,
+        `<p>Your gift order <b>${order.code}</b> has been delivered to <b>${escapeHtml(order.email)}</b>.</p>
+         <p>You can track the order here:<br>
+         <a href="${appUrl}/orders/${order.code}">${appUrl}/orders/${order.code}</a></p>`
+      ),
+      text: `<b>Gift delivered — order ${order.code}</b>\nYour gift was delivered to ${escapeHtml(order.email)}.\n\n${appUrl}/orders/${order.code}`,
+    });
+    return;
+  }
+
   const html = emailLayout(
     siteName,
     allDone ? `Your order ${order.code} has been delivered` : `Items delivered for order ${order.code}`,
@@ -482,11 +517,19 @@ async function sendOrderEmail(orderId: number): Promise<void> {
   const rows = order.items
     .map((i) => `<tr><td style="padding:6px 0">${i.productName} — ${i.packageName} × ${i.quantity}</td><td align="right">${money(Number(i.lineTotal), order.currency)}</td></tr>`)
     .join('');
+  // Payment confirmation always goes to the buyer; for gift orders it also
+  // says where the items themselves will be delivered (no keys here).
+  const buyer = await prisma.user.findUnique({ where: { id: order.userId }, select: { email: true } });
+  const isGift = !!buyer && order.email.toLowerCase() !== buyer.email.toLowerCase();
+  const giftLine = isGift
+    ? `<p>This is a <b>gift order</b> — the items will be delivered to <b>${escapeHtml(order.email)}</b>.</p>`
+    : '';
   const html = emailLayout(
     siteName,
     `Payment received — order ${order.code}`,
     `<p>Thank you for your purchase! We received your payment of <b>${money(Number(order.total), order.currency)}</b>.</p>
      <table width="100%" style="font-size:14px;border-collapse:collapse">${rows}</table>
+     ${giftLine}
      <p>Track your order and view delivered items here:<br>
      <a href="${appUrl}/orders/${order.code}">${appUrl}/orders/${order.code}</a></p>`
   );
@@ -496,6 +539,6 @@ async function sendOrderEmail(orderId: number): Promise<void> {
   await notifyUser(order.userId, {
     subject: `Your ${siteName} order ${order.code}`,
     html,
-    text: `<b>Payment received — order ${order.code}</b>\n${itemsText}\nTotal: ${money(Number(order.total), order.currency)}\n\n${appUrl}/orders/${order.code}`,
+    text: `<b>Payment received — order ${order.code}</b>\n${itemsText}\nTotal: ${money(Number(order.total), order.currency)}${isGift ? `\nGift order — items are delivered to ${escapeHtml(order.email)}.` : ''}\n\n${appUrl}/orders/${order.code}`,
   });
 }

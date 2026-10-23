@@ -8,6 +8,7 @@ import { api } from '@/lib/client';
 import Icon from './icons';
 import AppearanceMenu from './AppearanceMenu';
 import LanguageSwitcher from './LanguageSwitcher';
+import SearchBox from './SearchBox';
 
 type Category = { id: number; name: string; slug: string };
 
@@ -28,7 +29,6 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
   const money = useMoney();
   const t = useT();
   const router = useRouter();
-  const [q, setQ] = useState('');
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenu, setUserMenu] = useState(false);
   const [catMenu, setCatMenu] = useState(false);       // desktop dropdown
@@ -47,12 +47,6 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
     return () => { document.body.style.overflow = ''; };
   }, [mobileOpen]);
 
-  const search = (e: React.FormEvent) => {
-    e.preventDefault();
-    router.push(q.trim() ? `/products?q=${encodeURIComponent(q.trim())}` : '/products');
-    closeAll();
-  };
-
   const logout = async () => {
     await api('/api/auth/logout', { method: 'POST' });
     await refreshUser();
@@ -60,28 +54,6 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
     router.push('/');
     router.refresh();
   };
-
-  const searchPill = (id: string) => (
-    <form onSubmit={search} className="w-full">
-      <div className="flex items-center gap-1 rounded-full bg-white p-1 shadow-[0_10px_28px_-12px_rgba(0,0,0,.45)] ring-1 ring-white/60">
-        <Icon name="search" size={16} className="ms-2.5 shrink-0 text-gray-400" />
-        <input
-          id={id}
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder={t('nav.search')}
-          className="min-w-0 flex-1 bg-transparent px-1.5 py-1.5 text-sm text-gray-900 outline-none placeholder:text-gray-400"
-        />
-        <button
-          type="submit"
-          aria-label={t('home.search')}
-          className="grid h-8 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-b from-brand-500 to-brand-600 text-white shadow-btn-primary transition hover:brightness-110 active:scale-95"
-        >
-          <Icon name="search" size={16} />
-        </button>
-      </div>
-    </form>
-  );
 
   return (
     <>
@@ -209,7 +181,7 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
 
           {/* Search (desktop) + hot keywords */}
           <div className="mx-auto hidden w-full max-w-xl flex-1 md:block">
-            {searchPill('search-desktop')}
+            <SearchBox id="search-desktop" onNavigate={closeAll} />
             {(categories.length > 0 || on('flash_sale')) && (
               <div className="mt-1.5 flex flex-wrap items-center gap-x-3.5 gap-y-0.5 px-2 text-[11px] font-medium text-white/80">
                 {on('flash_sale') && (
@@ -281,6 +253,7 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
                       {on('giftcards') && <Link href="/gift-cards" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">{t('nav.giftCards')}</Link>}
                       <Link href="/affiliate" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">{t('nav.affiliate')}</Link>
                       {on('wishlist') && <Link href="/wishlist" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">{t('nav.wishlist')}</Link>}
+                      <Link href="/vouchers" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">{t('nav.vouchers')}</Link>
                       {on('support') && <Link href="/support" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">{t('nav.support')}</Link>}
                       <Link href="/account" onClick={closeAll} className="block px-4 py-2 text-sm hover:bg-gray-50">{t('nav.account')}</Link>
                       <button onClick={logout} className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50">
@@ -300,7 +273,7 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
         </div>
 
         {/* Search (mobile) */}
-        <div className="container pb-3 md:hidden">{searchPill('search-mobile')}</div>
+        <div className="container pb-3 md:hidden"><SearchBox id="search-mobile" onNavigate={closeAll} /></div>
       </div>
     </header>
 
@@ -378,6 +351,9 @@ export default function Header({ siteName, logo, categories, features = {} }: Pr
                         <Icon name="heart" size={17} className="text-gray-400" /> {t('nav.wishlist')}
                       </Link>
                     )}
+                    <Link href="/vouchers" onClick={closeAll} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
+                      <Icon name="ticket" size={17} className="text-gray-400" /> {t('nav.vouchers')}
+                    </Link>
                     {on('support') && (
                       <Link href="/support" onClick={closeAll} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-gray-100">
                         <Icon name="chat" size={17} className="text-gray-400" /> {t('nav.support')}

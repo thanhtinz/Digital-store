@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import Icon from './icons';
 import { useT } from './Providers';
 import VoucherCard from './VoucherCard';
@@ -43,6 +44,14 @@ export default function VoucherStrip({ vouchers }: { vouchers: Voucher[] }) {
           </button>
         </div>
       )}
+      <div className="mt-4 text-center">
+        <Link
+          href="/vouchers"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-700 transition hover:text-brand-800 hover:underline"
+        >
+          {t('home.voucherViewAll')} <Icon name="arrow-right" size={13} />
+        </Link>
+      </div>
     </section>
   );
 }
