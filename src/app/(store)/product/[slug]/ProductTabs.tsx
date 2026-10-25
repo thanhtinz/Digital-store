@@ -119,7 +119,7 @@ export default function ProductTabs({ reviewsEnabled = true, productId, descript
         </section>
       )}
       {reviewsEnabled && (
-        <section id="reviews" className="card scroll-mt-24 overflow-hidden">
+        <section id="reviews" className="card scroll-mt-36 overflow-hidden">
           <SectionHeader title={t('product.reviewsFull')} />
           <ReviewsSection productId={productId} ratingAvg={ratingAvg} ratingCount={ratingCount} reviews={reviews} />
         </section>
