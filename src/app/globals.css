@@ -11,6 +11,35 @@
     --brand-900: 140 40 24;
     --font-sans: 'Inter';
   }
+  /* Interface-style surfaces (theme.ts UI_STYLES). The default 'shopee'
+     style is flat and square; 'glass' swaps the same variables to frosted
+     Apple-style glass with large radii — components read only the vars. */
+  :root {
+    --ctl-radius: 2px;
+    --tile-radius: 2px;
+    --img-radius: 2px;
+    --surface-bg: #fff;
+    --surface-border: transparent;
+    --surface-shadow: 0 1px 1px 0 rgb(0 0 0 / 0.05);
+    --surface-blur: 0px;
+    --strip-bg: rgb(0 0 0 / 0.02);
+    --inset-bg: #fafafa;
+    --panel-bg: #fffbf8;
+    --panel-border: #f9ede5;
+  }
+  :root[data-ui-style='glass'] {
+    --ctl-radius: 999px;
+    --tile-radius: 22px;
+    --img-radius: 20px;
+    --surface-bg: rgb(255 255 255 / 0.6);
+    --surface-border: rgb(255 255 255 / 0.65);
+    --surface-shadow: 0 8px 32px -12px rgb(var(--brand-600) / 0.18), 0 2px 8px rgb(16 24 40 / 0.05), inset 0 1px 0 rgb(255 255 255 / 0.65);
+    --surface-blur: 20px;
+    --strip-bg: rgb(255 255 255 / 0.35);
+    --inset-bg: rgb(255 255 255 / 0.45);
+    --panel-bg: rgb(255 255 255 / 0.5);
+    --panel-border: rgb(255 255 255 / 0.6);
+  }
   html {
     -webkit-tap-highlight-color: transparent;
     scroll-behavior: smooth;
@@ -79,6 +108,24 @@
   .card-hover {
     @apply hover:shadow-card-hover hover:border-brand-200;
   }
+  /* Style-driven surfaces: flat white blocks under 'shopee', frosted glass
+     under 'glass' — driven entirely by the variables above. */
+  .surface-block {
+    background: var(--surface-bg);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--tile-radius);
+    box-shadow: var(--surface-shadow);
+    backdrop-filter: blur(var(--surface-blur)) saturate(1.6);
+    -webkit-backdrop-filter: blur(var(--surface-blur)) saturate(1.6);
+  }
+  .surface-header { background: var(--strip-bg); }
+  .surface-inset { background: var(--inset-bg); }
+  .surface-panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    backdrop-filter: blur(var(--surface-blur)) saturate(1.6);
+    -webkit-backdrop-filter: blur(var(--surface-blur)) saturate(1.6);
+  }
   /* Section header used across the storefront */
   .section-eyebrow {
     @apply inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.16em] text-brand-600;
@@ -138,6 +185,12 @@
 .prose-content table { @apply my-4 w-full overflow-hidden rounded-xl text-sm; }
 .prose-content th { @apply bg-gray-50 px-3 py-2 text-left font-semibold text-gray-900; }
 .prose-content td { @apply border-t border-gray-100 px-3 py-2; }
+
+/* Apple-glass mode: shared primitives go rounder and softer site-wide.
+   (Buttons and badges are already pills; cards are already glass.) */
+:root[data-ui-style='glass'] .card { border-radius: 1.625rem; }
+:root[data-ui-style='glass'] input.input { border-radius: 999px; }
+:root[data-ui-style='glass'] .prose-content img { border-radius: 20px; }
 
 /* Print: turn the order page into a clean invoice */
 @media print {

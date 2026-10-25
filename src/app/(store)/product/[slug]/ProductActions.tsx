@@ -69,7 +69,7 @@ export default function ProductActions({
         <button
           onClick={() => setAffOpen(true)}
           title={t('catalog.affTooltip', { rate: affiliate.rate })}
-          className="flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[2px] border border-green-200 bg-green-50 px-3 text-xs font-bold text-green-700 transition hover:bg-green-100"
+          className="flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[var(--ctl-radius)] border border-green-200 bg-green-50 px-3 text-xs font-bold text-green-700 transition hover:bg-green-100"
         >
           <Icon name="gift" size={15} /> {t('catalog.affEarn', { rate: affiliate.rate })}
         </button>
@@ -79,7 +79,7 @@ export default function ProductActions({
           onClick={toggle}
           disabled={busy}
           aria-label={t('catalog.toggleWishlist')}
-          className={`grid h-10 w-10 place-items-center rounded-[2px] border transition ${
+          className={`grid h-10 w-10 place-items-center rounded-[var(--ctl-radius)] border transition ${
             inWishlist
               ? 'border-red-200 bg-red-50 text-red-500'
               : 'border-gray-300 bg-white text-gray-400 hover:border-red-200 hover:text-red-400'
@@ -91,7 +91,7 @@ export default function ProductActions({
       <button
         onClick={share}
         aria-label={t('catalog.shareProduct')}
-        className="grid h-10 w-10 place-items-center rounded-[2px] border border-gray-300 bg-white text-gray-400 transition hover:border-brand-300 hover:text-brand-600"
+        className="grid h-10 w-10 place-items-center rounded-[var(--ctl-radius)] border border-gray-300 bg-white text-gray-400 transition hover:border-brand-300 hover:text-brand-600"
       >
         <Icon name="share" size={17} />
       </button>

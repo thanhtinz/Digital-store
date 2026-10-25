@@ -44,7 +44,7 @@ function OutOfStockNotice({ packageId }: { packageId: number }) {
   };
 
   return (
-    <div className="mt-5 rounded-[2px] bg-amber-50 p-3">
+    <div className="mt-5 rounded-[var(--tile-radius)] bg-amber-50 p-3">
       <p className="text-xs font-semibold text-amber-800">{t('catalog.outOfStockLong')}</p>
       <p className="mt-0.5 text-xs text-amber-700">{t('catalog.notifyIntro')}</p>
       {done ? (
@@ -63,7 +63,7 @@ function OutOfStockNotice({ packageId }: { packageId: number }) {
             />
           )}
           <button
-            className="flex items-center gap-1.5 rounded-[2px] border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-[var(--ctl-radius)] border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 disabled:opacity-50"
             onClick={subscribe}
             disabled={busy || (!user && !email.trim())}
           >
@@ -100,7 +100,7 @@ export default function BuyBox({ productId, packages }: { productId: number; pac
 
   const pkg = packages.find((p) => p.id === selectedId) || packages[0];
   if (!pkg) {
-    return <div className="rounded-[2px] bg-[#fafafa] p-6 text-sm text-gray-500">{t('catalog.unavailable')}</div>;
+    return <div className="surface-inset rounded-[var(--tile-radius)] p-6 text-sm text-gray-500">{t('catalog.unavailable')}</div>;
   }
 
   const strike = pkg.onSale ? pkg.originalPrice : pkg.comparePrice;
@@ -158,7 +158,7 @@ export default function BuyBox({ productId, packages }: { productId: number; pac
   return (
     <div>
       {/* Flash-sale strip + price block, Shopee-style */}
-      <div className="mt-4">
+      <div className="mt-4 overflow-hidden rounded-[var(--tile-radius)]">
         {pkg.onSale && pkg.saleEndsAt && (
           <div className="flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-brand-700 via-brand-600 to-brand-500 px-4 py-2.5 text-white">
             <span className="flex items-center gap-1.5 text-base font-bold uppercase tracking-wide">
@@ -169,13 +169,13 @@ export default function BuyBox({ productId, packages }: { productId: number; pac
             </span>
           </div>
         )}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-[#fafafa] px-5 py-4">
+        <div className="surface-inset flex flex-wrap items-center gap-x-3 gap-y-1 px-5 py-4">
           <span className="text-[30px] font-medium leading-none text-brand-600">{money(pkg.price * quantity)}</span>
           {strike && strike > pkg.price && (
             <span className="text-base text-black/40 line-through">{money(strike * quantity)}</span>
           )}
           {discountPct > 0 && (
-            <span className="rounded-[2px] bg-brand-600 px-1 py-0.5 text-xs font-medium text-white">-{discountPct}%</span>
+            <span className="rounded-[var(--ctl-radius)] bg-brand-600 px-1 py-0.5 text-xs font-medium text-white">-{discountPct}%</span>
           )}
         </div>
       </div>
@@ -201,7 +201,7 @@ export default function BuyBox({ productId, packages }: { productId: number; pac
                   setSelectedId(p.id);
                   setQuantity((q) => Math.min(q, p.stock === null ? 100 : Math.max(1, p.stock)));
                 }}
-                className={`relative min-w-[130px] max-w-[240px] flex-1 rounded-[2px] border px-3 py-2 text-left transition sm:flex-none ${
+                className={`relative min-w-[130px] max-w-[240px] flex-1 rounded-[var(--tile-radius)] border px-3 py-2 text-left transition sm:flex-none ${
                   selected
                     ? 'border-brand-600 bg-white'
                     : 'border-black/10 bg-white hover:border-brand-600'
@@ -229,7 +229,7 @@ export default function BuyBox({ productId, packages }: { productId: number; pac
 
       {/* Custom fields required for this package */}
       {!soldOut && pkg.customFields.length > 0 && (
-        <div className="mt-5 space-y-3 rounded-[2px] bg-[#fafafa] p-4">
+        <div className="surface-inset mt-5 space-y-3 rounded-[var(--tile-radius)] p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{t('catalog.requiredInfo')}</p>
           {pkg.customFields.map((def) => (
             <div key={def.key}>
@@ -266,7 +266,7 @@ export default function BuyBox({ productId, packages }: { productId: number; pac
           {/* Quantity row */}
           <div className="mt-5 flex flex-wrap items-center text-sm">
             <span className="w-[110px] shrink-0 text-black/50">{t('product.quantity')}</span>
-            <div className="flex items-center border border-black/10">
+            <div className="flex items-center overflow-hidden rounded-[var(--ctl-radius)] border border-black/10">
               <button className="h-8 w-8 text-base leading-none text-black/60 transition hover:bg-gray-50" onClick={() => setQuantity((q) => Math.max(1, q - 1))} aria-label="-">−</button>
               <span className="w-12 border-x border-black/10 text-center text-sm leading-8">{quantity}</span>
               <button className="h-8 w-8 text-base leading-none text-black/60 transition hover:bg-gray-50" onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))} aria-label="+">+</button>
@@ -282,7 +282,7 @@ export default function BuyBox({ productId, packages }: { productId: number; pac
           {/* Actions: Shopee's tinted add-to-cart + solid buy-now */}
           <div className="mt-6 flex flex-wrap gap-3">
             <button
-              className="flex h-12 min-w-[180px] flex-1 items-center justify-center gap-2 rounded-[2px] border border-brand-600 bg-brand-50 px-4 text-[15px] text-brand-600 transition hover:bg-brand-100 disabled:opacity-60"
+              className="flex h-12 min-w-[180px] flex-1 items-center justify-center gap-2 rounded-[var(--ctl-radius)] border border-brand-600 bg-brand-50 px-4 text-[15px] text-brand-600 transition hover:bg-brand-100 disabled:opacity-60"
               onClick={addToCart}
               disabled={busy !== ''}
             >
@@ -290,7 +290,7 @@ export default function BuyBox({ productId, packages }: { productId: number; pac
               {busy === 'cart' ? t('catalog.adding') : t('product.addToCart')}
             </button>
             <button
-              className="h-12 min-w-[180px] flex-1 rounded-[2px] bg-brand-600 px-4 text-[15px] text-white transition hover:bg-brand-700 disabled:opacity-60"
+              className="h-12 min-w-[180px] flex-1 rounded-[var(--ctl-radius)] bg-brand-600 px-4 text-[15px] text-white transition hover:bg-brand-700 disabled:opacity-60"
               onClick={buyNow}
               disabled={busy !== ''}
             >

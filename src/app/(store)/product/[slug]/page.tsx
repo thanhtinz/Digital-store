@@ -143,8 +143,9 @@ export default async function ProductPage({ params }: { params: { slug: string }
         <span className="font-medium text-gray-900">{product.name}</span>
       </nav>
 
-      {/* Top block, Shopee-style: one flat white panel holding gallery + info */}
-      <div className="rounded-[2px] bg-white p-5 shadow-[0_1px_1px_0_rgba(0,0,0,0.05)] sm:p-[25px]">
+      {/* Top block: one panel holding gallery + info — flat white under the
+          Shopee style, frosted glass under the Apple-glass style */}
+      <div className="surface-block p-5 sm:p-[25px]">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,460px)_1fr]">
           <Gallery images={product.images.map((i) => i.url)} name={product.name} />
           {/* min-w-0: without it the grid item takes its content's min-content
@@ -155,7 +156,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
                   whole grid wider than a phone viewport. */}
               <h1 className="min-w-0 break-words text-xl font-medium leading-snug text-black/85">
                 {product.isFeatured && (
-                  <span className="mr-2 inline-block -translate-y-0.5 rounded-[2px] bg-brand-600 px-1.5 py-0.5 align-middle text-xs font-medium text-white">
+                  <span className="mr-2 inline-block -translate-y-0.5 rounded-[var(--ctl-radius)] bg-brand-600 px-1.5 py-0.5 align-middle text-xs font-medium text-white">
                     {t('catalog.favoritePlus')}
                   </span>
                 )}

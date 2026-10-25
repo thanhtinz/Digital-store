@@ -74,9 +74,19 @@ export const TEXT_SIZES: TextSize[] = [
 
 export type Dir = 'ltr' | 'rtl';
 
-export const DEFAULT_THEME = { color: 'shopee', font: 'inter', textSize: 'normal', dir: 'ltr' as Dir, custom: '' };
+// Interface style: 'shopee' is the flat, square-cornered Shopee look;
+// 'glass' restyles every surface as frosted Apple-style glass with large
+// radii. It only flips CSS variables (see globals.css), never markup.
+export type UiStyle = { key: string; name: string };
 
-export type Theme = { color: string; font: string; textSize: string; dir: Dir; custom: string };
+export const UI_STYLES: UiStyle[] = [
+  { key: 'shopee', name: 'Shopee' },
+  { key: 'glass', name: 'Apple glass' },
+];
+
+export const DEFAULT_THEME = { color: 'shopee', font: 'inter', textSize: 'normal', dir: 'ltr' as Dir, custom: '', style: 'shopee' };
+
+export type Theme = { color: string; font: string; textSize: string; dir: Dir; custom: string; style: string };
 
 const HEX_RE = /^#[0-9a-f]{6}$/i;
 
@@ -138,27 +148,30 @@ export function resolveTheme(store: Partial<Theme>, override?: Partial<Theme> | 
     font: pick(FONT_PRESETS, override?.font, store.font, DEFAULT_THEME.font).key,
     textSize: pick(TEXT_SIZES, override?.textSize, store.textSize, DEFAULT_THEME.textSize).key,
     dir: (override?.dir ?? store.dir) === 'rtl' ? 'rtl' : 'ltr',
+    style: pick(UI_STYLES, override?.style, store.style, DEFAULT_THEME.style).key,
   };
 }
 
-// Parses the visitor's ds_theme cookie: "color:font:size:dir:customHex".
-// Older cookies carry only the first three segments — those still parse.
+// Parses the visitor's ds_theme cookie: "color:font:size:dir:customHex:style".
+// Older cookies carry fewer segments — those still parse, with the missing
+// values falling back to the store's configured theme.
 export function parseThemeCookie(raw: string | undefined): Partial<Theme> | null {
   if (!raw) return null;
   let decoded = raw;
   try { decoded = decodeURIComponent(raw); } catch { /* keep raw */ }
-  const [color, font, textSize, dir, custom] = decoded.split(':');
+  const [color, font, textSize, dir, custom, style] = decoded.split(':');
   return {
     color,
     font,
     textSize,
     dir: dir === 'rtl' ? 'rtl' : dir === 'ltr' ? 'ltr' : undefined,
     custom: isValidHex(custom) ? custom : undefined,
+    style: UI_STYLES.some((s) => s.key === style) ? style : undefined,
   };
 }
 
 export function serializeThemeCookie(theme: Theme): string {
-  return encodeURIComponent(`${theme.color}:${theme.font}:${theme.textSize}:${theme.dir}:${theme.custom || ''}`);
+  return encodeURIComponent(`${theme.color}:${theme.font}:${theme.textSize}:${theme.dir}:${theme.custom || ''}:${theme.style}`);
 }
 
 export function fontUrl(fontKey: string): string | null {

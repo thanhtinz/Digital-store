@@ -76,6 +76,7 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   theme_dir: 'ltr',               // 'ltr' | 'rtl'
   theme_font: 'inter',
   theme_text_size: 'normal',
+  theme_style: 'shopee',          // 'shopee' (flat) | 'glass' (Apple glass)
   theme_allow_override: 'true',   // let visitors pick their own
   support_email: 'support@example.com',
   // Fallback language for visitors whose browser offers neither Vietnamese
@@ -167,7 +168,7 @@ export async function getPublicSettings() {
     'sepay_enabled', 'sepay_account_number', 'payos_enabled', 'payos_client_id',
     'bank_transfer_enabled', 'bank_transfer_account_number',
     'footer_about', 'social_facebook', 'social_twitter', 'social_instagram', 'social_youtube', 'social_telegram', 'social_discord',
-    'theme_color', 'theme_custom_color', 'theme_dir', 'theme_font', 'theme_text_size', 'theme_allow_override',
+    'theme_color', 'theme_custom_color', 'theme_dir', 'theme_font', 'theme_text_size', 'theme_style', 'theme_allow_override',
     'feature_wallet', 'feature_giftcards', 'feature_reviews', 'feature_wishlist', 'feature_news', 'feature_flash_sale', 'feature_support',
   ]);
   return {
@@ -186,6 +187,7 @@ export async function getPublicSettings() {
       dir: (s.theme_dir === 'rtl' ? 'rtl' : 'ltr') as 'ltr' | 'rtl',
       font: s.theme_font,
       textSize: s.theme_text_size,
+      style: s.theme_style,
     },
     themeAllowOverride: s.theme_allow_override !== 'false',
     stripeEnabled: s.stripe_enabled === 'true',

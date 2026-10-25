@@ -48,7 +48,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const font = fontUrl(theme.font);
 
   return (
-    <html lang={locale} dir={theme.dir}>
+    <html lang={locale} dir={theme.dir} data-ui-style={theme.style}>
       <head>
         {font && (
           <>

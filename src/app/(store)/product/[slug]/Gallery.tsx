@@ -11,7 +11,7 @@ export default function Gallery({ images, name }: { images: string[]; name: stri
 
   return (
     <div className="min-w-0">
-      <div className="aspect-[4/3] overflow-hidden rounded-[2px] border border-black/5">
+      <div className="aspect-[4/3] overflow-hidden rounded-[var(--img-radius)] border border-black/5">
         {list[active] ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={list[active]} alt={t('catalog.imageAlt', { name, index: active + 1 })} className="h-full w-full object-cover" />
@@ -25,7 +25,7 @@ export default function Gallery({ images, name }: { images: string[]; name: stri
             <button
               key={i}
               onClick={() => setActive(i)}
-              className={`h-[82px] w-[82px] shrink-0 overflow-hidden rounded-[2px] border-2 transition ${
+              className={`h-[82px] w-[82px] shrink-0 overflow-hidden rounded-[var(--tile-radius)] border-2 transition ${
                 i === active ? 'border-brand-600' : 'border-black/5 opacity-80 hover:border-brand-300 hover:opacity-100'
               }`}
             >

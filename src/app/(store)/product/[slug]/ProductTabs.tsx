@@ -37,14 +37,14 @@ type Props = {
   packagesCount: number;
 };
 
-// Shopee section block: flat solid white, 2px corners, hairline shadow —
-// deliberately NOT the store's frosted-glass card.
-const BLOCK = 'overflow-hidden rounded-[2px] bg-white shadow-[0_1px_1px_0_rgba(0,0,0,0.05)]';
+// Section block driven by the interface style: flat solid white with 2px
+// corners under 'shopee', frosted rounded glass under 'glass' (globals.css).
+const BLOCK = 'surface-block overflow-hidden';
 const CONTENT = 'px-5 py-[25px] sm:px-[30px]';
 
 function SectionHeader({ title }: { title: string }) {
   return (
-    <div className="bg-black/[0.02] px-5 py-3.5 sm:px-[30px]">
+    <div className="surface-header px-5 py-3.5 sm:px-[30px]">
       <h2 className="text-lg font-normal uppercase leading-snug text-gray-900">{title}</h2>
     </div>
   );
@@ -82,7 +82,7 @@ function ExpandableHtml({ html }: { html: string }) {
         <div className="mt-4 text-center">
           <button
             onClick={() => setExpanded((v) => !v)}
-            className="inline-flex items-center gap-1.5 rounded-[2px] border border-brand-600 bg-white px-10 py-2 text-sm text-brand-600 transition hover:bg-brand-50"
+            className="inline-flex items-center gap-1.5 rounded-[var(--ctl-radius)] border border-brand-600 bg-white px-10 py-2 text-sm text-brand-600 transition hover:bg-brand-50"
           >
             {expanded ? t('product.seeLess') : t('product.seeMore')}
             <svg
@@ -258,7 +258,7 @@ function ReviewsSection({ productId, ratingAvg, ratingCount, reviews }: {
     <div className={CONTENT}>
       {/* Rating overview, Shopee-style: pale peach panel with a thin border,
           big brand-colour score on the left, square filter chips on the right */}
-      <div className="flex flex-col gap-5 border border-[#f9ede5] bg-[#fffbf8] px-5 py-[25px] sm:px-[30px] lg:flex-row lg:items-center">
+      <div className="surface-panel flex flex-col gap-5 rounded-[var(--tile-radius)] px-5 py-[25px] sm:px-[30px] lg:flex-row lg:items-center">
         <div className="shrink-0 text-center lg:w-44">
           <p className="text-brand-600">
             <span className="text-[30px] font-medium leading-none">{ratingAvg || '—'}</span>
@@ -276,7 +276,7 @@ function ReviewsSection({ productId, ratingAvg, ratingCount, reviews }: {
             <button
               key={String(chip.key)}
               onClick={() => setFilter(chip.key)}
-              className={`h-8 min-w-[100px] rounded-[2px] border px-2.5 text-sm transition ${
+              className={`h-8 min-w-[100px] rounded-[var(--ctl-radius)] border px-2.5 text-sm transition ${
                 filter === chip.key
                   ? 'border-brand-600 bg-brand-50 text-brand-600'
                   : 'border-black/10 bg-white text-gray-700 hover:border-brand-600 hover:text-brand-600'
@@ -290,7 +290,7 @@ function ReviewsSection({ productId, ratingAvg, ratingCount, reviews }: {
 
       {/* Write a review */}
       {user && !submitted && (
-        <div className="mt-6 rounded-[2px] border border-black/10 p-4">
+        <div className="mt-6 rounded-[var(--tile-radius)] border border-black/10 p-4">
           <p className="text-sm font-semibold">{t('catalog.writeReview')}</p>
           <p className="mt-0.5 text-xs text-gray-500">{t('catalog.reviewAfterPurchase')}</p>
           <div className="mt-2 flex gap-1">
@@ -313,7 +313,7 @@ function ReviewsSection({ productId, ratingAvg, ratingCount, reviews }: {
             <AttachmentPicker attachments={images} onChange={setImages} toast={toast} labels={attachLabels} />
           </div>
           <button
-            className="mt-3 rounded-[2px] bg-brand-600 px-8 py-2 text-sm font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
+            className="mt-3 rounded-[var(--ctl-radius)] bg-brand-600 px-8 py-2 text-sm font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
             onClick={submit}
             disabled={busy}
           >
@@ -355,7 +355,7 @@ function ReviewsSection({ productId, ratingAvg, ratingCount, reviews }: {
                 {r.images.length > 0 && (
                   <div className="mt-2.5 flex flex-wrap gap-2">
                     {r.images.map((url) => (
-                      <a key={url} href={url} target="_blank" rel="noreferrer" className="block overflow-hidden border border-black/5">
+                      <a key={url} href={url} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-[var(--tile-radius)] border border-black/5">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={url} alt={t('catalog.reviewPhoto')} className="h-[72px] w-[72px] object-cover transition hover:scale-105" />
                       </a>
@@ -363,7 +363,7 @@ function ReviewsSection({ productId, ratingAvg, ratingCount, reviews }: {
                   </div>
                 )}
                 {r.adminReply && (
-                  <div className="mt-3 bg-[#f5f5f5] p-3 text-sm">
+                  <div className="mt-3 rounded-[var(--tile-radius)] bg-[#f5f5f5] p-3 text-sm">
                     <p className="text-xs font-medium text-black/80">{t('catalog.storeResponse')}</p>
                     <p className="mt-1 text-black/70">{r.adminReply}</p>
                   </div>
