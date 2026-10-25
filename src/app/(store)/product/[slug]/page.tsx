@@ -156,7 +156,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-500">
             <a href="#reviews" className="flex items-center gap-1.5 hover:text-brand-600">
-              <Stars value={product.ratingAvg} />
+              <Stars value={product.ratingAvg} color="rgb(var(--brand-600))" />
               <b className="text-gray-800">{product.ratingAvg || '—'}</b>
               ({product.ratingCount === 1 ? t('catalog.reviewCountOne') : t('catalog.reviewCount', { count: product.ratingCount })})
             </a>
@@ -181,7 +181,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
         </div>
       </div>
 
-      <div className="mt-10">
+      <div className="mt-5">
         <ProductTabs
           reviewsEnabled={feats.reviews}
           productId={product.id}
@@ -189,6 +189,10 @@ export default async function ProductPage({ params }: { params: { slug: string }
           guide={product.guide}
           ratingAvg={product.ratingAvg}
           ratingCount={product.ratingCount}
+          categoryName={product.category?.name ?? null}
+          categorySlug={product.category?.slug ?? null}
+          soldCount={product.soldCount}
+          packagesCount={packages.length}
           reviews={product.reviews.map((r) => ({
             id: r.id,
             rating: r.rating,

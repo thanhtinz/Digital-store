@@ -125,6 +125,12 @@ export const vi: Record<string, string> = {
   'product.withPhotos': 'Có hình ảnh',
   'product.withComments': 'Có bình luận',
   'product.noReviewsFilter': 'Chưa có đánh giá nào phù hợp với bộ lọc này.',
+  'product.detailsTitle': 'Chi tiết sản phẩm',
+  'product.specCategory': 'Danh mục',
+  'product.specDelivery': 'Hình thức giao hàng',
+  'product.specDeliveryAuto': 'Giao key/tài khoản tự động qua email & tài khoản',
+  'product.specSold': 'Đã bán',
+  'product.specPackages': 'Số gói lựa chọn',
 
   'cart.title': 'Giỏ hàng',
   'cart.empty': 'Giỏ hàng đang trống',

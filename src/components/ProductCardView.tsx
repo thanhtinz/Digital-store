@@ -9,12 +9,12 @@ import { formatNumber } from '@/lib/utils';
 import { INTL_LOCALE } from '@/i18n';
 import { useStore, useT } from '@/components/Providers';
 
-export function Stars({ value, size = 14 }: { value: number; size?: number }) {
+export function Stars({ value, size = 14, color = '#f59e0b' }: { value: number; size?: number; color?: string }) {
   const t = useT();
   return (
     <span className="inline-flex items-center gap-0.5" aria-label={t('catalog.starsAria', { value })}>
       {[1, 2, 3, 4, 5].map((i) => (
-        <svg key={i} width={size} height={size} viewBox="0 0 24 24" fill={i <= Math.round(value) ? '#f59e0b' : '#e5e7eb'}>
+        <svg key={i} width={size} height={size} viewBox="0 0 24 24" fill={i <= Math.round(value) ? color : '#e5e7eb'}>
           <path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3l-6.1 3.3 1.4-6.8L2.2 9.1l6.9-.8L12 2z" />
         </svg>
       ))}

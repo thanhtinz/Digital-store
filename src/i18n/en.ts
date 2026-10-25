@@ -125,6 +125,12 @@ export const en: Record<string, string> = {
   'product.withPhotos': 'With photos',
   'product.withComments': 'With comments',
   'product.noReviewsFilter': 'No reviews match this filter yet.',
+  'product.detailsTitle': 'Product details',
+  'product.specCategory': 'Category',
+  'product.specDelivery': 'Delivery',
+  'product.specDeliveryAuto': 'Automatic delivery of key/account by email & account',
+  'product.specSold': 'Sold',
+  'product.specPackages': 'Packages',
 
   'cart.title': 'Your cart',
   'cart.empty': 'Your cart is empty',
