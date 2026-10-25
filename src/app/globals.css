@@ -11,23 +11,10 @@
     --brand-900: 140 40 24;
     --font-sans: 'Inter';
   }
-  /* Interface-style surfaces (theme.ts UI_STYLES). The default 'shopee'
-     style is flat and square; 'glass' swaps the same variables to frosted
-     Apple-style glass with large radii — components read only the vars. */
+  /* Surface variables: the whole storefront is frosted Apple-style glass —
+     translucent surfaces, large radii, pill controls. Components read only
+     these variables, never hard-coded surface values. */
   :root {
-    --ctl-radius: 2px;
-    --tile-radius: 2px;
-    --img-radius: 2px;
-    --surface-bg: #fff;
-    --surface-border: transparent;
-    --surface-shadow: 0 1px 1px 0 rgb(0 0 0 / 0.05);
-    --surface-blur: 0px;
-    --strip-bg: rgb(0 0 0 / 0.02);
-    --inset-bg: #fafafa;
-    --panel-bg: #fffbf8;
-    --panel-border: #f9ede5;
-  }
-  :root[data-ui-style='glass'] {
     --ctl-radius: 999px;
     --tile-radius: 22px;
     --img-radius: 20px;
@@ -103,13 +90,12 @@
   }
   /* Cards are frosted glass over the aurora backdrop. */
   .card {
-    @apply rounded-[1.25rem] border border-white/60 bg-white/70 shadow-glass backdrop-blur-xl backdrop-saturate-150 transition-shadow duration-300;
+    @apply rounded-[1.625rem] border border-white/60 bg-white/70 shadow-glass backdrop-blur-xl backdrop-saturate-150 transition-shadow duration-300;
   }
   .card-hover {
     @apply hover:shadow-card-hover hover:border-brand-200;
   }
-  /* Style-driven surfaces: flat white blocks under 'shopee', frosted glass
-     under 'glass' — driven entirely by the variables above. */
+  /* Frosted-glass surfaces, driven entirely by the variables above. */
   .surface-block {
     background: var(--surface-bg);
     border: 1px solid var(--surface-border);
@@ -186,11 +172,10 @@
 .prose-content th { @apply bg-gray-50 px-3 py-2 text-left font-semibold text-gray-900; }
 .prose-content td { @apply border-t border-gray-100 px-3 py-2; }
 
-/* Apple-glass mode: shared primitives go rounder and softer site-wide.
-   (Buttons and badges are already pills; cards are already glass.) */
-:root[data-ui-style='glass'] .card { border-radius: 1.625rem; }
-:root[data-ui-style='glass'] input.input { border-radius: 999px; }
-:root[data-ui-style='glass'] .prose-content img { border-radius: 20px; }
+/* Apple-glass touches on shared primitives (buttons and badges are already
+   pills; cards are already glass): pill text fields, softer content images. */
+input.input { border-radius: 999px; }
+.prose-content img { border-radius: 20px; }
 
 /* Print: turn the order page into a clean invoice */
 @media print {

@@ -2,7 +2,7 @@
 
 import { useSettings, toggle, SettingsHeader } from '../shared';
 import { useAdminT } from '@/components/Providers';
-import { COLOR_PRESETS, FONT_PRESETS, TEXT_SIZES, UI_STYLES } from '@/lib/theme';
+import { COLOR_PRESETS, FONT_PRESETS, TEXT_SIZES } from '@/lib/theme';
 import Icon from '@/components/icons';
 
 export default function AppearanceSettingsPage() {
@@ -13,7 +13,6 @@ export default function AppearanceSettingsPage() {
   const color = s.theme_color || 'indigo';
   const font = s.theme_font || 'inter';
   const size = s.theme_text_size || 'normal';
-  const uiStyle = s.theme_style || 'shopee';
   const preset = COLOR_PRESETS.find((c) => c.key === color) || COLOR_PRESETS[0];
 
   return (
@@ -91,27 +90,6 @@ export default function AppearanceSettingsPage() {
         <p className="mt-1 text-xs text-gray-400">
           {t('admin.appearance.overrideNote')}
         </p>
-      </div>
-
-      <div className="card p-5">
-        <h2 className="font-bold">{t('admin.appearance.styleTitle')}</h2>
-        <p className="mt-0.5 text-sm text-gray-500">{t('admin.appearance.styleText')}</p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {UI_STYLES.map((st) => (
-            <button
-              key={st.key}
-              onClick={() => set('theme_style', st.key)}
-              className={`rounded-xl border-2 p-4 text-left transition ${
-                uiStyle === st.key ? 'border-gray-900' : 'border-gray-200 hover:border-gray-300'
-              }`}
-            >
-              <span className="flex items-center gap-1 text-sm font-bold">
-                {uiStyle === st.key && <Icon name="check" size={14} />} {t(`theme.style.${st.key}`)}
-              </span>
-              <span className="mt-0.5 block text-xs text-gray-500">{t(`admin.appearance.styleNote.${st.key}`)}</span>
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* Live preview using the selected values directly, not the saved ones */}

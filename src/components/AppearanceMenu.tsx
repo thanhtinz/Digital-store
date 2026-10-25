@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useStore, useT } from './Providers';
 import {
-  COLOR_PRESETS, FONT_PRESETS, TEXT_SIZES, UI_STYLES, fontUrl, isValidHex, serializeThemeCookie, themeCssVars,
+  COLOR_PRESETS, FONT_PRESETS, TEXT_SIZES, fontUrl, isValidHex, serializeThemeCookie, themeCssVars,
   type Theme,
 } from '@/lib/theme';
 import { api } from '@/lib/client';
@@ -25,7 +25,6 @@ function applyLive(next: Theme) {
   }
   style.textContent = themeCssVars(next);
   document.documentElement.dir = next.dir;
-  document.documentElement.dataset.uiStyle = next.style;
 
   const url = fontUrl(next.font);
   let link = document.querySelector<HTMLLinkElement>('link[href*="fonts.googleapis.com/css2"]');
@@ -112,7 +111,7 @@ export default function AppearanceMenu({
   }, [open ]);
 
   const PANEL_W = 340;
-  const PANEL_H_EST = 540;
+  const PANEL_H_EST = 440;
 
   const toggle = () => {
     if (!open && box.current) {
@@ -162,7 +161,6 @@ export default function AppearanceMenu({
           theme_dir: draft.dir,
           theme_font: draft.font,
           theme_text_size: draft.textSize,
-          theme_style: draft.style,
         },
       });
       toast(t('appearance.saved'));
@@ -219,16 +217,7 @@ export default function AppearanceMenu({
           style={panelStyle}
           className="absolute z-[120] w-[340px] max-w-[calc(100vw-1.5rem)] animate-scale-in rounded-3xl border border-white/60 bg-white/95 p-4 text-gray-900 shadow-pop backdrop-blur-2xl backdrop-saturate-150"
         >
-          <p className={sectionLabel}>{t('appearance.style')}</p>
-          <div className="mt-2 grid grid-cols-2 gap-1.5 rounded-full bg-gray-100/80 p-1">
-            {UI_STYLES.map((s) => (
-              <button key={s.key} onClick={() => apply({ ...draft, style: s.key })} className={segBtn(draft.style === s.key)}>
-                {t(`theme.style.${s.key}`)}
-              </button>
-            ))}
-          </div>
-
-          <p className={`mt-4 ${sectionLabel}`}>{t('appearance.colour')}</p>
+          <p className={sectionLabel}>{t('appearance.colour')}</p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {COLOR_PRESETS.map((c) => (
               <button

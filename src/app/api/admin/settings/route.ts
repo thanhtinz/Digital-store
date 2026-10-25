@@ -45,7 +45,7 @@ const ALL_KEYS = [
   // SEO
   'indexnow_key',
   // Appearance
-  'theme_color', 'theme_custom_color', 'theme_dir', 'theme_font', 'theme_text_size', 'theme_style', 'theme_allow_override',
+  'theme_color', 'theme_custom_color', 'theme_dir', 'theme_font', 'theme_text_size', 'theme_allow_override',
   // Feature switches
   'feature_wallet', 'feature_giftcards', 'feature_reviews', 'feature_wishlist', 'feature_news', 'feature_flash_sale', 'feature_support',
 ];
