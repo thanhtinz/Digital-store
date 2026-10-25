@@ -155,11 +155,11 @@ export default async function ProductPage({ params }: { params: { slug: string }
             <ProductActions productId={product.id} slug={product.slug} affiliate={affiliate} wishlistEnabled={feats.wishlist} />
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-500">
-            <span className="flex items-center gap-1.5">
+            <a href="#reviews" className="flex items-center gap-1.5 hover:text-brand-600">
               <Stars value={product.ratingAvg} />
               <b className="text-gray-800">{product.ratingAvg || '—'}</b>
               ({product.ratingCount === 1 ? t('catalog.reviewCountOne') : t('catalog.reviewCount', { count: product.ratingCount })})
-            </span>
+            </a>
             <span>·</span>
             <span>{t('product.sold', { count: formatNumber(product.soldCount, intlLocale) })}</span>
           </div>
