@@ -131,6 +131,7 @@ export const en: Record<string, string> = {
   'product.specDeliveryAuto': 'Automatic delivery of key/account by email & account',
   'product.specSold': 'Sold',
   'product.specPackages': 'Packages',
+  'buybox.available': '{count} available',
 
   'cart.title': 'Your cart',
   'cart.empty': 'Your cart is empty',

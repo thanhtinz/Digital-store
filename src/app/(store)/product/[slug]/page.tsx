@@ -143,40 +143,55 @@ export default async function ProductPage({ params }: { params: { slug: string }
         <span className="font-medium text-gray-900">{product.name}</span>
       </nav>
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        <Gallery images={product.images.map((i) => i.url)} name={product.name} />
-        {/* min-w-0: without it the grid item takes its content's min-content
-            width, which pushes the whole page wider than a phone viewport. */}
-        <div className="min-w-0 lg:sticky lg:top-20 lg:self-start">
-          <div className="flex items-start justify-between gap-3">
-            {/* min-w-0 lets a long product name wrap instead of forcing the
-                whole grid wider than a phone viewport. */}
-            <h1 className="min-w-0 break-words text-2xl font-bold sm:text-3xl">{product.name}</h1>
-            <ProductActions productId={product.id} slug={product.slug} affiliate={affiliate} wishlistEnabled={feats.wishlist} />
-          </div>
-          <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-500">
-            <a href="#reviews" className="flex items-center gap-1.5 hover:text-brand-600">
-              <Stars value={product.ratingAvg} color="rgb(var(--brand-600))" />
-              <b className="text-gray-800">{product.ratingAvg || '—'}</b>
-              ({product.ratingCount === 1 ? t('catalog.reviewCountOne') : t('catalog.reviewCount', { count: product.ratingCount })})
-            </a>
-            <span>·</span>
-            <span>{t('product.sold', { count: formatNumber(product.soldCount, intlLocale) })}</span>
-          </div>
-          {product.shortDesc && <p className="mt-3 text-sm leading-relaxed text-gray-600">{product.shortDesc}</p>}
-          <div className="mt-5">
+      {/* Top block, Shopee-style: one flat white panel holding gallery + info */}
+      <div className="rounded-[2px] bg-white p-5 shadow-[0_1px_1px_0_rgba(0,0,0,0.05)] sm:p-[25px]">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,460px)_1fr]">
+          <Gallery images={product.images.map((i) => i.url)} name={product.name} />
+          {/* min-w-0: without it the grid item takes its content's min-content
+              width, which pushes the whole page wider than a phone viewport. */}
+          <div className="min-w-0">
+            <div className="flex items-start justify-between gap-3">
+              {/* min-w-0 lets a long product name wrap instead of forcing the
+                  whole grid wider than a phone viewport. */}
+              <h1 className="min-w-0 break-words text-xl font-medium leading-snug text-black/85">
+                {product.isFeatured && (
+                  <span className="mr-2 inline-block -translate-y-0.5 rounded-[2px] bg-brand-600 px-1.5 py-0.5 align-middle text-xs font-medium text-white">
+                    {t('catalog.favoritePlus')}
+                  </span>
+                )}
+                {product.name}
+              </h1>
+              <ProductActions productId={product.id} slug={product.slug} affiliate={affiliate} wishlistEnabled={feats.wishlist} />
+            </div>
+            {/* Meta row, Shopee-style: underlined orange rating, divided counts */}
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+              <a href="#reviews" className="flex items-center gap-1.5">
+                <span className="border-b border-brand-600 font-medium leading-tight text-brand-600">{product.ratingAvg || '—'}</span>
+                <Stars value={product.ratingAvg} color="rgb(var(--brand-600))" />
+              </a>
+              <span className="h-4 w-px bg-gray-300" />
+              <a href="#reviews" className="text-black/50 transition hover:text-brand-600">
+                <span className="font-medium text-black/80">{formatNumber(product.ratingCount, intlLocale)}</span> {t('product.reviews')}
+              </a>
+              <span className="h-4 w-px bg-gray-300" />
+              <span className="text-black/50">
+                <span className="font-medium text-black/80">{formatNumber(product.soldCount, intlLocale)}</span> {t('product.specSold')}
+              </span>
+            </div>
+            {product.shortDesc && <p className="mt-3 text-sm leading-relaxed text-black/55">{product.shortDesc}</p>}
             <BuyBox productId={product.id} packages={packages} />
-          </div>
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            {([
-              ['bolt', t('trust.instant')],
-              ['shield', t('home.trustProtection')],
-              ['chat', t('catalog.support247')],
-            ] as const).map(([icon, label]) => (
-              <div key={label} className="flex items-center justify-center gap-1.5 rounded-full bg-white/60 px-2 py-2.5 text-xs font-medium text-gray-600 shadow-sm ring-1 ring-white/70 backdrop-blur">
-                <Icon name={icon} size={14} className="text-brand-600" /> {label}
-              </div>
-            ))}
+            {/* Guarantee row, Shopee-style: plain icon + text, no pills */}
+            <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 border-t border-black/5 pt-4">
+              {([
+                ['bolt', t('trust.instant')],
+                ['shield', t('home.trustProtection')],
+                ['chat', t('catalog.support247')],
+              ] as const).map(([icon, label]) => (
+                <span key={label} className="flex items-center gap-1.5 text-sm text-black/55">
+                  <Icon name={icon} size={16} className="text-brand-600" /> {label}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       </div>

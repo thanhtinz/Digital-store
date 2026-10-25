@@ -131,6 +131,7 @@ export const vi: Record<string, string> = {
   'product.specDeliveryAuto': 'Giao key/tài khoản tự động qua email & tài khoản',
   'product.specSold': 'Đã bán',
   'product.specPackages': 'Số gói lựa chọn',
+  'buybox.available': '{count} sản phẩm có sẵn',
 
   'cart.title': 'Giỏ hàng',
   'cart.empty': 'Giỏ hàng đang trống',
